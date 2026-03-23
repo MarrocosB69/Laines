@@ -1,0 +1,76 @@
+.student-view {
+  --student-text: #1e293b;
+  --student-muted: #64748b;
+  --student-border: rgba(15, 23, 42, 0.09);
+  --student-surface: #ffffff;
+  --student-surface-soft: #f8fafc;
+  --student-accent: #74a865;
+}
+
+.student-view .admin-bg-pattern {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(116, 168, 101, 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.74), rgba(248, 250, 252, 1));
+}
+
+.student-view .admin-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--student-border);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.student-view .breadcrumb-text {
+  color: var(--student-text);
+}
+
+.student-view .breadcrumb-text.mute {
+  color: #94a3b8;
+}
+
+.student-view .breadcrumb-separator {
+  color: #cbd5e1;
+}
+
+.student-view .icon-wrapper {
+  color: var(--student-accent);
+}
+
+.student-view .theme-toggle,
+.student-view .notifications-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--student-border);
+  background: var(--student-surface);
+  color: var(--student-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-view .theme-toggle:hover,
+.student-view .notifications-btn:hover {
+  background: var(--student-surface-soft);
+  color: #103355;
+}
+
+.student-view .user-profile .avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #56addb, #74a865);
+  color: #ffffff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(86, 173, 219, 0.25);
+}
+
+.student-view .laines-sidebar {
+  --sidebar-accent: #74a865;
+  --sidebar-accent-soft: rgba(116, 168, 101, 0.16);
+  --sidebar-accent-strong: rgba(116, 168, 101, 0.92);
+}

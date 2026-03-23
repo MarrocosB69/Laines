@@ -1,0 +1,15 @@
+.avaliacao-hidratacao .eval-icon {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0284c7;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+}
+
+.avaliacao-hidratacao .eval-card {
+  border-radius: 22px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: #ffffff;
+}
+
+.avaliacao-hidratacao .eval-textarea {
+  background: #f8fafc;
+}

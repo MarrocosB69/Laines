@@ -1,0 +1,515 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch, tag or SHA)"
+        required: true
+        default: "main"
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      run_migrations:
+        description: "Run database migrations during deploy"
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  preflight-gates:
+    name: Preflight Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix server ci
+
+      - name: Runtime schema guard
+        run: npm run guard:schema
+
+      - name: Backend TypeScript lint
+        run: npm --prefix server run lint
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Backend build
+        run: npm --prefix server run build
+
+      - name: Core tests
+        run: npm run test:core
+
+  api-e2e-gates:
+    name: API Smoke + E2E Gates
+    runs-on: ubuntu-latest
+    needs: preflight-gates
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: laines_ci
+          POSTGRES_USER: laines
+          POSTGRES_PASSWORD: laines_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U laines -d laines_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: laines
+      DB_PASSWORD: laines_ci_password
+      DB_NAME: laines_ci
+      DB_SYNC: "false"
+      DB_MIGRATIONS_RUN: "false"
+      JWT_SECRET: ci-jwt-secret
+      CORS_ORIGIN: http://localhost:5173
+      PORT: 4000
+      NODE_ENV: test
+      E2E_ADMIN_EMAIL: admin.ci@laines.ufrn.br
+      E2E_ADMIN_PASSWORD: Admin#123456
+      E2E_STUDENT_EMAIL: aluno.ci@laines.ufrn.br
+      E2E_STUDENT_PASSWORD: Aluno#123456
+      E2E_PROFESSOR_EMAIL: professor.ci@laines.ufrn.br
+      E2E_PROFESSOR_PASSWORD: Professor#123456
+      E2E_TEAM_EMAIL: tecnico.ci@laines.ufrn.br
+      E2E_TEAM_PASSWORD: Tecnico#123456
+      E2E_ATHLETE_EMAIL: atleta.ci@laines.ufrn.br
+      E2E_ATHLETE_PASSWORD: Atleta#123456
+      E2E_EMAIL: admin.ci@laines.ufrn.br
+      E2E_PASSWORD: Admin#123456
+      E2E_ROLE_MATRIX_REQUIRED: "true"
+      E2E_ALLOW_MUTATIONS: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix server ci
+
+      - name: Build backend
+        run: npm --prefix server run build
+
+      - name: Run database migrations
+        run: npm --prefix server run migration:run
+
+      - name: Seed CI users
+        run: node server/scripts/seed-ci-users.js
+
+      - name: Seed CI analytics data
+        run: node server/scripts/seed-ci-analytics.js
+
+      - name: Validate E2E environment matrix
+        run: npm run test:e2e:env
+
+      - name: Prepare E2E artifacts directory
+        run: mkdir -p e2e-artifacts
+
+      - name: Start API
+        run: |
+          nohup node server/dist/main.js > api.log 2>&1 &
+          echo $! > api.pid
+
+      - name: Wait for API health
+        run: |
+          for i in {1..40}; do
+            if curl -fsS "http://127.0.0.1:4000/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy in time."
+          exit 1
+
+      - name: Smoke tests
+        run: npm run smoke:api
+        env:
+          API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E critical flow
+        run: npm run test:e2e:critical
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E role contracts
+        run: npm run test:e2e:roles
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E analytics and export
+        run: npm run test:e2e:analytics
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+          E2E_ANALYTICS_REPORT_PATH: e2e-artifacts/e2e-analytics-report.json
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f api.pid ]; then
+            kill "$(cat api.pid)" || true
+          fi
+
+      - name: Upload API and E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-api-gates-artifacts
+          path: |
+            api.log
+            e2e-artifacts
+          if-no-files-found: warn
+
+  package-release:
+    name: Package Release
+    runs-on: ubuntu-latest
+    needs:
+      - preflight-gates
+      - api-e2e-gates
+    timeout-minutes: 15
+    outputs:
+      artifact_name: ${{ steps.release_meta.outputs.artifact_name }}
+      release_id: ${{ steps.release_meta.outputs.release_id }}
+      source_ref: ${{ steps.release_meta.outputs.source_ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix server ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build backend
+        run: npm --prefix server run build
+
+      - name: Resolve release metadata
+        id: release_meta
+        env:
+          SOURCE_REF: ${{ github.event.inputs.ref }}
+        run: |
+          RELEASE_ID="$(git rev-parse HEAD)"
+          ARTIFACT_NAME="laines-release-${RELEASE_ID}.tar.gz"
+          echo "release_id=${RELEASE_ID}" >> "${GITHUB_OUTPUT}"
+          echo "artifact_name=${ARTIFACT_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "source_ref=${SOURCE_REF}" >> "${GITHUB_OUTPUT}"
+
+      - name: Prepare release artifact
+        env:
+          RELEASE_ID: ${{ steps.release_meta.outputs.release_id }}
+          ARTIFACT_NAME: ${{ steps.release_meta.outputs.artifact_name }}
+          SOURCE_REF: ${{ steps.release_meta.outputs.source_ref }}
+        run: |
+          BUILT_AT_UTC="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          rm -rf release
+          mkdir -p release/frontend release/server
+          cp -R dist/. release/frontend/
+          cp -R server/dist release/server/dist
+          cp server/package.json release/server/package.json
+          cp server/package-lock.json release/server/package-lock.json
+          cat > release/release.json <<JSON
+          {
+            "releaseId": "${RELEASE_ID}",
+            "artifactName": "${ARTIFACT_NAME}",
+            "sourceRef": "${SOURCE_REF}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "workflowRunNumber": "${GITHUB_RUN_NUMBER}",
+            "builtAtUtc": "${BUILT_AT_UTC}"
+          }
+          JSON
+          tar -C release -czf "${ARTIFACT_NAME}" .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.release_meta.outputs.artifact_name }}
+          path: ${{ steps.release_meta.outputs.artifact_name }}
+          retention-days: 14
+
+  deploy:
+    name: Deploy To ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: package-release
+    timeout-minutes: 20
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.package-release.outputs.artifact_name }}
+
+      - name: Validate deployment secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_HEALTHCHECK_URL: ${{ secrets.DEPLOY_HEALTHCHECK_URL }}
+          DEPLOY_RESTART_COMMAND: ${{ secrets.DEPLOY_RESTART_COMMAND }}
+          DEPLOY_DB_BACKUP_COMMAND: ${{ secrets.DEPLOY_DB_BACKUP_COMMAND }}
+          DEPLOY_DB_RESTORE_COMMAND: ${{ secrets.DEPLOY_DB_RESTORE_COMMAND }}
+          RUN_MIGRATIONS: ${{ github.event.inputs.run_migrations }}
+        run: |
+          test -n "${DEPLOY_HOST}" || (echo "Missing DEPLOY_HOST secret." && exit 1)
+          test -n "${DEPLOY_USER}" || (echo "Missing DEPLOY_USER secret." && exit 1)
+          test -n "${DEPLOY_PATH}" || (echo "Missing DEPLOY_PATH secret." && exit 1)
+          test -n "${DEPLOY_SSH_PRIVATE_KEY}" || (echo "Missing DEPLOY_SSH_PRIVATE_KEY secret." && exit 1)
+          test -n "${DEPLOY_HEALTHCHECK_URL}" || (echo "Missing DEPLOY_HEALTHCHECK_URL secret." && exit 1)
+          test -n "${DEPLOY_RESTART_COMMAND}" || (echo "Missing DEPLOY_RESTART_COMMAND secret." && exit 1)
+          if [ "${RUN_MIGRATIONS}" = "true" ]; then
+            test -n "${DEPLOY_DB_BACKUP_COMMAND}" || (echo "Missing DEPLOY_DB_BACKUP_COMMAND secret for migration deploy." && exit 1)
+            test -n "${DEPLOY_DB_RESTORE_COMMAND}" || (echo "Missing DEPLOY_DB_RESTORE_COMMAND secret for migration deploy." && exit 1)
+          fi
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+
+      - name: Add deployment host to known_hosts
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Upload artifact to server
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          ARTIFACT_NAME: ${{ needs.package-release.outputs.artifact_name }}
+        run: |
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p '${DEPLOY_PATH}/artifacts' '${DEPLOY_PATH}/releases'"
+          scp "${ARTIFACT_NAME}" "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/artifacts/${ARTIFACT_NAME}"
+
+      - name: Deploy and auto-rollback on failure
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_HEALTHCHECK_URL: ${{ secrets.DEPLOY_HEALTHCHECK_URL }}
+          DEPLOY_RESTART_COMMAND: ${{ secrets.DEPLOY_RESTART_COMMAND }}
+          DEPLOY_DB_BACKUP_COMMAND: ${{ secrets.DEPLOY_DB_BACKUP_COMMAND }}
+          DEPLOY_DB_RESTORE_COMMAND: ${{ secrets.DEPLOY_DB_RESTORE_COMMAND }}
+          ARTIFACT_NAME: ${{ needs.package-release.outputs.artifact_name }}
+          RUN_MIGRATIONS: ${{ github.event.inputs.run_migrations }}
+          RELEASE_ID: ${{ needs.package-release.outputs.release_id }}
+          SOURCE_REF: ${{ needs.package-release.outputs.source_ref }}
+        run: |
+          RESTART_COMMAND_B64="$(printf '%s' "${DEPLOY_RESTART_COMMAND}" | base64 | tr -d '\n')"
+          DB_BACKUP_COMMAND_B64="$(printf '%s' "${DEPLOY_DB_BACKUP_COMMAND}" | base64 | tr -d '\n')"
+          DB_RESTORE_COMMAND_B64="$(printf '%s' "${DEPLOY_DB_RESTORE_COMMAND}" | base64 | tr -d '\n')"
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "bash -s -- '${DEPLOY_PATH}' '${ARTIFACT_NAME}' '${RELEASE_ID}' '${SOURCE_REF}' '${RUN_MIGRATIONS}' '${DEPLOY_HEALTHCHECK_URL}' '${RESTART_COMMAND_B64}' '${DB_BACKUP_COMMAND_B64}' '${DB_RESTORE_COMMAND_B64}'" <<'EOF'
+          set -euo pipefail
+
+          APP_DIR="$1"
+          ARTIFACT_NAME="$2"
+          RELEASE_ID="$3"
+          SOURCE_REF="$4"
+          RUN_MIGRATIONS="$5"
+          HEALTHCHECK_URL="$6"
+          RESTART_COMMAND="$(printf '%s' "$7" | base64 -d)"
+          DB_BACKUP_COMMAND="$(printf '%s' "$8" | base64 -d)"
+          DB_RESTORE_COMMAND="$(printf '%s' "$9" | base64 -d)"
+
+          RELEASES_DIR="${APP_DIR}/releases"
+          CURRENT_LINK="${APP_DIR}/current"
+          PREVIOUS_LINK="${APP_DIR}/previous"
+          ARTIFACT_PATH="${APP_DIR}/artifacts/${ARTIFACT_NAME}"
+          NEW_RELEASE="${RELEASES_DIR}/${RELEASE_ID}"
+          DEPLOY_SUCCESS="false"
+          ROLLBACK_DONE="false"
+          BACKUP_TAKEN="false"
+          CURRENT_PHASE="prepare"
+
+          rollback_release() {
+            if [ "${ROLLBACK_DONE}" = "true" ]; then
+              return 0
+            fi
+            if [ -z "${PREVIOUS_TARGET:-}" ] || [ ! -d "${PREVIOUS_TARGET}" ]; then
+              echo "Rollback skipped: no previous release target available."
+              return 0
+            fi
+            echo "Rolling back application symlink to ${PREVIOUS_TARGET}"
+            ln -sfn "${PREVIOUS_TARGET}" "${CURRENT_LINK}"
+            bash -lc "${RESTART_COMMAND}"
+            ROLLBACK_DONE="true"
+          }
+
+          restore_database_if_needed() {
+            if [ "${BACKUP_TAKEN}" != "true" ]; then
+              return 0
+            fi
+            if [ -z "${DB_RESTORE_COMMAND}" ]; then
+              echo "Database restore command is missing."
+              return 1
+            fi
+            echo "Restoring database backup..."
+            bash -lc "${DB_RESTORE_COMMAND}"
+          }
+
+          on_failure() {
+            local exit_code=$?
+            if [ "${DEPLOY_SUCCESS}" = "true" ]; then
+              return 0
+            fi
+            echo "Deployment failed during phase: ${CURRENT_PHASE}"
+            rollback_release || true
+            restore_database_if_needed || true
+            exit "${exit_code}"
+          }
+
+          trap on_failure ERR
+
+          mkdir -p "${RELEASES_DIR}"
+          if [ -L "${CURRENT_LINK}" ]; then
+            PREVIOUS_TARGET="$(readlink -f "${CURRENT_LINK}")"
+            ln -sfn "${PREVIOUS_TARGET}" "${PREVIOUS_LINK}"
+          else
+            PREVIOUS_TARGET=""
+          fi
+
+          CURRENT_PHASE="extract_release"
+          rm -rf "${NEW_RELEASE}"
+          mkdir -p "${NEW_RELEASE}"
+          tar -xzf "${ARTIFACT_PATH}" -C "${NEW_RELEASE}"
+
+          CURRENT_PHASE="validate_release_manifest"
+          if [ ! -f "${NEW_RELEASE}/release.json" ]; then
+            echo "release.json not found in release artifact."
+            false
+          fi
+          MANIFEST_RELEASE_ID="$(sed -n 's/.*"releaseId":[[:space:]]*"\([^"]*\)".*/\1/p' "${NEW_RELEASE}/release.json" | head -n1)"
+          if [ "${MANIFEST_RELEASE_ID}" != "${RELEASE_ID}" ]; then
+            echo "Release manifest mismatch: expected ${RELEASE_ID}, got ${MANIFEST_RELEASE_ID:-<empty>}"
+            false
+          fi
+
+          CURRENT_PHASE="install_backend_dependencies"
+          cd "${NEW_RELEASE}/server"
+          npm ci --omit=dev
+
+          CURRENT_PHASE="database_migration"
+          if [ "${RUN_MIGRATIONS}" = "true" ]; then
+            if [ -z "${DB_BACKUP_COMMAND}" ] || [ -z "${DB_RESTORE_COMMAND}" ]; then
+              echo "Database backup/restore commands are required when running migrations."
+              false
+            fi
+            CURRENT_PHASE="database_backup"
+            bash -lc "${DB_BACKUP_COMMAND}"
+            BACKUP_TAKEN="true"
+
+            CURRENT_PHASE="run_migrations"
+            npm run migration:run:prod
+          fi
+
+          CURRENT_PHASE="switch_symlink"
+          ln -sfn "${NEW_RELEASE}" "${CURRENT_LINK}"
+
+          restart_and_check() {
+            CURRENT_PHASE="restart_service"
+            bash -lc "${RESTART_COMMAND}"
+            CURRENT_PHASE="healthcheck"
+            for attempt in $(seq 1 30); do
+              if curl -fsS "${HEALTHCHECK_URL}" >/dev/null; then
+                return 0
+              fi
+              sleep 2
+            done
+            return 1
+          }
+
+          CURRENT_PHASE="restart_and_validate"
+          restart_and_check
+
+          CURRENT_PHASE="validate_current_symlink"
+          CURRENT_TARGET="$(readlink -f "${CURRENT_LINK}")"
+          if [ "${CURRENT_TARGET}" != "${NEW_RELEASE}" ]; then
+            echo "Current symlink points to unexpected target: ${CURRENT_TARGET}"
+            false
+          fi
+
+          CURRENT_PHASE="prune_old_releases"
+          readarray -t RELEASE_DIRS < <(ls -1dt "${RELEASES_DIR}"/* 2>/dev/null || true)
+          if [ "${#RELEASE_DIRS[@]}" -gt 5 ]; then
+            for OLD_RELEASE in "${RELEASE_DIRS[@]:5}"; do
+              if [ "${OLD_RELEASE}" = "${NEW_RELEASE}" ] || [ "${OLD_RELEASE}" = "${PREVIOUS_TARGET}" ]; then
+                continue
+              fi
+              rm -rf "${OLD_RELEASE}"
+            done
+          fi
+
+          DEPLOY_SUCCESS="true"
+          trap - ERR
+          echo "Deployment succeeded: ${RELEASE_ID} (source ref: ${SOURCE_REF})"
+          EOF

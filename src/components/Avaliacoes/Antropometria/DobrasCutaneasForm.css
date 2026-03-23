@@ -1,0 +1,274 @@
+.dobras-form .eval-icon {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0284c7;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+}
+
+.dobras-form .eval-card {
+  border-radius: 22px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: #ffffff;
+}
+
+.dobras-form .eval-note {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.18);
+  color: #0369a1;
+}
+
+.dobras-form .dobras-section {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dobras-form .dobras-section h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f172a;
+}
+
+.dobras-form .dobras-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.dobras-form .dobras-result-card {
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 0.9rem;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dobras-form .dobras-result-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.dobras-form .dobras-result-card strong {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.dobras-form .dobras-diagram {
+  margin-top: 0;
+}
+
+.dobras-form .dobras-diagram-figure {
+  position: relative;
+  min-height: 460px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.25rem;
+  background: #f8fafc;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  --line-length: clamp(90px, 18vw, 200px);
+}
+
+.dobras-form .dobras-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(260px, 1fr) minmax(180px, 240px);
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+.dobras-form .dobras-panel {
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1rem;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+}
+
+.dobras-form .dobras-panel h5 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.dobras-form .dobras-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+.dobras-form .dobras-field span {
+  font-weight: 600;
+  color: #334155;
+}
+
+.dobras-form .dobras-figure {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.dobras-form .dobras-silhouette-image {
+  width: 220px;
+  max-width: 60%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.12));
+  pointer-events: none;
+}
+
+.dobras-form .dobras-point {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #0ea5e9;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
+  cursor: help;
+  outline: none;
+  border: none;
+}
+
+.dobras-form .dobras-point::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: var(--line-length);
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.1) 0%, #0ea5e9 100%);
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.25);
+}
+
+.dobras-form .dobras-point::before {
+  content: attr(data-label);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dobras-form .dobras-point:hover::before,
+.dobras-form .dobras-point:focus::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.dobras-form .dobras-point.left::after {
+  left: calc(-1 * var(--line-length));
+  transform: translateY(-50%);
+}
+
+.dobras-form .dobras-point.right::after {
+  right: calc(-1 * var(--line-length));
+  transform: translateY(-50%);
+}
+
+.dobras-form .point-tricipital-left {
+  top: 130px;
+  left: calc(50% - 70px);
+}
+
+.dobras-form .point-tricipital-right {
+  top: 130px;
+  left: calc(50% + 70px);
+}
+
+.dobras-form .point-subescapular-left {
+  top: 145px;
+  left: calc(50% - 30px);
+}
+
+.dobras-form .point-subescapular-right {
+  top: 145px;
+  left: calc(50% + 30px);
+}
+
+.dobras-form .point-suprailiaca-left {
+  top: 210px;
+  left: calc(50% - 40px);
+}
+
+.dobras-form .point-suprailiaca-right {
+  top: 210px;
+  left: calc(50% + 40px);
+}
+
+.dobras-form .point-abdominal-left {
+  top: 210px;
+  left: calc(50% - 20px);
+}
+
+.dobras-form .point-abdominal-right {
+  top: 210px;
+  left: calc(50% + 20px);
+}
+
+.dobras-form .point-coxa-left {
+  top: 285px;
+  left: calc(50% - 35px);
+}
+
+.dobras-form .point-coxa-right {
+  top: 285px;
+  left: calc(50% + 35px);
+}
+
+.dobras-form .point-peitoral-left {
+  top: 120px;
+  left: calc(50% - 15px);
+}
+
+.dobras-form .point-peitoral-right {
+  top: 120px;
+  left: calc(50% + 15px);
+}
+
+@media (max-width: 920px) {
+  .dobras-form .dobras-diagram-figure {
+    position: static;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .dobras-form .dobras-figure {
+    position: relative;
+    order: -1;
+    min-height: 320px;
+  }
+
+  .dobras-form .dobras-layout {
+    grid-template-columns: 1fr;
+  }
+}

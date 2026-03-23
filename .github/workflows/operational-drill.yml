@@ -1,0 +1,90 @@
+name: Operational Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment for drill"
+        required: true
+        type: choice
+        options:
+          - staging
+      samples:
+        description: "Number of synthetic requests per drill scenario"
+        required: true
+        default: "120"
+
+concurrency:
+  group: operational-drill-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  observability-drill:
+    name: Observability Drill (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate drill secrets
+        env:
+          API_BASE_URL: ${{ secrets.DRILL_API_BASE_URL }}
+          DRILL_ADMIN_EMAIL: ${{ secrets.DRILL_ADMIN_EMAIL }}
+          DRILL_ADMIN_PASSWORD: ${{ secrets.DRILL_ADMIN_PASSWORD }}
+          DRILL_ADMIN_TOKEN: ${{ secrets.DRILL_ADMIN_TOKEN }}
+        run: |
+          test -n "${API_BASE_URL}" || (echo "Missing DRILL_API_BASE_URL secret." && exit 1)
+          if [ -z "${DRILL_ADMIN_TOKEN}" ] && { [ -z "${DRILL_ADMIN_EMAIL}" ] || [ -z "${DRILL_ADMIN_PASSWORD}" ]; }; then
+            echo "Provide DRILL_ADMIN_TOKEN or DRILL_ADMIN_EMAIL + DRILL_ADMIN_PASSWORD."
+            exit 1
+          fi
+
+      - name: Acquire drill token
+        id: drill_token
+        env:
+          API_BASE_URL: ${{ secrets.DRILL_API_BASE_URL }}
+          DRILL_ADMIN_EMAIL: ${{ secrets.DRILL_ADMIN_EMAIL }}
+          DRILL_ADMIN_PASSWORD: ${{ secrets.DRILL_ADMIN_PASSWORD }}
+          DRILL_ADMIN_TOKEN: ${{ secrets.DRILL_ADMIN_TOKEN }}
+        run: |
+          if [ -n "${DRILL_ADMIN_EMAIL}" ] && [ -n "${DRILL_ADMIN_PASSWORD}" ]; then
+            TOKEN="$(node -e "const url=String(process.env.API_BASE_URL||'').replace(/\/$/,'') + '/auth/login'; (async()=>{ const response=await fetch(url,{ method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({ email: process.env.DRILL_ADMIN_EMAIL, password: process.env.DRILL_ADMIN_PASSWORD }) }); if(!response.ok){ const text=await response.text(); console.error(text); process.exit(2); } const payload=await response.json(); if(!payload.accessToken){ process.exit(3); } process.stdout.write(payload.accessToken); })().catch((error)=>{ console.error(error.message); process.exit(4); });")"
+            if [ -z "${TOKEN}" ]; then
+              echo "Failed to obtain drill token via login."
+              exit 1
+            fi
+            echo "token=${TOKEN}" >> "${GITHUB_OUTPUT}"
+            echo "Token acquired by technical login."
+            exit 0
+          fi
+          echo "token=${DRILL_ADMIN_TOKEN}" >> "${GITHUB_OUTPUT}"
+          echo "Token acquired by static secret fallback."
+
+      - name: Run observability drill
+        env:
+          API_BASE_URL: ${{ secrets.DRILL_API_BASE_URL }}
+          DRILL_ADMIN_TOKEN: ${{ steps.drill_token.outputs.token }}
+          DRILL_SAMPLES: ${{ github.event.inputs.samples }}
+          DRILL_OUTPUT_DIR: drill-artifacts
+        run: npm run drill:observability
+
+      - name: Upload drill artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operational-drill-${{ github.run_id }}
+          path: drill-artifacts
+          if-no-files-found: warn

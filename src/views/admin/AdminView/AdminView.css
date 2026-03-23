@@ -1,0 +1,169 @@
+﻿.admin-view {
+  --admin-bg: #eff5fb;
+  --admin-bg-soft: #f7fbff;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f3f8fd;
+  --admin-border: rgba(20, 53, 84, 0.14);
+  --admin-border-strong: rgba(20, 53, 84, 0.2);
+  --admin-text: #143554;
+  --admin-muted: #5a728b;
+  --admin-accent: #2f6fa6;
+  --admin-accent-soft: rgba(86, 173, 219, 0.18);
+  --admin-success: #4d9c6c;
+  --admin-shadow-soft: 0 18px 42px -34px rgba(20, 53, 84, 0.45);
+  --admin-shadow: 0 24px 56px -38px rgba(20, 53, 84, 0.52);
+
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  color: var(--admin-text);
+  background: linear-gradient(172deg, #f8fbff 0%, var(--admin-bg) 62%, #e9f1f8 100%);
+  font-family: var(--font-inter);
+}
+
+.admin-view.dark-mode {
+  --admin-bg: #111d2a;
+  --admin-bg-soft: #152436;
+  --admin-surface: #17273a;
+  --admin-surface-soft: #1d3046;
+  --admin-border: rgba(148, 163, 184, 0.24);
+  --admin-border-strong: rgba(148, 163, 184, 0.32);
+  --admin-text: #e7eff8;
+  --admin-muted: #9db0c4;
+  --admin-accent: #7fc5e8;
+  --admin-accent-soft: rgba(127, 197, 232, 0.22);
+  --admin-success: #9fddae;
+  --admin-shadow-soft: 0 18px 42px -34px rgba(2, 12, 24, 0.72);
+  --admin-shadow: 0 24px 56px -38px rgba(2, 12, 24, 0.82);
+
+  background: linear-gradient(172deg, #0f1b29 0%, #132338 62%, #102132 100%);
+}
+
+.admin-bg-pattern {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(86, 173, 219, 0.22), transparent 34%),
+    radial-gradient(circle at 92% 8%, rgba(116, 168, 101, 0.18), transparent 30%),
+    radial-gradient(circle at 76% 80%, rgba(29, 51, 80, 0.11), transparent 36%);
+}
+
+.admin-view.dark-mode .admin-bg-pattern {
+  background:
+    radial-gradient(circle at 8% 12%, rgba(86, 173, 219, 0.16), transparent 34%),
+    radial-gradient(circle at 92% 8%, rgba(116, 168, 101, 0.14), transparent 30%),
+    radial-gradient(circle at 76% 80%, rgba(2, 12, 24, 0.35), transparent 40%);
+}
+
+.pattern-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(20, 53, 84, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 53, 84, 0.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  opacity: 0.28;
+}
+
+.admin-view.dark-mode .pattern-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  opacity: 0.22;
+}
+
+.admin-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+}
+
+.admin-main-content {
+  margin-left: 286px;
+  width: calc(100% - 286px);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  transition: margin-left 0.28s ease, width 0.28s ease;
+}
+
+.admin-main-content.expanded {
+  margin-left: 0;
+  width: 100%;
+}
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: 0.95rem 1rem 1rem;
+  padding: clamp(1rem, 2vw, 1.6rem);
+  border-radius: 1.15rem;
+  border: 1px solid var(--admin-border);
+  background: color-mix(in srgb, var(--admin-surface) 92%, transparent);
+  box-shadow: var(--admin-shadow);
+  backdrop-filter: blur(8px);
+  scroll-behavior: smooth;
+}
+
+.admin-view.dark-mode .content-area {
+  background: color-mix(in srgb, var(--admin-surface) 96%, transparent);
+}
+
+.dynamic-content {
+  min-height: 100%;
+}
+
+.content-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content-area::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-muted) 58%, transparent);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+  background: rgba(2, 12, 24, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+@media (max-width: 1100px) {
+  .content-area {
+    margin: 0.8rem 0.8rem 0.9rem;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-main-content,
+  .admin-main-content.expanded {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .content-area {
+    margin: 0.75rem;
+    padding: 0.9rem;
+    border-radius: 0.95rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .content-area {
+    margin: 0.62rem;
+    padding: 0.75rem;
+  }
+}

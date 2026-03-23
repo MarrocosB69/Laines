@@ -1,0 +1,17 @@
+.avaliacao-fisioterapia {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.avaliacao-fisioterapia .eval-header {
+  margin-bottom: 1.2rem;
+}
+
+.avaliacao-fisioterapia .eval-actions {
+  margin-top: 1.2rem;
+}
+
+.avaliacao-fisioterapia .eval-btn-primary {
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+}

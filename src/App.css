@@ -1,0 +1,36 @@
+﻿/* Global bridge styles loaded by App.jsx */
+:root {
+  --laines-primary: var(--color-primary);
+  --laines-dark: var(--color-dark-blue);
+  --laines-accent: var(--color-light-blue);
+}
+
+#root {
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+/* Lightweight utility aliases used by some legacy screens */
+.btn-base {
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.input-base {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  background: #ffffff;
+  color: var(--color-text-primary);
+}
+
+.input-base:focus {
+  outline: none;
+  border-color: var(--color-light-blue);
+  box-shadow: 0 0 0 3px rgba(86, 173, 219, 0.22);
+}
+

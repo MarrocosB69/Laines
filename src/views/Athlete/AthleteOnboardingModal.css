@@ -1,0 +1,189 @@
+.athlete-onboarding-overlay {
+  z-index: 2500;
+  align-items: flex-start;
+  padding-top: clamp(0.9rem, 4vh, 2.1rem);
+}
+
+.athlete-onboarding-modal {
+  --app-modal-width: 1024px;
+}
+
+.athlete-onboarding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0;
+}
+
+.athlete-onboarding-header {
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.athlete-onboarding-progress {
+  border: 1px solid #dbe3ef;
+  border-radius: 0.9rem;
+  background: #f8fbff;
+  padding: 0.68rem 0.8rem;
+}
+
+.athlete-onboarding-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: #38506b;
+  margin-bottom: 0.45rem;
+}
+
+.athlete-onboarding-progress-label strong {
+  font-size: 0.82rem;
+  color: #0f2745;
+}
+
+.athlete-onboarding-progress-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: #e6edf7;
+  overflow: hidden;
+}
+
+.athlete-onboarding-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1e5fa4 0%, #2b7cc7 100%);
+  border-radius: inherit;
+  transition: width 180ms ease;
+}
+
+.athlete-onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.athlete-onboarding-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5a6f88;
+  margin-top: 0.2rem;
+}
+
+.athlete-onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.athlete-onboarding-field > span {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.athlete-onboarding-input,
+.athlete-onboarding-textarea {
+  width: 100%;
+  border: 1px solid #d5e0ed;
+  border-radius: 0.9rem;
+  padding: 0.56rem 0.72rem;
+  font-size: 0.82rem;
+  color: #12253a;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.athlete-onboarding-textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.athlete-onboarding-input:focus,
+.athlete-onboarding-textarea:focus {
+  outline: none;
+  border-color: #7da8d8;
+  box-shadow: 0 0 0 3px rgba(125, 168, 216, 0.22);
+}
+
+.athlete-onboarding-toggle {
+  border: 1px solid #d5e0ed;
+  border-radius: 0.9rem;
+  background: #f9fbff;
+  padding: 0.6rem 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.athlete-onboarding-toggle p {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #60748e;
+}
+
+.athlete-onboarding-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1f3853;
+}
+
+.athlete-onboarding-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #1e5fa4;
+}
+
+.athlete-onboarding-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.46rem;
+}
+
+.athlete-onboarding-check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.44rem;
+  border: 1px solid #dbe5f2;
+  border-radius: 0.72rem;
+  padding: 0.34rem 0.48rem;
+  background: #f8fbff;
+  font-size: 0.76rem;
+  color: #27415d;
+}
+
+.athlete-onboarding-check-item input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: #1e5fa4;
+}
+
+.athlete-onboarding-error {
+  border: 1px solid #f6c3c0;
+  border-radius: 0.9rem;
+  background: #fff3f2;
+  color: #9f2d2d;
+  font-size: 0.76rem;
+  padding: 0.66rem 0.76rem;
+}
+
+@media (min-width: 768px) {
+  .athlete-onboarding-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .athlete-onboarding-overlay {
+    padding-top: 0.5rem;
+  }
+
+  .athlete-onboarding-check-grid {
+    grid-template-columns: 1fr;
+  }
+}

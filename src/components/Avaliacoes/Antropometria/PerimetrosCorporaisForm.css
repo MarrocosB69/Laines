@@ -1,0 +1,59 @@
+.perimetros-form .eval-icon {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0284c7;
+  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+}
+
+.perimetros-form .eval-card {
+  border-radius: 22px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: #ffffff;
+}
+
+.perimetros-form .perimetros-basicos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+.perimetros-form .perimetros-field {
+  background: rgba(248, 250, 252, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  padding: 0.65rem;
+}
+
+.perimetros-form .perimetros-field .eval-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.perimetros-form .perimetros-field__unit {
+  font-size: 0.62rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-field__optional {
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #475569;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-field__hint {
+  display: block;
+  margin-top: 0.32rem;
+  color: #64748b;
+  font-size: 0.69rem;
+  font-weight: 600;
+}

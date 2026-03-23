@@ -1,0 +1,736 @@
+.link-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(0.8rem, 2vw, 1.4rem);
+}
+
+.link-modal-overlay.app-modal-overlay {
+  background: rgba(4, 15, 30, 0.58);
+  backdrop-filter: blur(5px);
+}
+
+.link-modal-overlay .modal-container {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  --app-modal-width: 1040px;
+}
+
+.link-modal-overlay .modal-header {
+  gap: 0.9rem;
+}
+
+.link-modal-overlay .close-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.link-modal-overlay .patient-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.88rem 1.45rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.link-modal-overlay .patient-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #103355, #2f6fa6);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.02rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.link-modal-overlay .patient-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.link-modal-overlay .patient-name {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.link-modal-overlay .patient-details {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.72rem;
+}
+
+.link-modal-overlay .patient-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+  font-size: 0.71rem;
+  color: #64748b;
+}
+
+.link-modal-overlay .patient-status {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.3rem 0.58rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+}
+
+.link-modal-overlay .controls-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.88rem 1.45rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.link-modal-overlay .search-container {
+  position: relative;
+  flex: 1;
+  min-width: 280px;
+}
+
+.link-modal-overlay .search-icon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.link-modal-overlay .search-input {
+  width: 100%;
+  min-height: 2.62rem;
+  border-radius: 0.82rem;
+  border: 1px solid #dbe3ee;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.84rem;
+  font-weight: 500;
+  padding: 0.56rem 2.1rem 0.56rem 2.05rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.link-modal-overlay .search-input::placeholder {
+  color: #94a3b8;
+}
+
+.link-modal-overlay .search-input:focus {
+  outline: none;
+  border-color: #103355;
+  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.13);
+}
+
+.link-modal-overlay .search-input:disabled {
+  opacity: 0.62;
+}
+
+.link-modal-overlay .clear-search {
+  position: absolute;
+  top: 50%;
+  right: 0.52rem;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.link-modal-overlay .controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+}
+
+.link-modal-overlay .sort-options {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.link-modal-overlay .sort-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.link-modal-overlay .sort-select {
+  min-height: 2.2rem;
+  border-radius: 0.72rem;
+  border: 1px solid #dbe3ee;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0 0.58rem;
+}
+
+.link-modal-overlay .sort-select:focus {
+  outline: none;
+  border-color: #103355;
+}
+
+.link-modal-overlay .view-toggle {
+  display: flex;
+  gap: 0.32rem;
+  border-radius: 0.72rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.2rem;
+}
+
+.link-modal-overlay .view-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.link-modal-overlay .view-btn.active {
+  background: #103355;
+  color: #ffffff;
+}
+
+.link-modal-overlay .students-section {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 1.45rem;
+}
+
+.link-modal-overlay .section-header {
+  margin: 0.85rem 0 0.72rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.link-modal-overlay .section-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.link-modal-overlay .students-count {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.link-modal-overlay .empty-students {
+  border-radius: 0.88rem;
+  border: 1px dashed #dbe3ee;
+  background: #f8fafc;
+  margin-bottom: 0.9rem;
+  padding: 1.3rem 0.8rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.link-modal-overlay .empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  margin: 0 auto 0.62rem;
+  background: rgba(16, 51, 85, 0.08);
+  color: #103355;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.link-modal-overlay .empty-students h5 {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #0f172a;
+}
+
+.link-modal-overlay .empty-students p {
+  margin: 0.26rem 0 0;
+  font-size: 0.78rem;
+}
+
+.link-modal-overlay .students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.52rem;
+  margin-bottom: 0.9rem;
+}
+
+.link-modal-overlay .student-item {
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3ee;
+  background: #ffffff;
+  padding: 0.62rem 0.68rem;
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.link-modal-overlay .student-item:hover:not(.disabled):not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.link-modal-overlay .student-item.selected {
+  border-color: rgba(16, 51, 85, 0.32);
+  background: rgba(16, 51, 85, 0.06);
+}
+
+.link-modal-overlay .student-item.disabled,
+.link-modal-overlay .student-item:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.link-modal-overlay .student-item:focus-visible {
+  outline: none;
+  border-color: #103355;
+  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.13);
+}
+
+.link-modal-overlay .student-avatar {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.72rem;
+  background: rgba(16, 51, 85, 0.08);
+  color: #103355;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.link-modal-overlay .student-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.link-modal-overlay .student-name {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.link-modal-overlay .student-details {
+  margin-top: 0.17rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.18rem 0.62rem;
+}
+
+.link-modal-overlay .student-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.69rem;
+  color: #64748b;
+}
+
+.link-modal-overlay .student-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+}
+
+.link-modal-overlay .stat-item,
+.link-modal-overlay .card-stat,
+.link-modal-overlay .preview-stat {
+  min-width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.link-modal-overlay .stat-label {
+  font-size: 0.64rem;
+  color: #94a3b8;
+}
+
+.link-modal-overlay .stat-value {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.link-modal-overlay .stat-value.limit-reached,
+.link-modal-overlay .stat-value.limit {
+  color: #b91c1c;
+}
+
+.link-modal-overlay .stat-value.available {
+  color: #15803d;
+}
+
+.link-modal-overlay .student-selection {
+  width: 30px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.link-modal-overlay .limit-badge {
+  border-radius: 999px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 0.18rem 0.42rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.link-modal-overlay .selected-badge,
+.link-modal-overlay .selected-indicator {
+  color: #15803d;
+}
+
+.link-modal-overlay .select-badge {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+}
+
+.link-modal-overlay .students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.56rem;
+  margin-bottom: 0.9rem;
+}
+
+.link-modal-overlay .student-card {
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3ee;
+  background: #ffffff;
+  padding: 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.link-modal-overlay .student-card.selected {
+  border-color: rgba(16, 51, 85, 0.32);
+  background: rgba(16, 51, 85, 0.06);
+}
+
+.link-modal-overlay .student-card.disabled,
+.link-modal-overlay .student-card:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.link-modal-overlay .student-card:focus-visible,
+.link-modal-overlay .view-btn:focus-visible,
+.link-modal-overlay .clear-selection:focus-visible,
+.link-modal-overlay .clear-search:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.13);
+}
+
+.link-modal-overlay .card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.link-modal-overlay .card-content {
+  text-align: center;
+}
+
+.link-modal-overlay .student-email {
+  margin: 0.16rem 0 0.5rem;
+  font-size: 0.71rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-modal-overlay .card-stats {
+  display: flex;
+  justify-content: center;
+  gap: 0.62rem;
+  margin-bottom: 0.48rem;
+}
+
+.link-modal-overlay .card-supervisor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  border-radius: 0.65rem;
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.66rem;
+  color: #64748b;
+}
+
+.link-modal-overlay .selected-preview {
+  margin: 0 1.45rem 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid #dbe3ee;
+  background: #f8fafc;
+  padding: 0.66rem;
+}
+
+.link-modal-overlay .preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.link-modal-overlay .preview-header h4 {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.link-modal-overlay .clear-selection {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 0.55rem;
+  border: 1px solid #dbe3ee;
+  background: #ffffff;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.link-modal-overlay .preview-content {
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+}
+
+.link-modal-overlay .preview-avatar {
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 0.72rem;
+  background: rgba(16, 51, 85, 0.08);
+  color: #103355;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.link-modal-overlay .preview-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.link-modal-overlay .preview-name {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.link-modal-overlay .preview-details {
+  margin-top: 0.18rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.52rem;
+}
+
+.link-modal-overlay .preview-detail {
+  font-size: 0.69rem;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.link-modal-overlay .preview-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+}
+
+.link-modal-overlay .success-message,
+.link-modal-overlay .error-message {
+  margin: 0 1.45rem 0.76rem;
+  border-radius: 0.86rem;
+  padding: 0.56rem 0.66rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.42rem;
+  font-size: 0.74rem;
+}
+
+.link-modal-overlay .success-message {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.link-modal-overlay .error-message {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.link-modal-overlay .success-message h5,
+.link-modal-overlay .error-message h5 {
+  margin: 0;
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+
+.link-modal-overlay .success-message p,
+.link-modal-overlay .error-message p {
+  margin: 0.14rem 0 0;
+}
+
+.link-modal-overlay .modal-footer {
+  padding-left: 1.45rem;
+  padding-right: 1.45rem;
+}
+
+.link-modal-overlay .app-modal-btn {
+  flex: 1;
+}
+
+.link-modal-overlay .app-modal-btn--primary {
+  flex: 1.25;
+}
+
+.link-modal-overlay .app-modal-btn:disabled,
+.link-modal-overlay .student-item:disabled,
+.link-modal-overlay .student-card:disabled,
+.link-modal-overlay .view-btn:disabled,
+.link-modal-overlay .sort-select:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.link-modal-overlay .spinner {
+  animation: link-modal-spin 1s linear infinite;
+}
+
+@keyframes link-modal-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 900px) {
+  .link-modal-overlay .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .link-modal-overlay .controls-right {
+    justify-content: space-between;
+  }
+
+  .link-modal-overlay .students-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .link-modal-overlay .preview-content {
+    flex-wrap: wrap;
+  }
+
+  .link-modal-overlay .preview-stats {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 680px) {
+  .link-modal-overlay {
+    padding: 0.55rem;
+  }
+
+  .link-modal-overlay .modal-header,
+  .link-modal-overlay .patient-card,
+  .link-modal-overlay .controls-section,
+  .link-modal-overlay .students-section,
+  .link-modal-overlay .modal-footer {
+    padding-left: 0.88rem;
+    padding-right: 0.88rem;
+  }
+
+  .link-modal-overlay .patient-card {
+    flex-wrap: wrap;
+  }
+
+  .link-modal-overlay .search-container {
+    min-width: 100%;
+  }
+
+  .link-modal-overlay .student-item {
+    flex-wrap: wrap;
+  }
+
+  .link-modal-overlay .student-stats {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .link-modal-overlay .selected-preview,
+  .link-modal-overlay .success-message,
+  .link-modal-overlay .error-message {
+    margin-left: 0.88rem;
+    margin-right: 0.88rem;
+  }
+
+  .link-modal-overlay .app-modal-btn {
+    width: 100%;
+  }
+}
+
+
+

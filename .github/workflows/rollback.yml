@@ -1,0 +1,158 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      release_id:
+        description: "Release ID to rollback to (empty = use previous symlink)"
+        required: false
+        default: ""
+      restore_database:
+        description: "Execute database restore command during rollback"
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: rollback-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Rollback ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Validate rollback secrets
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_HEALTHCHECK_URL: ${{ secrets.DEPLOY_HEALTHCHECK_URL }}
+          DEPLOY_RESTART_COMMAND: ${{ secrets.DEPLOY_RESTART_COMMAND }}
+          DEPLOY_DB_RESTORE_COMMAND: ${{ secrets.DEPLOY_DB_RESTORE_COMMAND }}
+          RESTORE_DATABASE: ${{ github.event.inputs.restore_database }}
+        run: |
+          test -n "${DEPLOY_HOST}" || (echo "Missing DEPLOY_HOST secret." && exit 1)
+          test -n "${DEPLOY_USER}" || (echo "Missing DEPLOY_USER secret." && exit 1)
+          test -n "${DEPLOY_PATH}" || (echo "Missing DEPLOY_PATH secret." && exit 1)
+          test -n "${DEPLOY_SSH_PRIVATE_KEY}" || (echo "Missing DEPLOY_SSH_PRIVATE_KEY secret." && exit 1)
+          test -n "${DEPLOY_HEALTHCHECK_URL}" || (echo "Missing DEPLOY_HEALTHCHECK_URL secret." && exit 1)
+          test -n "${DEPLOY_RESTART_COMMAND}" || (echo "Missing DEPLOY_RESTART_COMMAND secret." && exit 1)
+          if [ "${RESTORE_DATABASE}" = "true" ]; then
+            test -n "${DEPLOY_DB_RESTORE_COMMAND}" || (echo "Missing DEPLOY_DB_RESTORE_COMMAND secret." && exit 1)
+          fi
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+
+      - name: Add deployment host to known_hosts
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Execute rollback
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_HEALTHCHECK_URL: ${{ secrets.DEPLOY_HEALTHCHECK_URL }}
+          DEPLOY_RESTART_COMMAND: ${{ secrets.DEPLOY_RESTART_COMMAND }}
+          DEPLOY_DB_RESTORE_COMMAND: ${{ secrets.DEPLOY_DB_RESTORE_COMMAND }}
+          RELEASE_ID: ${{ github.event.inputs.release_id }}
+          RESTORE_DATABASE: ${{ github.event.inputs.restore_database }}
+        run: |
+          RESTART_COMMAND_B64="$(printf '%s' "${DEPLOY_RESTART_COMMAND}" | base64 | tr -d '\n')"
+          DB_RESTORE_COMMAND_B64="$(printf '%s' "${DEPLOY_DB_RESTORE_COMMAND}" | base64 | tr -d '\n')"
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "bash -s -- '${DEPLOY_PATH}' '${RELEASE_ID}' '${DEPLOY_HEALTHCHECK_URL}' '${RESTART_COMMAND_B64}' '${RESTORE_DATABASE}' '${DB_RESTORE_COMMAND_B64}'" <<'EOF'
+          set -euo pipefail
+
+          APP_DIR="$1"
+          REQUESTED_RELEASE="$2"
+          HEALTHCHECK_URL="$3"
+          RESTART_COMMAND="$(printf '%s' "$4" | base64 -d)"
+          RESTORE_DATABASE="$5"
+          DB_RESTORE_COMMAND="$(printf '%s' "$6" | base64 -d)"
+
+          RELEASES_DIR="${APP_DIR}/releases"
+          CURRENT_LINK="${APP_DIR}/current"
+          PREVIOUS_LINK="${APP_DIR}/previous"
+          ROLLBACK_SUCCESS="false"
+
+          if [ ! -L "${CURRENT_LINK}" ]; then
+            echo "Current symlink not found at ${CURRENT_LINK}"
+            exit 1
+          fi
+
+          CURRENT_TARGET="$(readlink -f "${CURRENT_LINK}")"
+          TARGET=""
+
+          on_failure() {
+            local exit_code=$?
+            if [ "${ROLLBACK_SUCCESS}" = "true" ]; then
+              return 0
+            fi
+            echo "Rollback failed. Restoring original current release."
+            ln -sfn "${CURRENT_TARGET}" "${CURRENT_LINK}"
+            bash -lc "${RESTART_COMMAND}" || true
+            exit "${exit_code}"
+          }
+          trap on_failure ERR
+
+          if [ -n "${REQUESTED_RELEASE}" ]; then
+            CANDIDATE="${RELEASES_DIR}/${REQUESTED_RELEASE}"
+            if [ ! -d "${CANDIDATE}" ]; then
+              echo "Requested release does not exist: ${REQUESTED_RELEASE}"
+              exit 1
+            fi
+            TARGET="${CANDIDATE}"
+          else
+            if [ ! -L "${PREVIOUS_LINK}" ]; then
+              echo "No previous symlink found and release_id was not provided."
+              exit 1
+            fi
+            TARGET="$(readlink -f "${PREVIOUS_LINK}")"
+          fi
+
+          ln -sfn "${CURRENT_TARGET}" "${PREVIOUS_LINK}"
+          ln -sfn "${TARGET}" "${CURRENT_LINK}"
+
+          if [ "${RESTORE_DATABASE}" = "true" ]; then
+            if [ -z "${DB_RESTORE_COMMAND}" ]; then
+              echo "Database restore command was requested but is empty."
+              false
+            fi
+            echo "Executing database restore command..."
+            bash -lc "${DB_RESTORE_COMMAND}"
+          fi
+
+          bash -lc "${RESTART_COMMAND}"
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS "${HEALTHCHECK_URL}" >/dev/null; then
+              ROLLBACK_SUCCESS="true"
+              trap - ERR
+              echo "Rollback succeeded to $(basename "${TARGET}")"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Rollback health check failed."
+          false
+          EOF

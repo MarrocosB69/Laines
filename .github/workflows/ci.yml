@@ -1,0 +1,200 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix server ci
+
+      - name: Runtime schema guard
+        run: npm run guard:schema
+
+      - name: Backend TypeScript lint
+        run: npm --prefix server run lint
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Frontend build
+        run: npm run build
+
+      - name: Core tests
+        run: npm run test:core
+
+  api-smoke:
+    name: API Smoke Tests
+    runs-on: ubuntu-latest
+    needs: quality
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: laines_ci
+          POSTGRES_USER: laines
+          POSTGRES_PASSWORD: laines_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U laines -d laines_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: laines
+      DB_PASSWORD: laines_ci_password
+      DB_NAME: laines_ci
+      DB_SYNC: "false"
+      DB_MIGRATIONS_RUN: "false"
+      JWT_SECRET: ci-jwt-secret
+      CORS_ORIGIN: http://localhost:5173
+      PORT: 4000
+      NODE_ENV: test
+      AUTH_NEW_FLOW_ENABLED: "true"
+      E2E_ADMIN_EMAIL: admin.ci@laines.ufrn.br
+      E2E_ADMIN_PASSWORD: Admin#123456
+      E2E_STUDENT_EMAIL: aluno.ci@laines.ufrn.br
+      E2E_STUDENT_PASSWORD: Aluno#123456
+      E2E_PROFESSOR_EMAIL: professor.ci@laines.ufrn.br
+      E2E_PROFESSOR_PASSWORD: Professor#123456
+      E2E_TEAM_EMAIL: tecnico.ci@laines.ufrn.br
+      E2E_TEAM_PASSWORD: Tecnico#123456
+      E2E_ATHLETE_EMAIL: atleta.ci@laines.ufrn.br
+      E2E_ATHLETE_PASSWORD: Atleta#123456
+      E2E_EMAIL: admin.ci@laines.ufrn.br
+      E2E_PASSWORD: Admin#123456
+      E2E_ROLE_MATRIX_REQUIRED: "true"
+      E2E_ALLOW_MUTATIONS: "false"
+      E2E_EXPECT_SECURE_COOKIE: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm --prefix server ci
+
+      - name: Build backend
+        run: npm --prefix server run build
+
+      - name: Run database migrations
+        run: npm --prefix server run migration:run
+
+      - name: Seed CI users
+        run: node server/scripts/seed-ci-users.js
+
+      - name: Seed CI analytics data
+        run: node server/scripts/seed-ci-analytics.js
+
+      - name: Validate E2E environment matrix
+        run: npm run test:e2e:env
+
+      - name: Prepare E2E artifacts directory
+        run: mkdir -p e2e-artifacts
+
+      - name: Start API
+        run: |
+          nohup node server/dist/main.js > api.log 2>&1 &
+          echo $! > api.pid
+
+      - name: Wait for API health
+        run: |
+          for i in {1..40}; do
+            if curl -fsS "http://127.0.0.1:4000/health" >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy in time."
+          exit 1
+
+      - name: Smoke tests
+        run: npm run smoke:api
+        env:
+          API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E critical flow
+        run: npm run test:e2e:critical
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E auth session flow (refresh rotation/reuse)
+        run: npm run test:e2e:auth-session
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E role contracts per profile
+        run: npm run test:e2e:roles
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+
+      - name: E2E analytics and export
+        run: npm run test:e2e:analytics
+        env:
+          E2E_API_BASE_URL: http://127.0.0.1:4000
+          E2E_ANALYTICS_REPORT_PATH: e2e-artifacts/e2e-analytics-report.json
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f api.pid ]; then
+            kill "$(cat api.pid)" || true
+          fi
+
+      - name: Upload API and E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-smoke-artifacts
+          path: |
+            api.log
+            e2e-artifacts
+          if-no-files-found: warn

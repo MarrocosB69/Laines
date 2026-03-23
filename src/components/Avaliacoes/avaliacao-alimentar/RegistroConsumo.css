@@ -1,0 +1,34 @@
+.registro-consumo .eval-card {
+  border-radius: 22px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  background: #ffffff;
+}
+
+.registro-consumo .eval-icon {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0284c7;
+}
+
+.registro-consumo .eval-empty {
+  border-color: rgba(14, 165, 233, 0.2);
+  color: #0369a1;
+}
+
+.registro-consumo-item {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 0.7rem 0.75rem;
+}
+
+.registro-consumo-item__title {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 0.85rem;
+}
+
+.registro-consumo-item__meta {
+  font-size: 0.74rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}

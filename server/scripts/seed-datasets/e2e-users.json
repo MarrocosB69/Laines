@@ -1,0 +1,47 @@
+[
+  {
+    "key": "admin",
+    "role": "admin",
+    "name": "Admin E2E",
+    "defaultEmail": "e2e-admin@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_ADMIN_EMAIL",
+    "ciPasswordEnv": "E2E_ADMIN_PASSWORD"
+  },
+  {
+    "key": "professor",
+    "role": "professor",
+    "name": "Professor E2E",
+    "defaultEmail": "e2e-prof@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_PROFESSOR_EMAIL",
+    "ciPasswordEnv": "E2E_PROFESSOR_PASSWORD"
+  },
+  {
+    "key": "aluno",
+    "role": "aluno",
+    "name": "Aluno E2E",
+    "defaultEmail": "e2e-aluno@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_STUDENT_EMAIL",
+    "ciPasswordEnv": "E2E_STUDENT_PASSWORD"
+  },
+  {
+    "key": "tecnico",
+    "role": "tecnico",
+    "name": "Tecnico E2E",
+    "defaultEmail": "e2e-tecnico@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_TEAM_EMAIL",
+    "ciPasswordEnv": "E2E_TEAM_PASSWORD"
+  },
+  {
+    "key": "atleta",
+    "role": "atleta",
+    "name": "Atleta E2E",
+    "defaultEmail": "e2e-atleta@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_ATHLETE_EMAIL",
+    "ciPasswordEnv": "E2E_ATHLETE_PASSWORD"
+  }
+]

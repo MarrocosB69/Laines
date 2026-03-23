@@ -1,0 +1,26 @@
+.athlete-ebia-modal {
+  --app-modal-width: 980px;
+}
+
+.athlete-ebia-header {
+  gap: 0.9rem;
+}
+
+.athlete-ebia-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 0.82rem;
+  border: 1px solid rgba(16, 51, 85, 0.24);
+  background: rgba(16, 51, 85, 0.08);
+  color: #103355;
+  display: grid;
+  place-items: center;
+}
+
+.athlete-ebia-body {
+  overflow-y: auto;
+}
+
+.athlete-ebia-body .avaliacao-socioeconomica {
+  margin: 0;
+}

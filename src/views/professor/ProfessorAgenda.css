@@ -1,0 +1,449 @@
+.professor-agenda {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 2rem;
+}
+
+.professor-agenda-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.professor-agenda-header h1 {
+  margin: 0.4rem 0 0.2rem;
+  color: var(--text);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.professor-agenda-header p {
+  margin: 0;
+  color: #475569;
+  font-size: var(--font-size-sm);
+}
+
+.professor-agenda-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.professor-agenda-refresh {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: #1d3350;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+}
+
+.professor-agenda-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.professor-agenda-sync {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.professor-agenda-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.7rem;
+}
+
+.professor-agenda-stat {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  border-radius: 0.9rem;
+  padding: 0.72rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.professor-agenda-stat span {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.professor-agenda-stat strong {
+  font-size: 1.15rem;
+  color: #1d3350;
+}
+
+.professor-agenda-stat.success {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(236, 253, 245, 0.85);
+}
+
+.professor-agenda-stat.warning {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(255, 251, 235, 0.85);
+}
+
+.professor-agenda-stat.danger {
+  border-color: rgba(239, 68, 68, 0.32);
+  background: rgba(254, 242, 242, 0.88);
+}
+
+.professor-agenda-filters {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 0.7rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.55rem;
+}
+
+.professor-agenda-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  color: #64748b;
+}
+
+.professor-agenda-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.88rem;
+  color: #1d3350;
+}
+
+.professor-agenda-filters select,
+.professor-agenda-filters button {
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  padding: 0.5rem 0.65rem;
+  background: #ffffff;
+  color: #1d3350;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.professor-agenda-filters button {
+  cursor: pointer;
+}
+
+.professor-agenda-filters button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.professor-agenda-error {
+  padding: 0.75rem 0.9rem;
+  font-size: 0.84rem;
+  text-align: left;
+}
+
+.professor-agenda-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.4fr);
+  gap: 1rem;
+}
+
+.professor-agenda-calendar-card,
+.professor-agenda-day-card {
+  border: 1px solid var(--border);
+  background: #ffffff;
+  border-radius: 1.1rem;
+  padding: 0.9rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.professor-agenda-month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.professor-agenda-month-header h3 {
+  margin: 0;
+  color: #1d3350;
+  font-size: 0.98rem;
+  text-transform: capitalize;
+}
+
+.month-nav-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  cursor: pointer;
+}
+
+.professor-agenda-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.professor-agenda-weekdays span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  text-align: center;
+}
+
+.professor-agenda-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.calendar-day-empty {
+  height: 54px;
+}
+
+.calendar-day-btn {
+  height: 54px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.calendar-day-btn:hover {
+  border-color: rgba(30, 64, 175, 0.3);
+  background: #eef3fb;
+}
+
+.calendar-day-btn.is-selected {
+  border-color: rgba(29, 51, 80, 0.45);
+  background: rgba(30, 64, 175, 0.08);
+}
+
+.calendar-day-btn.is-today .day-number {
+  color: #1d4ed8;
+}
+
+.calendar-day-btn.has-items {
+  background: rgba(241, 245, 249, 0.95);
+}
+
+.day-number {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.day-badge {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #1d3350;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.3rem;
+}
+
+.day-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1d3350;
+  text-transform: capitalize;
+}
+
+.day-card-header p {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.day-empty-state {
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  margin-top: 0.85rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.day-appointments-list {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 460px;
+  overflow: auto;
+}
+
+.day-appointment-item {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 0.85rem;
+  padding: 0.72rem 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.appointment-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.34rem;
+}
+
+.appointment-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+.appointment-row strong {
+  color: #1d3350;
+}
+
+.appointment-meta {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(248, 250, 252, 0.95);
+  padding: 0.22rem 0.55rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #334155;
+}
+
+.meta-pill.status-agendada {
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #1d4ed8;
+}
+
+.meta-pill.status-realizada {
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #047857;
+}
+
+.meta-pill.status-remarcada {
+  border-color: rgba(245, 158, 11, 0.34);
+  color: #b45309;
+}
+
+.meta-pill.status-falta {
+  border-color: rgba(239, 68, 68, 0.34);
+  color: #b91c1c;
+}
+
+.open-prontuario-btn {
+  border: 1px solid rgba(29, 51, 80, 0.2);
+  background: #ffffff;
+  color: #1d3350;
+  border-radius: 999px;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.open-prontuario-btn:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.professor-agenda-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  padding: 0.9rem 1rem;
+}
+
+.is-rotating {
+  animation: professor-agenda-rotate 0.8s linear infinite;
+}
+
+@keyframes professor-agenda-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .professor-agenda-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .professor-agenda-header h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .professor-agenda-header-actions {
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .professor-agenda-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .day-appointment-item {
+    flex-direction: column;
+  }
+
+  .open-prontuario-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

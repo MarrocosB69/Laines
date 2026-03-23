@@ -1,0 +1,17 @@
+.avaliacao-psicologia {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.avaliacao-psicologia .eval-header {
+  margin-bottom: 1.2rem;
+}
+
+.avaliacao-psicologia .eval-actions {
+  margin-top: 1.2rem;
+}
+
+.avaliacao-psicologia .eval-btn-primary {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
