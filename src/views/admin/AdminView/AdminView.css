@@ -1,30 +1,30 @@
-﻿.admin-view {
-  --admin-bg: #eff5fb;
-  --admin-bg-soft: #f7fbff;
-  --admin-surface: #ffffff;
-  --admin-surface-soft: #f3f8fd;
-  --admin-border: rgba(20, 53, 84, 0.14);
-  --admin-border-strong: rgba(20, 53, 84, 0.2);
-  --admin-text: #143554;
-  --admin-muted: #5a728b;
-  --admin-accent: #2f6fa6;
-  --admin-accent-soft: rgba(86, 173, 219, 0.18);
+.admin-view {
+  --admin-sidebar-width: 248px;
+  --admin-sidebar-collapsed-width: 78px;
+  --admin-bg: var(--color-surface);
+  --admin-surface: var(--color-white);
+  --admin-surface-soft: #f3f6fb;
+  --admin-border: var(--color-border);
+  --admin-border-strong: #cbd5e1;
+  --admin-text: var(--color-text-primary);
+  --admin-muted: var(--color-text-muted);
+  --admin-accent: var(--color-navy);
+  --admin-accent-soft: rgba(16, 51, 85, 0.08);
   --admin-success: #4d9c6c;
-  --admin-shadow-soft: 0 18px 42px -34px rgba(20, 53, 84, 0.45);
-  --admin-shadow: 0 24px 56px -38px rgba(20, 53, 84, 0.52);
+  --admin-shadow-soft: var(--shadow-sm);
+  --admin-shadow: var(--shadow-md);
 
   width: 100%;
   height: 100vh;
   overflow: hidden;
   position: relative;
   color: var(--admin-text);
-  background: linear-gradient(172deg, #f8fbff 0%, var(--admin-bg) 62%, #e9f1f8 100%);
-  font-family: var(--font-inter);
+  background: var(--admin-bg);
+  font-family: "Inter", sans-serif;
 }
 
 .admin-view.dark-mode {
   --admin-bg: #111d2a;
-  --admin-bg-soft: #152436;
   --admin-surface: #17273a;
   --admin-surface-soft: #1d3046;
   --admin-border: rgba(148, 163, 184, 0.24);
@@ -36,43 +36,15 @@
   --admin-success: #9fddae;
   --admin-shadow-soft: 0 18px 42px -34px rgba(2, 12, 24, 0.72);
   --admin-shadow: 0 24px 56px -38px rgba(2, 12, 24, 0.82);
-
-  background: linear-gradient(172deg, #0f1b29 0%, #132338 62%, #102132 100%);
+  background: #0f1b29;
 }
 
-.admin-bg-pattern {
+.admin-bg-pattern,
+.pattern-grid {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(circle at 8% 12%, rgba(86, 173, 219, 0.22), transparent 34%),
-    radial-gradient(circle at 92% 8%, rgba(116, 168, 101, 0.18), transparent 30%),
-    radial-gradient(circle at 76% 80%, rgba(29, 51, 80, 0.11), transparent 36%);
-}
-
-.admin-view.dark-mode .admin-bg-pattern {
-  background:
-    radial-gradient(circle at 8% 12%, rgba(86, 173, 219, 0.16), transparent 34%),
-    radial-gradient(circle at 92% 8%, rgba(116, 168, 101, 0.14), transparent 30%),
-    radial-gradient(circle at 76% 80%, rgba(2, 12, 24, 0.35), transparent 40%);
-}
-
-.pattern-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(20, 53, 84, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20, 53, 84, 0.05) 1px, transparent 1px);
-  background-size: 46px 46px;
-  opacity: 0.28;
-}
-
-.admin-view.dark-mode .pattern-grid {
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-  opacity: 0.22;
 }
 
 .admin-container {
@@ -83,13 +55,18 @@
 }
 
 .admin-main-content {
-  margin-left: 286px;
-  width: calc(100% - 286px);
+  margin-left: var(--admin-sidebar-width);
+  width: calc(100% - var(--admin-sidebar-width));
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 100%;
   transition: margin-left 0.28s ease, width 0.28s ease;
+}
+
+.admin-main-content.collapsed {
+  margin-left: var(--admin-sidebar-collapsed-width);
+  width: calc(100% - var(--admin-sidebar-collapsed-width));
 }
 
 .admin-main-content.expanded {
@@ -101,18 +78,18 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  margin: 0.95rem 1rem 1rem;
-  padding: clamp(1rem, 2vw, 1.6rem);
-  border-radius: 1.15rem;
-  border: 1px solid var(--admin-border);
-  background: color-mix(in srgb, var(--admin-surface) 92%, transparent);
-  box-shadow: var(--admin-shadow);
-  backdrop-filter: blur(8px);
+  margin: 0;
+  padding: 24px;
+  border-radius: 0;
+  border: 0;
+  background: var(--color-surface);
+  box-shadow: none;
+  min-height: calc(100vh - 56px);
   scroll-behavior: smooth;
 }
 
 .admin-view.dark-mode .content-area {
-  background: color-mix(in srgb, var(--admin-surface) 96%, transparent);
+  background: #102132;
 }
 
 .dynamic-content {
@@ -142,8 +119,7 @@
 
 @media (max-width: 1100px) {
   .content-area {
-    margin: 0.8rem 0.8rem 0.9rem;
-    padding: 1rem;
+    padding: 20px;
   }
 }
 
@@ -155,15 +131,12 @@
   }
 
   .content-area {
-    margin: 0.75rem;
-    padding: 0.9rem;
-    border-radius: 0.95rem;
+    padding: 16px;
   }
 }
 
 @media (max-width: 520px) {
   .content-area {
-    margin: 0.62rem;
-    padding: 0.75rem;
+    padding: 14px;
   }
 }

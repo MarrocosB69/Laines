@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   BarChart3, FileText, Settings, UserCog, Stethoscope, Inbox, FlaskConical, BookOpen, Users2
 } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 // Importação dos componentes
 import Sidebar from "../SideBar/Sidebar";
@@ -27,25 +27,58 @@ import "./AdminView.css";
 const AdminView = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const wasMobileRef = useRef(window.innerWidth <= 768);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [prontuarioReturnTab, setProntuarioReturnTab] = useState('patients');
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const { user } = useAuth();
   const { getPacienteById } = usePacientes();
 
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
+      const wasMobile = wasMobileRef.current;
       setIsMobile(mobile);
-      setSidebarOpen(!mobile);
+      setSidebarOpen((previous) => {
+        if (mobile) return false;
+        if (wasMobile && !mobile) return true;
+        return previous;
+      });
+      wasMobileRef.current = mobile;
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isMobile || !isSidebarOpen) return;
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isMobile, isSidebarOpen]);
+
+  useEffect(() => {
+    const selectedPatientId = location.state?.selectedPatientId;
+    if (!selectedPatientId) return;
+    const returnTab = String(location.state?.returnTab || 'patients');
+    getPacienteById(selectedPatientId).then((patient) => {
+      if (patient) {
+        setProntuarioReturnTab(returnTab);
+        setSelectedPatient(patient);
+        setActiveTab('patients');
+      }
+    }).catch(() => {
+      // Erro ja tratado no contexto com notificacao.
+    });
+  }, [location.state, getPacienteById]);
 
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
@@ -56,7 +89,6 @@ const AdminView = () => {
     });
   }, [setSearchParams]);
   const toggleSidebar = useCallback(() => setSidebarOpen(prev => !prev), []);
-  const toggleDarkMode = useCallback(() => setDarkMode(prev => !prev), []);
 
   const handleOpenPatientProntuario = useCallback(async (patient) => {
     const patientId = patient?.id || null;
@@ -89,6 +121,9 @@ const AdminView = () => {
         <PatientProntuario
           patient={selectedPatient}
           onBack={handleBackFromProntuario}
+          originPath="/admin"
+          originView="patients"
+          originTab={prontuarioReturnTab || 'patients'}
         />
       );
     }
@@ -105,7 +140,7 @@ const AdminView = () => {
       settings: <SettingsPage />,
     };
     return components[activeTab] || components.dashboard;
-  }, [activeTab, handleBackFromProntuario, handleOpenPatientProntuario, selectedPatient]);
+  }, [activeTab, handleBackFromProntuario, handleOpenPatientProntuario, prontuarioReturnTab, selectedPatient]);
 
   const tabIcons = {
     dashboard: <BarChart3 size={16} />,
@@ -147,8 +182,18 @@ const AdminView = () => {
     }
   }, [activeTab, selectedPatient]);
 
+  const mainContentClassName = `admin-main-content ${
+    !isSidebarOpen ? (isMobile ? 'expanded' : 'collapsed') : ''
+  }`;
+
   return (
-    <div className={`admin-view ${darkMode ? 'dark-mode' : 'light-mode'}`}>
+    <motion.div
+      className="admin-view light-mode"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="admin-bg-pattern">
         <div className="pattern-grid"></div>
       </div>
@@ -159,7 +204,7 @@ const AdminView = () => {
           setActiveTab={handleTabChange}
           isOpen={isSidebarOpen}
           onToggle={toggleSidebar}
-          darkMode={darkMode}
+          isMobile={isMobile}
         />
 
         {/* Overlay para Mobile (Melhoria de UX) */}
@@ -167,14 +212,12 @@ const AdminView = () => {
           <div className="sidebar-overlay" onClick={toggleSidebar} />
         )}
 
-        <main className={`admin-main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <main className={mainContentClassName}>
           <AdminHeader 
             isSidebarOpen={isSidebarOpen}
             onToggleSidebar={toggleSidebar}
             activeTab={activeTab}
             activeIcon={tabIcons[activeTab]}
-            darkMode={darkMode}
-            onToggleTheme={toggleDarkMode}
           />
 
           <div className="content-area">
@@ -193,7 +236,7 @@ const AdminView = () => {
           </div>
         </main>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
