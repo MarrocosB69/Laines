@@ -1,0 +1,1375 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Heart } from 'lucide-react';
+import { Button } from '../../ui';
+import MiniSparkline from '../../shared/MiniSparkline';
+import { toLocalDateInputValue } from '../../../utils/dateUtils';
+import {
+  buildComparativeDeltas,
+  calculateClinicalEvaluation
+} from '../../../services/calculationEngine';
+import '../avaliacoes.css';
+import './AvaliacaoClinicaForm.css';
+
+const CLINICAL_SIGN_OPTIONS = [
+  { value: 'palidez', label: 'Palidez' },
+  { value: 'queda_cabelo', label: 'Queda de cabelo' },
+  { value: 'unhas_frageis', label: 'Unhas frageis' },
+  { value: 'glossite', label: 'Glossite' },
+  { value: 'queilite_angular', label: 'Queilite angular' },
+  { value: 'xeroftalmia', label: 'Xeroftalmia' },
+  { value: 'fraqueza_muscular', label: 'Fraqueza muscular' }
+];
+
+const GLUCOSE_CONTEXT_OPTIONS = [
+  { value: 'nao_informado', label: 'Nao informado' },
+  { value: 'jejum', label: 'Jejum' },
+  { value: 'pos_prandial', label: 'Pos-prandial' }
+];
+
+const EDEMA_GRADE_OPTIONS = [
+  { value: '0', label: '0 (ausente)' },
+  { value: '1', label: '1+' },
+  { value: '2', label: '2+' },
+  { value: '3', label: '3+' },
+  { value: '4', label: '4+' }
+];
+
+const INDICATOR_INFO = {
+  bloodPressure: {
+    name: 'Classificacao da Pressao Arterial',
+    formula: 'Tabela de classificacao da 7a Diretriz Brasileira de HAS (PAS/PAD)',
+    reference: 'Sociedade Brasileira de Cardiologia',
+    year: '2016'
+  },
+  map: {
+    name: 'Pressao Arterial Media (PAM)',
+    formula: 'PAM = (PAS + 2 x PAD) / 3',
+    reference: 'Monitoramento hemodinamico clinico',
+    year: 'Uso clinico consolidado'
+  },
+  pulsePressure: {
+    name: 'Pressao de Pulso',
+    formula: 'PP = PAS - PAD',
+    reference: 'Semiologia cardiovascular',
+    year: 'Uso clinico consolidado'
+  },
+  heartRate: {
+    name: 'Frequencia Cardiaca',
+    formula: 'BPM medidos em repouso',
+    reference: 'Triagem clinica de sinais vitais',
+    year: 'Uso clinico consolidado'
+  },
+  glucose: {
+    name: 'Glicemia Capilar',
+    formula: 'Classificacao por contexto (jejum/pos-prandial)',
+    reference: 'Consenso ADA/SBD',
+    year: 'Atual'
+  },
+  redFlags: {
+    name: 'Red Flags Clinicas',
+    formula: 'PA >= 180/110 | Glicemia jejum > 200 | FC < 40 ou > 120 | Edema >= 3+',
+    reference: 'Regras de seguranca clinica do modulo',
+    year: 'v1.0.0'
+  }
+};
+
+const createInitialData = () => ({
+  dataAvaliacao: toLocalDateInputValue(new Date()),
+  systolic: '',
+  diastolic: '',
+  heartRate: '',
+  temperatureC: '',
+  glucoseMgDl: '',
+  glucoseContext: 'nao_informado',
+  edemaLocation: '',
+  edemaGrade: '0',
+  clinicalSigns: [],
+  observacoes: ''
+});
+
+const AvaliacaoClinicaForm = ({
+  pacienteId,
+  onSalvar,
+  onAutoSave,
+  readOnly = false,
+  moduleSnapshot,
+  moduleHistory = [],
+  currentSessionId
+}) => {
+  const [dados, setDados] = useState(createInitialData);
+  const [error, setError] = useState('');
+  const [saveStatus, setSaveStatus] = useState(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [touchedFields, setTouchedFields] = useState({});
+  const [hasUserInput, setHasUserInput] = useState(false);
+
+  const autoSaveRef = useRef(null);
+  const saveStatusResetRef = useRef(null);
+  const loadedSnapshotIdRef = useRef('');
+
+  useEffect(() => {
+    setHasUserInput(false);
+    setTouchedFields({});
+    setSubmitAttempted(false);
+    setError('');
+    setSaveStatus(null);
+    if (saveStatusResetRef.current) clearTimeout(saveStatusResetRef.current);
+  }, [pacienteId]);
+
+  useEffect(() => () => {
+    clearTimeout(autoSaveRef.current);
+    if (saveStatusResetRef.current) clearTimeout(saveStatusResetRef.current);
+  }, []);
+
+  useEffect(() => {
+    const snapshotId = moduleSnapshot?.id || '';
+    if (!snapshotId || loadedSnapshotIdRef.current === snapshotId) return;
+
+    const source = moduleSnapshot?.dados || {};
+    const dadosBrutos = source?.dados_brutos || source?.input || source;
+
+    setDados((prev) => ({
+      ...prev,
+      dataAvaliacao: normalizeDateValue(firstDefined(
+        moduleSnapshot?.data,
+        source?.dataAvaliacao,
+        dadosBrutos?.dataAvaliacao,
+        prev.dataAvaliacao
+      )),
+      systolic: toInputValue(firstDefined(
+        dadosBrutos?.systolic,
+        dadosBrutos?.pressaoSistolica,
+        dadosBrutos?.pressao_sistolica,
+        source?.pressaoSistolica,
+        source?.pressao_sistolica
+      ), 0),
+      diastolic: toInputValue(firstDefined(
+        dadosBrutos?.diastolic,
+        dadosBrutos?.pressaoDiastolica,
+        dadosBrutos?.pressao_diastolica,
+        source?.pressaoDiastolica,
+        source?.pressao_diastolica
+      ), 0),
+      heartRate: toInputValue(firstDefined(
+        dadosBrutos?.heartRate,
+        dadosBrutos?.frequenciaCardiaca,
+        dadosBrutos?.frequencia_cardiaca,
+        source?.frequenciaCardiaca,
+        source?.frequencia_cardiaca
+      ), 0),
+      temperatureC: toInputValue(firstDefined(
+        dadosBrutos?.temperatureC,
+        dadosBrutos?.temperaturaC,
+        dadosBrutos?.temperatura,
+        source?.temperaturaC,
+        source?.temperatura
+      ), 1),
+      glucoseMgDl: toInputValue(firstDefined(
+        dadosBrutos?.glucoseMgDl,
+        dadosBrutos?.glicemiaCapilar,
+        dadosBrutos?.glicemia_capilar,
+        source?.glicemiaCapilar,
+        source?.glicemia_capilar
+      ), 0),
+      glucoseContext: toTextInput(firstDefined(
+        dadosBrutos?.glucoseContext,
+        dadosBrutos?.contextoGlicemia,
+        dadosBrutos?.contexto_glicemia,
+        source?.contextoGlicemia,
+        source?.contexto_glicemia,
+        'nao_informado'
+      )) || 'nao_informado',
+      edemaLocation: toTextInput(firstDefined(
+        dadosBrutos?.edemaLocation,
+        dadosBrutos?.edemaLocal,
+        dadosBrutos?.edema_local,
+        source?.edemaLocal,
+        source?.edema_local
+      )),
+      edemaGrade: String(firstDefined(
+        dadosBrutos?.edemaGrade,
+        dadosBrutos?.edemaGrau,
+        dadosBrutos?.edema_grau,
+        source?.edemaGrau,
+        source?.edema_grau,
+        '0'
+      )),
+      clinicalSigns: normalizeStringArray(firstDefined(
+        dadosBrutos?.clinicalSigns,
+        dadosBrutos?.sinaisCarenciais,
+        dadosBrutos?.sinais_carenciais,
+        source?.sinaisCarenciais,
+        source?.sinais_carenciais
+      )),
+      observacoes: toTextInput(firstDefined(
+        dadosBrutos?.observacoes,
+        source?.observacoes
+      ))
+    }));
+
+    loadedSnapshotIdRef.current = snapshotId;
+  }, [moduleSnapshot]);
+
+  const evaluation = useMemo(() => calculateClinicalEvaluation({
+    systolic: parseNumeric(dados.systolic),
+    diastolic: parseNumeric(dados.diastolic),
+    heartRate: parseNumeric(dados.heartRate),
+    temperatureC: parseNumeric(dados.temperatureC),
+    glucoseMgDl: parseNumeric(dados.glucoseMgDl),
+    glucoseContext: dados.glucoseContext,
+    edemaLocation: dados.edemaLocation,
+    edemaGrade: parseNumeric(dados.edemaGrade),
+    clinicalSigns: dados.clinicalSigns
+  }), [
+    dados.clinicalSigns,
+    dados.diastolic,
+    dados.edemaGrade,
+    dados.edemaLocation,
+    dados.glucoseContext,
+    dados.glucoseMgDl,
+    dados.heartRate,
+    dados.systolic,
+    dados.temperatureC
+  ]);
+
+  const fieldValidation = useMemo(() => ({
+    systolic: validateNumericField({
+      value: dados.systolic,
+      label: 'PA sistolica',
+      required: true,
+      min: 70,
+      max: 260
+    }),
+    diastolic: validateNumericField({
+      value: dados.diastolic,
+      label: 'PA diastolica',
+      required: true,
+      min: 40,
+      max: 160
+    }),
+    heartRate: validateNumericField({
+      value: dados.heartRate,
+      label: 'Frequencia cardiaca',
+      required: true,
+      min: 20,
+      max: 220
+    }),
+    temperatureC: validateNumericField({
+      value: dados.temperatureC,
+      label: 'Temperatura',
+      required: false,
+      min: 32,
+      max: 43
+    }),
+    glucoseMgDl: validateNumericField({
+      value: dados.glucoseMgDl,
+      label: 'Glicemia capilar',
+      required: false,
+      min: 20,
+      max: 700
+    }),
+    edemaGrade: validateNumericField({
+      value: dados.edemaGrade,
+      label: 'Grau de edema',
+      required: false,
+      min: 0,
+      max: 4
+    })
+  }), [
+    dados.diastolic,
+    dados.edemaGrade,
+    dados.glucoseMgDl,
+    dados.heartRate,
+    dados.systolic,
+    dados.temperatureC
+  ]);
+
+  const hasRequiredMissing = useMemo(() => (
+    !Number.isFinite(evaluation?.inputNormalized?.systolic)
+    || !Number.isFinite(evaluation?.inputNormalized?.diastolic)
+    || !Number.isFinite(evaluation?.inputNormalized?.heartRate)
+  ), [
+    evaluation?.inputNormalized?.diastolic,
+    evaluation?.inputNormalized?.heartRate,
+    evaluation?.inputNormalized?.systolic
+  ]);
+
+  const hasFieldErrors = useMemo(
+    () => Object.values(fieldValidation).some((item) => item.status === 'error'),
+    [fieldValidation]
+  );
+
+  const warnings = useMemo(() => {
+    const list = new Set(Array.isArray(evaluation?.warnings) ? evaluation.warnings : []);
+    Object.values(fieldValidation).forEach((item) => {
+      if (item.status === 'warning' && item.message) list.add(item.message);
+    });
+    return Array.from(list);
+  }, [evaluation, fieldValidation]);
+
+  const history = useMemo(
+    () => normalizeClinicalHistory(moduleHistory),
+    [moduleHistory]
+  );
+  const currentSnapshotId = moduleSnapshot?.id || '';
+  const referenceHistory = useMemo(
+    () => history.filter((item) => !currentSnapshotId || item.id !== currentSnapshotId),
+    [currentSnapshotId, history]
+  );
+  const previous = referenceHistory[0] || null;
+  const first = referenceHistory.length ? referenceHistory[referenceHistory.length - 1] : null;
+
+  const comparisonRows = useMemo(() => ([
+    createComparisonRow(
+      'systolic',
+      'PA sistolica',
+      'mmHg',
+      evaluation?.inputNormalized?.systolic,
+      previous?.metrics?.systolic,
+      first?.metrics?.systolic
+    ),
+    createComparisonRow(
+      'diastolic',
+      'PA diastolica',
+      'mmHg',
+      evaluation?.inputNormalized?.diastolic,
+      previous?.metrics?.diastolic,
+      first?.metrics?.diastolic
+    ),
+    createComparisonRow(
+      'map',
+      'PAM',
+      'mmHg',
+      evaluation?.derived?.meanArterialPressure,
+      previous?.metrics?.map,
+      first?.metrics?.map
+    ),
+    createComparisonRow(
+      'heartRate',
+      'Frequencia cardiaca',
+      'bpm',
+      evaluation?.inputNormalized?.heartRate,
+      previous?.metrics?.heartRate,
+      first?.metrics?.heartRate
+    ),
+    createComparisonRow(
+      'glucose',
+      'Glicemia capilar',
+      'mg/dL',
+      evaluation?.inputNormalized?.glucoseMgDl,
+      previous?.metrics?.glucose,
+      first?.metrics?.glucose
+    )
+  ]), [
+    evaluation?.derived?.meanArterialPressure,
+    evaluation?.inputNormalized?.diastolic,
+    evaluation?.inputNormalized?.glucoseMgDl,
+    evaluation?.inputNormalized?.heartRate,
+    evaluation?.inputNormalized?.systolic,
+    first?.metrics?.diastolic,
+    first?.metrics?.glucose,
+    first?.metrics?.heartRate,
+    first?.metrics?.map,
+    first?.metrics?.systolic,
+    previous?.metrics?.diastolic,
+    previous?.metrics?.glucose,
+    previous?.metrics?.heartRate,
+    previous?.metrics?.map,
+    previous?.metrics?.systolic
+  ]);
+
+  const comparisonByKey = useMemo(
+    () => Object.fromEntries(comparisonRows.map((row) => [row.key, row])),
+    [comparisonRows]
+  );
+
+  const sparklineSystolic = useMemo(
+    () => buildSparklineSeries(referenceHistory, 'systolic', evaluation?.inputNormalized?.systolic),
+    [evaluation?.inputNormalized?.systolic, referenceHistory]
+  );
+  const sparklineHeartRate = useMemo(
+    () => buildSparklineSeries(referenceHistory, 'heartRate', evaluation?.inputNormalized?.heartRate),
+    [evaluation?.inputNormalized?.heartRate, referenceHistory]
+  );
+
+  const autoInterpretation = useMemo(
+    () => buildClinicalInterpretation(comparisonRows, evaluation),
+    [comparisonRows, evaluation]
+  );
+
+  const payloadData = useMemo(() => {
+    const deltaSystolic = buildComparativeDeltas({
+      current: evaluation?.inputNormalized?.systolic,
+      reference: previous?.metrics?.systolic
+    });
+    const deltaDiastolic = buildComparativeDeltas({
+      current: evaluation?.inputNormalized?.diastolic,
+      reference: previous?.metrics?.diastolic
+    });
+    const deltaHeartRate = buildComparativeDeltas({
+      current: evaluation?.inputNormalized?.heartRate,
+      reference: previous?.metrics?.heartRate
+    });
+    const deltaGlucose = buildComparativeDeltas({
+      current: evaluation?.inputNormalized?.glucoseMgDl,
+      reference: previous?.metrics?.glucose
+    });
+
+    return {
+      dataAvaliacao: normalizeDateValue(dados.dataAvaliacao),
+      pressaoSistolica: numberOrNull(evaluation?.inputNormalized?.systolic, 0),
+      pressaoDiastolica: numberOrNull(evaluation?.inputNormalized?.diastolic, 0),
+      frequenciaCardiaca: numberOrNull(evaluation?.inputNormalized?.heartRate, 0),
+      prioridadeCuidado: evaluation?.summary?.carePriority?.level || null,
+      dados_brutos: {
+        systolic: numberOrNull(evaluation?.inputNormalized?.systolic, 0),
+        diastolic: numberOrNull(evaluation?.inputNormalized?.diastolic, 0),
+        heartRate: numberOrNull(evaluation?.inputNormalized?.heartRate, 0),
+        temperatureC: numberOrNull(evaluation?.inputNormalized?.temperatureC, 1),
+        glucoseMgDl: numberOrNull(evaluation?.inputNormalized?.glucoseMgDl, 0),
+        glucoseContext: evaluation?.inputNormalized?.glucoseContext || 'nao_informado',
+        edemaLocation: toTextInput(evaluation?.inputNormalized?.edemaLocation) || null,
+        edemaGrade: numberOrNull(evaluation?.inputNormalized?.edemaGrade, 0),
+        clinicalSigns: Array.isArray(evaluation?.inputNormalized?.clinicalSigns)
+          ? evaluation.inputNormalized.clinicalSigns
+          : [],
+        observacoes: toTextInput(dados.observacoes) || null
+      },
+      resultados_calculados: {
+        pressaoSistolica: numberOrNull(evaluation?.inputNormalized?.systolic, 0),
+        pressaoDiastolica: numberOrNull(evaluation?.inputNormalized?.diastolic, 0),
+        frequenciaCardiaca: numberOrNull(evaluation?.inputNormalized?.heartRate, 0),
+        glicemiaCapilar: numberOrNull(evaluation?.inputNormalized?.glucoseMgDl, 0),
+        pressaoArterialMedia: numberOrNull(evaluation?.derived?.meanArterialPressure, 1),
+        pressaoPulso: numberOrNull(evaluation?.derived?.pulsePressure, 1),
+        classificacaoPressaoArterial: evaluation?.classifications?.bloodPressure?.label || null,
+        estagioPressaoArterial: evaluation?.classifications?.bloodPressure?.stage || null,
+        classificacaoFrequenciaCardiaca: evaluation?.classifications?.heartRate?.label || null,
+        classificacaoGlicemia: evaluation?.classifications?.glucose?.label || null,
+        classificacaoEdema: evaluation?.classifications?.edema?.label || null,
+        redFlags: (evaluation?.redFlags || []).map((flag) => ({
+          id: flag.id,
+          label: flag.label,
+          severity: flag.severity,
+          source: flag.source,
+          detail: flag.detail || null
+        })),
+        redFlagsCount: evaluation?.summary?.redFlagsCount || 0,
+        sinaisCarenciaisCount: Array.isArray(evaluation?.inputNormalized?.clinicalSigns)
+          ? evaluation.inputNormalized.clinicalSigns.length
+          : 0,
+        prioridadeCuidado: evaluation?.summary?.carePriority?.level || null,
+        justificativaPrioridade: evaluation?.summary?.carePriority?.reason || null
+      },
+      classificacoes: {
+        pressao_arterial: evaluation?.classifications?.bloodPressure?.label || null,
+        frequencia_cardiaca: evaluation?.classifications?.heartRate?.label || null,
+        glicemia: evaluation?.classifications?.glucose?.label || null,
+        edema: evaluation?.classifications?.edema?.label || null,
+        prioridade_cuidado: evaluation?.summary?.carePriority?.level || null,
+        referencia: '7a Diretriz Brasileira de HAS (2016)'
+      },
+      metadados_formula: {
+        formulaId: 'avaliacao_clinica_has_2016_redflags_v1',
+        formulaVersion: '1.0.0',
+        paReferencia: evaluation?.formulas?.bloodPressure || null,
+        redFlagRule: evaluation?.formulas?.redFlags || null
+      },
+      comparacao: {
+        referencia_comparacao: previous ? 'avaliacao_anterior' : null,
+        delta_pas_mmhg: numberOrNull(deltaSystolic?.deltaAbs, 1),
+        delta_pas_percentual: numberOrNull(deltaSystolic?.deltaPct, 2),
+        delta_pad_mmhg: numberOrNull(deltaDiastolic?.deltaAbs, 1),
+        delta_pad_percentual: numberOrNull(deltaDiastolic?.deltaPct, 2),
+        delta_fc_bpm: numberOrNull(deltaHeartRate?.deltaAbs, 1),
+        delta_fc_percentual: numberOrNull(deltaHeartRate?.deltaPct, 2),
+        delta_glicemia_mgdl: numberOrNull(deltaGlucose?.deltaAbs, 1),
+        delta_glicemia_percentual: numberOrNull(deltaGlucose?.deltaPct, 2)
+      },
+      source: {
+        mode: 'calculado',
+        system: 'avaliacao_clinica'
+      },
+      observacoes: toTextInput(dados.observacoes) || null
+    };
+  }, [dados.dataAvaliacao, dados.observacoes, evaluation, previous]);
+
+  const payloadResults = useMemo(() => ({
+    pressao_sistolica: payloadData?.pressaoSistolica ?? null,
+    pressao_diastolica: payloadData?.pressaoDiastolica ?? null,
+    frequencia_cardiaca: payloadData?.frequenciaCardiaca ?? null,
+    prioridade_cuidado: payloadData?.prioridadeCuidado ?? null,
+    red_flags_count: payloadData?.resultados_calculados?.redFlagsCount ?? 0,
+    output: {
+      classificacaoPressaoArterial: payloadData?.resultados_calculados?.classificacaoPressaoArterial ?? null,
+      prioridadeCuidado: payloadData?.prioridadeCuidado ?? null
+    },
+    comparacao: payloadData?.comparacao || {}
+  }), [payloadData]);
+
+  const hasValues = useMemo(() => (
+    toTextInput(dados.systolic) !== ''
+    || toTextInput(dados.diastolic) !== ''
+    || toTextInput(dados.heartRate) !== ''
+    || toTextInput(dados.temperatureC) !== ''
+    || toTextInput(dados.glucoseMgDl) !== ''
+    || toTextInput(dados.edemaLocation) !== ''
+    || toTextInput(dados.observacoes) !== ''
+    || (Array.isArray(dados.clinicalSigns) && dados.clinicalSigns.length > 0)
+  ), [
+    dados.clinicalSigns,
+    dados.diastolic,
+    dados.edemaLocation,
+    dados.glucoseMgDl,
+    dados.heartRate,
+    dados.observacoes,
+    dados.systolic,
+    dados.temperatureC
+  ]);
+
+  const dispatchSave = useCallback(async (auto = false) => {
+    const dispatch = auto ? onAutoSave : onSalvar;
+    if (!dispatch) return;
+
+    await dispatch({
+      tipo: 'avaliacao_clinica',
+      dados: payloadData,
+      resultados: payloadResults,
+      data: dados.dataAvaliacao,
+      pacienteId,
+      schemaVersion: 1,
+      formulaId: 'avaliacao_clinica_has_2016_redflags_v1',
+      formulaVersion: '1.0.0',
+      sourceSystem: 'calculado',
+      measuredAt: normalizeDateValue(dados.dataAvaliacao),
+      sessaoId: moduleSnapshot?.sessaoId || currentSessionId
+    });
+  }, [
+    currentSessionId,
+    dados.dataAvaliacao,
+    moduleSnapshot?.sessaoId,
+    onAutoSave,
+    onSalvar,
+    pacienteId,
+    payloadData,
+    payloadResults
+  ]);
+
+  const executeSave = useCallback(async (auto = false) => {
+    setSaveStatus('saving');
+    if (saveStatusResetRef.current) clearTimeout(saveStatusResetRef.current);
+    try {
+      await dispatchSave(auto);
+      setSaveStatus('saved');
+      saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
+    } catch (saveError) {
+      setSaveStatus('error');
+      if (!auto) {
+        setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
+      }
+    }
+  }, [dispatchSave]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!onSalvar) return;
+    setSubmitAttempted(true);
+    setError('');
+
+    if (!hasValues) {
+      setError('Preencha ao menos os sinais vitais principais para salvar a avaliacao clinica.');
+      return;
+    }
+
+    if (hasRequiredMissing) {
+      setError('PA sistolica, PA diastolica e frequencia cardiaca sao obrigatorias.');
+      return;
+    }
+
+    if (hasFieldErrors) {
+      setError('Existem campos com erro de validacao. Revise os valores destacados.');
+      return;
+    }
+
+    if (warnings.length > 0) {
+      const confirmMessage = [
+        'Foram detectados alertas nesta avaliacao:',
+        ...warnings.map((item) => `- ${item}`),
+        '',
+        'Deseja salvar mesmo assim?'
+      ].join('\n');
+
+      if (!window.confirm(confirmMessage)) return;
+    }
+
+    await executeSave(false);
+  }, [executeSave, hasFieldErrors, hasRequiredMissing, hasValues, onSalvar, warnings]);
+
+  useEffect(() => {
+    if (readOnly || !onAutoSave || !hasUserInput) return undefined;
+    if (!hasValues || hasFieldErrors || hasRequiredMissing) return undefined;
+
+    clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(() => {
+      executeSave(true);
+    }, 900);
+
+    return () => clearTimeout(autoSaveRef.current);
+  }, [
+    executeSave,
+    hasFieldErrors,
+    hasRequiredMissing,
+    hasUserInput,
+    hasValues,
+    onAutoSave,
+    readOnly
+  ]);
+
+  const redFlagTone = evaluation?.redFlags?.some((item) => item.severity === 'danger') ? 'danger' : 'warning';
+
+  return (
+    <div className={`eval-card clinica-form clinica-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
+      <div className="eval-header">
+        <div className="eval-icon">
+          <Heart size={20} />
+        </div>
+        <div>
+          <h3 className="eval-title">Avaliacao clinica</h3>
+          <p className="eval-subtitle">
+            Triagem de sinais vitais, classificacao automatica de PA e alertas clinicos de seguranca.
+          </p>
+        </div>
+      </div>
+
+      <div className="eval-section">
+        <h4 className="eval-section-title">Dados obrigatorios</h4>
+        <div className="clinica-grid">
+          <div className="eval-field">
+            <label className="eval-label">Data da avaliacao</label>
+            <input
+              type="date"
+              className="eval-input"
+              value={dados.dataAvaliacao}
+              onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'dataAvaliacao', event.target.value)}
+              disabled={readOnly}
+            />
+          </div>
+
+          <NumericField
+            label="PA sistolica"
+            unit="mmHg"
+            required
+            value={dados.systolic}
+            placeholder="Ex.: 120"
+            disabled={readOnly}
+            isInvalid={shouldShowMessage(submitAttempted, touchedFields.systolic) && fieldValidation.systolic.status === 'error'}
+            isWarning={shouldShowMessage(submitAttempted, touchedFields.systolic) && fieldValidation.systolic.status === 'warning'}
+            message={shouldShowMessage(submitAttempted, touchedFields.systolic) ? fieldValidation.systolic.message : ''}
+            tooltipLines={[
+              'Pressao arterial sistolica (maxima).',
+              'Classificacao por diretriz brasileira de hipertensao.'
+            ]}
+            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'systolic', value)}
+            onBlur={() => markTouched(setTouchedFields, 'systolic')}
+            className="eval-field--critical"
+          />
+
+          <NumericField
+            label="PA diastolica"
+            unit="mmHg"
+            required
+            value={dados.diastolic}
+            placeholder="Ex.: 80"
+            disabled={readOnly}
+            isInvalid={shouldShowMessage(submitAttempted, touchedFields.diastolic) && fieldValidation.diastolic.status === 'error'}
+            isWarning={shouldShowMessage(submitAttempted, touchedFields.diastolic) && fieldValidation.diastolic.status === 'warning'}
+            message={shouldShowMessage(submitAttempted, touchedFields.diastolic) ? fieldValidation.diastolic.message : ''}
+            tooltipLines={[
+              'Pressao arterial diastolica (minima).',
+              'Classificacao por diretriz brasileira de hipertensao.'
+            ]}
+            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'diastolic', value)}
+            onBlur={() => markTouched(setTouchedFields, 'diastolic')}
+            className="eval-field--critical"
+          />
+
+          <NumericField
+            label="Frequencia cardiaca"
+            unit="bpm"
+            required
+            value={dados.heartRate}
+            placeholder="Ex.: 72"
+            disabled={readOnly}
+            isInvalid={shouldShowMessage(submitAttempted, touchedFields.heartRate) && fieldValidation.heartRate.status === 'error'}
+            isWarning={shouldShowMessage(submitAttempted, touchedFields.heartRate) && fieldValidation.heartRate.status === 'warning'}
+            message={shouldShowMessage(submitAttempted, touchedFields.heartRate) ? fieldValidation.heartRate.message : ''}
+            tooltipLines={[
+              'Frequencia cardiaca de repouso.',
+              'Red flag: < 40 bpm ou > 120 bpm.'
+            ]}
+            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'heartRate', value)}
+            onBlur={() => markTouched(setTouchedFields, 'heartRate')}
+          />
+        </div>
+      </div>
+
+      <div className="eval-section">
+        <h4 className="eval-section-title">Dados opcionais</h4>
+        <div className="clinica-grid">
+          <NumericField
+            label="Temperatura"
+            unit="degC"
+            optional
+            value={dados.temperatureC}
+            placeholder="Ex.: 36.4"
+            disabled={readOnly}
+            isInvalid={shouldShowMessage(submitAttempted, touchedFields.temperatureC) && fieldValidation.temperatureC.status === 'error'}
+            isWarning={shouldShowMessage(submitAttempted, touchedFields.temperatureC) && fieldValidation.temperatureC.status === 'warning'}
+            message={shouldShowMessage(submitAttempted, touchedFields.temperatureC) ? fieldValidation.temperatureC.message : ''}
+            tooltipLines={['Temperatura corporal periferica.']}
+            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'temperatureC', value)}
+            onBlur={() => markTouched(setTouchedFields, 'temperatureC')}
+          />
+
+          <NumericField
+            label="Glicemia capilar"
+            unit="mg/dL"
+            optional
+            value={dados.glucoseMgDl}
+            placeholder="Ex.: 92"
+            disabled={readOnly}
+            isInvalid={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) && fieldValidation.glucoseMgDl.status === 'error'}
+            isWarning={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) && fieldValidation.glucoseMgDl.status === 'warning'}
+            message={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) ? fieldValidation.glucoseMgDl.message : ''}
+            tooltipLines={[
+              'Informe em mg/dL.',
+              'Se em jejum e > 200 mg/dL, gera alerta critico.'
+            ]}
+            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseMgDl', value)}
+            onBlur={() => markTouched(setTouchedFields, 'glucoseMgDl')}
+          />
+
+          <SelectField
+            label="Contexto da glicemia"
+            optional
+            value={dados.glucoseContext}
+            options={GLUCOSE_CONTEXT_OPTIONS}
+            disabled={readOnly}
+            tooltipLines={['Utilizado para classificar o resultado glicemico automaticamente.']}
+            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseContext', value)}
+          />
+
+          <div className="eval-field">
+            <label className="eval-label">
+              Local do edema
+              <span className="clinica-optional-badge">Opcional</span>
+              <InlineHelp lines={['Registre local predominante do edema (MMII, sacral, etc.).']} />
+            </label>
+            <input
+              type="text"
+              className="eval-input"
+              value={dados.edemaLocation}
+              onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'edemaLocation', event.target.value)}
+              disabled={readOnly}
+              placeholder="Ex.: Membros inferiores"
+            />
+          </div>
+
+          <SelectField
+            label="Grau de edema"
+            optional
+            value={dados.edemaGrade}
+            options={EDEMA_GRADE_OPTIONS}
+            disabled={readOnly}
+            tooltipLines={[
+              'Escala semiologica de edema.',
+              'Red flag amarelo para grau 3+ ou maior.'
+            ]}
+            isInvalid={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) && fieldValidation.edemaGrade.status === 'error'}
+            isWarning={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) && fieldValidation.edemaGrade.status === 'warning'}
+            message={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) ? fieldValidation.edemaGrade.message : ''}
+            onChange={(value) => {
+              handleFieldValueChange(setDados, setHasUserInput, 'edemaGrade', value);
+              markTouched(setTouchedFields, 'edemaGrade');
+            }}
+          />
+
+          <div className="eval-field eval-field-full">
+            <label className="eval-label">
+              Sinais de carencias nutricionais
+              <span className="clinica-optional-badge">Opcional</span>
+              <InlineHelp lines={['Checklist semiologico para rastreio clinico-nutricional.']} />
+            </label>
+            <div className="clinica-sign-grid">
+              {CLINICAL_SIGN_OPTIONS.map((item) => (
+                <label key={item.value} className="clinica-sign-item">
+                  <input
+                    type="checkbox"
+                    checked={dados.clinicalSigns.includes(item.value)}
+                    onChange={() => toggleStringArray(setDados, setHasUserInput, 'clinicalSigns', item.value)}
+                    disabled={readOnly}
+                  />
+                  <span>{item.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="eval-section">
+        <h4 className="eval-section-title">Resultados calculados</h4>
+        <div className="clinica-results-grid">
+          <ResultCard
+            title="Pressao arterial"
+            valueDisplay={formatPressure(
+              evaluation?.inputNormalized?.systolic,
+              evaluation?.inputNormalized?.diastolic
+            )}
+            classification={evaluation?.classifications?.bloodPressure}
+            delta={comparisonByKey?.systolic?.delta}
+            tooltipInfo={INDICATOR_INFO.bloodPressure}
+          />
+          <ResultCard
+            title="PAM"
+            valueDisplay={formatMetricValue(evaluation?.derived?.meanArterialPressure, 'mmHg', 1)}
+            classification={evaluation?.classifications?.bloodPressure}
+            delta={comparisonByKey?.map?.delta}
+            tooltipInfo={INDICATOR_INFO.map}
+          />
+          <ResultCard
+            title="Pressao de pulso"
+            valueDisplay={formatMetricValue(evaluation?.derived?.pulsePressure, 'mmHg', 1)}
+            classification={evaluation?.classifications?.bloodPressure}
+            tooltipInfo={INDICATOR_INFO.pulsePressure}
+          />
+          <ResultCard
+            title="Frequencia cardiaca"
+            valueDisplay={formatMetricValue(evaluation?.inputNormalized?.heartRate, 'bpm', 0)}
+            classification={evaluation?.classifications?.heartRate}
+            delta={comparisonByKey?.heartRate?.delta}
+            tooltipInfo={INDICATOR_INFO.heartRate}
+          />
+          <ResultCard
+            title="Glicemia capilar"
+            valueDisplay={formatMetricValue(evaluation?.inputNormalized?.glucoseMgDl, 'mg/dL', 0)}
+            classification={evaluation?.classifications?.glucose}
+            delta={comparisonByKey?.glucose?.delta}
+            tooltipInfo={INDICATOR_INFO.glucose}
+          />
+          <ResultCard
+            title="Red flags"
+            valueDisplay={formatMetricValue(evaluation?.summary?.redFlagsCount, 'alertas', 0)}
+            classification={{
+              label: (evaluation?.summary?.redFlagsCount || 0) > 0
+                ? `${evaluation?.summary?.redFlagsCount || 0} alerta(s)`
+                : 'Sem alertas',
+              tone: (evaluation?.summary?.redFlagsCount || 0) > 0 ? redFlagTone : 'success',
+              source: 'Regras de triagem'
+            }}
+            tooltipInfo={INDICATOR_INFO.redFlags}
+          />
+        </div>
+
+        {evaluation?.redFlags?.length ? (
+          <div className="clinica-flag-list">
+            {evaluation.redFlags.map((flag) => (
+              <div key={flag.id} className={`clinica-flag-item severity-${flag.severity}`}>
+                <div className="clinica-flag-title">
+                  <AlertTriangle size={14} />
+                  <strong>{flag.label}</strong>
+                </div>
+                <small>{flag.detail || flag.source}</small>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="eval-note">Sem red flags clinicas para a avaliacao atual.</div>
+        )}
+
+        <div className="clinica-comparison">
+          <h5>Comparacao longitudinal</h5>
+          <div className="clinica-table-wrap">
+            <table className="clinica-table">
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Atual</th>
+                  <th>Anterior</th>
+                  <th>Primeira</th>
+                  <th>Delta abs.</th>
+                  <th>Delta %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row.key}>
+                    <td>{row.label}</td>
+                    <td>{formatMetricValue(row.current, row.unit, row.digits)}</td>
+                    <td>{formatMetricValue(row.previous, row.unit, row.digits)}</td>
+                    <td>{formatMetricValue(row.first, row.unit, row.digits)}</td>
+                    <td className={resolveDeltaClass(row.delta?.deltaAbs)}>
+                      {formatSigned(row.delta?.deltaAbs, row.unit, row.digits)}
+                    </td>
+                    <td className={resolveDeltaClass(row.delta?.deltaPct)}>
+                      {formatSigned(row.delta?.deltaPct, '%', 2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="clinica-sparklines">
+            <SparklineCard label="PA sistolica (ultimos 6)" values={sparklineSystolic} />
+            <SparklineCard label="Frequencia cardiaca (ultimos 6)" values={sparklineHeartRate} />
+          </div>
+          <p className="clinica-interpretation">{autoInterpretation}</p>
+        </div>
+      </div>
+
+      <div className="eval-section">
+        <h4 className="eval-section-title">Observacoes clinicas</h4>
+        <textarea
+          className="eval-textarea"
+          value={dados.observacoes}
+          onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'observacoes', event.target.value)}
+          disabled={readOnly}
+          placeholder="Anote conduta, orientacoes e encaminhamentos complementares."
+        />
+      </div>
+
+      <div className="eval-actions">
+        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+        <Button type="button" variant="primary" onClick={handleSubmit} disabled={readOnly} loading={saveStatus === 'saving'}>
+          Salvar avaliacao clinica
+        </Button>
+      </div>
+
+      {error ? <div className="eval-note clinica-error-note">{error}</div> : null}
+    </div>
+  );
+};
+
+export default AvaliacaoClinicaForm;
+
+const NumericField = ({
+  label,
+  unit,
+  value,
+  placeholder,
+  disabled,
+  required = false,
+  optional = false,
+  isInvalid = false,
+  isWarning = false,
+  message = '',
+  tooltipLines = [],
+  onChange,
+  onBlur,
+  className = ''
+}) => (
+  <div className={`eval-field${className ? ` ${className}` : ''}`}>
+    <label className="eval-label">
+      {label}
+      <span className="clinica-unit-badge">{unit}</span>
+      {required ? <span className="clinica-required-dot" aria-hidden="true">*</span> : null}
+      {optional ? <span className="clinica-optional-badge">Opcional</span> : null}
+      <InlineHelp lines={tooltipLines} />
+    </label>
+    <input
+      type="text"
+      inputMode="decimal"
+      className={`eval-input ${isInvalid ? 'clinica-input-invalid' : ''} ${isWarning ? 'clinica-input-warning' : ''}`}
+      value={value}
+      placeholder={placeholder}
+      onChange={(event) => onChange(event.target.value)}
+      onBlur={onBlur}
+      disabled={disabled}
+      aria-invalid={isInvalid ? 'true' : 'false'}
+    />
+    {message ? <small className={`clinica-field-message ${isInvalid ? 'is-error' : 'is-warning'}`}>{message}</small> : null}
+  </div>
+);
+
+const SelectField = ({
+  label,
+  value,
+  options = [],
+  disabled,
+  optional = false,
+  tooltipLines = [],
+  isInvalid = false,
+  isWarning = false,
+  message = '',
+  onChange
+}) => (
+  <div className="eval-field">
+    <label className="eval-label">
+      {label}
+      {optional ? <span className="clinica-optional-badge">Opcional</span> : null}
+      <InlineHelp lines={tooltipLines} />
+    </label>
+    <select
+      className={`eval-select ${isInvalid ? 'clinica-input-invalid' : ''} ${isWarning ? 'clinica-input-warning' : ''}`}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      disabled={disabled}
+      aria-invalid={isInvalid ? 'true' : 'false'}
+    >
+      {options.map((item) => (
+        <option key={item.value} value={item.value}>{item.label}</option>
+      ))}
+    </select>
+    {message ? <small className={`clinica-field-message ${isInvalid ? 'is-error' : 'is-warning'}`}>{message}</small> : null}
+  </div>
+);
+
+const InlineHelp = ({ lines = [] }) => (
+  <span className="clinica-help" tabIndex={0} role="button" aria-label="Abrir informacao">
+    ?
+    <span className="clinica-help-tooltip" role="tooltip">
+      {lines.map((line, index) => (
+        <span key={`${line}-${index}`}>{line}</span>
+      ))}
+    </span>
+  </span>
+);
+
+const ResultCard = ({
+  title,
+  valueDisplay,
+  classification,
+  delta,
+  tooltipInfo
+}) => {
+  const tone = resolveTone(classification?.tone);
+  return (
+    <article className="clinica-result-card">
+      <div className="clinica-result-card__header">
+        <h6>{title}</h6>
+        <InlineHelp
+          lines={[
+            tooltipInfo?.name || 'Indicador',
+            `Formula: ${tooltipInfo?.formula || 'N/A'}`,
+            `Referencia: ${tooltipInfo?.reference || 'N/A'}`,
+            `Ano/Fonte: ${tooltipInfo?.year || 'N/A'}`
+          ]}
+        />
+      </div>
+      <strong className="clinica-result-card__value">{valueDisplay || '--'}</strong>
+      <div className="clinica-result-card__meta">
+        <span className={`clinica-status-badge clinica-tone-${tone}`}>
+          {classification?.label || 'Sem classificacao'}
+        </span>
+        {classification?.source ? <small>{classification.source}</small> : null}
+      </div>
+      {delta && Number.isFinite(delta.deltaAbs) ? (
+        <p className={`clinica-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
+          {formatSigned(delta.deltaAbs, '', 1)}
+          {Number.isFinite(delta.deltaPct) ? ` (${formatSigned(delta.deltaPct, '%', 2)})` : ''}
+        </p>
+      ) : null}
+    </article>
+  );
+};
+
+const SparklineCard = ({ label, values = [] }) => (
+  <div className="clinica-sparkline-card">
+    <p>{label}</p>
+    <MiniSparkline values={values} width={220} height={72} />
+  </div>
+);
+
+function handleFieldValueChange(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({ ...prev, [key]: value }));
+}
+
+function markTouched(setTouchedFields, field) {
+  setTouchedFields((prev) => ({ ...prev, [field]: true }));
+}
+
+function shouldShowMessage(submitAttempted, touched) {
+  return Boolean(submitAttempted || touched);
+}
+
+function toggleStringArray(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => {
+    const current = Array.isArray(prev[key]) ? prev[key] : [];
+    return current.includes(value)
+      ? { ...prev, [key]: current.filter((item) => item !== value) }
+      : { ...prev, [key]: [...current, value] };
+  });
+}
+
+function parseNumeric(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const parsed = Number(String(value).replace(',', '.').trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toInputValue(value, digits = null) {
+  const numeric = parseNumeric(value);
+  if (!Number.isFinite(numeric)) return '';
+  if (!Number.isFinite(digits)) return String(numeric);
+  return Number(numeric).toFixed(digits);
+}
+
+function toTextInput(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+}
+
+function firstDefined(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+  return null;
+}
+
+function normalizeDateValue(value) {
+  if (!value) return toLocalDateInputValue(new Date());
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return value.trim();
+  const date = resolveDate(value);
+  if (!date) return toLocalDateInputValue(new Date());
+  return toLocalDateInputValue(date);
+}
+
+function resolveDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value?.toDate === 'function') {
+    const converted = value.toDate();
+    return Number.isNaN(converted?.getTime?.()) ? null : converted;
+  }
+  if (typeof value?.seconds === 'number') {
+    const dateFromSeconds = new Date(value.seconds * 1000);
+    return Number.isNaN(dateFromSeconds.getTime()) ? null : dateFromSeconds;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeStringArray(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || '').trim()).filter(Boolean);
+  }
+  const token = toTextInput(value);
+  if (!token) return [];
+  return token.split(/[,\n;]+/g).map((item) => item.trim()).filter(Boolean);
+}
+
+function validateNumericField({
+  value,
+  label,
+  required = false,
+  min = null,
+  max = null
+}) {
+  const text = toTextInput(value);
+  if (!text) {
+    if (required) return { status: 'error', message: 'Campo obrigatorio.' };
+    return { status: 'empty', message: '' };
+  }
+
+  const numeric = parseNumeric(value);
+  if (!Number.isFinite(numeric)) {
+    return { status: 'error', message: 'Informe um numero valido.' };
+  }
+
+  if (Number.isFinite(min) && numeric < min) {
+    return {
+      status: 'warning',
+      message: `${label} abaixo da faixa fisiologica. Verifique o valor informado.`
+    };
+  }
+  if (Number.isFinite(max) && numeric > max) {
+    return {
+      status: 'warning',
+      message: `${label} acima da faixa fisiologica. Verifique o valor informado.`
+    };
+  }
+
+  return { status: 'ok', message: '' };
+}
+
+function numberOrNull(value, digits = null) {
+  if (!Number.isFinite(value)) return null;
+  if (!Number.isFinite(digits)) return Number(value);
+  return Number(Number(value).toFixed(digits));
+}
+
+function resolveTone(tone) {
+  if (tone === 'success') return 'success';
+  if (tone === 'warning') return 'warning';
+  if (tone === 'danger') return 'danger';
+  if (tone === 'info') return 'info';
+  return 'neutral';
+}
+
+function formatNumber(value, digits = 1) {
+  if (!Number.isFinite(value)) return '--';
+  return Number(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
+}
+
+function formatMetricValue(value, unit = '', digits = 1) {
+  if (!Number.isFinite(value)) return '--';
+  return `${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}`;
+}
+
+function formatPressure(systolic, diastolic) {
+  if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) return '--';
+  return `${formatNumber(systolic, 0)}/${formatNumber(diastolic, 0)} mmHg`;
+}
+
+function formatSigned(value, unit = '', digits = 1) {
+  if (!Number.isFinite(value)) return '--';
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}`;
+}
+
+function resolveDeltaClass(value) {
+  if (!Number.isFinite(value)) return 'is-flat';
+  if (value > 0) return 'is-up';
+  if (value < 0) return 'is-down';
+  return 'is-flat';
+}
+
+function createComparisonRow(key, label, unit, current, previous, first) {
+  return {
+    key,
+    label,
+    unit,
+    digits: unit === '%' ? 2 : 1,
+    current: Number.isFinite(current) ? current : null,
+    previous: Number.isFinite(previous) ? previous : null,
+    first: Number.isFinite(first) ? first : null,
+    delta: buildComparativeDeltas({ current, reference: previous })
+  };
+}
+
+function buildSparklineSeries(records = [], metricKey, currentValue) {
+  const values = [];
+  records
+    .slice()
+    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+    .forEach((item) => {
+      const metric = item?.metrics?.[metricKey];
+      if (Number.isFinite(metric)) values.push(metric);
+    });
+  if (Number.isFinite(currentValue)) values.push(currentValue);
+  return values.slice(-6);
+}
+
+function buildClinicalInterpretation(rows = [], evaluation = null) {
+  if (!Array.isArray(rows) || !rows.length) {
+    return 'Sem dados suficientes para interpretacao automatica.';
+  }
+
+  const systolicRow = rows.find((item) => item.key === 'systolic');
+  if (systolicRow && Number.isFinite(systolicRow?.delta?.deltaAbs) && Math.abs(systolicRow.delta.deltaAbs) >= 1) {
+    const direction = systolicRow.delta.deltaAbs > 0 ? 'aumentou' : 'reduziu';
+    return `PA sistolica ${direction} ${formatNumber(Math.abs(systolicRow.delta.deltaAbs), 1)} mmHg em relacao a ultima avaliacao.`;
+  }
+
+  const heartRow = rows.find((item) => item.key === 'heartRate');
+  if (heartRow && Number.isFinite(heartRow?.delta?.deltaAbs) && Math.abs(heartRow.delta.deltaAbs) >= 1) {
+    const direction = heartRow.delta.deltaAbs > 0 ? 'aumentou' : 'reduziu';
+    return `Frequencia cardiaca ${direction} ${formatNumber(Math.abs(heartRow.delta.deltaAbs), 1)} bpm em relacao a ultima avaliacao.`;
+  }
+
+  const carePriority = evaluation?.summary?.carePriority?.level;
+  if (carePriority === 'alta') {
+    return 'Foram detectados sinais criticos. Recomenda-se avaliacao medica imediata.';
+  }
+  if (carePriority === 'moderada') {
+    return 'Ha sinais de atencao clinica que exigem acompanhamento proximo.';
+  }
+  return 'Sem variacoes relevantes em relacao a ultima avaliacao.';
+}
+
+function normalizeClinicalHistory(records = []) {
+  if (!Array.isArray(records)) return [];
+  return records
+    .map((record) => {
+      const date = resolveDate(record?.updatedAt || record?.createdAt || record?.data);
+      const timestamp = date ? date.getTime() : 0;
+      return {
+        id: record?.id || '',
+        timestamp,
+        metrics: resolveClinicalMetrics(record)
+      };
+    })
+    .filter((entry) => hasAnyClinicalMetric(entry.metrics))
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+}
+
+function hasAnyClinicalMetric(metrics = {}) {
+  return ['systolic', 'diastolic', 'map', 'heartRate', 'glucose'].some((key) => Number.isFinite(metrics[key]));
+}
+
+function resolveClinicalMetrics(record) {
+  const dados = record?.dados || {};
+  const dadosBrutos = dados?.dados_brutos || dados?.input || {};
+  const calculated = dados?.resultados_calculados || {};
+
+  const systolic = parseNumeric(firstDefined(
+    calculated?.pressaoSistolica,
+    dados?.pressaoSistolica,
+    dados?.pressao_sistolica,
+    dadosBrutos?.systolic,
+    dadosBrutos?.pressaoSistolica,
+    dadosBrutos?.pressao_sistolica,
+    record?.resultados?.pressao_sistolica
+  ));
+
+  const diastolic = parseNumeric(firstDefined(
+    calculated?.pressaoDiastolica,
+    dados?.pressaoDiastolica,
+    dados?.pressao_diastolica,
+    dadosBrutos?.diastolic,
+    dadosBrutos?.pressaoDiastolica,
+    dadosBrutos?.pressao_diastolica,
+    record?.resultados?.pressao_diastolica
+  ));
+
+  const map = parseNumeric(firstDefined(
+    calculated?.pressaoArterialMedia,
+    dados?.pressaoArterialMedia,
+    dados?.pressao_arterial_media,
+    record?.resultados?.pressao_arterial_media
+  ));
+
+  const heartRate = parseNumeric(firstDefined(
+    calculated?.frequenciaCardiaca,
+    dados?.frequenciaCardiaca,
+    dados?.frequencia_cardiaca,
+    dadosBrutos?.heartRate,
+    dadosBrutos?.frequenciaCardiaca,
+    dadosBrutos?.frequencia_cardiaca,
+    record?.resultados?.frequencia_cardiaca
+  ));
+
+  const glucose = parseNumeric(firstDefined(
+    calculated?.glicemiaCapilar,
+    dados?.glicemiaCapilar,
+    dados?.glicemia_capilar,
+    dadosBrutos?.glucoseMgDl,
+    dadosBrutos?.glicemiaCapilar,
+    dadosBrutos?.glicemia_capilar,
+    record?.resultados?.glicemia_capilar
+  ));
+
+  return {
+    systolic: Number.isFinite(systolic) ? systolic : null,
+    diastolic: Number.isFinite(diastolic) ? diastolic : null,
+    map: Number.isFinite(map) ? map : null,
+    heartRate: Number.isFinite(heartRate) ? heartRate : null,
+    glucose: Number.isFinite(glucose) ? glucose : null
+  };
+}

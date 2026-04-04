@@ -232,6 +232,14 @@
   background: color-mix(in srgb, var(--dash-accent-soft) 68%, transparent);
 }
 
+.dashboard-stats .btn-ghost:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  color: var(--dash-muted);
+  border-color: var(--dash-border);
+  background: color-mix(in srgb, var(--dash-surface-soft) 80%, transparent);
+}
+
 .dashboard-stats .activities-list {
   display: grid;
   gap: 0.48rem;
@@ -278,6 +286,8 @@
 .dashboard-stats .activity-tag {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--dash-border) 90%, transparent);
+  background: color-mix(in srgb, var(--dash-surface-soft) 80%, transparent);
+  color: var(--dash-text);
   font-size: 0.58rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -338,8 +348,7 @@
 .dashboard-stats .task-filter-group button,
 .dashboard-stats .task-edit input,
 .dashboard-stats .task-edit button,
-.dashboard-stats .task-toggle,
-.dashboard-stats .task-edit-btn {
+.dashboard-stats .task-toggle {
   min-height: 32px;
   border-radius: 0.62rem;
   font-size: 0.7rem;
@@ -386,8 +395,7 @@
 
 .dashboard-stats .task-filter-group button,
 .dashboard-stats .task-toggle,
-.dashboard-stats .task-edit button,
-.dashboard-stats .task-edit-btn {
+.dashboard-stats .task-edit button {
   border: 1px solid color-mix(in srgb, var(--dash-border) 92%, transparent);
   background: var(--dash-surface-soft);
   color: var(--dash-muted);

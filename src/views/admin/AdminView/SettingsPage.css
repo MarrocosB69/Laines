@@ -60,47 +60,56 @@
 }
 
 .settings-page .action-btn {
-  min-height: 2.48rem;
-  border-radius: 0.82rem;
+  min-height: 38px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0 0.82rem;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 9px 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.32rem;
+  gap: 8px;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .settings-page .action-btn.primary {
-  background: linear-gradient(135deg, #2f6fa6 0%, #1d4f79 100%);
+  background: var(--color-green);
   color: #ffffff;
-  box-shadow: 0 16px 34px -24px rgba(47, 111, 166, 0.78);
+  box-shadow: var(--shadow-sm);
 }
 
 .settings-page .action-btn.primary:hover:not(:disabled) {
   transform: translateY(-1px);
+  background: var(--color-green-dark);
 }
 
 .settings-page .action-btn.secondary,
 .settings-page .action-btn.outline {
-  border-color: var(--set-border);
-  background: var(--set-surface);
-  color: color-mix(in srgb, var(--set-text) 76%, transparent);
+  border-color: var(--color-navy);
+  border-width: 1.5px;
+  background: transparent;
+  color: var(--color-navy);
 }
 
 .settings-page .action-btn.secondary:hover:not(:disabled),
 .settings-page .action-btn.outline:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--set-border) 72%, #2f6fa6 28%);
-  background: var(--set-surface-soft);
+  border-color: var(--color-navy);
+  background: rgba(16, 51, 85, 0.05);
 }
 
 .settings-page .action-btn:disabled {
   opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.settings-page .setting-input:disabled,
+.settings-page .setting-select:disabled,
+.settings-page .range-input:disabled {
+  opacity: 0.64;
   cursor: not-allowed;
 }
 
@@ -350,6 +359,11 @@
   cursor: pointer;
 }
 
+.settings-page .toggle-option:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
 .settings-page .toggle-option.active {
   border-color: color-mix(in srgb, var(--set-border) 68%, #2f6fa6 32%);
   background: color-mix(in srgb, #2f6fa6 10%, transparent);
@@ -397,6 +411,10 @@
   opacity: 0;
   width: 0;
   height: 0;
+}
+
+.settings-page .toggle-switch input:disabled + .toggle-slider {
+  opacity: 0.58;
 }
 
 .settings-page .toggle-slider {

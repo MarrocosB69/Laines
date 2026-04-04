@@ -40,11 +40,13 @@ export class AnalyticsController {
 
   @Get('correlations')
   correlations(
+    @Query('range') range?: string,
     @Query('forceRefresh') forceRefresh?: string,
     @Query('projectId') projectId?: string
   ) {
     const mustRefresh = String(forceRefresh || '').toLowerCase() === 'true';
     return this.analyticsService.getCorrelations({
+      range,
       forceRefresh: mustRefresh,
       projectId
     });

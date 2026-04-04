@@ -4,6 +4,7 @@
 
 .appointment-modal {
   --app-modal-width: 760px;
+  --app-modal-content-max-width: 700px;
 }
 
 .appointment-modal .appointment-header .title {
@@ -32,7 +33,7 @@
 }
 
 .appointment-modal .appointment-form {
-  padding: 0;
+  padding: 0.95rem var(--app-modal-padding-x) 1.15rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -137,4 +138,84 @@
 
 .appointment-modal .actions {
   padding-top: 0;
+}
+
+/* Parte 2 — normalização visual (Modal de consulta) */
+.appointment-overlay {
+  backdrop-filter: blur(2px);
+}
+
+.appointment-modal {
+  --app-modal-width: 780px;
+  --app-modal-content-max-width: 700px;
+}
+
+.appointment-modal .appointment-header .icon {
+  border-radius: var(--radius-md);
+  background: rgba(16, 51, 85, 0.1);
+  color: var(--color-navy);
+}
+
+.appointment-modal .appointment-form {
+  gap: 1.15rem;
+}
+
+.appointment-modal .form-grid {
+  gap: 1rem;
+}
+
+.appointment-modal .field label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.appointment-modal .field input,
+.appointment-modal .field select {
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  padding: 0.58rem 0.8rem;
+}
+
+.appointment-modal .field input:focus,
+.appointment-modal .field select:focus {
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.15);
+}
+
+.appointment-modal .evaluations-section {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: #f8fafc;
+  padding: 0.95rem;
+}
+
+.appointment-modal .section-title {
+  font-size: 0.8rem;
+  color: var(--color-navy);
+}
+
+.appointment-modal .evaluation-chip {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: 0.8rem;
+}
+
+.appointment-modal .evaluation-chip:hover {
+  border-color: rgba(16, 51, 85, 0.25);
+  background: #f8fafc;
+}
+
+.appointment-modal .evaluation-chip input {
+  accent-color: var(--color-green);
+}
+
+.appointment-modal .form-error {
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 760px) {
+  .appointment-modal .appointment-form {
+    padding-left: 0.86rem;
+    padding-right: 0.86rem;
+  }
 }

@@ -6,20 +6,27 @@ import { usePacientes } from '../../../contexts/PacienteContext';
 import { useModalBodyLock } from '../../../hooks/useModalBodyLock';
 import { useModalFocusTrap } from '../../../hooks/useModalFocusTrap';
 import { getApiErrorMessage } from '../../../services/api';
+import { listEvaluationRegistryByContext } from '../../../constants/evaluationRegistry';
 import './AppointmentModal.css';
 
-const evaluationOptions = [
-  { id: 'bioimpedancia', label: 'Bioimpedancia' },
-  { id: 'dobras_cutaneas', label: 'Dobras Cutâneas' },
-  { id: 'perimetros', label: 'Perimetros' },
-  { id: 'alimentar', label: 'Avaliação Alimentar' },
-  { id: 'hidratacao', label: 'Hidratação' },
-  { id: 'avaliacao_socioeconomica', label: 'Socioeconômica' }
-];
+const evaluationOptions = listEvaluationRegistryByContext('avaliacaoCompleta')
+  .map((item) => ({
+    id: item.type,
+    label: item.shortLabel || item.label
+  }))
+  .sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 const appointmentTypeOptions = [
   { value: 'primeira_consulta', label: 'Primeira consulta' },
   { value: 'retorno', label: 'Retorno' }
 ];
+
+const normalizeTimeValue = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const matched = raw.match(/^([01]\d|2[0-3]):([0-5]\d)/);
+  if (!matched) return '';
+  return `${matched[1]}:${matched[2]}`;
+};
 
 const AppointmentModal = ({
   isOpen,
@@ -43,15 +50,6 @@ const AppointmentModal = ({
   useModalBodyLock(isOpen);
   useModalFocusTrap(isOpen, modalRef);
 
-  const timeSlots = useMemo(() => {
-    const slots = [];
-    for (let hour = 7; hour <= 20; hour += 1) {
-      const label = `${String(hour).padStart(2, '0')}:00`;
-      slots.push(label);
-    }
-    return slots;
-  }, []);
-
   const minDate = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -64,8 +62,8 @@ const AppointmentModal = ({
     if (!isOpen) return;
     if (appointment) {
       setDate(appointment.date || '');
-      setTime(appointment.time || '');
-      setAppointmentType(appointment.appointmentType || '');
+      setTime(normalizeTimeValue(appointment.time));
+      setAppointmentType(appointment.appointmentType || (isReschedule ? 'retorno' : ''));
       setSelectedEvaluations(appointment.evaluations || []);
     } else {
       setDate('');
@@ -74,7 +72,7 @@ const AppointmentModal = ({
       setSelectedEvaluations([]);
     }
     setError('');
-  }, [appointment, isOpen]);
+  }, [appointment, isOpen, isReschedule]);
 
   const handleToggleEvaluation = (id) => {
     setSelectedEvaluations((prev) => (
@@ -86,8 +84,12 @@ const AppointmentModal = ({
     event.preventDefault();
     setError('');
 
-    if (!date || !time || !appointmentType) {
-      setError('Selecione data, horário e tipo da consulta.');
+    const normalizedTime = normalizeTimeValue(time);
+    const resolvedAppointmentType = String(
+      appointmentType || appointment?.appointmentType || (isReschedule ? 'retorno' : '')
+    ).trim().toLowerCase();
+    if (!date || !normalizedTime || !resolvedAppointmentType) {
+      setError('Informe data, horario e tipo da consulta.');
       return;
     }
     const selectedEvaluationsSafe = lockEvaluations
@@ -99,17 +101,17 @@ const AppointmentModal = ({
       return;
     }
 
-    const scheduledAt = new Date(`${date}T${time}:00`);
+    const scheduledAt = new Date(`${date}T${normalizedTime}:00`);
     if (Number.isNaN(scheduledAt.getTime())) {
-      setError('Data ou horário inválido.');
+      setError('Data ou horario invalido.');
       return;
     }
     if ((!appointment?.id || isReschedule) && scheduledAt.getTime() < Date.now()) {
-      setError('Não é permitido agendar consulta em horário passado.');
+      setError('Nao e permitido agendar consulta em horario passado.');
       return;
     }
-    if (isReschedule && appointment?.date === date && appointment?.time === time) {
-      setError('Novo horário deve ser diferente da consulta original.');
+    if (isReschedule && appointment?.date === date && normalizeTimeValue(appointment?.time) === normalizedTime) {
+      setError('Novo horario deve ser diferente da consulta original.');
       return;
     }
     const scheduledAtIso = scheduledAt.toISOString();
@@ -119,29 +121,29 @@ const AppointmentModal = ({
       if (appointment?.id && isReschedule) {
         await remarcarAgendamento(appointment.id, {
           date,
-          time,
-          appointmentType,
+          time: normalizedTime,
+          appointmentType: resolvedAppointmentType,
           evaluations: selectedEvaluationsSafe
         });
       } else if (appointment?.id) {
         await updateAgendamento(appointment.id, {
           date,
-          time,
-          appointmentType,
+          time: normalizedTime,
+          appointmentType: resolvedAppointmentType,
           scheduledAt: scheduledAtIso,
           evaluations: selectedEvaluationsSafe,
           pacienteId: appointment.pacienteId || patient?.id || null,
-          pacienteNome: appointment.pacienteNome || patient?.nome || 'Paciente'
+          pacienteNome: appointment.pacienteNome || patient?.nome || 'Atleta'
         });
       } else {
         await criarAgendamento({
           pacienteId: patient?.id || null,
-          pacienteNome: patient?.nome || 'Paciente',
+          pacienteNome: patient?.nome || 'Atleta',
           alunoId: user?.uid || null,
           alunoNome: user?.name || user?.nome || user?.email || 'Aluno',
           date,
-          time,
-          appointmentType,
+          time: normalizedTime,
+          appointmentType: resolvedAppointmentType,
           scheduledAt: scheduledAtIso,
           evaluations: selectedEvaluationsSafe,
           status: 'agendada'
@@ -206,7 +208,7 @@ const AppointmentModal = ({
               <h2 id="appointment-modal-title" className="app-modal-title">
                 {isReschedule ? 'Remarcar consulta' : (appointment ? 'Editar consulta' : 'Marcar consulta')}
               </h2>
-              <p className="app-modal-subtitle">{patient?.nome || 'Paciente'}</p>
+              <p className="app-modal-subtitle">{patient?.nome || 'Atleta'}</p>
             </div>
           </div>
           <button className="app-modal-close" onClick={handleRequestClose} type="button" aria-label="Fechar">
@@ -228,18 +230,13 @@ const AppointmentModal = ({
             </div>
             <div className="field">
               <label htmlFor="appointment-time">Horário</label>
-              <select
+              <input
                 id="appointment-time"
+                type="time"
                 value={time}
-                onChange={(event) => setTime(event.target.value)}
-              >
-                <option value="">Selecione</option>
-                {timeSlots.map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
-              </select>
+                onChange={(event) => setTime(normalizeTimeValue(event.target.value))}
+                step="60"
+              />
             </div>
             <div className="field">
               <label htmlFor="appointment-type">Tipo de consulta</label>

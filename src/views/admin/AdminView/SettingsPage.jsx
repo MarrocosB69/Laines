@@ -200,7 +200,7 @@ const SettingsPage = () => {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="settings-page">
       <div className="settings-header">
         <div className="header-left">
-          <h1>Configurações do Sistema</h1>
+          <h1>Configurações do sistema</h1>
           <p>Personalize as configurações do LAINES conforme suas necessidades</p>
           <span className="settings-meta">
             {lastSavedLabel}
@@ -209,14 +209,20 @@ const SettingsPage = () => {
         </div>
 
         <div className="header-actions">
-          <button onClick={handleReset} className="action-btn secondary" disabled={isSaving || isLoadingSettings}>
+          <button
+            onClick={handleReset}
+            className="action-btn secondary"
+            disabled={isSaving || isLoadingSettings || !canManageSettings}
+            title={!canManageSettings ? 'Seu perfil possui somente leitura em configurações.' : undefined}
+          >
             <RefreshCw size={18} />
-            Restaurar Padrão
+            Restaurar padrão
           </button>
           <button
             onClick={handleSave}
             className="action-btn primary"
-            disabled={isSaving || isLoadingSettings || !hasUnsavedChanges}
+            disabled={isSaving || isLoadingSettings || !hasUnsavedChanges || !canManageSettings}
+            title={!canManageSettings ? 'Seu perfil possui somente leitura em configurações.' : undefined}
           >
             {isSaving ? (
               <>
@@ -243,6 +249,12 @@ const SettingsPage = () => {
         <div className="status-message info">
           <RefreshCw size={18} className="spinner" />
           <span>Carregando configurações persistidas...</span>
+        </div>
+      )}
+      {!isLoadingSettings && !canManageSettings && (
+        <div className="status-message info" role="status" aria-live="polite">
+          <AlertCircle size={18} />
+          <span>Seu perfil possui acesso somente leitura nesta área.</span>
         </div>
       )}
 
@@ -273,6 +285,7 @@ const SettingsPage = () => {
             activeTab={activeTab}
             settings={settings}
             updateSetting={updateSetting}
+            readOnly={!canManageSettings}
           />
         </div>
       </div>

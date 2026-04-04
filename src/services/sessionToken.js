@@ -4,7 +4,7 @@ const AUTH_SYNC_STORAGE_KEY = 'laines_auth_sync';
 const AUTH_SYNC_EVENT = 'laines:auth-sync';
 const AUTH_SYNC_CHANNEL = 'laines-auth-sync';
 const TOKEN_EXPIRY_SKEW_MS = 15 * 1000;
-const NEW_AUTH_FLOW_ENABLED = String(import.meta.env.VITE_NEW_AUTH_FLOW || 'false').trim().toLowerCase() === 'true';
+const NEW_AUTH_FLOW_ENABLED = String(import.meta.env.VITE_NEW_AUTH_FLOW || 'true').trim().toLowerCase() === 'true';
 
 let memoryToken = '';
 let memoryTokenExpiresAt = null;

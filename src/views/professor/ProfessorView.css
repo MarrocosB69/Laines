@@ -170,14 +170,6 @@
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
 }
 
-.professor-view .professor-refresh-btn {
-  border-radius: 999px;
-  padding: 0.44rem 0.85rem;
-  font-size: 0.74rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
 .professor-view .professor-refresh-meta {
   font-size: 0.74rem;
   color: #64748b;
@@ -835,4 +827,28 @@
     align-self: stretch;
     justify-content: center;
   }
+}
+
+/* Header alignment with global premium shell */
+.professor-view .admin-header {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.professor-view .header-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+}
+
+.professor-view .user-profile-mini .avatar,
+.professor-view .user-profile .avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-navy);
+  box-shadow: none;
 }

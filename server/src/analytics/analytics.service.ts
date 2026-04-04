@@ -1,5 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createHash } from 'crypto';
 import { Readable } from 'stream';
 import { In, IsNull, Repository } from 'typeorm';
 import { User } from '../users/user.entity';
@@ -7,6 +8,11 @@ import { Paciente } from '../pacientes/paciente.entity';
 import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 import { Agendamento } from '../agendamentos/agendamento.entity';
 import { Projeto } from '../projetos/projeto.entity';
+import {
+  AVALIACAO_ANALYTICS_COLORS,
+  AVALIACAO_ANALYTICS_LABELS,
+  normalizeAvaliacaoTipo
+} from '../avaliacoes/evaluation-registry';
 import { isStudentMemberRole } from '../common/domain/access.constants';
 import { ObservabilityService } from '../observability/observability.service';
 
@@ -22,6 +28,7 @@ type ReportsQuery = {
 type DashboardQuery = {
   forceRefresh?: boolean;
   projectId?: string;
+  range?: string;
 };
 
 type ExportQuery = {
@@ -55,28 +62,6 @@ const DASHBOARD_CACHE_TTL_MS = 30 * 1000;
 const CORRELATIONS_CACHE_TTL_MS = 45 * 1000;
 const CACHE_MAX_ENTRIES = 120;
 const EXPORT_PAGE_SIZE = 200;
-
-const TYPE_LABELS: Record<string, string> = {
-  bioimpedancia: 'Avaliacoes de Bioimpedancia',
-  dobras_cutaneas: 'Dobras Cutaneas',
-  perimetros: 'Perimetros',
-  alimentar: 'Avaliacao Alimentar (NOVA)',
-  hidratacao: 'Hidratacao',
-  avaliacao_socioeconomica: 'Socioeconomica (EBIA)',
-  fisioterapia: 'Fisioterapia',
-  psicologia: 'Psicologia'
-};
-
-const TYPE_COLORS: Record<string, string> = {
-  bioimpedancia: 'progress-gradient-emerald',
-  dobras_cutaneas: 'progress-gradient-green',
-  perimetros: 'progress-gradient-blue',
-  alimentar: 'progress-gradient-purple',
-  hidratacao: 'progress-gradient-amber',
-  avaliacao_socioeconomica: 'progress-gradient-cyan',
-  fisioterapia: 'progress-gradient-rose',
-  psicologia: 'progress-gradient-indigo'
-};
 
 const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   agendada: 'Consulta agendada',
@@ -268,23 +253,24 @@ export class AnalyticsService {
   }
 
   private mapUsageByType(avaliacoes: Array<Pick<Avaliacao, 'tipo'>>) {
-    const byType = Object.keys(TYPE_LABELS).reduce<Record<string, number>>((acc, key) => {
+    const registryKeys = Object.keys(AVALIACAO_ANALYTICS_LABELS);
+    const byType = registryKeys.reduce<Record<string, number>>((acc, key) => {
       acc[key] = 0;
       return acc;
     }, {});
 
     avaliacoes.forEach((item) => {
-      const normalized = String(item.tipo || '').trim().toLowerCase();
+      const normalized = normalizeAvaliacaoTipo(item.tipo);
       if (Object.prototype.hasOwnProperty.call(byType, normalized)) {
         byType[normalized] += 1;
       }
     });
 
     const total = Math.max(avaliacoes.length, 1);
-    return Object.keys(TYPE_LABELS).map((key) => ({
+    return registryKeys.map((key) => ({
       key,
-      label: TYPE_LABELS[key],
-      color: TYPE_COLORS[key],
+      label: AVALIACAO_ANALYTICS_LABELS[key],
+      color: AVALIACAO_ANALYTICS_COLORS[key] || 'progress-gradient-blue',
       count: byType[key] || 0,
       percentage: Math.round(((byType[key] || 0) / total) * 100)
     }));
@@ -594,7 +580,10 @@ export class AnalyticsService {
 
   private anonymizeString(value: string) {
     if (!value) return '';
-    return `anon-${String(value).slice(0, 8)}`;
+    const salt = String(process.env.EXPORT_ANONYMIZE_SALT || 'laines-analytics-export');
+    const normalized = `${salt}:${String(value).trim().toLowerCase()}`;
+    const digest = createHash('sha256').update(normalized).digest('hex').slice(0, 16);
+    return `anon-${digest}`;
   }
 
   private async getScopedPacientes(projectFilter: string) {
@@ -1390,8 +1379,10 @@ export class AnalyticsService {
   }
 
   async getCorrelations(query: DashboardQuery) {
+    const range = this.normalizeRange(query.range);
+    const rangeStart = this.getRangeStart(range);
     const projectFilter = this.normalizeProjectFilter(query.projectId);
-    const cacheKey = this.getCacheKey('analytics', 'correlations', projectFilter);
+    const cacheKey = this.getCacheKey('analytics', 'correlations', range, projectFilter);
     if (!query.forceRefresh) {
       const cached = this.getCache(cacheKey);
       if (cached) {
@@ -1405,14 +1396,16 @@ export class AnalyticsService {
       }
     }
 
-    const [pacientes, avaliacoes] = await Promise.all([
+    const [pacientes, avaliacoesBase] = await Promise.all([
       this.getScopedPacientes(projectFilter),
       this.getScopedAvaliacoes(projectFilter)
     ]);
-    const agendamentos = await this.getScopedAgendamentos(
+    const agendamentosBase = await this.getScopedAgendamentos(
       projectFilter,
       pacientes.map((item) => item.id)
     );
+    const avaliacoes = avaliacoesBase.filter((item) => this.inRange(item.createdAt || item.data, rangeStart));
+    const agendamentos = agendamentosBase.filter((item) => this.inRange(item.scheduledAt || item.date || item.createdAt, rangeStart));
 
     const patientById = new Map(
       pacientes.map((patient) => [patient.id, patient] as const)
@@ -1579,6 +1572,7 @@ export class AnalyticsService {
     const response = {
       generatedAt: new Date().toISOString(),
       filters: {
+        range,
         projectId: projectFilter
       },
       dataset: {
@@ -1661,7 +1655,7 @@ export class AnalyticsService {
         quarterly: (overview as Record<string, unknown>).quarterly || [],
         pacientes: anonymize
           ? scopedPacientes.map((patient) => ({
-              id: patient.id,
+              id: this.anonymizeString(patient.id),
               anonId: this.anonymizeString(patient.id),
               status: patient.status || '',
               projeto: patient.projetoNome || '',
@@ -1670,14 +1664,23 @@ export class AnalyticsService {
           : scopedPacientes,
         avaliacoes: anonymize
           ? scopedAvaliacoes.map((evaluation) => ({
-              id: evaluation.id,
-              pacienteId: evaluation.pacienteId || '',
+              id: this.anonymizeString(evaluation.id),
+              pacienteId: this.anonymizeString(evaluation.pacienteId || ''),
               projeto: evaluation.projetoNome || '',
               tipo: evaluation.tipo || '',
               status: evaluation.status || ''
             }))
           : scopedAvaliacoes,
-        agendamentos: scopedAgendamentos
+        agendamentos: anonymize
+          ? scopedAgendamentos.map((appointment) => ({
+              ...appointment,
+              id: this.anonymizeString(appointment.id || ''),
+              pacienteId: this.anonymizeString(appointment.pacienteId || ''),
+              pacienteNome: '',
+              alunoId: this.anonymizeString(appointment.alunoId || ''),
+              alunoNome: ''
+            }))
+          : scopedAgendamentos
       };
 
       return {
@@ -1732,8 +1735,8 @@ export class AnalyticsService {
           });
           const row = {
             tipo_registro: 'paciente',
-            id: patient.id,
-            paciente_id: patient.id,
+            id: anonymize ? service.anonymizeString(patient.id) : patient.id,
+            paciente_id: anonymize ? service.anonymizeString(patient.id) : patient.id,
             paciente_nome: anonymize ? '' : (patient.nome || ''),
             paciente_anon_id: anonymize ? service.anonymizeString(patient.id) : '',
             projeto_id: patient.projetoId || '',
@@ -1762,8 +1765,8 @@ export class AnalyticsService {
           );
           const row = {
             tipo_registro: 'avaliacao',
-            id: evaluation.id,
-            paciente_id: evaluation.pacienteId || '',
+            id: anonymize ? service.anonymizeString(evaluation.id) : evaluation.id,
+            paciente_id: anonymize ? service.anonymizeString(evaluation.pacienteId || '') : (evaluation.pacienteId || ''),
             paciente_nome: anonymize ? '' : (patient?.nome || ''),
             paciente_anon_id: anonymize ? service.anonymizeString(evaluation.pacienteId || '') : '',
             projeto_id: evaluation.projetoId || patient?.projetoId || '',
@@ -1793,8 +1796,8 @@ export class AnalyticsService {
             const scheduledAt = service.toDate(appointment.scheduledAt || appointment.date);
             const row = {
               tipo_registro: 'consulta',
-              id: appointment.id,
-              paciente_id: appointment.pacienteId || '',
+              id: anonymize ? service.anonymizeString(appointment.id) : appointment.id,
+              paciente_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : (appointment.pacienteId || ''),
               paciente_nome: anonymize ? '' : (appointment.pacienteNome || patient?.nome || ''),
               paciente_anon_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : '',
               projeto_id: patient?.projetoId || '',
@@ -1825,8 +1828,8 @@ export class AnalyticsService {
             const scheduledAt = service.toDate(appointment.scheduledAt || appointment.date);
             const row = {
               tipo_registro: 'consulta',
-              id: appointment.id,
-              paciente_id: appointment.pacienteId || '',
+              id: anonymize ? service.anonymizeString(appointment.id) : appointment.id,
+              paciente_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : (appointment.pacienteId || ''),
               paciente_nome: anonymize ? '' : (appointment.pacienteNome || patient?.nome || ''),
               paciente_anon_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : '',
               projeto_id: patient?.projetoId || '',

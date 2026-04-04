@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:/Users/bruno/laines-app/server/src -type f -name *prontuario* -o -name *Prontuario*)",
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/bruno/laines-app -type f -name playwright.config.*)",
+      "Bash(npm run:*)",
+      "Bash(ls c:/Users/bruno/laines-app/e2e-artifacts/*.png)",
+      "Bash(node scripts/generate-profile-manuals.mjs)",
+      "Bash(xargs wc:*)",
+      "Bash(find /c/Users/bruno/laines-app/src -name \"*.css\" -exec wc -l {} +)",
+      "Bash(find /c/Users/bruno/laines-app/src/components -name \"*.css\" -exec wc -l {})",
+      "Read(//c/Users/bruno/laines-app/**)",
+      "Bash(grep -v \":0$\")",
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(node -e \"require\\(''''./dist/main''''\\)\")",
+      "Bash(timeout 8 npx ts-node -e \"console.log\\(''ts-node ok''\\)\")",
+      "Read(//c/Users/bruno/**)",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

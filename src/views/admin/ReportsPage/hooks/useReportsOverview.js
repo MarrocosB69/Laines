@@ -76,6 +76,7 @@ export const useReportsOverview = ({ range, projectId, notify }) => {
         }),
         api.get('/analytics/correlations', {
           params: {
+            range,
             projectId,
             forceRefresh
           }

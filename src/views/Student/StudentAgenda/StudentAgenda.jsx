@@ -33,12 +33,28 @@ const APPOINTMENT_TYPE_LABELS = {
 };
 
 const EVALUATION_LABELS = {
-  bioimpedancia: 'Bioimpedancia',
-  dobras_cutaneas: 'Dobras Cutaneas',
-  perimetros: 'Perimetros',
+  bioimpedancia: 'Bioimpedância',
+  dobras_cutaneas: 'Dobras Cutâneas',
+  perimetros: 'Perímetros',
   alimentar: 'Avaliação Alimentar',
-  hidratacao: 'Hidratacao',
+  hidratacao: 'Hidratação',
   avaliacao_socioeconomica: 'Socioeconômica'
+};
+
+const normalizeTimeToken = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const matched = raw.match(/^([01]\d|2[0-3]):([0-5]\d)/);
+  if (!matched) return '';
+  return `${matched[1]}:${matched[2]}`;
+};
+
+const toMinutes = (value) => {
+  const normalized = normalizeTimeToken(value);
+  if (!normalized) return Number.POSITIVE_INFINITY;
+  const [hour, minute] = normalized.split(':').map((part) => Number(part));
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return Number.POSITIVE_INFINITY;
+  return (hour * 60) + minute;
 };
 
 const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateChange = null }) => {
@@ -62,7 +78,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
   const [actionInProgress, setActionInProgress] = useState({ id: '', type: '' });
   const { notify, confirm } = useUiFeedback();
 
-  const timeSlots = useMemo(() => {
+  const baseTimeSlots = useMemo(() => {
     const slots = [];
     for (let hour = 7; hour <= 20; hour += 1) {
       slots.push(`${String(hour).padStart(2, '0')}:00`);
@@ -240,12 +256,22 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
   const appointmentsByTime = useMemo(() => {
     const map = new Map();
     dayAppointments.forEach((item) => {
-      const slot = item.time || '--:--';
+      const slot = normalizeTimeToken(item.time) || '--:--';
       if (!map.has(slot)) map.set(slot, []);
       map.get(slot).push(item);
     });
     return map;
   }, [dayAppointments]);
+
+  const timelineSlots = useMemo(() => {
+    const dynamicSlots = Array.from(appointmentsByTime.keys()).filter((slot) => slot !== '--:--');
+    const merged = Array.from(new Set([...baseTimeSlots, ...dynamicSlots]));
+    merged.sort((a, b) => toMinutes(a) - toMinutes(b));
+    if (appointmentsByTime.has('--:--')) {
+      merged.push('--:--');
+    }
+    return merged;
+  }, [appointmentsByTime, baseTimeSlots]);
 
   const monthSummary = useMemo(() => {
     const now = new Date();
@@ -282,7 +308,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     if (!appointment?.id) return;
     const accepted = await confirm({
       title: 'Confirmar consulta realizada',
-      message: `Marcar a consulta de ${appointment.pacienteNome || 'Paciente'} como realizada?`,
+      message: `Marcar a consulta de ${appointment.pacienteNome || 'Atleta'} como realizada?`,
       confirmLabel: 'Confirmar',
       cancelLabel: 'Cancelar',
       variant: 'warning'
@@ -322,7 +348,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     if (!appointment?.id || !appointment?.pacienteId) return;
     const accepted = await confirm({
       title: 'Confirmar falta',
-      message: `Registrar falta para ${appointment.pacienteNome || 'Paciente'} nesta consulta?`,
+      message: `Registrar falta para ${appointment.pacienteNome || 'Atleta'} nesta consulta?`,
       confirmLabel: 'Registrar falta',
       cancelLabel: 'Cancelar',
       variant: 'danger'
@@ -365,14 +391,14 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
   const handleOpenProntuario = useCallback((appointment) => {
     const hasPatient = guardAction(notify, Boolean(appointment?.pacienteId), {
       actionLabel: 'Abrir prontuário',
-      reason: 'Consulta sem paciente vinculado.'
+      reason: 'Consulta sem atleta vinculado.'
     });
     if (!hasPatient) return;
     if (typeof onSelectPatient !== 'function') return;
     onSelectPatient(
       {
         id: appointment.pacienteId,
-        nome: appointment.pacienteNome || 'Paciente'
+        nome: appointment.pacienteNome || 'Atleta'
       },
       {
         source: 'agenda',
@@ -406,6 +432,12 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     return true;
   };
 
+  const canReschedule = useCallback((appointment) => {
+    const status = appointment?.status || 'agendada';
+    if (status === 'realizada' || status === 'remarcada' || status === 'falta') return false;
+    return true;
+  }, []);
+
   const isActionBusy = (appointment, type) => (
     actionInProgress.id === appointment?.id && actionInProgress.type === type
   );
@@ -421,6 +453,15 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     return '';
   }, [isAppointmentInFuture, selectedDetail]);
 
+  const rescheduleLockReason = useMemo(() => {
+    if (!selectedDetail) return '';
+    const status = selectedDetail?.status || 'agendada';
+    if (status === 'realizada') return 'Consulta já finalizada.';
+    if (status === 'remarcada') return 'Consulta original já remarcada.';
+    if (status === 'falta') return 'Falta já registrada para esta consulta.';
+    return '';
+  }, [selectedDetail]);
+
   const hasAppliedFilters = useMemo(() => (
     rangeFilter !== 'week'
     || statusFilter !== 'all'
@@ -430,7 +471,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
 
   const syncLabel = useMemo(() => {
     if (!lastSyncedAt) return 'Sincronização pendente';
-    return `Atualizado as ${lastSyncedAt.toLocaleTimeString('pt-BR', {
+    return `Atualizado às ${lastSyncedAt.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
@@ -478,7 +519,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     const headers = [
       'Data',
       'Horário',
-      'Paciente',
+      'Atleta',
       'Tipo',
       'Status',
       'Avaliações',
@@ -491,7 +532,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     const rows = sorted.map((item) => [
       item.dateObj ? formatDate(item.dateObj) : '---',
       item.time || '--:--',
-      item.pacienteNome || 'Paciente',
+      item.pacienteNome || 'Atleta',
       getAppointmentTypeLabel(item),
       STATUS_LABELS[item.status || 'agendada'] || (item.status || 'Sem status'),
       String((item.evaluations || []).length),
@@ -563,7 +604,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                   {formatDate(nextAppointment.dateObj)}
                 </span>
                 <span className="agenda-next-info">
-                  {nextAppointment.time || '--:--'} - {nextAppointment.pacienteNome || 'Paciente'} - {getAppointmentTypeLabel(nextAppointment)}
+                  {nextAppointment.time || '--:--'} - {nextAppointment.pacienteNome || 'Atleta'} - {getAppointmentTypeLabel(nextAppointment)}
                 </span>
               </div>
             ) : (
@@ -652,10 +693,10 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
               <input
                 className="agenda-search-input"
                 type="text"
-                placeholder="Buscar por paciente, horario ou status..."
+                placeholder="Buscar por atleta, horário ou status..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                aria-label="Buscar na agenda por paciente, horario ou status"
+                aria-label="Buscar na agenda por atleta, horário ou status"
               />
               {searchTerm && (
                 <button
@@ -744,7 +785,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                   <h3>Agenda do dia</h3>
                 </header>
                 <div className="agenda-slots">
-                  {timeSlots.map((slot) => {
+                  {timelineSlots.map((slot) => {
                     const slotAppointments = appointmentsByTime.get(slot) || [];
                     return (
                       <div key={slot} className={`agenda-slot ${slotAppointments.length ? 'has-event' : ''}`}>
@@ -761,7 +802,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                                 onClick={() => handleSelectDetail(item)}
                                 aria-pressed={selectedDetail?.id === item.id}
                               >
-                                <span>{item.pacienteNome || 'Paciente'}</span>
+                                <span>{item.pacienteNome || 'Atleta'}</span>
                                 <span className="status-pill">{STATUS_LABELS[item.status || 'agendada']}</span>
                               </button>
                             ))
@@ -792,7 +833,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                           <div className="agenda-card-top">
                             <div className="agenda-card-patient">
                               <User size={16} />
-                              <span>{item.pacienteNome || 'Paciente'}</span>
+                              <span>{item.pacienteNome || 'Atleta'}</span>
                             </div>
                             <div className="agenda-card-time">
                               <Clock size={14} />
@@ -826,8 +867,8 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
               {selectedDetail ? (
                 <div className="detail-body">
                   <div className="detail-row">
-                    <span>Paciente</span>
-                    <strong>{selectedDetail.pacienteNome || 'Paciente'}</strong>
+                    <span>Atleta</span>
+                    <strong>{selectedDetail.pacienteNome || 'Atleta'}</strong>
                   </div>
                   <div className="detail-row">
                     <span>Data</span>
@@ -898,7 +939,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                       className="agenda-action ghost"
                       type="button"
                       onClick={() => handleReschedule(selectedDetail)}
-                      disabled={!canUpdateStatus(selectedDetail) || actionInProgress.id === selectedDetail.id}
+                      disabled={!canReschedule(selectedDetail) || actionInProgress.id === selectedDetail.id}
                     >
                       Remarcar
                     </button>
@@ -921,6 +962,9 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                   </div>
                   {!canUpdateStatus(selectedDetail) && (
                     <p className="detail-status-note">{statusLockReason}</p>
+                  )}
+                  {!canReschedule(selectedDetail) && (
+                    <p className="detail-status-note">{rescheduleLockReason}</p>
                   )}
                 </div>
               ) : (

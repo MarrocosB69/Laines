@@ -123,6 +123,14 @@ export class AgendamentosService {
     return Array.from(new Set(normalized));
   }
 
+  private normalizeTimeToken(value?: string | null) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const matched = raw.match(/^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
+    if (!matched) return '';
+    return `${matched[1]}:${matched[2]}`;
+  }
+
   private isBusinessDay(date: Date) {
     const day = date.getDay();
     return day >= 1 && day <= 5;
@@ -588,19 +596,26 @@ export class AgendamentosService {
       throw new BadRequestException('Remarcacao permitida somente ate 1 dia util antes da consulta.');
     }
 
+    const sourceEvaluations = this.normalizeEvaluations(source.evaluations);
+    const requestedEvaluations = this.normalizeEvaluations(dto.evaluations);
     const rescheduleEvaluations = role === 'atleta'
-      ? this.normalizeEvaluations(source.evaluations)
-      : this.normalizeEvaluations(dto.evaluations);
+      ? sourceEvaluations
+      : (requestedEvaluations.length > 0 ? requestedEvaluations : sourceEvaluations);
     if (rescheduleEvaluations.length === 0) {
       throw new BadRequestException('Selecione ao menos uma avaliacao.');
     }
 
-    if (source.date === dto.date && source.time === dto.time) {
+    const requestedTime = this.normalizeTimeToken(dto.time);
+    if (!requestedTime) {
+      throw new BadRequestException('Horario invalido para remarcacao.');
+    }
+    const sourceTime = this.normalizeTimeToken(source.time);
+    if (source.date === dto.date && sourceTime === requestedTime) {
       throw new BadRequestException('Novo horario deve ser diferente da consulta original.');
     }
 
-    await this.assertScheduleConflict(source.alunoId, dto.date, dto.time, source.id);
-    const rescheduledAt = this.buildScheduledAt(dto.date, dto.time);
+    await this.assertScheduleConflict(source.alunoId, dto.date, requestedTime, source.id);
+    const rescheduledAt = this.buildScheduledAt(dto.date, requestedTime);
     if (!rescheduledAt) {
       throw new BadRequestException('Data ou horario invalidos para remarcacao.');
     }
@@ -631,7 +646,7 @@ export class AgendamentosService {
         alunoId: sourceFresh.alunoId,
         alunoNome: sourceFresh.alunoNome,
         date: dto.date,
-        time: dto.time,
+        time: requestedTime,
         appointmentType: nextAppointmentType,
         scheduledAt: rescheduledAt,
         evaluations: rescheduleEvaluations,

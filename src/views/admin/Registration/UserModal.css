@@ -1,9 +1,14 @@
+.user-modal-container {
+  --app-modal-content-max-width: 920px;
+}
+
 .user-modal-header .header-content {
   max-width: 85%;
 }
 
 .user-role-selector {
-  margin: 0.95rem 1.4rem 0;
+  width: min(calc(100% - (var(--app-modal-padding-x) * 2)), var(--app-modal-content-max-width));
+  margin: 0.95rem auto 0;
   padding: 0.55rem;
   border-radius: 1rem;
   border: 1px solid #e2e8f0;
@@ -59,28 +64,12 @@
   margin: 0;
   font-size: 0.79rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
-.user-modal-form input:not([type='checkbox']),
-.user-modal-form select,
-.user-modal-form textarea {
-  min-height: 2.62rem;
-  border-radius: 0.82rem;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.84rem;
-  font-weight: 500;
-  padding: 0.56rem 0.74rem;
-}
-
-.user-modal-form input:not([type='checkbox']):focus,
-.user-modal-form select:focus,
-.user-modal-form textarea:focus {
-  outline: none;
-  border-color: #103355;
-  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.13);
+.user-field-input,
+.user-field-select {
+  border-radius: var(--radius-md);
 }
 
 .user-modal-form .form-group {
@@ -112,15 +101,28 @@
 .user-modal .modern-checkbox {
   width: 16px;
   height: 16px;
-  accent-color: #103355;
+  accent-color: var(--color-navy);
+}
+
+.user-coord-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.68rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  padding: 0.7rem 0.78rem;
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+  font-weight: 600;
 }
 
 .user-modal .readonly-field {
   min-height: 2.62rem;
-  border-radius: 0.82rem;
-  border: 1px solid #dbe3ee;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
   background: #f8fafc;
-  color: #475569;
+  color: var(--color-text-muted);
   font-size: 0.83rem;
   padding: 0.56rem 0.74rem;
   display: inline-flex;
@@ -128,16 +130,28 @@
   gap: 0.4rem;
 }
 
+.user-readonly-field {
+  border-radius: var(--radius-md);
+}
+
 .user-modal .readonly-field.highlight {
-  border-color: rgba(16, 51, 85, 0.25);
-  background: linear-gradient(135deg, #103355 0%, #1d4f79 100%);
-  color: #ffffff;
+  border-color: rgba(16, 51, 85, 0.3);
+  background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+  color: var(--color-white);
+}
+
+.user-readonly-field--highlight {
+  border-color: rgba(16, 51, 85, 0.3);
 }
 
 .user-modal .field-hint {
   margin: 0;
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--color-text-muted);
+}
+
+.user-field-hint {
+  margin-top: 0.12rem;
 }
 
 .user-modal .error-message {
@@ -158,7 +172,6 @@
 
 @media (max-width: 760px) {
   .user-role-selector {
-    margin-left: 0.88rem;
-    margin-right: 0.88rem;
+    width: calc(100% - 1.76rem);
   }
 }

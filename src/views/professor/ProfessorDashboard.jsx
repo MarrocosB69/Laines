@@ -19,7 +19,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import PatientModal from '../admin/Registration/PatientModal';
-import { Button as UiButton, StatCard as UiStatCard } from '../../components/ui';
+import Button from '../../components/ui/Button';
+import { StatCard as UiStatCard } from '../../components/ui';
 import EvaluationSummaryStrip from '../../components/shared/EvaluationSummaryStrip';
 import ClinicalEvaluationResultCard from '../../components/shared/ClinicalEvaluationResultCard';
 import {
@@ -38,6 +39,32 @@ const PATIENT_STATUS_OPTIONS = [
   { value: 'alta', label: 'Alta' },
   { value: 'inativo', label: 'Inativo' }
 ];
+
+const AVALIACOES_PAGE_SIZE = 200;
+const AVALIACOES_MAX_PAGES = 250;
+
+const fetchAllAvaliacoes = async (params = {}) => {
+  const mergedParams = { ...params };
+  const allItems = [];
+
+  for (let page = 0; page < AVALIACOES_MAX_PAGES; page += 1) {
+    const offset = page * AVALIACOES_PAGE_SIZE;
+    const { data } = await api.get('/avaliacoes', {
+      params: {
+        ...mergedParams,
+        limit: AVALIACOES_PAGE_SIZE,
+        offset
+      }
+    });
+    const chunk = Array.isArray(data) ? data : [];
+    allItems.push(...chunk);
+    if (chunk.length < AVALIACOES_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return allItems;
+};
 
 const normalizePatientStatus = (value) => {
   const raw = String(value || '').trim().toLowerCase();
@@ -158,7 +185,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
       const rawDate = paciente.updatedAt || paciente.dataCadastro || paciente.linkedAt;
       acc[alunoId].push({
         id: paciente.id,
-        nome: paciente.nome || 'Paciente',
+        nome: paciente.nome || 'Atleta',
         ultimaAvaliacao:
           paciente.ultimaAvaliacao || formatDate(rawDate),
         ultimaAvaliacaoDate: toDate(rawDate),
@@ -242,10 +269,10 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
       setMetricsLoading(true);
       try {
         const [evalRes, appRes] = await Promise.all([
-          api.get('/avaliacoes'),
+          fetchAllAvaliacoes(),
           api.get('/agendamentos')
         ]);
-        const evaluations = (Array.isArray(evalRes.data) ? evalRes.data : []).filter((item) => patientSet.has(item.pacienteId));
+        const evaluations = (Array.isArray(evalRes) ? evalRes : []).filter((item) => patientSet.has(item.pacienteId));
         const appointments = (Array.isArray(appRes.data) ? appRes.data : []).filter((item) => patientSet.has(item.pacienteId));
         if (isActive) setEvaluationItems(evaluations);
 
@@ -283,10 +310,10 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
           });
         }
       } catch (error) {
-        console.error('Erro ao carregar metricas:', error);
+        console.error('Erro ao carregar métricas:', error);
         notify({
           type: 'error',
-          title: 'Erro ao carregar metricas',
+          title: 'Erro ao carregar métricas',
           message: getApiErrorMessage(error, 'Não foi possível atualizar as métricas do painel.')
         });
       } finally {
@@ -348,8 +375,8 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
   }, [professorDisplayName, studentMap, user?.uid]);
 
   const getPatientName = useCallback((item) => {
-    if (!item?.pacienteId) return 'Paciente';
-    return patientMap.get(item.pacienteId)?.nome || 'Paciente';
+    if (!item?.pacienteId) return 'Atleta';
+    return patientMap.get(item.pacienteId)?.nome || 'Atleta';
   }, [patientMap]);
 
   const supervisedPatientsList = useMemo(() => {
@@ -494,7 +521,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
 
   const syncLabel = useMemo(() => {
     if (!lastSyncedAt) return 'Sincronização pendente';
-    return `Atualizado as ${lastSyncedAt.toLocaleTimeString('pt-BR', {
+    return `Atualizado às ${lastSyncedAt.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit'
     })}`;
@@ -557,15 +584,16 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
             </div>
           </div>
           <div className="professor-refresh-card">
-            <UiButton
+            <Button
               type="button"
-              className="professor-refresh-btn"
+              variant="ghost"
+              size="sm"
               onClick={() => loadPatients({ silent: true })}
               disabled={isRefreshing || loadingStudents || loadingPatients}
             >
               <RefreshCw size={16} className={isRefreshing ? 'is-rotating' : ''} />
               {isRefreshing ? 'Atualizando...' : 'Atualizar painel'}
-            </UiButton>
+            </Button>
             <span className="professor-refresh-meta">{syncLabel}</span>
           </div>
         </div>
@@ -578,7 +606,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
           onClick={() => setActiveMetric(activeMetric === 'patients' ? '' : 'patients')}
         >
           <UiStatCard
-            title="Pacientes supervisionados"
+            title="Atletas supervisionados"
             value={metricsLoading ? '...' : metrics.totalPatients}
             icon={Users}
             meta={`${alunos.length || 0} alunos`}
@@ -618,7 +646,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
           title="Lista de espera"
           value={metricsLoading ? '...' : metrics.waitlistPatients}
           icon={Hourglass}
-          meta="Pacientes aguardando"
+          meta="Atletas aguardando"
         />
         <UiStatCard
           title="Taxa de comparecimento"
@@ -639,12 +667,12 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
           <div className="metric-panel-header">
             <div>
               <h3>
-                {activeMetric === 'patients' && 'Pacientes supervisionados'}
+                {activeMetric === 'patients' && 'Atletas supervisionados'}
                 {activeMetric === 'done' && 'Avaliações realizadas (mês)'}
                 {activeMetric === 'pending' && 'Avaliações pendentes'}
               </h3>
               <p>
-                {activeMetric === 'patients' && 'Clique em um paciente para abrir o prontuário.'}
+                {activeMetric === 'patients' && 'Clique em um atleta para abrir o prontuário.'}
                 {activeMetric === 'done' && 'Avaliações finalizadas no mês atual.'}
                 {activeMetric === 'pending' && 'Avaliações em aberto com responsável.'}
               </p>
@@ -678,7 +706,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
                     onClick={() => onSelectPatient?.(patient)}
                   >
                     <div className="metric-main">
-                      <strong>{patient.nome || 'Paciente'}</strong>
+                      <strong>{patient.nome || 'Atleta'}</strong>
                       <span>{patient.alunoResponsavel?.nome || 'Aluno não informado'}</span>
                     </div>
                     <span className="metric-meta">{patient.status || '---'}</span>
@@ -819,14 +847,15 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
                     {alunoSelecionado.email || 'Email não informado'}
                   </p>
                 </div>
-                <UiButton
-                  className="patient-action-btn"
+                <Button
+                  variant="primary"
+                  size="sm"
                   type="button"
                   onClick={() => setPatientModalOpen(true)}
                 >
                   <Plus size={18} />
                   Novo paciente
-                </UiButton>
+                </Button>
               </div>
 
               <div className="patient-summary-row">
@@ -874,14 +903,15 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
                     <option value="name">Nome (A-Z)</option>
                   </select>
                 </div>
-                <UiButton
+                <Button
                   type="button"
-                  className="patient-clear-btn"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleResetPatientFilters}
                   disabled={!hasPatientFilters}
                 >
                   Limpar filtros
-                </UiButton>
+                </Button>
               </div>
 
               <div className="patient-grid">
@@ -950,4 +980,3 @@ function normalizeEvaluationType(value) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '_');
 }
-

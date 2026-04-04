@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,26 +6,29 @@ import {
   AlertCircle,
   ArrowRight,
   ArrowUp,
-  Award,
+  BarChart3,
   BookOpenCheck,
+  CalendarDays,
+  ClipboardList,
   Eye,
   EyeOff,
-  FlaskConical,
   HeartPulse,
   Loader2,
   Lock,
   Mail,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   Users,
   X
 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../services/api';
 import { isPastDate, isValidCpf, isValidEmail, normalizeCpf } from '../utils/validation';
+import { formatCpf } from '../utils/formatters';
 import { useModalBodyLock } from '../hooks/useModalBodyLock';
+import { useModalFocusTrap } from '../hooks/useModalFocusTrap';
 import { getRedirectPathFromRole, normalizeRole } from '../constants/roles';
-import logoLaines from '../assets/LogoLaines.png';
-import logoFacisa from '../assets/facisa.png';
+import logoLaines from '../assets/LogoLaines.webp';
 import './LoginPage.css';
 
 const initialRequestForm = {
@@ -46,76 +49,86 @@ const initialRequestForm = {
   justificativa: ''
 };
 
-const strategicPillars = [
+const accessGuides = [
   {
-    id: 'ensino',
-    title: 'Ensino prático',
-    description: 'Formação com rotina real de atendimento, supervisão e evolução clínica.',
+    id: 'acesso-existente',
+    title: 'Já tenho acesso',
+    description: 'Utilize seu e-mail e senha para entrar.',
+    icon: ShieldCheck
+  },
+  {
+    id: 'acesso-institucional',
+    title: 'Sou aluno / professor',
+    description: 'Solicite acesso institucional.',
     icon: BookOpenCheck
   },
   {
-    id: 'pesquisa',
-    title: 'Pesquisa aplicada',
-    description: 'Projetos ativos com métricas e dados consistentes para tomada de decisão.',
-    icon: FlaskConical
-  },
-  {
-    id: 'extensao',
-    title: 'Extensão com impacto',
-    description: 'Atendimento orientado por cuidado, desempenho e impacto social mensurável.',
+    id: 'acesso-atleta',
+    title: 'Sou atleta',
+    description: 'Acesse com os dados fornecidos pela equipe.',
     icon: HeartPulse
   }
 ];
 
-const operatingTracks = [
+const usageCards = [
   {
-    id: 'nutricao',
-    title: 'Nutrição esportiva',
-    description: 'Planejamento nutricional, bioimpedância e acompanhamento longitudinal.'
+    id: 'uso-professor',
+    title: 'Professor',
+    icon: Users,
+    points: ['Supervisiona atendimentos', 'Acompanha alunos']
   },
   {
-    id: 'interprofissional',
-    title: 'Formação interprofissional',
-    description: 'Alunos, professores e profissionais atuando em fluxo colaborativo.'
+    id: 'uso-aluno',
+    title: 'Aluno',
+    icon: BookOpenCheck,
+    points: ['Registra avaliações', 'Realiza atendimentos']
   },
   {
-    id: 'gestao',
-    title: 'Gestão acadêmica e clínica',
-    description: 'Agenda, prontuário, avaliações e relatórios conectados no mesmo fluxo.'
+    id: 'uso-atleta',
+    title: 'Atleta',
+    icon: HeartPulse,
+    points: ['Acompanha evolução', 'Acessa histórico']
   }
 ];
 
-const coreValues = [
-  'Colaboração interprofissional',
-  'Rigor técnico',
-  'Ética no cuidado',
-  'Inovação pedagógica',
-  'Impacto social mensurável'
+const systemCapabilities = [
+  { icon: ClipboardList, text: 'Registrar avaliações clínicas' },
+  { icon: TrendingUp, text: 'Acompanhar evolução dos atletas' },
+  { icon: CalendarDays, text: 'Gerenciar agenda e atendimentos' },
+  { icon: BarChart3, text: 'Gerar relatórios' }
+];
+
+const heroTags = ['Nutrição esportiva', 'Multiprofissional', 'Prontuário digital', 'Web e mobile'];
+
+const heroMetrics = [
+  { value: '14+', label: 'Módulos de avaliação' },
+  { value: '6', label: 'Perfis de acesso' },
+  { value: '100%', label: 'Web e mobile' }
 ];
 
 const landingNavLinks = [
-  { id: 'pilares', label: 'Pilares' },
-  { id: 'atuacao', label: 'Atuação' },
-  { id: 'valores', label: 'Valores' },
-  { id: 'parceria', label: 'Parceria' },
+  { id: 'acesso', label: 'Acesso' },
+  { id: 'como-acessar', label: 'Como acessar' },
+  { id: 'como-funciona', label: 'Como funciona' },
+  { id: 'recursos', label: 'Recursos' },
   { id: 'faq', label: 'FAQ' }
 ];
 
 const landingFaq = [
   {
     id: 'faq-acesso',
-    question: 'Quem pode solicitar acesso ao sistema?',
-    answer: 'Professores, profissionais e parceiros vinculados à operação institucional da LAINES.'
+    question: 'Quem deve solicitar acesso institucional?',
+    answer: 'Alunos e professores que ainda não possuem credenciais ativas no sistema.'
   },
   {
-    id: 'faq-seguranca',
-    question: 'O acesso é controlado por perfil?',
-    answer: 'Sim. Cada perfil acessa apenas as áreas e ações autorizadas, com bloqueios explícitos na interface.'
+    id: 'faq-atleta',
+    question: 'Atletas precisam solicitar acesso?',
+    answer: 'Não. O acesso do atleta é disponibilizado pela equipe responsável pelo acompanhamento.'
   },
   {
-    id: 'faq-fluxo',
-    question: 'Quais fluxos estão integrados hoje?',
-    answer: 'Agenda, prontuário, avaliações e pesquisa já operam de forma contínua no escopo atual da versão 1.0.'
+    id: 'faq-perfil',
+    question: 'O que acontece após entrar?',
+    answer: 'Cada utilizador é direcionado automaticamente para a área do seu perfil.'
   }
 ];
 
@@ -134,6 +147,9 @@ const LoginPage = () => {
   const [requestProjectsLoading, setRequestProjectsLoading] = useState(false);
   const [requestError, setRequestError] = useState('');
   const [requestSuccess, setRequestSuccess] = useState('');
+  const accessRequestModalRef = useRef(null);
+  const hasLoadedProjectsRef = useRef(false);
+  const loadingProjectsRef = useRef(false);
 
   const { login, user, signed, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -142,7 +158,28 @@ const LoginPage = () => {
   const isProfissionalRequest = requestForm.cargoSolicitado === 'profissional';
   const canPickProject = isProfessorRequest || isProfissionalRequest;
 
+  const loadPublicProjects = useCallback(async () => {
+    if (hasLoadedProjectsRef.current || loadingProjectsRef.current) return;
+    loadingProjectsRef.current = true;
+    setRequestProjectsLoading(true);
+    try {
+      const { data } = await api.get('/projetos/public');
+      const sorted = Array.isArray(data)
+        ? data.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+        : [];
+      setRequestProjects(sorted);
+      hasLoadedProjectsRef.current = true;
+    } catch (err) {
+      console.error('Erro ao carregar projetos:', err);
+      setRequestProjects([]);
+    } finally {
+      loadingProjectsRef.current = false;
+      setRequestProjectsLoading(false);
+    }
+  }, []);
+
   useModalBodyLock(requestOpen);
+  useModalFocusTrap(requestOpen, accessRequestModalRef);
 
   useEffect(() => {
     document.body.classList.add('landing-page');
@@ -161,35 +198,57 @@ const LoginPage = () => {
       return scrollingElement?.scrollTop ?? window.scrollY ?? 0;
     };
 
+    let rafId = null;
+
     const handleScroll = () => {
-      setShowScrollTop(getScrollTop() > 360);
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        const nextVisible = getScrollTop() > 360;
+        setShowScrollTop((prev) => (prev === nextVisible ? prev : nextVisible));
+      });
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   useEffect(() => {
-    const loadProjects = async () => {
-      setRequestProjectsLoading(true);
-      try {
-        const { data } = await api.get('/projetos/public');
-        const sorted = Array.isArray(data)
-          ? data.slice().sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-          : [];
-        setRequestProjects(sorted);
-      } catch (err) {
-        console.error('Erro ao carregar projetos:', err);
-        setRequestProjects([]);
-      } finally {
-        setRequestProjectsLoading(false);
+    if (hasLoadedProjectsRef.current) return undefined;
+
+    let timeoutId = null;
+    let idleId = null;
+
+    if (typeof window.requestIdleCallback === 'function') {
+      idleId = window.requestIdleCallback(() => {
+        loadPublicProjects();
+      }, { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(() => {
+        loadPublicProjects();
+      }, 320);
+    }
+
+    return () => {
+      if (idleId !== null && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
       }
     };
-    loadProjects();
-  }, []);
+  }, [loadPublicProjects]);
 
   const handleOpenRequest = () => {
+    if (!hasLoadedProjectsRef.current && !loadingProjectsRef.current) {
+      loadPublicProjects();
+    }
     setRequestOpen(true);
     setRequestError('');
     setRequestSuccess('');
@@ -236,14 +295,6 @@ const LoginPage = () => {
     setRequestForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const formatCpf = (value) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  };
 
   const handleRequestCpfChange = (event) => {
     const formatted = formatCpf(event.target.value);
@@ -302,7 +353,7 @@ const LoginPage = () => {
         email: requestForm.email.trim(),
         cpf: requestForm.cpf.trim()
       });
-      setRequestSuccess('Solicitação enviada. Aguarde aprovação.');
+      setRequestSuccess('Solicitação enviada com sucesso. Você receberá retorno por e-mail após a análise da coordenação.');
       setRequestForm(initialRequestForm);
     } catch (err) {
       console.error('Erro ao enviar solicitação:', err);
@@ -327,10 +378,10 @@ const LoginPage = () => {
         >
           <div className="landing-container landing-topbar__inner">
             <a href="#inicio" className="landing-brand">
-              <img src={logoLaines} alt="LAINES" />
+              <img src={logoLaines} alt="LAINES" width="512" height="512" decoding="async" />
               <div>
                 <strong>LAINES</strong>
-                <span>Liga Acadêmica Interprofissional de Nutrição Esportiva</span>
+                <span>Plataforma clínico-educacional</span>
               </div>
             </a>
 
@@ -341,15 +392,6 @@ const LoginPage = () => {
                 </a>
               ))}
             </nav>
-
-            <div className="landing-topbar__actions">
-              <button type="button" className="btn-ghost" onClick={handleOpenRequest}>
-                Solicitar acesso
-              </button>
-              <a href="#acesso" className="btn-solid">
-                Entrar
-              </a>
-            </div>
           </div>
         </motion.header>
 
@@ -362,47 +404,34 @@ const LoginPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7 }}
               >
-                <span className="hero-kicker">
-                  <Sparkles size={14} />
-                  Plataforma institucional LAINES 1.0
-                </span>
-                <h1>
-                  Gestão acadêmica e clínica em um fluxo único
-                </h1>
+                <div className="hero-kicker">
+                  <Sparkles size={13} />
+                  Liga Acadêmica Interprofissional de Nutrição Esportiva
+                </div>
+
+                <h1>Bem-vindo ao sistema LAINES</h1>
                 <p>
-                  Conecte agenda, prontuário, avaliações e pesquisa em uma operação contínua,
-                  com acesso por perfil e rastreabilidade de ações.
+                  Gerencie atendimentos, acompanhe atletas e registre avaliações em um
+                  ambiente clínico-educacional integrado.
                 </p>
 
                 <div className="hero-tag-list">
-                  <span>Controle por perfil</span>
-                  <span>Fluxos clínicos contínuos</span>
-                  <span>Operação auditável</span>
+                  {heroTags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
                 </div>
 
-                <div className="hero-actions">
-                  <a href="#acesso" className="hero-action hero-action--primary">
-                    Acessar plataforma
-                    <ArrowRight size={16} />
-                  </a>
-                  <button type="button" className="hero-action hero-action--ghost" onClick={handleOpenRequest}>
-                    Solicitar acesso
-                  </button>
+                <div className="hero-helper-text">
+                  <span>Acesse com seu perfil para visualizar agenda, prontuário e avaliações.</span>
                 </div>
 
                 <div className="hero-metrics">
-                  <article>
-                    <strong>{requestProjectsLoading ? '...' : String(requestProjects.length || 0).padStart(2, '0')}</strong>
-                    <span>projetos disponíveis para vínculo</span>
-                  </article>
-                  <article>
-                    <strong>3 frentes</strong>
-                    <span>ensino, pesquisa e extensão</span>
-                  </article>
-                  <article>
-                    <strong>1 fluxo</strong>
-                    <span>agenda, prontuário e avaliações</span>
-                  </article>
+                  {heroMetrics.map((m) => (
+                    <article key={m.label}>
+                      <strong>{m.value}</strong>
+                      <span>{m.label}</span>
+                    </article>
+                  ))}
                 </div>
               </motion.div>
 
@@ -489,9 +518,9 @@ const LoginPage = () => {
                   </AnimatePresence>
 
                   <div className="landing-login-panel__foot">
-                    <p>Docente ou profissional parceiro?</p>
+                    <p>Não possui acesso?</p>
                     <button type="button" onClick={handleOpenRequest}>
-                      Solicitar cadastro
+                      Solicitar acesso institucional
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -500,106 +529,93 @@ const LoginPage = () => {
             </div>
           </section>
 
-          <section id="pilares" className="landing-section">
+          <section id="como-acessar" className="landing-section landing-section--soft">
             <div className="landing-container">
-              <header className="section-heading">
-                <span>Direção estratégica</span>
-                <h2>Pilares que sustentam a operação</h2>
+              <header className="section-heading section-heading--left-md">
+                <h2>Como acessar o sistema</h2>
               </header>
-              <div className="pillar-grid">
-                {strategicPillars.map((pillar, index) => (
+              <div className="entry-grid">
+                {accessGuides.map((guide, index) => (
                   <motion.article
-                    key={pillar.id}
-                    className="pillar-card"
+                    key={guide.id}
+                    className="entry-card"
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.5, delay: index * 0.08 }}
                   >
-                    <div className="pillar-card__icon">
-                      <pillar.icon size={20} />
+                    <div className="entry-card__icon">
+                      <guide.icon size={18} />
                     </div>
-                    <h3>{pillar.title}</h3>
-                    <p>{pillar.description}</p>
+                    <h3>{guide.title}</h3>
+                    <p>{guide.description}</p>
                   </motion.article>
                 ))}
               </div>
             </div>
           </section>
 
-          <section id="atuacao" className="landing-section landing-section--soft">
+          <section id="como-funciona" className="landing-section">
             <div className="landing-container">
-              <header className="section-heading">
-                <span>Atuação</span>
-                <h2>Frentes operacionais da LAINES</h2>
+              <header className="section-heading section-heading--left-md">
+                <h2>Como o sistema é utilizado</h2>
               </header>
-              <div className="track-grid">
-                {operatingTracks.map((track, index) => (
+              <div className="workflow-grid">
+                {usageCards.map((card, index) => (
                   <motion.article
-                    key={track.id}
-                    className="track-card"
+                    key={card.id}
+                    className="workflow-card"
                     initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ duration: 0.5, delay: index * 0.08 }}
                   >
-                    <strong>{track.title}</strong>
-                    <p>{track.description}</p>
+                    <div className="workflow-card__header">
+                      <div className="workflow-card__icon">
+                        <card.icon size={18} />
+                      </div>
+                      <h3>{card.title}</h3>
+                    </div>
+                    <ul className="workflow-list">
+                      {card.points.map((point) => (
+                        <li key={`${card.id}-${point}`}>{point}</li>
+                      ))}
+                    </ul>
                   </motion.article>
                 ))}
               </div>
             </div>
           </section>
 
-          <section id="valores" className="landing-section">
-            <div className="landing-container landing-values">
-              <div className="landing-values__copy">
-                <header className="section-heading section-heading--left">
-                  <span>Cultura</span>
-                  <h2>Valores que orientam o cuidado e o ensino</h2>
-                </header>
-                <p>
-                  O ambiente foi desenhado para ser técnico, simples de operar e confiável para toda a equipe.
-                </p>
-              </div>
-
-              <div className="value-list">
-                {coreValues.map((item, index) => (
+          <section id="recursos" className="landing-section landing-section--soft">
+            <div className="landing-container">
+              <header className="section-heading section-heading--left-md">
+                <h2>O que você pode fazer no sistema</h2>
+              </header>
+              <div className="feature-grid">
+                {systemCapabilities.map((item, index) => (
                   <motion.div
-                    key={item}
-                    className="value-item"
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    key={item.text}
+                    className="feature-card"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.5, delay: index * 0.05 }}
+                    transition={{ duration: 0.45, delay: index * 0.07 }}
                   >
-                    <span>{String(index + 1).padStart(2, '0')}</span>
-                    <p>{item}</p>
+                    <div className="feature-card__icon">
+                      <item.icon size={18} />
+                    </div>
+                    <p>{item.text}</p>
                   </motion.div>
                 ))}
               </div>
             </div>
           </section>
 
-          <section id="parceria" className="landing-section landing-section--partner">
-            <div className="landing-container partner-panel">
-              <div className="partner-panel__copy">
-                <Award size={18} />
-                <h3>Parceria institucional ativa</h3>
-                <p>Operação com apoio acadêmico local para ensino, pesquisa aplicada e extensão.</p>
-              </div>
-              <div className="partner-panel__logo">
-                <img src={logoFacisa} alt="Facisa" />
-                <span>Faculdade de Ciências da Saúde do Trairi</span>
-              </div>
-            </div>
-          </section>
-
-          <section id="faq" className="landing-section landing-section--soft">
+          <section id="faq" className="landing-section">
             <div className="landing-container">
-              <header className="section-heading">
-                <span>Perguntas frequentes</span>
-                <h2>Esclarecimentos rápidos sobre acesso e operação</h2>
+              <header className="section-heading section-heading--left-md">
+                <h2>Perguntas frequentes</h2>
               </header>
               <div className="faq-grid">
                 {landingFaq.map((item) => (
@@ -611,31 +627,18 @@ const LoginPage = () => {
               </div>
             </div>
           </section>
-
-          <section className="landing-section landing-section--cta">
-            <div className="landing-container cta-panel">
-              <div>
-                <Users size={18} />
-                <h3>Pronto para integrar seu time ao ecossistema LAINES?</h3>
-              </div>
-              <button type="button" onClick={handleOpenRequest}>
-                Solicitar acesso institucional
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </section>
         </main>
 
         <footer className="landing-footer-v2">
           <div className="landing-container landing-footer-v2__inner">
             <div className="landing-footer-v2__brand">
-              <img src={logoLaines} alt="LAINES" />
+              <img src={logoLaines} alt="LAINES" width="512" height="512" loading="lazy" decoding="async" />
               <div>
                 <strong>LAINES</strong>
-                <span>Liga Acadêmica Interprofissional de Nutrição Esportiva</span>
+                <span>Plataforma de gestão clínica e educacional</span>
               </div>
             </div>
-            <small>© 2026 LAINES. Plataforma institucional de ensino, pesquisa e extensão.</small>
+            <small>© 2026 LAINES. Ambiente operacional para ensino e cuidado.</small>
           </div>
         </footer>
       </div>
@@ -665,6 +668,7 @@ const LoginPage = () => {
           >
             <motion.div
               className="request-modal app-modal-shell app-modal-shell--lg app-modal-shell--scrollable"
+              ref={accessRequestModalRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="request-access-modal-title"
@@ -675,7 +679,7 @@ const LoginPage = () => {
               <div className="request-modal-header app-modal-header">
                 <div className="app-modal-heading">
                   <h3 id="request-access-modal-title" className="app-modal-title">Solicitar acesso</h3>
-                  <p className="app-modal-subtitle">Solicitação sujeita à aprovação da coordenação.</p>
+                  <p className="app-modal-subtitle">Solicitação sujeita à aprovação da coordenação, com retorno por e-mail.</p>
                 </div>
                 <button type="button" className="app-modal-close" onClick={handleCloseRequest} aria-label="Fechar">
                   <X size={18} />
@@ -839,12 +843,12 @@ const LoginPage = () => {
                   )}
 
                   <label className="request-field full">
-                    <span>Justificativa</span>
+                    <span>Justificativa de uso (opcional)</span>
                     <textarea
                       rows="4"
                       value={requestForm.justificativa}
                       onChange={handleRequestChange('justificativa')}
-                      placeholder="Conte como pretende usar o ecossistema."
+                      placeholder="Conte, de forma breve, como pretende usar a plataforma."
                     />
                   </label>
                 </div>
@@ -878,4 +882,5 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
 

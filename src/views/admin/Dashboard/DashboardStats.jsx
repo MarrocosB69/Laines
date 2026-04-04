@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+﻿import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -18,9 +18,15 @@ import {
 import { useAuth } from "../../../contexts/AuthContext";
 import { useUiFeedback } from "../../../contexts/UiFeedbackContext";
 import { toDate } from "../../../utils/dateUtils";
+import Button from "../../../components/ui/Button";
 import { StatCard as UiStatCard } from "../../../components/ui";
 import api, { getApiErrorMessage } from "../../../services/api";
 import "./DashboardStats.css";
+
+const DASHBOARD_REFRESH_MS = Number(import.meta.env.VITE_DASHBOARD_REFRESH_MS);
+const DASHBOARD_REFRESH_INTERVAL = Number.isFinite(DASHBOARD_REFRESH_MS) && DASHBOARD_REFRESH_MS > 0
+  ? DASHBOARD_REFRESH_MS
+  : 60_000;
 
 const CalendarWidget = ({ appointments = [] }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -111,8 +117,12 @@ const CalendarWidget = ({ appointments = [] }) => {
           <span className="year">{year}</span>
         </div>
         <div className="calendar-nav">
-          <button onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
-          <button onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+          <button type="button" onClick={() => changeMonth(-1)} aria-label="Mês anterior">
+            <ChevronLeft size={16} />
+          </button>
+          <button type="button" onClick={() => changeMonth(1)} aria-label="Próximo mês">
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
@@ -181,7 +191,7 @@ const CalendarWidget = ({ appointments = [] }) => {
                     {detailedAppointments.slice(0, 4).map((item) => (
                       <li key={item.id}>
                         <span className="calendar-tooltip-consultation-main">
-                          {getAppointmentTime(item)} - {item.pacienteNome || "Paciente"}
+                          {getAppointmentTime(item)} - {item.pacienteNome || "Atleta"}
                         </span>
                         <span className="calendar-tooltip-consultation-meta">
                           {getAppointmentTypeLabel(item.appointmentType)} | {getPerformerName(item)}
@@ -365,7 +375,7 @@ const DashboardStats = () => {
 
   useEffect(() => {
     loadDashboardData();
-    const intervalId = setInterval(() => loadDashboardData(true), 60000);
+    const intervalId = setInterval(() => loadDashboardData(true), DASHBOARD_REFRESH_INTERVAL);
     return () => clearInterval(intervalId);
   }, [loadDashboardData]);
 
@@ -489,7 +499,7 @@ const DashboardStats = () => {
       notify({
         type: "success",
         title: "Tarefa atualizada",
-        message: "Titulo atualizado com sucesso."
+        message: "Título atualizado com sucesso."
       });
       handleCancelEdit();
     } catch (error) {
@@ -503,24 +513,24 @@ const DashboardStats = () => {
   };
 
   const statCards = [
-    { id: 1, title: "Total Pacientes", value: stats.totalPatients, icon: Users, color: "blue", delay: 1 },
+    { id: 1, title: "Total Atletas", value: stats.totalPatients, icon: Users, color: "blue", delay: 1 },
     { id: 2, title: "Professores/Profissionais", value: stats.professors, icon: GraduationCap, color: "purple", delay: 2 },
-    { id: 3, title: "Em Atendimento", value: stats.activePatients, icon: Activity, gradient: true, color: "green", description: "Pacientes ativos", delay: 3 },
+    { id: 3, title: "Em Atendimento", value: stats.activePatients, icon: Activity, gradient: true, color: "green", description: "Atletas ativos", delay: 3 },
     { id: 4, title: "Fila de Espera", value: stats.waitingList, icon: ClipboardList, color: "orange", delay: 4 }
   ];
 
   const insights = [
     { id: 1, title: "Consultas hoje", value: appointmentMetrics.todayCount, subtitle: "Agenda do dia", tone: "primary" },
     { id: 2, title: "Consultas 7 dias", value: appointmentMetrics.weekCount, subtitle: "Próxima semana", tone: "info" },
-    { id: 3, title: "Taxa de faltas", value: `${appointmentMetrics.noShowRate}%`, subtitle: "Ultimos 30 dias", tone: "danger" },
-    { id: 4, title: "Taxa de remarcacao", value: `${appointmentMetrics.rescheduleRate}%`, subtitle: "Ultimos 30 dias", tone: "warning" },
-    { id: 5, title: "Consultas realizadas", value: `${appointmentMetrics.completionRate}%`, subtitle: "Ultimos 30 dias", tone: "success" }
+    { id: 3, title: "Taxa de faltas", value: `${appointmentMetrics.noShowRate}%`, subtitle: "Últimos 30 dias", tone: "danger" },
+    { id: 4, title: "Taxa de remarcação", value: `${appointmentMetrics.rescheduleRate}%`, subtitle: "Últimos 30 dias", tone: "warning" },
+    { id: 5, title: "Consultas realizadas", value: `${appointmentMetrics.completionRate}%`, subtitle: "Últimos 30 dias", tone: "success" }
   ];
 
   const pulseCards = [
     { id: "pulse-1", title: "Hoje", value: appointmentMetrics.todayCount, subtitle: "Consultas", tone: "primary" },
-    { id: "pulse-2", title: "Proximos 7 dias", value: appointmentMetrics.weekCount, subtitle: "Agenda geral", tone: "info" },
-    { id: "pulse-3", title: "Conclusao", value: `${appointmentMetrics.completionRate}%`, subtitle: "Ultimos 30 dias", tone: "success" },
+    { id: "pulse-2", title: "Próximos 7 dias", value: appointmentMetrics.weekCount, subtitle: "Agenda geral", tone: "info" },
+    { id: "pulse-3", title: "Conclusão", value: `${appointmentMetrics.completionRate}%`, subtitle: "Últimos 30 dias", tone: "success" },
     { id: "pulse-4", title: "Fila de espera", value: stats.waitingList, subtitle: "Triagem/Espera", tone: "warning" }
   ];
 
@@ -532,14 +542,24 @@ const DashboardStats = () => {
     return first ? `${first.charAt(0).toUpperCase()}${first.slice(1)}` : 'Admin';
   }, [user]);
 
-  if (isLoading) return <div className="loading-state">Carregando dados...</div>;
+  if (isLoading) {
+    return (
+      <div className="dashboard-stats">
+        <div className="stats-grid">
+          {[...Array(4)].map((_, index) => (
+            <div key={index} className="skeleton-card" style={{ height: 120 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-stats">
       <div className="dashboard-top">
         <div className="dashboard-greeting">
-          <p className="greeting-label">Bem vindo</p>
-          <h2>Ola, {firstName}</h2>
+          <p className="greeting-label">Bem-vindo</p>
+          <h2>Olá, {firstName}</h2>
           <span>Confira os principais indicadores do dia.</span>
         </div>
         <div className="pulse-grid">
@@ -569,7 +589,6 @@ const DashboardStats = () => {
                 <Activity size={20} className="text-blue" />
                 <h3>Atividades recentes</h3>
               </div>
-              <button className="btn-ghost">Ver tudo <ChevronRight size={16} /></button>
             </div>
             <div className="activities-list">
               {recentActivities.length === 0 ? (
@@ -601,7 +620,7 @@ const DashboardStats = () => {
                 <strong>{taskStats.em_andamento}</strong>
               </div>
               <div>
-                <span>Concluidas</span>
+                <span>Concluídas</span>
                 <strong>{taskStats.concluida}</strong>
               </div>
             </div>
@@ -623,7 +642,7 @@ const DashboardStats = () => {
               <select value={taskStatus} onChange={(e) => setTaskStatus(e.target.value)}>
                 <option value="pendente">Pendente</option>
                 <option value="em_andamento">Em andamento</option>
-                <option value="concluida">Concluida</option>
+                <option value="concluida">Concluída</option>
               </select>
               <button type="button" onClick={handleAddTask}>Adicionar</button>
             </div>
@@ -632,7 +651,7 @@ const DashboardStats = () => {
                 <button type="button" onClick={() => setTaskFilter("all")} className={taskFilter === "all" ? "active" : ""}>Todos</button>
                 <button type="button" onClick={() => setTaskFilter("pendente")} className={taskFilter === "pendente" ? "active" : ""}>Pendentes</button>
                 <button type="button" onClick={() => setTaskFilter("em_andamento")} className={taskFilter === "em_andamento" ? "active" : ""}>Em andamento</button>
-                <button type="button" onClick={() => setTaskFilter("concluida")} className={taskFilter === "concluida" ? "active" : ""}>Concluidas</button>
+                <button type="button" onClick={() => setTaskFilter("concluida")} className={taskFilter === "concluida" ? "active" : ""}>Concluídas</button>
               </div>
               <input
                 type="text"
@@ -673,9 +692,9 @@ const DashboardStats = () => {
                       <button type="button" onClick={() => handleToggleTask(task)} className="task-toggle">
                         {task.status || "pendente"}
                       </button>
-                      <button type="button" onClick={() => handleStartEdit(task)} className="task-edit-btn">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => handleStartEdit(task)}>
                         <Edit2 size={14} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -715,3 +734,4 @@ const DashboardStats = () => {
 };
 
 export default DashboardStats;
+

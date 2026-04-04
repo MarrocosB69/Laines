@@ -1,0 +1,412 @@
+.clinica-form.clinica-form--modern {
+  border-radius: 20px;
+  border: 1px solid rgba(14, 116, 144, 0.2);
+}
+
+.clinica-form .eval-icon {
+  background: rgba(225, 29, 72, 0.10);
+  color: #be123c;
+  box-shadow: 0 8px 20px rgba(225, 29, 72, 0.12);
+}
+
+.clinica-form .clinica-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.clinica-form .clinica-unit-badge {
+  font-size: 0.62rem;
+  padding: 0.08rem 0.36rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.clinica-form .clinica-required-dot {
+  color: #dc2626;
+  margin-left: 0.2rem;
+  font-weight: 900;
+}
+
+.clinica-form .clinica-optional-badge {
+  font-size: 0.6rem;
+  padding: 0.08rem 0.34rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #475569;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  font-weight: 800;
+}
+
+.clinica-form .clinica-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 116, 144, 0.3);
+  background: #ffffff;
+  color: #0f5a73;
+  font-size: 0.66rem;
+  font-weight: 800;
+  margin-left: 0.2rem;
+  cursor: help;
+}
+
+.clinica-form .clinica-help:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.2);
+}
+
+.clinica-form .clinica-help-tooltip {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  width: min(320px, 85vw);
+  background: #0f2432;
+  color: #e2f1fa;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 10px;
+  padding: 0.5rem 0.56rem;
+  display: grid;
+  gap: 0.24rem;
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.clinica-form .clinica-help-tooltip span {
+  font-size: 0.69rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.clinica-form .clinica-help:hover .clinica-help-tooltip,
+.clinica-form .clinica-help:focus-visible .clinica-help-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.clinica-form .clinica-input-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.clinica-form .clinica-input-warning {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.clinica-form .clinica-field-message {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.clinica-form .clinica-field-message.is-error {
+  color: #b91c1c;
+}
+
+.clinica-form .clinica-field-message.is-warning {
+  color: #b45309;
+}
+
+.clinica-form .clinica-sign-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.clinica-form .clinica-sign-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.35rem 0.5rem;
+}
+
+.clinica-form .clinica-sign-item span {
+  font-size: 0.72rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.clinica-form .clinica-results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.68rem;
+}
+
+.clinica-form .clinica-result-card {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.72rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.clinica-form .clinica-result-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.clinica-form .clinica-result-card__header h6 {
+  margin: 0;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  font-weight: 800;
+}
+
+.clinica-form .clinica-result-card__value {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.clinica-form .clinica-result-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.clinica-form .clinica-result-card__meta small {
+  color: #64748b;
+  font-size: 0.67rem;
+  font-weight: 600;
+}
+
+.clinica-form .clinica-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.14rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.63rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.clinica-form .clinica-tone-success {
+  background: rgba(34, 197, 94, 0.16);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.clinica-form .clinica-tone-warning {
+  background: rgba(234, 179, 8, 0.18);
+  color: #854d0e;
+  border-color: rgba(234, 179, 8, 0.34);
+}
+
+.clinica-form .clinica-tone-danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.clinica-form .clinica-tone-info {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0c4a6e;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.clinica-form .clinica-tone-neutral {
+  background: rgba(148, 163, 184, 0.14);
+  color: #334155;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.clinica-form .clinica-delta {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.clinica-form .clinica-delta.is-up,
+.clinica-form .is-up {
+  color: #047857;
+}
+
+.clinica-form .clinica-delta.is-down,
+.clinica-form .is-down {
+  color: #b91c1c;
+}
+
+.clinica-form .clinica-delta.is-flat,
+.clinica-form .is-flat {
+  color: #475569;
+}
+
+.clinica-form .clinica-flag-list {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.clinica-form .clinica-flag-item {
+  border-radius: 10px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #ffffff;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.clinica-form .clinica-flag-item.severity-warning {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(254, 249, 195, 0.5);
+}
+
+.clinica-form .clinica-flag-item.severity-danger {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(254, 226, 226, 0.6);
+}
+
+.clinica-form .clinica-flag-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.clinica-form .clinica-flag-title strong {
+  font-size: 0.73rem;
+  color: #1e293b;
+}
+
+.clinica-form .clinica-flag-item small {
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.clinica-form .clinica-comparison {
+  margin-top: 0.92rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.24);
+  padding-top: 0.76rem;
+}
+
+.clinica-form .clinica-comparison h5 {
+  margin: 0 0 0.45rem;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #334155;
+  font-weight: 800;
+}
+
+.clinica-form .clinica-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+}
+
+.clinica-form .clinica-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.clinica-form .clinica-table th {
+  text-align: left;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  padding: 0.48rem 0.55rem;
+  background: #f1f5f9;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.clinica-form .clinica-table td {
+  padding: 0.48rem 0.55rem;
+  font-size: 0.74rem;
+  color: #1e293b;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+}
+
+.clinica-form .clinica-table tr:last-child td {
+  border-bottom: none;
+}
+
+.clinica-form .clinica-sparklines {
+  margin-top: 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.clinica-form .clinica-sparkline-card {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.52rem;
+}
+
+.clinica-form .clinica-sparkline-card p {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.clinica-form .mini-sparkline {
+  width: 100%;
+  height: 72px;
+}
+
+.clinica-form .clinica-interpretation {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.clinica-form .clinica-error-note {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(254, 226, 226, 0.8);
+  color: #991b1b;
+}
+
+@media (max-width: 1024px) {
+  .clinica-form .clinica-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .clinica-form .clinica-sparklines {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .clinica-form .clinica-grid,
+  .clinica-form .clinica-results-grid,
+  .clinica-form .clinica-sign-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .clinica-form {
+    padding: 0.75rem 0.5rem !important;
+  }
+}
+

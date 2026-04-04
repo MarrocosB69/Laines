@@ -296,13 +296,38 @@
 
 .team-empty {
   border-radius: 0.9rem;
-  border: 1px dashed rgba(100, 116, 139, 0.35);
+  border: 1px dashed rgba(100, 116, 139, 0.28);
   background: rgba(248, 250, 252, 0.94);
-  padding: 0.9rem;
+  padding: 2rem 1.5rem;
   color: #64748b;
   text-align: center;
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-size: 0.84rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-empty::before {
+  content: '👥';
+  font-size: 1.8rem;
+  opacity: 0.35;
+  display: block;
+  line-height: 1;
+}
+
+.team-empty strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1d3350;
+}
+
+.team-empty span {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.5;
+  max-width: 220px;
 }
 
 @media (max-width: 960px) {
@@ -329,4 +354,76 @@
   .team-list {
     padding: 0.86rem;
   }
+}
+
+/* Parte 3 — harmonização visual (Equipe) */
+.team-portal {
+  color: var(--color-text-primary);
+}
+
+.team-header {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.team-header h1,
+.team-detail-header h2,
+.team-metric strong,
+.team-list-item strong {
+  color: var(--color-navy);
+}
+
+.team-header p,
+.team-subtext,
+.team-text,
+.team-list-item span,
+.team-metric span {
+  color: var(--color-text-muted);
+}
+
+.team-badge {
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-navy);
+}
+
+.team-logout-btn {
+  border-radius: var(--radius-md);
+}
+
+.team-list,
+.team-detail,
+.team-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.team-list-item {
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+}
+
+.team-list-item:hover {
+  border-color: rgba(16, 51, 85, 0.26);
+  box-shadow: var(--shadow-sm);
+}
+
+.team-list-item.active {
+  border-color: rgba(16, 51, 85, 0.34);
+  background: rgba(16, 51, 85, 0.08);
+}
+
+.team-status {
+  border: 1px solid rgba(16, 51, 85, 0.2);
+  background: rgba(16, 51, 85, 0.08);
+  color: var(--color-navy);
+}
+
+.team-eval-item,
+.team-empty {
+  border-radius: var(--radius-md);
 }

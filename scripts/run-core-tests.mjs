@@ -20,6 +20,12 @@ import {
   normalizeUserList,
   normalizeUserRecord
 } from '../src/utils/userAdapter.js';
+import {
+  calculateHydrationEvaluation,
+  calculateNovaEvaluation,
+  calculateLaboratoryEvaluation,
+  calculateEvolutionReturnEvaluation
+} from '../src/services/calculationEngine.js';
 
 const require = createRequire(import.meta.url);
 const { extractClientIp } = require('../server/dist/common/request-ip.js');
@@ -40,11 +46,100 @@ const { UsersService } = require('../server/dist/users/users.service.js');
 const { ObservabilityController } = require('../server/dist/observability/observability.controller.js');
 const { ObservabilityService } = require('../server/dist/observability/observability.service.js');
 const { normalizeBioimpedanciaPayload } = require('../server/dist/avaliacoes/bioimpedancia-normalizer.js');
+const { normalizeDobrasCutaneasPayload } = require('../server/dist/avaliacoes/dobras-cutaneas-normalizer.js');
+const { normalizePerimetrosPayload } = require('../server/dist/avaliacoes/perimetros-normalizer.js');
+const { normalizeComposicaoCorporalIntegradaPayload } = require('../server/dist/avaliacoes/composicao-corporal-integrada-normalizer.js');
+const { normalizeGastoEnergeticoTotalPayload } = require('../server/dist/avaliacoes/gasto-energetico-total-normalizer.js');
+const { normalizeAvaliacaoAlimentarPayload } = require('../server/dist/avaliacoes/alimentar-normalizer.js');
+const { normalizeHidratacaoPayload } = require('../server/dist/avaliacoes/hidratacao-normalizer.js');
+const { normalizeAvaliacaoSocioeconomicaPayload } = require('../server/dist/avaliacoes/avaliacao-socioeconomica-normalizer.js');
+const { normalizeFisioterapiaPayload } = require('../server/dist/avaliacoes/fisioterapia-normalizer.js');
+const { normalizePsicologiaPayload } = require('../server/dist/avaliacoes/psicologia-normalizer.js');
+const { normalizeExamesLaboratoriaisPayload } = require('../server/dist/avaliacoes/exames-laboratoriais-normalizer.js');
+const { normalizeEvolucaoRetornoPayload } = require('../server/dist/avaliacoes/evolucao-retorno-normalizer.js');
+const { AvaliacoesService } = require('../server/dist/avaliacoes/avaliacoes.service.js');
 const bcrypt = require('../server/node_modules/bcryptjs');
 const {
   normalizeUnicodeText,
   normalizeDeepUnicode
 } = require('../server/dist/common/text-normalization.js');
+
+const createBasicAvaliacaoQueryBuilder = () => {
+  const qb = {
+    orderBy: () => qb,
+    addOrderBy: () => qb,
+    andWhere: () => qb,
+    where: () => qb,
+    select: () => qb,
+    take: () => qb,
+    skip: () => qb,
+    setParameters: () => qb,
+    getMany: async () => [],
+    getRawMany: async () => []
+  };
+  return qb;
+};
+
+const createAvaliacaoServiceHarness = ({ pacienteOverrides = {}, repoOverrides = {} } = {}) => {
+  const paciente = {
+    id: 'paciente-1',
+    atletaUserId: 'atleta-1',
+    alunoResponsavelId: 'aluno-1',
+    projetoId: null,
+    projetoNome: '',
+    equipeTecnicaIds: [],
+    confirmacaoAtleta: {
+      ebiaSelfForm: {
+        enabled: true,
+        releaseId: 'release-1',
+        releasedAt: '2026-03-20T12:00:00.000Z',
+        releasedById: 'staff-1',
+        releasedByName: 'Equipe'
+      }
+    },
+    ...pacienteOverrides
+  };
+
+  const repo = {
+    createQueryBuilder: () => createBasicAvaliacaoQueryBuilder(),
+    create: (payload) => ({ id: 'avaliacao-1', ...payload }),
+    save: async (payload) => ({ id: payload?.id || 'avaliacao-1', ...payload }),
+    count: async () => 0,
+    ...repoOverrides
+  };
+  const sessoesRepo = {
+    findOne: async ({ where }) => {
+      if (where?.id) {
+        return { id: where.id, pacienteId: paciente.id, status: 'rascunho' };
+      }
+      return null;
+    },
+    save: async (payload) => payload
+  };
+  const pacientesRepo = {
+    findOne: async ({ where }) => (where?.id === paciente.id ? paciente : null),
+    save: async () => undefined,
+    createQueryBuilder: () => ({
+      select: () => pacientesRepo.createQueryBuilder(),
+      where: () => pacientesRepo.createQueryBuilder(),
+      andWhere: () => pacientesRepo.createQueryBuilder(),
+      getQuery: () => 'SELECT id FROM pacientes',
+      getParameters: () => ({})
+    })
+  };
+  const usersRepo = {
+    findOne: async ({ where }) => {
+      if (where?.id === 'aluno-1') {
+        return { id: 'aluno-1', role: 'aluno', status: 'ativo' };
+      }
+      return null;
+    }
+  };
+  const realtime = { emit: () => undefined };
+  const service = new AvaliacoesService(repo, sessoesRepo, pacientesRepo, usersRepo, realtime, undefined, undefined);
+  service.syncSessaoStatus = async () => undefined;
+  return { service };
+};
 
 const tests = [
   {
@@ -590,6 +685,626 @@ const tests = [
       const fileContent = fs.readFileSync(eventsFile, 'utf8');
       assert.ok(fileContent.includes('"type":"error"'));
       assert.ok(fileContent.includes('"type":"alert"'));
+    }
+  },
+  {
+    name: 'calculation.hydration-core-metrics',
+    run: () => {
+      const result = calculateHydrationEvaluation({
+        pesoAntesExercicio: 70,
+        pesoAposExercicio: 68.9,
+        duracaoExercicioMin: 60,
+        volumeIngeridoMl: 500,
+        volumeUrinarioMl: 100
+      });
+
+      assert.equal(Number(result.metrics.perdaPesoAbsolutaKg.toFixed(3)), 1.1);
+      assert.equal(Number(result.metrics.perdaPesoPercentual.toFixed(2)), 1.57);
+      assert.equal(Math.round(result.metrics.perdaHidricaLiquidaMl), 1500);
+      assert.equal(Number(result.metrics.taxaSudoreseLh.toFixed(2)), 1.5);
+      assert.equal(result.classification.label, 'Leve desidratacao');
+      assert.equal(result.warnings.length, 0);
+    }
+  },
+  {
+    name: 'calculation.hydration-invalid-input-warnings',
+    run: () => {
+      const result = calculateHydrationEvaluation({
+        pesoAntesExercicio: 70,
+        pesoAposExercicio: 71,
+        duracaoExercicioMin: 0
+      });
+
+      assert.equal(result.classification.label, 'Sem perda relevante');
+      assert.ok(result.warnings.some((item) => /maior que o peso antes/i.test(item)));
+      assert.ok(result.warnings.some((item) => /Duracao do exercicio deve ser maior que zero/i.test(item)));
+      assert.ok(result.warnings.some((item) => /Balanco hidrico liquido negativo/i.test(item)));
+    }
+  },
+  {
+    name: 'calculation.nova-distribution-and-classification',
+    run: () => {
+      const result = calculateNovaEvaluation({
+        kcalInNatura: 400,
+        kcalMinimamenteProcessados: 300,
+        kcalProcessados: 200,
+        kcalUltraprocessados: 100
+      });
+
+      assert.equal(result.totals.totalDiario, 1000);
+      assert.equal(result.percentuais.in_natura, 40);
+      assert.equal(result.percentuais.minimamente_processados, 30);
+      assert.equal(result.percentuais.processados, 20);
+      assert.equal(result.percentuais.ultraprocessados, 10);
+      assert.equal(result.classification.label, 'Padrao moderado');
+      assert.equal(result.warnings.length, 0);
+    }
+  },
+  {
+    name: 'calculation.nova-empty-and-inconsistency-warnings',
+    run: () => {
+      const empty = calculateNovaEvaluation({});
+      assert.ok(empty.warnings.some((item) => /Sem kcal por grupo NOVA e sem kcal total informado/i.test(item)));
+
+      const mismatch = calculateNovaEvaluation({
+        kcalTotalInformado: 1500,
+        kcalInNatura: 300
+      });
+      assert.equal(mismatch.totals.totalDiarioCalculado, 300);
+      assert.equal(mismatch.totals.inconsistenciaKcal, 1200);
+      assert.equal(mismatch.percentuais.in_natura, 100);
+      assert.equal(mismatch.percentuaisSobreTotalInformado.in_natura, 20);
+      assert.ok(mismatch.warnings.some((item) => /Diferenca relevante entre total informado e soma dos grupos NOVA/i.test(item)));
+    }
+  },
+  {
+    name: 'calculation.laboratory-classification-and-counts',
+    run: () => {
+      const result = calculateLaboratoryEvaluation({
+        painel: 'lipidograma',
+        analitos: [
+          { nome: 'LDL', valor: 151, referenciaMin: 0, referenciaMax: 129, unidade: 'mg/dL' },
+          { nome: 'HDL', valor: 45, referenciaMin: 40, referenciaMax: 60, unidade: 'mg/dL' }
+        ],
+        previousAnalitos: [
+          { nome: 'LDL', valor: 170 },
+          { nome: 'HDL', valor: 41 }
+        ]
+      });
+
+      assert.equal(result.classifications.statusPainel, 'alterado');
+      assert.equal(result.calculated.alteracoesCount, 1);
+      assert.equal(result.calculated.normaisCount, 1);
+      assert.equal(result.inputNormalized.analitos.length, 2);
+      assert.equal(result.inputNormalized.analitos[0].variacao.deltaAbs, -19);
+    }
+  },
+  {
+    name: 'calculation.evolution-score-and-priority',
+    run: () => {
+      const result = calculateEvolutionReturnEvaluation({
+        adesaoPlanoAlimentar: 80,
+        adesaoAtividadeFisica: 70,
+        respostaPercebida: 4,
+        objetivos: ['emagrecimento']
+      });
+
+      assert.equal(Number(result.calculated.scoreAdesaoGeral.toFixed(2)), 75.75);
+      assert.equal(result.classifications.prioridadeRetorno, 'baixa');
+      assert.equal(Array.isArray(result.calculated.resumoObjetivos), true);
+      assert.equal(result.calculated.resumoObjetivos.length, 1);
+    }
+  },
+  {
+    name: 'avaliacoes.exames-laboratoriais-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeExamesLaboratoriaisPayload({
+        tipo: 'exames_laboratoriais',
+        dados: {
+          painel: 'glicemia',
+          analitos: [
+            { nome: 'Glicose', valor: '108', referenciaMin: '70', referenciaMax: '99', unidade: 'mg/dL' }
+          ]
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.dados_brutos?.painel, 'glicemia');
+      assert.equal(Array.isArray(payload?.dados?.dados_brutos?.analitos), true);
+      assert.equal(payload?.dados?.resultados_calculados?.alteracoesCount, 1);
+      assert.equal(payload?.dados?.classificacoes?.statusPainel, 'alterado');
+      assert.equal(payload?.formulaId, 'lab_ref_range_v1');
+      assert.equal(payload?.formulaVersion, '1.0.0');
+    }
+  },
+  {
+    name: 'avaliacoes.evolucao-retorno-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeEvolucaoRetornoPayload({
+        tipo: 'evolucao_retorno',
+        dados: {
+          adesaoPlanoAlimentar: '60',
+          adesaoAtividadeFisica: '40',
+          respostaPercebida: '3',
+          sintomas: 'fadiga recorrente'
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.resultados_calculados?.scoreAdesaoGeral, 51.5);
+      assert.equal(payload?.dados?.classificacoes?.prioridadeRetorno, 'alta');
+      assert.equal(payload?.formulaId, 'evolucao_adesao_score_v1');
+      assert.equal(payload?.formulaVersion, '1.0.0');
+    }
+  },
+  {
+    name: 'avaliacoes.dobras-cutaneas-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeDobrasCutaneasPayload({
+        tipo: 'dobras_cutaneas',
+        dados: {
+          protocoloDobras: 'jackson_pollock_7',
+          sexo: 'male',
+          dobras: {
+            peitoral: '10.5',
+            abdominal: '14.2'
+          },
+          resultados_calculados: {
+            percentual_gordura: '18.2',
+            massa_magra_kg: '56.1'
+          }
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.protocolo, 'jackson_pollock_7');
+      assert.equal(payload?.dados?.dobras?.peitoral, 10.5);
+      assert.equal(payload?.dados?.resultados_calculados?.percentualGordura, 18.2);
+      assert.equal(payload?.dados?.resultados_calculados?.massaMagra, 56.1);
+      assert.equal(String(payload?.formulaId).startsWith('jackson_pollock_7-'), true);
+    }
+  },
+  {
+    name: 'avaliacoes.perimetros-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizePerimetrosPayload({
+        tipo: 'perimetros',
+        dados: {
+          peso_kg: '80',
+          estatura_cm: '180',
+          cintura_cm: '90',
+          foco_cardiometabolico: true,
+          resultados_calculados: {
+            imc: '24.69',
+            indiceCinturaEstatura: '0.5'
+          },
+          classificacoes: {
+            imc: 'Eutrofia'
+          }
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.peso, 80);
+      assert.equal(payload?.dados?.estatura, 1.8);
+      assert.equal(payload?.dados?.resultados_calculados?.indice_cintura_estatura, 0.5);
+      assert.equal(payload?.resultados?.calculated?.imc, 24.69);
+      assert.equal(payload?.resultados?.output?.imc, 'Eutrofia');
+    }
+  },
+  {
+    name: 'avaliacoes.composicao-integrada-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeComposicaoCorporalIntegradaPayload({
+        tipo: 'composicao_corporal_integrada',
+        dados: {
+          fonte_oficial: 'perimetros',
+          resultados_calculados: {
+            percentualGorduraOficial: '21.8',
+            massaMagraOficialKg: '54.2',
+            tmbSelecionadaKcal: '1620',
+            getEstimadoKcal: '2511'
+          }
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.fonte_oficial, 'perimetros');
+      assert.equal(payload?.dados?.percentualGorduraOficial, 21.8);
+      assert.equal(payload?.dados?.massaMagraOficialKg, 54.2);
+      assert.equal(payload?.dados?.tmbSelecionadaKcal, 1620);
+      assert.equal(payload?.resultados?.tmb_kcal, 1620);
+    }
+  },
+  {
+    name: 'avaliacoes.gasto-energetico-total-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeGastoEnergeticoTotalPayload({
+        tipo: 'gasto_energetico_total',
+        dados: {
+          resultados_calculados: {
+            tmbBaseKcal: '1500',
+            fatorAtividade: '1.6'
+          },
+          classificacoes: {
+            alertaIngestaoIntensa: false
+          }
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.resultados_calculados?.tmbBaseKcal, 1500);
+      assert.equal(payload?.dados?.resultados_calculados?.fatorAtividade, 1.6);
+      assert.equal(payload?.dados?.resultados_calculados?.getEstimadoKcal, 2400);
+      assert.equal(payload?.resultados?.get_kcal, 2400);
+      assert.equal(payload?.formulaId, 'mifflin_st_jeor_1990');
+    }
+  },
+  {
+    name: 'avaliacoes.alimentar-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeAvaliacaoAlimentarPayload({
+        tipo: 'alimentar',
+        dados: {
+          kcalInNatura: '400',
+          kcalMinimamenteProcessados: '300',
+          kcalProcessados: '200',
+          kcalUltraprocessados: '100'
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.categorias?.in_natura, 400);
+      assert.equal(payload?.dados?.categorias?.ultraprocessados, 100);
+      assert.equal(payload?.dados?.totalDiarioCalculado, 1000);
+      assert.equal(payload?.resultados?.percentuais?.ultraprocessados, 10);
+      assert.equal(payload?.classificacao, 'Padrao moderado');
+    }
+  },
+  {
+    name: 'avaliacoes.hidratacao-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeHidratacaoPayload({
+        tipo: 'hidratacao',
+        dados: {
+          pesoAntesExercicio: '70',
+          pesoAposExercicio: '68.9',
+          duracaoExercicioMin: '60',
+          volumeIngeridoMl: '500',
+          volumeUrinarioMl: '100'
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.perdaPesoAbsolutaKg, 1.1);
+      assert.equal(payload?.dados?.perdaPesoPercentual, 1.57);
+      assert.equal(payload?.dados?.perdaHidricaLiquidaMl, 1500);
+      assert.equal(payload?.resultados?.output?.classificacaoHidrica, 'Leve desidratacao');
+    }
+  },
+  {
+    name: 'avaliacoes.socioeconomica-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeAvaliacaoSocioeconomicaPayload({
+        tipo: 'avaliacao_socioeconomica',
+        dados: {
+          temMenores: false,
+          respostas: {
+            q1: true,
+            q2: true,
+            q3: false,
+            q4: false,
+            q5: false,
+            q6: false,
+            q7: false,
+            q8: false
+          }
+        },
+        resultados: {}
+      });
+
+      assert.equal(payload?.dados?.temMenores, false);
+      assert.equal(payload?.dados?.respostas?.q1, true);
+      assert.equal(payload?.pontuacaoEBIA, 2);
+      assert.equal(payload?.classificacao, 'IL');
+      assert.match(payload?.classificacaoLabel || '', /Leve/i);
+    }
+  },
+  {
+    name: 'avaliacoes.fisioterapia-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizeFisioterapiaPayload({
+        tipo: 'fisioterapia',
+        dados: {
+          queixaPrincipal: 'Dor lombar',
+          intensidadeDor: '7',
+          mobilidade: 'Limitada'
+        }
+      });
+
+      assert.equal(payload?.dados?.queixaPrincipal, 'Dor lombar');
+      assert.equal(payload?.dados?.intensidadeDor, 7);
+      assert.equal(payload?.formulaId, 'fisioterapia_funcional_basica');
+    }
+  },
+  {
+    name: 'avaliacoes.psicologia-normalizer-canonical-shape',
+    run: () => {
+      const payload = normalizePsicologiaPayload({
+        tipo: 'psicologia',
+        dados: {
+          objetivo: 'Reduzir ansiedade',
+          estresse: '6',
+          sono: 'Regular'
+        }
+      });
+
+      assert.equal(payload?.dados?.objetivo, 'Reduzir ansiedade');
+      assert.equal(payload?.dados?.estresse, 6);
+      assert.equal(payload?.formulaId, 'psicologia_triagem_emocional');
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-composicao-integrada',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'composicao_corporal_integrada',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            fonte_oficial: 'perimetros',
+            resultados_calculados: {
+              percentualGorduraOficial: 21.8,
+              massaMagraOficialKg: 54.2
+            }
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Composicao integrada exige fonte oficial/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-get',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'gasto_energetico_total',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            resultados_calculados: {
+              tmbBaseKcal: 1500
+            }
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /GET exige TMB base, fator de atividade e GET estimado validos/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-alimentar',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'alimentar',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            categorias: {
+              in_natura: 0,
+              minimamente_processados: 0,
+              processados: 0,
+              ultraprocessados: 0
+            }
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Avaliacao alimentar exige informar kcal consumidas nos grupos NOVA/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-hidratacao',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'hidratacao',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            pesoAntesExercicio: 70,
+            pesoAposExercicio: 69,
+            duracaoExercicioMin: 0
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Hidratacao exige peso antes, peso apos e duracao de exercicio validos/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-fisioterapia',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'fisioterapia',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            queixaPrincipal: '',
+            intensidadeDor: 5
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Fisioterapia exige queixa principal e intensidade de dor \(0-10\)/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-psicologia',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'psicologia',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            objetivo: 'Controle emocional',
+            estresse: 11
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Psicologia exige objetivo e nivel de estresse \(0-10\)/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-athlete-blocks-non-ebia',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'bioimpedancia',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {}
+        }, {
+          id: 'atleta-1',
+          role: 'atleta',
+          email: 'atleta@teste.com',
+          name: 'Atleta Teste'
+        }),
+        /Atleta pode preencher apenas o formulario EBIA/
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-athlete-allows-ebia-when-release-enabled',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      const saved = await service.create({
+        tipo: 'avaliacao_socioeconomica',
+        pacienteId: 'paciente-1',
+        sessaoId: 'sessao-1',
+        dados: {
+          temMenores: false,
+          respostas: {
+            q1: false,
+            q2: false,
+            q3: false,
+            q4: false,
+            q5: false,
+            q6: false,
+            q7: false,
+            q8: false
+          }
+        },
+        pontuacaoEBIA: 0,
+        classificacao: 'SA',
+        classificacaoLabel: 'Seguranca Alimentar'
+      }, {
+        id: 'atleta-1',
+        role: 'atleta',
+        email: 'atleta@teste.com',
+        name: 'Atleta Teste'
+      });
+
+      assert.equal(saved.tipo, 'avaliacao_socioeconomica');
+      assert.equal(saved.status, 'finalizada');
+      assert.equal(saved.alunoId, 'aluno-1');
+      assert.equal(saved.pacienteId, 'paciente-1');
+      assert.equal(saved.sessaoId, 'sessao-1');
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-athlete-blocks-incomplete-ebia',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'avaliacao_socioeconomica',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            temMenores: false,
+            respostas: { q1: true }
+          },
+          pontuacaoEBIA: 1,
+          classificacao: 'IL',
+          classificacaoLabel: 'Inseguranca Alimentar Leve'
+        }, {
+          id: 'atleta-1',
+          role: 'atleta',
+          email: 'atleta@teste.com',
+          name: 'Atleta Teste'
+        }),
+        /EBIA incompleta/
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.findall-requires-filter-for-athlete',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.findAll(
+          { id: 'atleta-1', role: 'atleta', email: 'atleta@teste.com', name: 'Atleta Teste' },
+          {}
+        ),
+        /Perfil atleta deve informar pacienteId ou projetoId/
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.findall-admin-global-requires-limit',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.findAll(
+          { id: 'admin-1', role: 'admin', email: 'admin@teste.com', name: 'Admin Teste' },
+          {}
+        ),
+        /Consultas administrativas sem filtros devem informar limit/
+      );
     }
   },
   {

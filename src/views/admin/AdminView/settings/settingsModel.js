@@ -4,7 +4,7 @@ export const SETTINGS_AUDIT_SCOPE = 'admin_console';
 export const SETTINGS_ALLOWED_ROLES = new Set(['admin', 'coordenacao', 'presidente', 'vice']);
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  name: 'Coordenacao Geral',
+  name: 'Coordenação Geral',
   email: 'coordenacao@laineslab.org',
   phone: '(11) 99999-9999',
   darkMode: false,

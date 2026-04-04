@@ -14,6 +14,8 @@ import { access, unlink } from 'fs/promises';
 import { basename, extname, resolve } from 'path';
 import { Paciente } from './paciente.entity';
 import { User } from '../users/user.entity';
+import { UsersService } from '../users/users.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 import { CriarPacienteDto } from './dto/criar-paciente.dto';
 import { AtualizarPacienteDto } from './dto/atualizar-paciente.dto';
 import { AtualizarOnboardingAtletaDto } from './dto/atualizar-onboarding-atleta.dto';
@@ -35,7 +37,10 @@ const ATTACHMENT_MIME_BY_EXT: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg'
 };
-type AtualizarPacienteWithMetadata = AtualizarPacienteDto & { linkedAt?: Date | null };
+type AtualizarPacienteWithMetadata = AtualizarPacienteDto & {
+  linkedAt?: Date | null;
+  prontuario?: string;
+};
 
 const PACIENTE_STATUS_VALUES = [
   'Ativo',
@@ -51,6 +56,7 @@ export class PacientesService {
   constructor(
     @InjectRepository(Paciente) private repo: Repository<Paciente>,
     @InjectRepository(User) private usersRepo: Repository<User>,
+    private usersService: UsersService,
     private realtime: RealtimeGateway,
     private readonly config: ConfigService,
     @Optional() private readonly observability?: ObservabilityService
@@ -62,6 +68,60 @@ export class PacientesService {
       durationMs: Date.now() - startedAt,
       context
     });
+  }
+
+  private asObject(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return {};
+    }
+    return value as Record<string, unknown>;
+  }
+
+  private normalizeText(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  }
+
+  private normalizeStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.normalizeText(item))
+        .filter(Boolean);
+    }
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }
+
+  private extractClinicalSummaryFromOnboarding(
+    onboardingData: Record<string, unknown>
+  ): Partial<Paciente> {
+    const nextSummary: Partial<Paciente> = {};
+    if (Object.prototype.hasOwnProperty.call(onboardingData, 'observacoes')) {
+      nextSummary.observacoes = this.normalizeText(onboardingData.observacoes);
+    }
+    if (Object.prototype.hasOwnProperty.call(onboardingData, 'historicoSaude')) {
+      nextSummary.historicoSaude = this.normalizeText(onboardingData.historicoSaude);
+    }
+    if (Object.prototype.hasOwnProperty.call(onboardingData, 'comorbidadesPessoais')) {
+      nextSummary.comorbidadesPessoais = this.normalizeStringArray(onboardingData.comorbidadesPessoais);
+    }
+    if (Object.prototype.hasOwnProperty.call(onboardingData, 'comorbidadesFamiliares')) {
+      nextSummary.comorbidadesFamiliares = this.normalizeStringArray(onboardingData.comorbidadesFamiliares);
+    }
+    return nextSummary;
+  }
+
+  private async generateProntuarioNumber(): Promise<string> {
+    const result = await this.repo.query(
+      `SELECT nextval('pacientes_prontuario_seq')::bigint AS value`
+    );
+    const value = Number(result?.[0]?.value || 0);
+    return `PRT-${String(value).padStart(6, '0')}`;
   }
 
   private isTeamMember(userId: string, paciente: Paciente) {
@@ -132,6 +192,76 @@ export class PacientesService {
   private normalizeCpf(cpf?: string) {
     if (!cpf) return '';
     return cpf.replace(/\D/g, '');
+  }
+
+  private normalizeEmail(email?: string) {
+    const normalized = String(email || '').trim().toLowerCase();
+    return normalized || '';
+  }
+
+  private async resolveAthleteUserForCreate(payload: CriarPacienteDto) {
+    const requestedAthleteId = this.normalizeText(payload.atletaUserId);
+    if (requestedAthleteId) {
+      const athleteById = await this.usersRepo.findOne({ where: { id: requestedAthleteId } });
+      if (!athleteById) {
+        throw new BadRequestException('Usuario atleta informado nao foi encontrado.');
+      }
+      if (normalizeRole(athleteById.role) !== 'atleta') {
+        throw new BadRequestException('Usuario informado deve possuir cargo de atleta.');
+      }
+      return {
+        id: athleteById.id,
+        email: this.normalizeEmail(athleteById.email) || this.normalizeEmail(payload.email)
+      };
+    }
+
+    const cpf = this.normalizeCpf(payload.cpf);
+    const email = this.normalizeEmail(payload.email);
+
+    const [athleteByCpf, athleteByEmail] = await Promise.all([
+      cpf ? this.usersRepo.findOne({ where: { cpf } }) : Promise.resolve(null),
+      email ? this.usersRepo.findOne({ where: { email } }) : Promise.resolve(null)
+    ]);
+
+    if (athleteByCpf && athleteByEmail && athleteByCpf.id !== athleteByEmail.id) {
+      throw new BadRequestException(
+        'Conflito entre CPF e e-mail informado. Revise os dados do atleta antes de cadastrar.'
+      );
+    }
+
+    const existing = athleteByCpf || athleteByEmail;
+    if (existing) {
+      if (normalizeRole(existing.role) !== 'atleta') {
+        throw new BadRequestException(
+          'CPF ou e-mail informado ja pertence a um usuario que nao e atleta.'
+        );
+      }
+      return {
+        id: existing.id,
+        email: this.normalizeEmail(existing.email) || email
+      };
+    }
+
+    const athleteCreatePayload: CreateUserDto = {
+      email: email || 'placeholder@laines.ufrn.br',
+      name: this.normalizeText(payload.nome),
+      role: 'atleta',
+      cpf: payload.cpf,
+      dataNascimento: payload.dataNascimento,
+      telefone: payload.telefone,
+      status: 'ativo'
+    };
+    const createdAthlete = await this.usersService.createWithTempPassword(athleteCreatePayload);
+    const createdUser = createdAthlete?.user as { id?: string; email?: string } | undefined;
+    const createdId = this.normalizeText(createdUser?.id);
+    if (!createdId) {
+      throw new BadRequestException('Nao foi possivel criar o acesso do atleta para este paciente.');
+    }
+
+    return {
+      id: createdId,
+      email: this.normalizeEmail(createdUser?.email) || email
+    };
   }
 
   private async resolveAlunoResponsavelOrThrow(alunoId: string) {
@@ -291,6 +421,10 @@ export class PacientesService {
       }
     }
 
+    const athleteAccess = await this.resolveAthleteUserForCreate(payload);
+    payload.atletaUserId = athleteAccess.id;
+    payload.email = athleteAccess.email || payload.email;
+
     if (payload.alunoResponsavelId) {
       const aluno = await this.resolveAlunoResponsavelOrThrow(payload.alunoResponsavelId);
       payload.alunoResponsavelId = aluno.id;
@@ -327,8 +461,11 @@ export class PacientesService {
       ...safePayload
     } = payload as any;
 
+    const prontuario = await this.generateProntuarioNumber();
+
     const paciente = this.repo.create({
       ...safePayload,
+      prontuario,
       cpf,
       status: nextStatus,
       tipoTreino: payload.tipoTreino || 'misto',
@@ -454,6 +591,10 @@ export class PacientesService {
       projetoId: resolvedProjetoId
     });
 
+    if (!paciente.prontuario) {
+      mutableDto.prontuario = await this.generateProntuarioNumber();
+    }
+
     const merged = this.repo.merge(paciente, mutableDto as any);
     const saved = await this.repo.save(merged);
     this.realtime.emit('pacientes.updated', saved);
@@ -524,8 +665,26 @@ export class PacientesService {
       throw new BadRequestException('Dados de onboarding invalidos.');
     }
 
+    const currentConfirmation = this.asObject(paciente.confirmacaoAtleta);
+    const incomingConfirmation = this.asObject(dto.confirmacaoAtleta);
+    const currentData = this.asObject(currentConfirmation.dados);
+    const incomingData = this.asObject(incomingConfirmation.dados);
+    const mergedOnboardingData: Record<string, unknown> = {
+      ...currentData,
+      ...incomingData
+    };
+    const mergedConfirmation: Record<string, unknown> = {
+      ...currentConfirmation,
+      ...incomingConfirmation,
+      dados: mergedOnboardingData
+    };
+    const onboardingSummary = this.extractClinicalSummaryFromOnboarding(mergedOnboardingData);
+
+    const nextProntuario = paciente.prontuario || await this.generateProntuarioNumber();
     const merged = this.repo.merge(paciente, {
-      confirmacaoAtleta: dto.confirmacaoAtleta
+      prontuario: nextProntuario,
+      confirmacaoAtleta: mergedConfirmation,
+      ...onboardingSummary
     } as any);
     const saved = await this.repo.save(merged);
     this.realtime.emit('pacientes.updated', saved);

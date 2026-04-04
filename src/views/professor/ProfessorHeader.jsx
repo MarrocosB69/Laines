@@ -1,11 +1,13 @@
-import React, { useMemo } from 'react';
-import { Bell, Sun, Moon, ChevronRight } from 'lucide-react';
+﻿import React, { useMemo } from 'react';
+import { Bell, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUiFeedback } from '../../contexts/UiFeedbackContext';
 
 import '../admin/AdminView/AdminHeader.css';
 
 const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   const { user } = useAuth();
+  const { notify } = useUiFeedback();
   const initials = useMemo(() => {
     const rawName = user?.name || user?.nome || user?.displayName || '';
     const rawEmail = user?.email || '';
@@ -17,8 +19,8 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
   }, [user]);
 
   const labels = {
-    dashboard: 'Visão Geral',
-    patients: 'Alunos e Pacientes',
+    dashboard: 'Visão geral',
+    patients: 'Alunos e atletas',
     agenda: 'Agenda',
     research: 'Pesquisas'
   };
@@ -27,16 +29,11 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
   return (
     <header className="admin-header">
       <div className="header-left">
-        <div className="breadcrumb">
-          <div className="breadcrumb-item">
-            <span className="breadcrumb-text mute">ÁREA DO PROFESSOR</span>
-          </div>
-          <ChevronRight size={14} className="breadcrumb-separator" />
-          <div className="breadcrumb-item active">
-            {activeIcon && <span className="icon-wrapper">{activeIcon}</span>}
-            <span className="breadcrumb-text capitalize">{currentLabel}</span>
-          </div>
+        <div className="header-page-title-row">
+          {activeIcon && <span className="icon-wrapper">{activeIcon}</span>}
+          <h1 className="header-page-title">{currentLabel}</h1>
         </div>
+        <p className="header-page-subtitle">Área do professor</p>
       </div>
 
       <div className="header-controls">
@@ -45,11 +42,21 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
           className="header-btn theme-toggle"
           aria-label="Alternar tema"
         >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
-
-        <button className="header-btn notifications-btn" aria-label="Notificações">
-          <Bell size={20} />
+        <button
+          type="button"
+          className="header-btn notifications-btn"
+          aria-label="Notificações"
+          onClick={() => {
+            notify({
+              type: 'info',
+              title: 'Notificações do professor',
+              message: 'Central de notificações dedicada em ativação. Por enquanto, acompanhe agenda e prontuários para atualizações.'
+            });
+          }}
+        >
+          <Bell size={18} />
         </button>
 
         <div className="user-profile-mini">
@@ -61,3 +68,4 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
 };
 
 export default ProfessorHeader;
+

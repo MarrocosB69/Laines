@@ -64,7 +64,7 @@ const AthleteEbiaModal = ({
           <div className="app-modal-heading">
             <h2 id="athlete-ebia-modal-title" className="app-modal-title">Preencher EBIA</h2>
             <p className="app-modal-subtitle">
-              Formulario liberado pela equipe em {releaseDate}. Complete para registrar no prontuario.
+              Formulário liberado pela equipe em {releaseDate}. Complete para registrar no prontuário.
             </p>
           </div>
           <button

@@ -12,6 +12,10 @@ export class Paciente {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Index({ unique: true })
+  @Column({ length: 20 })
+  prontuario!: string;
+
   @Column({ length: 120 })
   nome!: string;
 

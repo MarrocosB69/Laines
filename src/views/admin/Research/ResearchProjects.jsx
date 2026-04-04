@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { getApiErrorMessage } from '../../../services/api';
 import { Edit2, Filter, FlaskConical, Plus, RefreshCw, Search } from 'lucide-react';
+import Button from '../../../components/ui/Button';
 
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import Table from '../common/Table';
@@ -17,6 +18,32 @@ const resolvePermissionMessage = (error, fallback, forbiddenMessage) => {
   const status = Number(error?.response?.status || 0);
   if (status === 403) return forbiddenMessage;
   return getApiErrorMessage(error, fallback);
+};
+
+const AVALIACOES_PAGE_SIZE = 200;
+const AVALIACOES_MAX_PAGES = 250;
+
+const fetchAllAvaliacoes = async (params = {}) => {
+  const mergedParams = { ...params };
+  const allItems = [];
+
+  for (let page = 0; page < AVALIACOES_MAX_PAGES; page += 1) {
+    const offset = page * AVALIACOES_PAGE_SIZE;
+    const { data } = await api.get('/avaliacoes', {
+      params: {
+        ...mergedParams,
+        limit: AVALIACOES_PAGE_SIZE,
+        offset
+      }
+    });
+    const chunk = Array.isArray(data) ? data : [];
+    allItems.push(...chunk);
+    if (chunk.length < AVALIACOES_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return allItems;
 };
 
 const ResearchProjects = ({
@@ -47,12 +74,12 @@ const ResearchProjects = ({
       const [projectsRes, pacientesRes, avaliacoesRes, usersRes] = await Promise.all([
         api.get('/projetos'),
         api.get('/pacientes'),
-        api.get('/avaliacoes'),
+        fetchAllAvaliacoes(),
         usersRequest
       ]);
       const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : [];
       const pacientesData = Array.isArray(pacientesRes.data) ? pacientesRes.data : [];
-      const avaliacoesData = Array.isArray(avaliacoesRes.data) ? avaliacoesRes.data : [];
+      const avaliacoesData = Array.isArray(avaliacoesRes) ? avaliacoesRes : [];
       const usersData = normalizeUserList(usersRes.data);
       setProjects(projectsData);
       setPacientes(pacientesData);
@@ -430,19 +457,19 @@ const ResearchProjects = ({
         {!readOnly && (
           <div className="research-actions">
             {showSync && (
-              <button
+              <Button
                 type="button"
-                className="secondary-btn"
+                variant="secondary"
                 onClick={handleSyncEvaluations}
                 disabled={syncingEvaluations}
               >
                 <RefreshCw size={18} />
                 {syncingEvaluations ? 'Sincronizando...' : 'Sincronizar avaliações'}
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="button"
-              className="primary-btn"
+              variant="primary"
               onClick={() => {
                 setSelectedProject(null);
                 setIsModalOpen(true);
@@ -450,7 +477,7 @@ const ResearchProjects = ({
             >
               <Plus size={18} />
               Novo projeto
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -587,3 +614,5 @@ const ResearchProjects = ({
 };
 
 export default ResearchProjects;
+
+

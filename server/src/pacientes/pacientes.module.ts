@@ -7,9 +7,10 @@ import { PacientesController } from './pacientes.controller';
 import { RolesGuard } from '../auth/roles.guard';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { ObservabilityModule } from '../observability/observability.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Paciente, User]), RealtimeModule, ObservabilityModule],
+  imports: [TypeOrmModule.forFeature([Paciente, User]), RealtimeModule, ObservabilityModule, UsersModule],
   providers: [PacientesService, RolesGuard],
   controllers: [PacientesController],
   exports: [PacientesService]

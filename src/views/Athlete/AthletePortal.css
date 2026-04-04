@@ -282,6 +282,269 @@
   background: #ffffff;
 }
 
+.athlete-prontuario-card {
+  gap: 1rem;
+}
+
+.athlete-prontuario-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.92rem;
+}
+
+.athlete-prontuario-hero {
+  border: 1px solid rgba(20, 53, 84, 0.14);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(116, 168, 101, 0.18), transparent 52%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.98));
+  box-shadow: 0 18px 34px -28px rgba(20, 53, 84, 0.35);
+  padding: 0.86rem 0.94rem;
+}
+
+.athlete-prontuario-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.78rem;
+  border-bottom: 1px solid rgba(20, 53, 84, 0.12);
+}
+
+.athlete-prontuario-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+  min-width: 220px;
+}
+
+.athlete-prontuario-eyebrow {
+  margin: 0;
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4f6781;
+}
+
+.athlete-prontuario-note {
+  margin: 0;
+  color: #60758c;
+  font-size: 0.77rem;
+}
+
+.athlete-prontuario-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.44rem;
+  align-items: flex-start;
+}
+
+.athlete-prontuario-id {
+  color: #1d3350;
+  font-size: 1.02rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.athlete-prontuario-hero-main {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.15fr) minmax(240px, 1fr);
+  gap: 0.76rem;
+  align-items: stretch;
+}
+
+.athlete-prontuario-patient-card {
+  border: 1px solid rgba(20, 53, 84, 0.16);
+  border-radius: 0.92rem;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.7rem 0.78rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.68rem;
+}
+
+.athlete-prontuario-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #103355, #1a4a73);
+  color: #ecfeff;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.athlete-prontuario-patient-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.26rem;
+}
+
+.athlete-prontuario-patient-meta {
+  margin: 0;
+  color: #4f667f;
+  font-size: 0.77rem;
+  line-height: 1.4;
+}
+
+.athlete-prontuario-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.athlete-prontuario-stat {
+  border: 1px solid rgba(20, 53, 84, 0.14);
+  border-radius: 0.86rem;
+  background: linear-gradient(180deg, #ffffff, #f5f9ff);
+  padding: 0.56rem 0.62rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.athlete-prontuario-stat span {
+  color: #60758c;
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+}
+
+.athlete-prontuario-stat strong {
+  color: #1d3350;
+  font-size: 0.81rem;
+  line-height: 1.34;
+}
+
+.athlete-prontuario-stat--highlight {
+  border-color: rgba(14, 116, 144, 0.24);
+  background: linear-gradient(180deg, #f0f9ff, #e0f2fe);
+}
+
+.athlete-prontuario-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.56rem;
+}
+
+.athlete-prontuario-summary-item {
+  border: 1px solid rgba(20, 53, 84, 0.12);
+  border-radius: 0.82rem;
+  background: rgba(248, 250, 252, 0.95);
+  padding: 0.55rem 0.62rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.athlete-prontuario-summary-item span {
+  color: #63788f;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.athlete-prontuario-summary-item strong {
+  color: #1d3350;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.athlete-prontuario-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 0.68rem;
+}
+
+.athlete-prontuario-section--identity,
+.athlete-prontuario-section--clinical {
+  grid-column: 1 / -1;
+}
+
+.athlete-prontuario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.56rem;
+}
+
+.athlete-prontuario-item {
+  border: 1px solid rgba(20, 53, 84, 0.12);
+  border-radius: 0.74rem;
+  background: rgba(248, 250, 252, 0.96);
+  padding: 0.58rem 0.66rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+.athlete-prontuario-item span {
+  color: #64748b;
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.athlete-prontuario-item strong {
+  color: #1d3350;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.athlete-prontuario-section {
+  border: 1px solid rgba(20, 53, 84, 0.12);
+  border-radius: 0.9rem;
+  background: #ffffff;
+  padding: 0.76rem 0.82rem;
+}
+
+.athlete-prontuario-section h3 {
+  margin: 0 0 0.52rem;
+  color: #1d3350;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.athlete-prontuario-section p {
+  margin: 0 0 0.35rem;
+  color: #475569;
+  font-size: 0.79rem;
+  line-height: 1.48;
+}
+
+.athlete-prontuario-section p:last-child {
+  margin-bottom: 0;
+}
+
+.athlete-prontuario-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.athlete-prontuario-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.56rem;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 51, 85, 0.18);
+  background: rgba(16, 51, 85, 0.08);
+  color: #1d3350;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .athlete-eval-item {
   display: flex;
   justify-content: space-between;
@@ -334,6 +597,11 @@
   color: #991b1b;
 }
 
+.athlete-pill.neutral {
+  background: rgba(16, 51, 85, 0.1);
+  color: #1d3350;
+}
+
 .athlete-empty {
   border-radius: 0.9rem;
   border: 1px dashed rgba(100, 116, 139, 0.35);
@@ -348,5 +616,119 @@
 @media (max-width: 640px) {
   .athlete-portal {
     padding: 0.8rem;
+  }
+
+  .athlete-prontuario-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .athlete-prontuario-heading,
+  .athlete-prontuario-badges {
+    width: 100%;
+  }
+
+  .athlete-prontuario-hero-main,
+  .athlete-prontuario-stats-grid,
+  .athlete-prontuario-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .athlete-prontuario-patient-card {
+    flex-direction: row;
+  }
+}
+
+/* Parte 3 — harmonização visual (Atleta) */
+.athlete-portal {
+  color: var(--color-text-primary);
+}
+
+.athlete-header {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.athlete-header h1 {
+  color: var(--color-navy);
+}
+
+.athlete-header p,
+.athlete-subtext,
+.athlete-text,
+.athlete-metric span,
+.athlete-metric small {
+  color: var(--color-text-muted);
+}
+
+.athlete-badge {
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  color: var(--color-navy);
+  border-radius: 999px;
+}
+
+.athlete-logout-btn {
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  border-radius: var(--radius-md);
+}
+
+.athlete-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.athlete-card h2,
+.athlete-metric strong {
+  color: var(--color-navy);
+}
+
+.athlete-action-btn {
+  border-radius: var(--radius-md);
+}
+
+.athlete-action-btn:not(.athlete-action-btn--danger) {
+  background: rgba(16, 51, 85, 0.08);
+  border-color: rgba(16, 51, 85, 0.2);
+  color: var(--color-navy);
+}
+
+.athlete-action-btn:not(.athlete-action-btn--danger):hover:not(:disabled) {
+  background: rgba(16, 51, 85, 0.14);
+  border-color: rgba(16, 51, 85, 0.3);
+}
+
+.athlete-action-btn--danger {
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.athlete-pending-item,
+.athlete-eval-item {
+  border-radius: var(--radius-md);
+}
+
+.athlete-prontuario-item,
+.athlete-prontuario-section {
+  border-radius: var(--radius-md);
+  border-color: var(--color-border);
+}
+
+.athlete-prontuario-chip {
+  border-color: rgba(16, 51, 85, 0.2);
+  background: rgba(16, 51, 85, 0.08);
+  color: var(--color-navy);
+}
+
+.athlete-empty,
+.athlete-empty-inline {
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .athlete-prontuario-grid {
+    grid-template-columns: 1fr;
   }
 }

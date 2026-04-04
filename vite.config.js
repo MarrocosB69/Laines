@@ -12,11 +12,24 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+          const normalizedId = id.replace(/\\/g, '/')
+          if (
+            normalizedId.includes('/node_modules/react/')
+            || normalizedId.includes('/node_modules/react-dom/')
+            || normalizedId.includes('/node_modules/react-router/')
+            || normalizedId.includes('/node_modules/react-router-dom/')
+            || normalizedId.includes('/node_modules/scheduler/')
+          ) {
             return 'vendor-react'
           }
-          if (id.includes('framer-motion') || id.includes('recharts') || id.includes('lucide-react')) {
-            return 'vendor-ui'
+          if (id.includes('framer-motion')) {
+            return 'vendor-framer'
+          }
+          if (id.includes('recharts')) {
+            return 'vendor-charts'
+          }
+          if (id.includes('lucide-react')) {
+            return 'vendor-icons'
           }
           if (id.includes('@fortawesome')) {
             return 'vendor-icons'

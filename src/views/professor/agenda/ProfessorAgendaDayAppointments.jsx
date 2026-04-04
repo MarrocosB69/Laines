@@ -17,7 +17,7 @@ const ProfessorAgendaDayAppointments = ({
       </header>
 
       {dayAppointments.length === 0 ? (
-        <div className="day-empty-state">
+        <div className="day-empty-state laines-feedback-state">
           <CalendarDays size={20} />
           <p>Nenhuma consulta para este dia com os filtros aplicados.</p>
         </div>
@@ -32,7 +32,7 @@ const ProfessorAgendaDayAppointments = ({
                 </div>
                 <div className="appointment-row">
                   <UserRound size={14} />
-                  <strong>{item.pacienteNome || 'Paciente'}</strong>
+                  <strong>{item.pacienteNome || 'Atleta'}</strong>
                 </div>
                 <div className="appointment-row">
                   <UserSquare2 size={14} />

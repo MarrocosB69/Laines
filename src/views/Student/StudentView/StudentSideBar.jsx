@@ -1,16 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { getApiErrorMessage } from '../../../services/api';
-import logoLaines from '../../../assets/LogoLaines.png';
+import { normalizeRole } from '../../../constants/roles';
 import '../../SidebarShell.css';
 
 import {
   LayoutDashboard,
   Users,
   Calendar,
+  ArrowLeftCircle,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -18,9 +19,13 @@ import {
 } from 'lucide-react';
 
 const StudentSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
+  const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { notify } = useUiFeedback();
+  const normalizedRole = normalizeRole(user?.role);
+  const canReturnToPresidency = normalizedRole === 'presidente' || normalizedRole === 'vice';
+  const returnAdminTab = String(location.state?.returnAdminTab || 'dashboard');
 
   const getInitials = (name = '') => {
     const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -41,7 +46,7 @@ const StudentSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
     },
     {
       id: 'patients',
-      label: 'Meus Pacientes',
+      label: 'Meus Atletas',
       icon: <Users size={20} />
     },
     {
@@ -65,23 +70,28 @@ const StudentSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
     }
   };
 
+  const handleBackToPresidency = () => {
+    navigate(`/admin?tab=${encodeURIComponent(returnAdminTab)}`);
+    if (window.innerWidth <= 768 && isOpen) onToggle();
+  };
+
   return (
     <>
       <motion.aside
-        className="laines-sidebar"
+        className="laines-sidebar laines-sidebar--admin"
         initial={false}
-        animate={{ x: isOpen ? 0 : -280 }}
+        animate={{ x: isOpen ? 0 : -260 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <div className="laines-sidebar__header">
           <div className="laines-sidebar__brand">
-            <img src={logoLaines} alt="Logo" className="laines-sidebar__logo" />
+            <span className="laines-sidebar__logo-chip" aria-hidden="true">L</span>
             <div>
               <h1 className="laines-sidebar__title">LAINES</h1>
               <p className="laines-sidebar__subtitle">Liga acadêmica interprofissional</p>
             </div>
           </div>
-          <button onClick={onToggle} className="laines-sidebar__collapse md:hidden">
+          <button onClick={onToggle} className="laines-sidebar__collapse md:hidden" aria-label="Fechar menu">
             <ChevronLeft size={20} />
           </button>
         </div>
@@ -118,6 +128,20 @@ const StudentSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
                   )}
                 </button>
               ))}
+              {canReturnToPresidency && (
+                <button
+                  type="button"
+                  onClick={handleBackToPresidency}
+                  className="laines-sidebar__item"
+                  title="Voltar para Presidencia"
+                  aria-label="Voltar para Presidencia"
+                >
+                  <div className="laines-sidebar__item-icon">
+                    <ArrowLeftCircle size={20} />
+                  </div>
+                  <span>Voltar para Presidencia</span>
+                </button>
+              )}
             </div>
           </div>
         </nav>
@@ -133,15 +157,16 @@ const StudentSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
                 <p className="laines-sidebar__user-status">Online</p>
               </div>
             </div>
-            <button onClick={handleLogout} className="laines-sidebar__logout" title="Sair">
+            <button onClick={handleLogout} className="laines-sidebar__logout" title="Sair" aria-label="Sair">
               <LogOut size={18} />
             </button>
           </div>
+          <p className="laines-sidebar__footer-note">LAINES • Área do aluno</p>
         </div>
       </motion.aside>
 
       {!isOpen && (
-        <button onClick={onToggle} className="laines-sidebar__toggle">
+        <button onClick={onToggle} className="laines-sidebar__toggle" aria-label="Abrir menu">
           <ChevronRight size={20} />
         </button>
       )}

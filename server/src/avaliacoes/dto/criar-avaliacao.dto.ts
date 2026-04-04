@@ -11,6 +11,10 @@ import {
 const AVALIACAO_STATUS = ['rascunho', 'finalizada'] as const;
 
 export class CriarAvaliacaoDto {
+  @IsOptional()
+  @IsUUID()
+  sessaoId?: string;
+
   @IsString()
   tipo!: string;
 
@@ -54,6 +58,30 @@ export class CriarAvaliacaoDto {
 
   @IsOptional()
   autoSave?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  schemaVersion?: number;
+
+  @IsOptional()
+  @IsString()
+  formulaId?: string;
+
+  @IsOptional()
+  @IsString()
+  formulaVersion?: string;
+
+  @IsOptional()
+  @IsString()
+  sourceSystem?: string;
+
+  @IsOptional()
+  @IsString()
+  sourceRef?: string;
+
+  @IsOptional()
+  @IsDateString()
+  measuredAt?: string;
 
   @IsOptional()
   @IsNumber()

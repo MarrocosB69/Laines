@@ -54,6 +54,8 @@ const getStatusLabel = (status) => {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 };
 
+const PAGE_SIZE = 25;
+
 const PatientManagement = ({ onOpenPatient = null }) => {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,6 +78,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [deletingPatientId, setDeletingPatientId] = useState('');
   const [openingPatientId, setOpeningPatientId] = useState('');
+  const [visiblePatientCount, setVisiblePatientCount] = useState(PAGE_SIZE);
   const { notify, confirm } = useUiFeedback();
 
   const { user } = useAuth();
@@ -97,11 +100,11 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       setLastSyncedAt(new Date());
       setError(null);
     } catch (error) {
-      console.error('Erro ao carregar pacientes:', error);
-      const message = getApiErrorMessage(error, 'Não foi possível carregar a lista de pacientes.');
+      console.error('Erro ao carregar atletas:', error);
+      const message = getApiErrorMessage(error, 'Não foi possível carregar a lista de atletas.');
       notify({
         type: 'error',
-        title: 'Erro ao carregar pacientes',
+        title: 'Erro ao carregar atletas',
         message
       });
       setError(message);
@@ -222,7 +225,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   }, [bulkModalOpen, bulkLoading]);
 
   const statCards = [
-    { id: 'total', label: 'Total de Pacientes', value: stats.total, icon: Users, tone: 'blue' },
+    { id: 'total', label: 'Total de Atletas', value: stats.total, icon: Users, tone: 'blue' },
     { id: 'active', label: 'Em Atendimento', value: stats.inTreatment, icon: Activity, tone: 'green' },
     { id: 'discharged', label: 'Altas Realizadas', value: stats.discharged, icon: CheckCircle, tone: 'purple' },
     { id: 'waiting', label: 'Fila de Espera', value: stats.waiting, icon: Clock, tone: 'amber' }
@@ -243,6 +246,13 @@ const PatientManagement = ({ onOpenPatient = null }) => {
     return matchesSearch && matchesStatus && matchesProject;
   });
 
+  const visiblePatients = useMemo(
+    () => filteredPatients.slice(0, visiblePatientCount),
+    [filteredPatients, visiblePatientCount]
+  );
+
+  const canLoadMorePatients = visiblePatients.length < filteredPatients.length;
+
   const statusOptions = Array.from(
     new Set(
       patients
@@ -258,6 +268,10 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   useEffect(() => {
     setSelectedPatients((prev) => prev.filter((id) => patients.some((patient) => patient.id === id)));
   }, [patients]);
+
+  useEffect(() => {
+    setVisiblePatientCount(PAGE_SIZE);
+  }, [patients.length, projectFilter, searchTerm, statusFilter]);
 
   const allFilteredIds = filteredPatients.map((patient) => patient.id);
   const isAllSelected = filteredPatients.length > 0 && allFilteredIds.every((id) => selectedPatients.includes(id));
@@ -305,7 +319,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       notify({
         type: 'warning',
         title: 'Sem dados para exportar',
-        message: 'Ajuste os filtros para exportar o relatório de pacientes.'
+        message: 'Ajuste os filtros para exportar o relatório de atletas.'
       });
       return;
     }
@@ -321,7 +335,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
     ]);
 
     downloadCsv({
-      filename: `pacientes_${new Date().toISOString().slice(0, 10)}.csv`,
+      filename: `atletas_${new Date().toISOString().slice(0, 10)}.csv`,
       headers: ['Nome', 'Prontuário', 'Modalidade', 'Telefone', 'Status', 'Projeto', 'Aluno responsável'],
       rows
     });
@@ -329,7 +343,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
     notify({
       type: 'success',
       title: 'Relatório exportado',
-      message: `${filteredPatients.length} pacientes exportados.`
+      message: `${filteredPatients.length} atletas exportados.`
     });
   }, [filteredPatients, notify]);
 
@@ -339,8 +353,8 @@ const PatientManagement = ({ onOpenPatient = null }) => {
     const accepted = await confirm({
       title: 'Confirmar vínculo em massa',
       message: selectedProject
-        ? `Vincular ${selectedPatients.length} pacientes ao projeto "${selectedProject.nome}"?`
-        : `Remover o vínculo de projeto de ${selectedPatients.length} pacientes?`,
+        ? `Vincular ${selectedPatients.length} atletas ao projeto "${selectedProject.nome}"?`
+        : `Remover o vínculo de projeto de ${selectedPatients.length} atletas?`,
       confirmLabel: 'Aplicar',
       cancelLabel: 'Cancelar',
       variant: 'warning'
@@ -380,7 +394,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       notify({
         type: 'error',
         title: 'Erro ao vincular projetos',
-        message: getApiErrorMessage(error, 'Não foi possível atualizar os pacientes.')
+        message: getApiErrorMessage(error, 'Não foi possível atualizar os atletas.')
       });
     } finally {
       setBulkLoading(false);
@@ -389,8 +403,8 @@ const PatientManagement = ({ onOpenPatient = null }) => {
 
   const handleDelete = async (id) => {
     const accepted = await confirm({
-      title: 'Remover paciente',
-      message: 'Tem certeza que deseja remover este paciente?',
+      title: 'Remover atleta',
+      message: 'Tem certeza que deseja remover este atleta?',
       confirmLabel: 'Remover',
       cancelLabel: 'Cancelar',
       variant: 'danger'
@@ -404,15 +418,15 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       setSelectedPatients((prev) => prev.filter((item) => item !== id));
       notify({
         type: 'success',
-        title: 'Paciente removido',
+        title: 'Atleta removido',
         message: 'Registro removido com sucesso.'
       });
     } catch (error) {
-      console.error('Erro ao excluir paciente:', error);
+      console.error('Erro ao excluir atleta:', error);
       notify({
         type: 'error',
-        title: 'Erro ao excluir paciente',
-        message: getApiErrorMessage(error, 'Não foi possível excluir o paciente.')
+        title: 'Erro ao excluir atleta',
+        message: getApiErrorMessage(error, 'Não foi possível excluir o atleta.')
       });
     } finally {
       setDeletingPatientId('');
@@ -436,7 +450,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
         <div className="admin-management-hero__row">
           <div className="admin-management-hero__content">
             <span className="admin-management-badge">Área do Professor</span>
-            <h1 className="admin-management-title">Meus Pacientes</h1>
+            <h1 className="admin-management-title">Meus Atletas</h1>
             <p className="admin-management-subtitle">
               Gestão clínica, acompanhamento de modalidades e vínculos de pesquisa.
             </p>
@@ -462,7 +476,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
               className="admin-btn admin-btn--success"
             >
               <UserPlus size={18} />
-              <span>Novo Paciente</span>
+              <span>Novo Atleta</span>
             </button>
           </div>
         </div>
@@ -491,7 +505,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
               onChange={(event) => setSearchTerm(event.target.value)}
               className="admin-search-input"
               placeholder="Buscar por nome ou modalidade..."
-              aria-label="Buscar pacientes por nome ou modalidade"
+              aria-label="Buscar atletas por nome ou modalidade"
             />
           {searchTerm && (
             <button
@@ -527,7 +541,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
             className="admin-btn admin-btn--surface"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            aria-label="Atualizar lista de pacientes"
+            aria-label="Atualizar lista de atletas"
           >
             {isRefreshing ? <Loader2 size={16} className="spin" /> : <RefreshCcw size={16} />}
             <span>{isRefreshing ? 'Atualizando...' : 'Atualizar'}</span>
@@ -608,11 +622,11 @@ const PatientManagement = ({ onOpenPatient = null }) => {
             <div className="admin-empty-icon">
               <Users size={30} />
             </div>
-            <h3 className="admin-empty-title">Nenhum paciente encontrado</h3>
+            <h3 className="admin-empty-title">Nenhum atleta encontrado</h3>
             <p className="admin-empty-text">
               {hasActiveCriteria
-                ? 'Ajuste a busca ou filtros para localizar pacientes.'
-                : 'Cadastre um novo paciente para iniciar o acompanhamento.'}
+                ? 'Ajuste a busca ou filtros para localizar atletas.'
+                : 'Cadastre um novo atleta para iniciar o acompanhamento.'}
             </p>
             <div className="admin-empty-actions">
               {hasActiveCriteria ? (
@@ -633,7 +647,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                   }}
                 >
                   <UserPlus size={16} />
-                  <span>Cadastrar paciente</span>
+                  <span>Cadastrar atleta</span>
                 </button>
               )}
             </div>
@@ -641,8 +655,8 @@ const PatientManagement = ({ onOpenPatient = null }) => {
         ) : (
           <>
             <div className="admin-table-header">
-              <h3 className="admin-list-title">Lista de Pacientes</h3>
-              <span className="admin-count-chip">{filteredPatients.length} encontrados</span>
+              <h3 className="admin-list-title">Lista de Atletas</h3>
+              <span className="admin-count-chip">{visiblePatients.length} de {filteredPatients.length} encontrados</span>
             </div>
 
             <p className="admin-table-hint">Em telas menores, deslize horizontalmente para ver todas as colunas.</p>
@@ -657,10 +671,10 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                         checked={isAllSelected}
                         onChange={toggleSelectAll}
                         className="admin-check-input"
-                        aria-label="Selecionar todos os pacientes filtrados"
+                        aria-label="Selecionar todos os atletas filtrados"
                       />
                     </th>
-                    <th>Paciente</th>
+                    <th>Atleta</th>
                     <th>Modalidade</th>
                     <th>Contato</th>
                     <th>Status</th>
@@ -668,7 +682,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPatients.map((patient) => {
+                  {visiblePatients.map((patient) => {
                     const isRowBusy = deletingPatientId === patient.id || openingPatientId === patient.id;
                     return (
                       <tr key={patient.id} className={isRowBusy ? 'admin-row-busy' : ''} aria-busy={isRowBusy}>
@@ -679,7 +693,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                           onChange={() => toggleSelectPatient(patient.id)}
                           className="admin-check-input"
                           disabled={isRowBusy}
-                          aria-label={`Selecionar paciente ${patient.nome || ''}`}
+                          aria-label={`Selecionar atleta ${patient.nome || ''}`}
                         />
                       </td>
                       <td className="admin-cell-user">
@@ -688,7 +702,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                             {getInitial(patient.nome)}
                           </div>
                           <div>
-                            <p className="admin-user-name">{patient.nome || 'Paciente sem nome'}</p>
+                            <p className="admin-user-name">{patient.nome || 'Atleta sem nome'}</p>
                             <p className="admin-user-meta">Prontuário: {patient.prontuario || '---'}</p>
                           </div>
                         </div>
@@ -761,6 +775,25 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                 </tbody>
               </table>
             </div>
+
+            {canLoadMorePatients && (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '0.9rem' }}>
+                <div className="admin-loadmore-wrap">
+                  {filteredPatients.length > 0 ? (
+                    <p className="admin-loadmore-meta">
+                      A mostrar {visiblePatients.length} de {filteredPatients.length}
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--surface"
+                    onClick={() => setVisiblePatientCount((prev) => Math.min(prev + PAGE_SIZE, filteredPatients.length))}
+                  >
+                    Carregar mais ({filteredPatients.length - visiblePatients.length} restantes)
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </section>
@@ -811,7 +844,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
               <div className="app-modal-heading">
                 <h2 id="bulk-project-modal-title" className="admin-bulk-modal__title app-modal-title">Vincular projeto</h2>
                 <p className="admin-bulk-modal__subtitle app-modal-subtitle">
-                  Selecione o projeto para {selectedPatients.length} pacientes.
+                  Selecione o projeto para {selectedPatients.length} atletas.
                 </p>
               </div>
               <button
@@ -826,7 +859,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
               </button>
             </div>
 
-            <div className="admin-bulk-modal__body">
+            <div className="admin-bulk-modal__body app-modal-body">
               <div className="admin-bulk-modal__field">
                 <label className="admin-bulk-modal__label">Projeto de pesquisa</label>
                 <select

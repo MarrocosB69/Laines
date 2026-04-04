@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUiFeedback } from '../../contexts/UiFeedbackContext';
 import { getApiErrorMessage } from '../../services/api';
-import logoLaines from '../../assets/LogoLaines.png';
 import '../SidebarShell.css';
 
 import {
@@ -42,7 +41,7 @@ const ProfessorSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
     },
     {
       id: 'patients',
-      label: 'Alunos e Pacientes',
+      label: 'Alunos e Atletas',
       icon: <Users size={20} />
     },
     {
@@ -74,20 +73,20 @@ const ProfessorSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
   return (
     <>
       <motion.aside
-        className="laines-sidebar"
+        className="laines-sidebar laines-sidebar--admin"
         initial={false}
-        animate={{ x: isOpen ? 0 : -280 }}
+        animate={{ x: isOpen ? 0 : -260 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       >
         <div className="laines-sidebar__header">
           <div className="laines-sidebar__brand">
-            <img src={logoLaines} alt="Logo" className="laines-sidebar__logo" />
+            <span className="laines-sidebar__logo-chip" aria-hidden="true">L</span>
             <div>
               <h1 className="laines-sidebar__title">LAINES</h1>
               <p className="laines-sidebar__subtitle">Liga acadêmica interprofissional</p>
             </div>
           </div>
-          <button onClick={onToggle} className="laines-sidebar__collapse md:hidden">
+          <button onClick={onToggle} className="laines-sidebar__collapse md:hidden" aria-label="Fechar menu">
             <ChevronLeft size={20} />
           </button>
         </div>
@@ -139,15 +138,16 @@ const ProfessorSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
                 <p className="laines-sidebar__user-status">Online</p>
               </div>
             </div>
-            <button onClick={handleLogout} className="laines-sidebar__logout" title="Sair">
+            <button onClick={handleLogout} className="laines-sidebar__logout" title="Sair" aria-label="Sair">
               <LogOut size={18} />
             </button>
           </div>
+          <p className="laines-sidebar__footer-note">LAINES • Área do professor</p>
         </div>
       </motion.aside>
 
       {!isOpen && (
-        <button onClick={onToggle} className="laines-sidebar__toggle">
+        <button onClick={onToggle} className="laines-sidebar__toggle" aria-label="Abrir menu">
           <ChevronRight size={20} />
         </button>
       )}

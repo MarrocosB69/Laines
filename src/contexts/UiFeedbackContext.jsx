@@ -31,7 +31,7 @@ export const UiFeedbackProvider = ({ children }) => {
   const confirm = useCallback((payload = {}) => {
     return new Promise((resolve) => {
       setConfirmation({
-        title: payload.title || 'Confirmar acao',
+        title: payload.title || 'Confirmar ação',
         message: payload.message || 'Deseja continuar?',
         confirmLabel: payload.confirmLabel || 'Confirmar',
         cancelLabel: payload.cancelLabel || 'Cancelar',
@@ -108,6 +108,14 @@ export const UiFeedbackProvider = ({ children }) => {
           >
             <div className="ui-confirm-header app-modal-header">
               <h4 id="ui-confirm-title" className="app-modal-title">{confirmation.title}</h4>
+              <button
+                type="button"
+                className="app-modal-close"
+                onClick={() => closeConfirmation(false)}
+                aria-label="Fechar modal de confirmação"
+              >
+                ×
+              </button>
             </div>
             <div className="ui-confirm-body app-modal-body">
               <p>{confirmation.message}</p>

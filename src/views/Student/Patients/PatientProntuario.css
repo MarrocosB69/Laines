@@ -189,6 +189,11 @@
   color: var(--text-muted);
 }
 
+.prontuario-container .tag-neutral.tag-prontuario {
+  background: rgba(14, 116, 144, 0.14);
+  color: #0f172a;
+}
+
 .prontuario-container .hero-actions {
   display: flex;
   align-items: center;
@@ -364,6 +369,7 @@
 }
 
 .project-link-modal {
+  --app-modal-content-max-width: 420px;
   border-radius: 1rem;
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: #ffffff;
@@ -383,7 +389,9 @@
 }
 
 .project-link-modal__body {
-  padding: 1rem 1.15rem;
+  width: min(100%, var(--app-modal-content-max-width));
+  margin-inline: auto;
+  padding: 0.95rem var(--app-modal-padding-x) 1.15rem;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -417,6 +425,13 @@
 .project-link-modal__footer .app-modal-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.project-link-modal__footer {
+  width: min(100%, var(--app-modal-content-max-width));
+  margin-inline: auto;
+  padding-left: var(--app-modal-padding-x);
+  padding-right: var(--app-modal-padding-x);
 }
 
 /* --- Prontuario V2 (refino estrutural) --- */
@@ -479,27 +494,18 @@
 
 .prontuario-container.prontuario-v2 .consultation-history-card {
   grid-column: 1;
-  grid-row: 1 / span 2;
+  grid-row: 1;
 }
 
 .prontuario-container.prontuario-v2 .timeline-card {
   grid-column: 1;
-  grid-row: 3;
-}
-
-.prontuario-container.prontuario-v2 .evolucoes-card {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.prontuario-container.prontuario-v2 .evolution-card {
-  grid-column: 2;
   grid-row: 2;
 }
 
 .prontuario-container.prontuario-v2 .prontuario-continuity {
   grid-column: 2;
-  grid-row: 3;
+  grid-row: 1 / span 2;
+  align-self: start;
   padding: 1rem 1.1rem;
   border-radius: 1rem;
   box-shadow: var(--shadow-soft);
@@ -831,6 +837,91 @@
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: var(--shadow-sm);
+}
+
+.prontuario-container .appointments-block--clinical {
+  gap: 0.85rem;
+}
+
+.prontuario-container .clinical-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.prontuario-container .clinical-signal-card {
+  border-radius: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #f8fafc;
+  padding: 0.6rem 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.prontuario-container .clinical-signal-card span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.prontuario-container .clinical-signal-card strong {
+  font-size: 0.9rem;
+  color: var(--text-main);
+}
+
+.prontuario-container .clinical-signal-card.tone-ok {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(236, 253, 245, 0.9);
+}
+
+.prontuario-container .clinical-signal-card.tone-attention {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(255, 251, 235, 0.95);
+}
+
+.prontuario-container .clinical-signal-card.tone-warning {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(254, 242, 242, 0.92);
+}
+
+.prontuario-container .clinical-pending-box {
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 0.85rem;
+  background: rgba(241, 245, 249, 0.72);
+  padding: 0.65rem 0.78rem;
+}
+
+.prontuario-container .clinical-pending-label {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.prontuario-container .clinical-pending-box p {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.prontuario-container .clinical-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .prontuario-container .clinical-signal-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .prontuario-container .appointments-subheader {
@@ -2710,6 +2801,20 @@
   line-height: 1.25;
 }
 
+.prontuario-container .avaliacao-module-tile--link .avaliacao-module-cta {
+  margin-top: 0.1rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary-navy);
+  opacity: 0.85;
+}
+
+.prontuario-container .avaliacao-module-tile--link:hover .avaliacao-module-cta {
+  opacity: 1;
+}
+
 .prontuario-container .avaliacao-panel-body-head {
   display: flex;
   align-items: center;
@@ -3299,6 +3404,11 @@
   color: #334155;
 }
 
+.prontuario-container.prontuario-v4 .tag-neutral.tag-prontuario {
+  background: rgba(14, 116, 144, 0.16);
+  color: #0f172a;
+}
+
 .prontuario-container.prontuario-v4 .btn-back,
 .prontuario-container.prontuario-v4 .btn-history,
 .prontuario-container.prontuario-v4 .btn-schedule,
@@ -3642,5 +3752,102 @@
   .prontuario-container.prontuario-v4 .results-highlight-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Parte 2 — normalização visual (Prontuário ativo v2 + v4) */
+.prontuario-container.prontuario-v2.prontuario-v4 {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .prontuario-hero {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 1.5rem;
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .hero-label {
+  color: var(--color-text-muted);
+  letter-spacing: 0.12em;
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .hero-title h1 {
+  color: var(--color-navy);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-back {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  color: var(--color-navy);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-new-eval,
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-schedule,
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-history,
+.prontuario-container.prontuario-v2.prontuario-v4 .appointments-btn,
+.prontuario-container.prontuario-v2.prontuario-v4 .summary-btn {
+  border-radius: var(--radius-md);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-new-eval,
+.prontuario-container.prontuario-v2.prontuario-v4 .appointments-btn:not(.appointments-btn--secondary),
+.prontuario-container.prontuario-v2.prontuario-v4 .summary-btn.primary {
+  background: var(--color-green);
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-new-eval:hover,
+.prontuario-container.prontuario-v2.prontuario-v4 .appointments-btn:not(.appointments-btn--secondary):hover,
+.prontuario-container.prontuario-v2.prontuario-v4 .summary-btn.primary:hover {
+  background: var(--color-green-dark);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-schedule,
+.prontuario-container.prontuario-v2.prontuario-v4 .btn-history,
+.prontuario-container.prontuario-v2.prontuario-v4 .appointments-btn--secondary,
+.prontuario-container.prontuario-v2.prontuario-v4 .summary-btn.secondary,
+.prontuario-container.prontuario-v2.prontuario-v4 .summary-btn.ghost {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  color: var(--color-navy);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .patient-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .patient-stats-grid,
+.prontuario-container.prontuario-v2.prontuario-v4 .general-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .appointments-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .summary-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .avaliacao-panel,
+.prontuario-container.prontuario-v2.prontuario-v4 .consultation-history-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .timeline-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .evolucoes-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .evolution-card,
+.prontuario-container.prontuario-v2.prontuario-v4 .prontuario-continuity {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .appointments-item,
+.prontuario-container.prontuario-v2.prontuario-v4 .attachments-item,
+.prontuario-container.prontuario-v2.prontuario-v4 .timeline-list .evolucao-item,
+.prontuario-container.prontuario-v2.prontuario-v4 .consultation-row {
+  border-color: #e5e7eb;
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .results-highlight-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.prontuario-container.prontuario-v2.prontuario-v4 .results-summary-inline span,
+.prontuario-container.prontuario-v2.prontuario-v4 .results-comparison-row {
+  border-color: #e5e7eb;
 }
 

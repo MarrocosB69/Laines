@@ -94,7 +94,7 @@ const CorrelationDrilldownPanel = ({ correlations }) => {
       </div>
 
       {rows.length === 0 ? (
-        <div className="reports-empty-state">Sem dados suficientes para este detalhamento no recorte atual.</div>
+        <div className="reports-empty-state laines-feedback-state">Sem dados suficientes para este detalhamento no recorte atual.</div>
       ) : (
         <div className="drilldown-table-wrap">
           <table className="drilldown-table">

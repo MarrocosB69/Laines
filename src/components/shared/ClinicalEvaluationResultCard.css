@@ -1,5 +1,6 @@
 .clinical-result-card {
   border: 1px solid rgba(148, 163, 184, 0.3);
+  border-top: 3px solid transparent;
   border-radius: 14px;
   background: #ffffff;
   padding: 0.9rem 1rem;
@@ -8,6 +9,15 @@
   gap: 0.55rem;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
 }
+
+/* ── Domain accent border-top ── */
+.clinical-result-card[data-domain="antropometria"]     { border-top: 3px solid #0e7490; }
+.clinical-result-card[data-domain="nutricao"]          { border-top: 3px solid #16a34a; }
+.clinical-result-card[data-domain="clinica"]           { border-top: 3px solid #e11d48; }
+.clinical-result-card[data-domain="multiprofissional"] { border-top: 3px solid #7c3aed; }
+.clinical-result-card[data-domain="social"]            { border-top: 3px solid #d97706; }
+.clinical-result-card[data-domain="anamnese"]          { border-top: 3px solid #4f46e5; }
+.clinical-result-card[data-domain="default"]           { border-top: 3px solid transparent; }
 
 .clinical-result-card.compact {
   padding: 0.75rem 0.85rem;

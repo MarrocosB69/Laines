@@ -68,6 +68,8 @@ const getStatusLabel = (status) => {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 };
 
+const PAGE_SIZE = 25;
+
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,6 +85,7 @@ const UserManagement = () => {
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [resettingUserId, setResettingUserId] = useState(null);
   const [deletingUserId, setDeletingUserId] = useState(null);
+  const [visibleUserCount, setVisibleUserCount] = useState(PAGE_SIZE);
   const { notify, confirm } = useUiFeedback();
 
   const loadUsers = useCallback(async ({ preserveCurrent = false } = {}) => {
@@ -159,6 +162,13 @@ const UserManagement = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  const visibleUsers = useMemo(
+    () => filteredUsers.slice(0, visibleUserCount),
+    [filteredUsers, visibleUserCount]
+  );
+
+  const canLoadMoreUsers = visibleUsers.length < filteredUsers.length;
+
   const roleOptions = Array.from(
     new Set(
       users
@@ -194,6 +204,10 @@ const UserManagement = () => {
     setStatusFilter('all');
   }, []);
 
+  useEffect(() => {
+    setVisibleUserCount(PAGE_SIZE);
+  }, [roleFilter, searchTerm, statusFilter, users.length]);
+
   const syncLabel = useMemo(() => {
     if (!lastSyncedAt) return 'Sincronização pendente';
     return `Atualizado às ${lastSyncedAt.toLocaleTimeString('pt-BR', {
@@ -224,7 +238,7 @@ const UserManagement = () => {
 
     downloadCsv({
       filename: `usuarios_${new Date().toISOString().slice(0, 10)}.csv`,
-      headers: ['Nome', 'Email', 'Função', 'Status', 'Senha alterada', 'Data de cadastro'],
+      headers: ['Nome', 'E-mail', 'Função', 'Status', 'Senha alterada', 'Data de cadastro'],
       rows
     });
 
@@ -239,7 +253,7 @@ const UserManagement = () => {
     if (!user?.temporaryPassword) return;
     try {
       if (!navigator?.clipboard?.writeText) {
-        throw new Error('Clipboard indisponivel');
+        throw new Error('Clipboard indisponível');
       }
       await navigator.clipboard.writeText(user.temporaryPassword);
       setCopiedUserId(user.id);
@@ -537,7 +551,7 @@ const UserManagement = () => {
           <>
             <div className="admin-table-header">
               <h3 className="admin-list-title">Lista de Usuários</h3>
-              <span className="admin-count-chip">{filteredUsers.length} encontrados</span>
+              <span className="admin-count-chip">{visibleUsers.length} de {filteredUsers.length} encontrados</span>
             </div>
 
             <p className="admin-table-hint">Em telas menores, deslize horizontalmente para ver todas as colunas.</p>
@@ -547,7 +561,7 @@ const UserManagement = () => {
                 <thead>
                   <tr>
                     <th>Usuário</th>
-                    <th>Email</th>
+                    <th>E-mail</th>
                     <th>Função</th>
                     <th>Acesso inicial</th>
                     <th>Status</th>
@@ -556,7 +570,7 @@ const UserManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => {
+                  {visibleUsers.map((user) => {
                     const isRowBusy = resettingUserId === user.id || deletingUserId === user.id;
                     return (
                       <tr key={user.id} className={isRowBusy ? 'admin-row-busy' : ''} aria-busy={isRowBusy}>
@@ -656,6 +670,25 @@ const UserManagement = () => {
                 </tbody>
               </table>
             </div>
+
+            {canLoadMoreUsers && (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '0.9rem' }}>
+                <div className="admin-loadmore-wrap">
+                  {filteredUsers.length > 0 ? (
+                    <p className="admin-loadmore-meta">
+                      A mostrar {visibleUsers.length} de {filteredUsers.length}
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn--surface"
+                    onClick={() => setVisibleUserCount((prev) => Math.min(prev + PAGE_SIZE, filteredUsers.length))}
+                  >
+                    Carregar mais ({filteredUsers.length - visibleUsers.length} restantes)
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </section>

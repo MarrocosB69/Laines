@@ -1,3 +1,8 @@
+import {
+  getEvaluationTypeLabelFromRegistry,
+  normalizeEvaluationTypeToken
+} from '../../constants/evaluationRegistry';
+
 const STATUS_META = {
   finalizada: { label: 'Finalizada', tone: 'success' },
   pendente: { label: 'Pendente', tone: 'warning' },
@@ -5,17 +10,6 @@ const STATUS_META = {
   rascunho: { label: 'Rascunho', tone: 'neutral' },
   falta: { label: 'Falta', tone: 'danger' },
   sem_registro: { label: 'Sem registro', tone: 'neutral' }
-};
-
-const TYPE_LABELS = {
-  bioimpedancia: 'Bioimpedancia',
-  dobras_cutaneas: 'Dobras cutaneas',
-  perimetros: 'Perimetros',
-  alimentar: 'Avaliação alimentar',
-  hidratacao: 'Hidratacao',
-  avaliacao_socioeconomica: 'Socioeconomica (EBIA)',
-  fisioterapia: 'Fisioterapia',
-  psicologia: 'Psicologia'
 };
 
 const normalizeToken = (value) =>
@@ -28,14 +22,14 @@ const normalizeToken = (value) =>
 
 const toSentenceCase = (value) => {
   const raw = String(value || '').trim();
-  if (!raw) return 'Não informado';
+  if (!raw) return 'Nao informado';
   return `${raw.charAt(0).toUpperCase()}${raw.slice(1)}`;
 };
 
 export const getEvaluationTypeLabel = (value) => {
-  const key = normalizeToken(value);
-  if (!key) return 'Não informado';
-  return TYPE_LABELS[key] || toSentenceCase(String(value).replace(/_/g, ' '));
+  const key = normalizeEvaluationTypeToken(value);
+  if (!key) return 'Nao informado';
+  return getEvaluationTypeLabelFromRegistry(key) || toSentenceCase(String(value).replace(/_/g, ' '));
 };
 
 export const getEvaluationStatusLabel = (value) => {

@@ -5,6 +5,23 @@ import {
 } from './evaluationSummaryUtils';
 import './ClinicalEvaluationResultCard.css';
 
+const DOMAIN_BY_TYPE = {
+  bioimpedancia: 'antropometria',
+  dobras_cutaneas: 'antropometria',
+  perimetros: 'antropometria',
+  composicao_corporal_integrada: 'antropometria',
+  gasto_energetico_total: 'antropometria',
+  avaliacao_alimentar: 'nutricao',
+  registro_consumo: 'nutricao',
+  avaliacao_clinica: 'clinica',
+  exames_laboratoriais: 'clinica',
+  avaliacao_fisioterapia: 'multiprofissional',
+  avaliacao_psicologia: 'multiprofissional',
+  avaliacao_socioeconomica: 'social',
+  anamnese_inicial: 'anamnese',
+  evolucao_retorno: 'anamnese'
+};
+
 const ClinicalEvaluationResultCard = ({
   result,
   status = 'sem_registro',
@@ -21,8 +38,10 @@ const ClinicalEvaluationResultCard = ({
 
   const statusTone = getEvaluationStatusTone(status);
   const statusLabel = getEvaluationStatusLabel(status);
-  const completionLabel = typeof completion === 'number' ? `${completion}%` : 'Nao informada';
+  const completionLabel = typeof completion === 'number' ? `${completion}%` : 'Não informada';
   const isBioimp = result?.type === 'bioimpedancia' && result?.bioimp;
+
+  const domain = DOMAIN_BY_TYPE[result?.type] || null;
 
   if (isBioimp) {
     const bioimp = result.bioimp;
@@ -31,13 +50,16 @@ const ClinicalEvaluationResultCard = ({
     const targetTone = targetDiff === null ? 'neutral' : (targetDiff <= 0 ? 'success' : targetDiff <= 3 ? 'warning' : 'danger');
 
     return (
-      <article className={`clinical-result-card clinical-result-card--bioimp tone-${result.tone} ${compact ? 'compact' : ''} ${className}`.trim()}>
+      <article
+        className={`clinical-result-card clinical-result-card--bioimp tone-${result.tone} ${compact ? 'compact' : ''} ${className}`.trim()}
+        data-domain={domain || undefined}
+      >
         <header className="clinical-result-card__header">
           <div className="clinical-result-card__title-wrap">
             <span className="clinical-result-card__type">{typeLabel || result.typeLabel}</span>
             <h4>{result.title}</h4>
             <span className="clinical-result-card__subtitle">
-              {dateLabel ? `Data ${dateLabel}` : 'Data nao informada'} • {responsible || 'Equipe LAINES'}
+              {dateLabel ? `Data ${dateLabel}` : 'Data não informada'} • {responsible || 'Equipe LAINES'}
             </span>
           </div>
           <span className={`clinical-result-card__status tone-${statusTone}`}>
@@ -95,12 +117,12 @@ const ClinicalEvaluationResultCard = ({
 
         {expanded && (
           <div className="clinical-result-card__bio-details">
-            <span><strong>% Agua/peso:</strong> {formatNumber(bioimp?.snapshot?.percentualAguaPesoCorporal, 1, '%')}</span>
-            <span><strong>% Agua/massa magra:</strong> {formatNumber(bioimp?.snapshot?.percentualAguaMassaMagra, 1, '%')}</span>
+            <span><strong>% Água/peso:</strong> {formatNumber(bioimp?.snapshot?.percentualAguaPesoCorporal, 1, '%')}</span>
+            <span><strong>% Água/massa magra:</strong> {formatNumber(bioimp?.snapshot?.percentualAguaMassaMagra, 1, '%')}</span>
             <span><strong>Alvo % gordura:</strong> {formatNumber(bioimp?.snapshot?.alvoPercentualGordura, 1, '%')}</span>
             <span><strong>Alvo peso gordura:</strong> {formatNumber(bioimp?.snapshot?.alvoPesoGordura, 1, 'kg')}</span>
             <span><strong>Alvo peso total:</strong> {formatNumber(bioimp?.snapshot?.alvoPesoTotal, 1, 'kg')}</span>
-            <span><strong>Projeto:</strong> {project || 'Nao vinculado'}</span>
+            <span><strong>Projeto:</strong> {project || 'Não vinculado'}</span>
             <span><strong>Completude:</strong> {completionLabel}</span>
           </div>
         )}
@@ -109,7 +131,10 @@ const ClinicalEvaluationResultCard = ({
   }
 
   return (
-    <article className={`clinical-result-card tone-${result.tone} ${compact ? 'compact' : ''} ${className}`.trim()}>
+    <article
+      className={`clinical-result-card tone-${result.tone} ${compact ? 'compact' : ''} ${className}`.trim()}
+      data-domain={domain || undefined}
+    >
       <header className="clinical-result-card__header">
         <div className="clinical-result-card__title-wrap">
           <span className="clinical-result-card__type">{typeLabel || result.typeLabel}</span>
@@ -144,12 +169,12 @@ const ClinicalEvaluationResultCard = ({
           {result.supportLabel && (
             <div>
               <dt>{result.supportLabel}</dt>
-              <dd>{result.supportValue || 'Nao informado'}</dd>
+              <dd>{result.supportValue || 'Não informado'}</dd>
             </div>
           )}
           {responsible && (
             <div>
-              <dt>Responsavel</dt>
+              <dt>Responsável</dt>
               <dd>{responsible}</dd>
             </div>
           )}
@@ -176,9 +201,8 @@ const ClinicalEvaluationResultCard = ({
 };
 
 const formatNumber = (value, digits = 1, unit = '') => {
-  if (!Number.isFinite(value)) return 'Nao informado';
+  if (!Number.isFinite(value)) return 'Não informado';
   return `${Number(value).toFixed(digits)}${unit ? ` ${unit}` : ''}`;
 };
 
 export default ClinicalEvaluationResultCard;
-

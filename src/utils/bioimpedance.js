@@ -77,7 +77,7 @@ const resolveBodyFatRange = (sexo, idade) => {
 
 const evaluateBodyFatStatus = ({ percentualGordura, sexo, idade, alvoPercentualGordura }) => {
   if (!Number.isFinite(percentualGordura)) {
-    return { tone: 'neutral', label: 'Sem classificacao de gordura' };
+    return { tone: 'neutral', label: 'Sem classificação de gordura' };
   }
 
   if (Number.isFinite(alvoPercentualGordura)) {
@@ -89,10 +89,10 @@ const evaluateBodyFatStatus = ({ percentualGordura, sexo, idade, alvoPercentualG
   }
 
   const range = resolveBodyFatRange(sexo, idade);
-  if (percentualGordura < range.low) return { tone: 'info', label: 'Percentual de gordura abaixo da faixa de referencia' };
+  if (percentualGordura < range.low) return { tone: 'info', label: 'Percentual de gordura abaixo da faixa de referência' };
   if (percentualGordura <= range.high) return { tone: 'success', label: 'Percentual de gordura em faixa adequada' };
-  if (percentualGordura <= range.warning) return { tone: 'warning', label: 'Percentual de gordura em atencao' };
-  return { tone: 'danger', label: 'Percentual de gordura em faixa critica' };
+  if (percentualGordura <= range.warning) return { tone: 'warning', label: 'Percentual de gordura em atenção' };
+  return { tone: 'danger', label: 'Percentual de gordura em faixa crítica' };
 };
 
 const evaluateHydrationStatus = ({ percentualAguaMassaMagra, percentualAguaPesoCorporal }) => {
@@ -101,35 +101,38 @@ const evaluateHydrationStatus = ({ percentualAguaMassaMagra, percentualAguaPesoC
     : percentualAguaPesoCorporal;
 
   if (!Number.isFinite(hydrationScore)) {
-    return { tone: 'neutral', label: 'Hidratacao nao classificada' };
+    return { tone: 'neutral', label: 'Hidratação não classificada' };
   }
 
-  if (hydrationScore < 69) return { tone: 'danger', label: 'Hidratacao celular baixa' };
-  if (hydrationScore < 72) return { tone: 'warning', label: 'Hidratacao em atencao' };
-  if (hydrationScore <= 78) return { tone: 'success', label: 'Hidratacao adequada' };
-  if (hydrationScore <= 82) return { tone: 'info', label: 'Hidratacao elevada, monitorar' };
-  return { tone: 'warning', label: 'Hidratacao muito elevada, revisar afericao' };
+  if (hydrationScore < 69) return { tone: 'danger', label: 'Hidratação celular baixa' };
+  if (hydrationScore < 72) return { tone: 'warning', label: 'Hidratação em atenção' };
+  if (hydrationScore <= 78) return { tone: 'success', label: 'Hidratação adequada' };
+  if (hydrationScore <= 82) return { tone: 'info', label: 'Hidratação elevada, monitorar' };
+  return { tone: 'warning', label: 'Hidratação muito elevada, revisar aferição' };
 };
 
 export const extractBioimpedanceSnapshot = (evaluation) => {
   const dados = evaluation?.dados || {};
   const resultados = evaluation?.resultados || {};
-  const sources = [dados, resultados, evaluation || {}];
+  const dadosBrutos = dados?.dados_brutos || dados?.input || {};
+  const resultadosCalculados = dados?.resultados_calculados || resultados?.calculated || {};
+  const classificacoes = dados?.classificacoes || resultados?.output || {};
+  const sources = [resultadosCalculados, dadosBrutos, classificacoes, dados, resultados, evaluation || {}];
 
-  const percentualGordura = pickNumber(sources, ['percentual_gordura', 'percentualGordura']);
-  const pesoGordura = pickNumber(sources, ['peso_gordura', 'pesoGordura', 'massaGorda']);
-  const massaMagra = pickNumber(sources, ['massa_magra', 'massaMagra']);
-  const taxaMetabolicaBasal = pickNumber(sources, ['taxa_metabolica_basal', 'taxaMetabolicaBasal', 'tmb']);
-  const aguaTotal = pickNumber(sources, ['agua_total', 'aguaTotal', 'aguaCorporal']);
-  const pesoTotal = pickNumber(sources, ['peso', 'peso_total', 'pesoTotal', 'weight']);
-  const bioresistencia = pickNumber(sources, ['bioresistencia', 'bioresistencia_ohms', 'bioResistencia']);
-  const reatancia = pickNumber(sources, ['reatancia', 'reatancia_ohms', 'reactancia']);
+  const percentualGordura = pickNumber(sources, ['percentual_gordura', 'percentualGordura', 'percentFat']);
+  const pesoGordura = pickNumber(sources, ['peso_gordura', 'pesoGordura', 'massaGorda', 'massa_gorda_kg', 'fatMassKg']);
+  const massaMagra = pickNumber(sources, ['massa_magra', 'massaMagra', 'massa_magra_kg', 'leanMassKg']);
+  const taxaMetabolicaBasal = pickNumber(sources, ['taxa_metabolica_basal', 'taxaMetabolicaBasal', 'tmb', 'tmb_kcal', 'deviceTmbKcal']);
+  const aguaTotal = pickNumber(sources, ['agua_total', 'aguaTotal', 'aguaCorporal', 'agua_total_l', 'tbwL']);
+  const pesoTotal = pickNumber(sources, ['peso', 'peso_total', 'pesoTotal', 'weight', 'weightKg']);
+  const bioresistencia = pickNumber(sources, ['bioresistencia', 'bioresistencia_ohms', 'bioResistencia', 'resistanceOhm']);
+  const reatancia = pickNumber(sources, ['reatancia', 'reatancia_ohms', 'reactancia', 'reactanceOhm']);
   const alvoPercentualGordura = pickNumber(sources, ['alvo_percentual_gordura', 'alvoPercentualGordura']);
   const alvoPesoGordura = pickNumber(sources, ['alvo_peso_gordura', 'alvoPesoGordura']);
   const alvoPesoTotal = pickNumber(sources, ['alvo_peso_total', 'alvoPesoTotal']);
-  const idade = pickNumber(sources, ['idade']);
+  const idade = pickNumber(sources, ['idade', 'ageYears']);
   const sexo = normalizeSex(pickText(sources, ['sexo', 'genero', 'sex']));
-  const imc = pickNumber(sources, ['imc']);
+  const imc = pickNumber(sources, ['imc', 'bmi']);
 
   let percentualAguaPesoCorporal = pickNumber(sources, [
     'percentual_agua_peso_corporal',
@@ -188,7 +191,7 @@ export const evaluateBioimpedanceSnapshot = (snapshot) => {
 };
 
 export const formatBioimpMetric = (value, unit, digits = 1) => {
-  if (!Number.isFinite(value)) return 'Nao informado';
+  if (!Number.isFinite(value)) return 'Não informado';
   return `${Number(value).toFixed(digits)}${unit ? ` ${unit}` : ''}`;
 };
 
@@ -208,7 +211,7 @@ export const buildBioimpVariation = (currentValue, previousValue, { unit = '', l
     return {
       available: true,
       direction: 'flat',
-      label: `Estavel (${absDelta.toFixed(digits)} ${unit})`,
+      label: `Estável (${absDelta.toFixed(digits)} ${unit})`,
       delta: 0
     };
   }
@@ -222,4 +225,3 @@ export const buildBioimpVariation = (currentValue, previousValue, { unit = '', l
     delta
   };
 };
-

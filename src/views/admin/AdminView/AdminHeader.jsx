@@ -175,7 +175,7 @@ const AdminHeader = ({ activeTab, activeIcon }) => {
   const tabLabels = {
     dashboard: "Inicio",
     users: "Membros",
-    patients: "Participantes",
+    patients: "Atletas",
     reports: "Relatorios",
     research: "Projetos",
     ensino: "Ensino",

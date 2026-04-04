@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, User, Mail, Lock, Shield, GraduationCap,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../../services/api';
 import { isValidCpf, isValidEmail, isPastDate, normalizeCpf } from '../../../utils/validation';
+import { formatCpf } from '../../../utils/formatters';
 import { generateInstitutionalEmail } from '../../../utils/institutionalEmail';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
@@ -31,6 +32,24 @@ const createEmptyFormData = () => ({
   coordAtendimento: false,
   lideranca: '',
   email: ''
+});
+
+const USER_FIELD_IDS = Object.freeze({
+  nome: 'user-nome',
+  cpf: 'user-cpf',
+  dataNascimento: 'user-data-nascimento',
+  matriculaAluno: 'user-matricula-aluno',
+  periodo: 'user-periodo',
+  supervisorId: 'user-supervisor-id',
+  curso: 'user-curso',
+  diretoria: 'user-diretoria',
+  lideranca: 'user-lideranca',
+  coordAtendimento: 'user-coord-atendimento',
+  funcao: 'user-funcao',
+  conselhoTipo: 'user-conselho-tipo',
+  conselhoNumero: 'user-conselho-numero',
+  matriculaProfessor: 'user-matricula-professor',
+  projetoId: 'user-projeto-id'
 });
 
 const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
@@ -173,15 +192,6 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
     handleRoleChange(event.target.value);
   };
 
-  const formatCPF = (value) => {
-    return value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
-  };
-
   const handleNameChange = (e) => {
     const nome = e.target.value;
     setFormData(prev => ({
@@ -195,7 +205,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
     const { name, value } = e.target;
     let finalValue = value;
 
-    if (name === 'cpf') finalValue = formatCPF(value);
+    if (name === 'cpf') finalValue = formatCpf(value);
 
     setFormData(prev => {
       return { ...prev, [name]: finalValue };
@@ -218,7 +228,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
       }
       const resolvedEmail = generateEmail(formData.nome);
       if (!resolvedEmail || !isValidEmail(resolvedEmail)) {
-        throw new Error('Email institucional inválido.');
+        throw new Error('E-mail institucional inválido.');
       }
       if (!isValidCpf(normalizeCpf(formData.cpf))) {
         throw new Error('CPF inválido.');
@@ -411,20 +421,23 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
             </div>
 
             <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-              <label>Nome Completo *</label>
-              <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+              <label htmlFor={USER_FIELD_IDS.nome}>Nome Completo *</label>
+              <input className="user-field-input app-modal-input"
                 type="text"
                 name="nome"
+                id={USER_FIELD_IDS.nome}
                 value={formData.nome}
                 onChange={handleNameChange}
+                data-modal-initial-focus
                 placeholder="Nome completo do usuário"
                 required
               />
             </div>
 
             <div className="form-group flex flex-col gap-2">
-              <label>CPF *</label>
-              <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+              <label htmlFor={USER_FIELD_IDS.cpf}>CPF *</label>
+              <input className="user-field-input app-modal-input"
+                id={USER_FIELD_IDS.cpf}
                 type="text"
                 name="cpf"
                 value={formData.cpf}
@@ -436,8 +449,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
             </div>
 
             <div className="form-group flex flex-col gap-2">
-              <label>Data de Nascimento *</label>
-              <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+              <label htmlFor={USER_FIELD_IDS.dataNascimento}>Data de Nascimento *</label>
+              <input className="user-field-input app-modal-input"
+                id={USER_FIELD_IDS.dataNascimento}
                 type="date"
                 name="dataNascimento"
                 value={formData.dataNascimento}
@@ -453,10 +467,11 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                 </div>
 
                 <div className="form-group flex flex-col gap-2">
-                  <label>Matrícula *</label>
-                  <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                  <label htmlFor={USER_FIELD_IDS.matriculaAluno}>Matrícula *</label>
+                  <input className="user-field-input app-modal-input"
                     type="text"
                     name="matricula"
+                    id={USER_FIELD_IDS.matriculaAluno}
                     value={formData.matricula}
                     onChange={handleChange}
                     placeholder="Ex: 2023005512"
@@ -465,8 +480,14 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                 </div>
 
                 <div className="form-group flex flex-col gap-2">
-                  <label>Período *</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10" name="periodo" value={formData.periodo} onChange={handleChange}>
+                  <label htmlFor={USER_FIELD_IDS.periodo}>Período *</label>
+                  <select
+                    id={USER_FIELD_IDS.periodo}
+                    className="user-field-select app-modal-select"
+                    name="periodo"
+                    value={formData.periodo}
+                    onChange={handleChange}
+                  >
                     <option value="">Selecione...</option>
                     {[1,2,3,4,5,6,7,8,9,10].map(p => (
                       <option key={p} value={`${p}º`}>{p}º Período</option>
@@ -475,8 +496,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                 </div>
 
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Supervisor (Professor) *</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                  <label htmlFor={USER_FIELD_IDS.supervisorId}>Supervisor (Professor) *</label>
+                  <select className="user-field-select app-modal-select"
+                    id={USER_FIELD_IDS.supervisorId}
                     name="supervisorId"
                     value={formData.supervisorId}
                     onChange={handleChange}
@@ -492,9 +514,10 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   </select>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Curso *</label>
+                  <label htmlFor={USER_FIELD_IDS.curso}>Curso *</label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                    id={USER_FIELD_IDS.curso}
+                    className="user-field-select app-modal-select"
                     name="curso"
                     value={formData.curso}
                     onChange={handleChange}
@@ -507,9 +530,10 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   </select>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Diretoria (opcional)</label>
+                  <label htmlFor={USER_FIELD_IDS.diretoria}>Diretoria (opcional)</label>
                   <select
-                    className="modern-select w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                    id={USER_FIELD_IDS.diretoria}
+                    className="modern-select user-field-select app-modal-select"
                     name="diretoria"
                     value={formData.diretoria}
                     onChange={handleChange}
@@ -522,9 +546,10 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   </select>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Cargo na Liga (opcional)</label>
+                  <label htmlFor={USER_FIELD_IDS.lideranca}>Cargo na Liga (opcional)</label>
                   <select
-                    className="modern-select w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                    id={USER_FIELD_IDS.lideranca}
+                    className="modern-select user-field-select app-modal-select"
                     name="lideranca"
                     value={formData.lideranca}
                     onChange={handleChange}
@@ -535,8 +560,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   </select>
                 </div>
                 {formData.diretoria === 'diretoria_extensao' && (
-                  <label className="form-group full-width flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 md:col-span-2">
+                  <label className="form-group full-width user-coord-toggle" htmlFor={USER_FIELD_IDS.coordAtendimento}>
                     <input
+                      id={USER_FIELD_IDS.coordAtendimento}
                       type="checkbox"
                       className="modern-checkbox"
                       checked={formData.coordAtendimento}
@@ -554,9 +580,10 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   <h3><Briefcase size={18} /> Tipo de cadastro</h3>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Função *</label>
+                  <label htmlFor={USER_FIELD_IDS.funcao}>Função *</label>
                   <select
-                    className="modern-select w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                    id={USER_FIELD_IDS.funcao}
+                    className="modern-select user-field-select app-modal-select"
                     value={role}
                     onChange={handleStaffRoleChange}
                     disabled={!!initialData}
@@ -574,8 +601,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   <h3><Briefcase size={18} /> Credenciais Profissionais</h3>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Conselho profissional *</label>
-                  <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                  <label htmlFor={USER_FIELD_IDS.conselhoTipo}>Conselho profissional *</label>
+                  <select className="user-field-select app-modal-select"
+                    id={USER_FIELD_IDS.conselhoTipo}
                     name="conselhoTipo"
                     value={formData.conselhoTipo}
                     onChange={handleChange}
@@ -589,8 +617,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   </select>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>Número do conselho *</label>
-                  <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                  <label htmlFor={USER_FIELD_IDS.conselhoNumero}>Número do conselho *</label>
+                  <input className="user-field-input app-modal-input"
+                    id={USER_FIELD_IDS.conselhoNumero}
                     type="text"
                     name="conselhoNumero"
                     value={formData.conselhoNumero}
@@ -608,8 +637,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   <h3><GraduationCap size={18} /> Dados Acadêmicos</h3>
                 </div>
                 <div className="form-group flex flex-col gap-2">
-                  <label>Matrícula *</label>
-                  <input className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                  <label htmlFor={USER_FIELD_IDS.matriculaProfessor}>Matrícula *</label>
+                  <input className="user-field-input app-modal-input"
+                    id={USER_FIELD_IDS.matriculaProfessor}
                     type="text"
                     name="matricula"
                     value={formData.matricula}
@@ -627,9 +657,12 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                   <h3><Briefcase size={18} /> Vínculos</h3>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label>{role === 'professor' || role === 'profissional' ? 'Projeto parceiro' : 'Projeto vinculado'}</label>
+                  <label htmlFor={USER_FIELD_IDS.projetoId}>
+                    {role === 'professor' || role === 'profissional' ? 'Projeto parceiro' : 'Projeto vinculado'}
+                  </label>
                   <select
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-[#103355] focus:outline-none focus:ring-2 focus:ring-[#103355]/10"
+                    id={USER_FIELD_IDS.projetoId}
+                    className="user-field-select app-modal-select"
                     value={formData.projetoId}
                     onChange={handleProjectChange}
                     required={role === 'aluno'}
@@ -655,7 +688,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
 
             <div className="form-group flex flex-col gap-2">
               <label>E-mail institucional (automático)</label>
-              <div className="readonly-field flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <div className="readonly-field user-readonly-field">
                 <Mail size={16} />
                 <span>{formData.email || 'Aguardando nome completo...'}</span>
               </div>
@@ -664,11 +697,11 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
             {!initialData && (
               <div className="form-group flex flex-col gap-2">
                 <label>Senha Inicial</label>
-                <div className="readonly-field highlight flex items-center gap-2 rounded-xl border border-[#103355] bg-[#103355] px-4 py-3 text-sm font-semibold text-white">
+                <div className="readonly-field highlight user-readonly-field user-readonly-field--highlight">
                   <Key size={16} />
                   <span className="password-display">Gerada automaticamente no cadastro</span>
                 </div>
-                <small className="field-hint text-xs text-slate-400">A senha temporária será exibida apenas após criar o usuário.</small>
+                <small className="field-hint user-field-hint">A senha temporária será exibida apenas após criar o usuário.</small>
               </div>
             )}
 
@@ -705,6 +738,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
 };
 
 export default UserModal;
+
 
 
 

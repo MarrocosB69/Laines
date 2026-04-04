@@ -89,7 +89,7 @@ const Ensino = () => {
 
   const handleDelete = async (_collectionName, id, title) => {
     const accepted = await confirm({
-      title: 'Remover conteudo',
+      title: 'Remover conteúdo',
       message: `Deseja remover "${title || 'item selecionado'}"?`,
       confirmLabel: 'Remover',
       cancelLabel: 'Cancelar',
@@ -102,14 +102,14 @@ const Ensino = () => {
       await loadData();
       notify({
         type: 'success',
-        title: 'Conteudo removido',
+        title: 'Conteúdo removido',
         message: 'O item foi removido com sucesso.'
       });
     } catch (error) {
       console.warn('Ensino: falha ao remover item', error);
       notify({
         type: 'error',
-        title: 'Erro ao remover conteudo',
+        title: 'Erro ao remover conteúdo',
         message: getApiErrorMessage(error, 'Não foi possível remover o item.')
       });
     }
@@ -120,10 +120,10 @@ const Ensino = () => {
       <header className="area-header">
         <div>
           <h2>Ensino</h2>
-          <p>Reunioes cientificas, links e materiais de apoio.</p>
+          <p>Reuniões científicas, links e materiais de apoio.</p>
         </div>
         <div className="area-badges">
-          <span className="area-badge"><BookOpen size={14} /> {reunioes.length} reunioes</span>
+          <span className="area-badge"><BookOpen size={14} /> {reunioes.length} reuniões</span>
           <span className="area-badge"><FileText size={14} /> {materiais.length} materiais</span>
         </div>
       </header>
@@ -132,26 +132,26 @@ const Ensino = () => {
         <section className="area-card">
           <div className="area-card-header">
             <div>
-              <h3>Proximas reunioes</h3>
-              <p>Links editaveis e pautas.</p>
+              <h3>Próximas reuniões</h3>
+              <p>Links editáveis e pautas.</p>
             </div>
           </div>
           <div className="area-list">
             {upcomingMeetings.length === 0 ? (
-              <div className="area-empty">Nenhuma reunião cadastrada.</div>
+              <div className="area-empty laines-feedback-state">Nenhuma reunião cadastrada.</div>
             ) : (
               upcomingMeetings.map((item) => (
                 <div key={item.id} className="area-list-item">
                   <div>
                     <strong>{item.titulo}</strong>
-                    <span>{item.data || 'sem data'}</span>
+                    <span>{item.data || 'Sem data'}</span>
                   </div>
                   {item.link ? (
                     <a className="area-link" href={item.link} target="_blank" rel="noreferrer">
                       <LinkIcon size={14} /> Abrir
                     </a>
                   ) : (
-                    <span>sem link</span>
+                    <span>Sem link</span>
                   )}
                 </div>
               ))
@@ -163,7 +163,7 @@ const Ensino = () => {
           <div className="area-card-header">
             <div>
               <h3>Agendar reunião</h3>
-              <p>Cadastre o link e o material de referencia.</p>
+              <p>Cadastre o link e o material de referência.</p>
             </div>
           </div>
           <form className="area-form" onSubmit={handleAddReuniao}>
@@ -186,7 +186,7 @@ const Ensino = () => {
             />
             <textarea
               rows="3"
-              placeholder="Descricao ou pauta"
+              placeholder="Descrição ou pauta"
               value={reuniaoForm.descricao}
               onChange={(e) => setReuniaoForm((prev) => ({ ...prev, descricao: e.target.value }))}
             />
@@ -196,13 +196,13 @@ const Ensino = () => {
           </form>
           <div className="area-list">
             {reunioes.length === 0 ? (
-              <div className="area-empty">Nenhuma reunião cadastrada.</div>
+              <div className="area-empty laines-feedback-state">Nenhuma reunião cadastrada.</div>
             ) : (
               reunioes.map((item) => (
                 <div key={item.id} className="area-list-item">
                   <div>
                     <strong>{item.titulo}</strong>
-                    <span>{item.data || 'sem data'}</span>
+                    <span>{item.data || 'Sem data'}</span>
                   </div>
                   <button type="button" onClick={() => handleDelete('reunioes_cientificas', item.id, item.titulo)}>
                     <Trash2 size={14} />
@@ -217,14 +217,14 @@ const Ensino = () => {
           <div className="area-card-header">
             <div>
               <h3>Materiais de ensino</h3>
-              <p>Artigos, guias e referencias.</p>
+              <p>Artigos, guias e referências.</p>
             </div>
             <FileText size={20} />
           </div>
           <form className="area-form" onSubmit={handleAddMaterial}>
             <input
               type="text"
-              placeholder="Titulo do material"
+              placeholder="Título do material"
               value={materialForm.titulo}
               onChange={(e) => setMaterialForm((prev) => ({ ...prev, titulo: e.target.value }))}
             />
@@ -244,7 +244,7 @@ const Ensino = () => {
             />
             <textarea
               rows="3"
-              placeholder="Descricao"
+              placeholder="Descrição"
               value={materialForm.descricao}
               onChange={(e) => setMaterialForm((prev) => ({ ...prev, descricao: e.target.value }))}
             />
@@ -254,7 +254,7 @@ const Ensino = () => {
           </form>
           <div className="area-list">
             {materiais.length === 0 ? (
-              <div className="area-empty">Nenhum material cadastrado.</div>
+              <div className="area-empty laines-feedback-state">Nenhum material cadastrado.</div>
             ) : (
               materiais.map((item) => (
                 <div key={item.id} className="area-list-item">

@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircle, CheckCircle2, LogOut, Save, UserRound } from 'lucide-react';
+import { AlertCircle, CheckCircle2, LogOut, Save, UserRound, X } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { isStudentMemberRole, normalizeRole } from '../../constants/roles';
@@ -143,6 +143,16 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
               Precisamos dos dados obrigatórios para liberar o uso completo do sistema.
             </p>
           </div>
+          <button
+            type="button"
+            className="app-modal-close"
+            onClick={logout}
+            disabled={saving}
+            aria-label="Sair da sessão"
+            title="Sair"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <form className="app-modal-body profile-completion-form" onSubmit={handleSubmit}>

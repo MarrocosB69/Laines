@@ -6,7 +6,7 @@ import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { getApiErrorMessage } from '../../../services/api';
 import { getAllowedAdminTabs } from '../../../constants/adminTabs';
 import { normalizeRole } from '../../../constants/roles';
-import logoLaines from '../../../assets/LogoLaines.png';
+import logoLaines from '../../../assets/LogoLaines.webp';
 import '../../SidebarShell.css';
 
 import {
@@ -21,8 +21,11 @@ import {
   Inbox,
   FlaskConical,
   BookOpen,
-  Users2
+  Users2,
+  GraduationCap
 } from 'lucide-react';
+
+const navIcon = (IconComponent) => <IconComponent size={18} strokeWidth={1.8} />;
 
 const ROLE_LABELS = Object.freeze({
   admin: 'Administração',
@@ -45,7 +48,7 @@ const NAVIGATION_GROUPS = Object.freeze([
         id: 'dashboard',
         label: 'Início',
         hint: 'Resumo do painel',
-        icon: <LayoutDashboard size={18} />
+        icon: navIcon(LayoutDashboard)
       }
     ]
   },
@@ -57,19 +60,19 @@ const NAVIGATION_GROUPS = Object.freeze([
         id: 'users',
         label: 'Membros',
         hint: 'Equipe interna da liga',
-        icon: <Users size={18} />
+        icon: navIcon(Users)
       },
       {
         id: 'patients',
-        label: 'Participantes',
+        label: 'Atletas',
         hint: 'Pessoas atendidas e acompanhadas',
-        icon: <UserCircle size={18} />
+        icon: navIcon(UserCircle)
       },
       {
         id: 'requests',
         label: 'Solicitações',
         hint: 'Pedidos e aprovações pendentes',
-        icon: <Inbox size={18} />
+        icon: navIcon(Inbox)
       }
     ]
   },
@@ -81,19 +84,19 @@ const NAVIGATION_GROUPS = Object.freeze([
         id: 'research',
         label: 'Projetos',
         hint: 'Pesquisa e iniciativas ativas',
-        icon: <FlaskConical size={18} />
+        icon: navIcon(FlaskConical)
       },
       {
         id: 'ensino',
         label: 'Ensino',
         hint: 'Trilhas e conteúdos acadêmicos',
-        icon: <BookOpen size={18} />
+        icon: navIcon(BookOpen)
       },
       {
         id: 'extensao',
         label: 'Extensão',
         hint: 'Ações com a comunidade',
-        icon: <Users2 size={18} />
+        icon: navIcon(Users2)
       }
     ]
   },
@@ -105,7 +108,7 @@ const NAVIGATION_GROUPS = Object.freeze([
         id: 'reports',
         label: 'Relatórios',
         hint: 'Indicadores e histórico',
-        icon: <FileText size={18} />
+        icon: navIcon(FileText)
       }
     ]
   },
@@ -117,13 +120,13 @@ const NAVIGATION_GROUPS = Object.freeze([
         id: 'settings',
         label: 'Configurações',
         hint: 'Preferências e parâmetros',
-        icon: <Settings size={18} />
+        icon: navIcon(Settings)
       }
     ]
   }
 ]);
 
-const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }) => {
+const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false, requestsCount = 0 }) => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { notify } = useUiFeedback();
@@ -141,6 +144,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }
 
   const allowedTabs = getAllowedAdminTabs(user?.role);
   const normalizedRole = normalizeRole(user?.role);
+  const canAccessStudentPortal = normalizedRole === 'presidente' || normalizedRole === 'vice';
   const roleLabel = ROLE_LABELS[normalizedRole] || 'Administração';
   const isCollapsed = !isOpen && !isMobile;
   const shouldRenderSidebar = isMobile ? isOpen : true;
@@ -173,6 +177,17 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }
     }
   };
 
+  const handleOpenStudentArea = () => {
+    navigate('/aluno', {
+      state: {
+        returnAdminTab: activeTab || 'dashboard'
+      }
+    });
+    if (window.innerWidth <= 768 && isOpen) {
+      onToggle();
+    }
+  };
+
   return (
     <>
       <motion.aside
@@ -183,8 +198,14 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }
       >
         <div className="laines-sidebar__header">
           <div className="laines-sidebar__brand">
-            <span className="laines-sidebar__logo-mark" aria-hidden="true">
-              <img src={logoLaines} alt="" />
+            <span className="laines-sidebar__logo-mark" aria-hidden={!isCollapsed}>
+              <img
+                src={logoLaines}
+                alt={isCollapsed ? 'LAINES' : ''}
+                width="512"
+                height="512"
+                decoding="async"
+              />
             </span>
             {!isCollapsed && (
               <div>
@@ -216,35 +237,76 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }
         </div>
 
         <nav className="laines-sidebar__nav custom-scrollbar" aria-label="Navegação principal">
-          {navigationGroups.map((group) => (
-            <section className="laines-sidebar__section" key={group.id} aria-label={group.label}>
-              {!isCollapsed && <h3 className="laines-sidebar__section-title">{group.label}</h3>}
+          {navigationGroups.map((group, groupIndex) => (
+            <React.Fragment key={group.id}>
+              <section className="laines-sidebar__section" aria-label={group.label}>
+                {!isCollapsed && <h3 className="laines-sidebar__section-title">{group.label}</h3>}
+                {isCollapsed && <div className="laines-sidebar__section-divider" aria-hidden="true" />}
+                <div className="laines-sidebar__section-items">
+                  {group.items.map((item) => {
+                    const isActive = activeTab === item.id;
+                    const tooltipText = item.hint ? `${item.label}: ${item.hint}` : item.label;
+                    const hasRequestsBadge = (
+                      item.id === 'requests'
+                      && Number.isFinite(requestsCount)
+                      && requestsCount > 0
+                    );
+
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleSelectTab(item.id)}
+                        className={`laines-sidebar__item ${isActive ? 'laines-sidebar__item--active' : ''}`}
+                        aria-label={isCollapsed ? tooltipText : item.label}
+                        title={isCollapsed ? tooltipText : item.label}
+                        data-tooltip={isCollapsed ? tooltipText : undefined}
+                      >
+                        <div className="laines-sidebar__item-icon" aria-hidden="true">{item.icon}</div>
+                        {!isCollapsed && (
+                          <span className="laines-sidebar__item-label">{item.label}</span>
+                        )}
+                        {!isCollapsed && hasRequestsBadge && (
+                          <span
+                            className={`laines-sidebar__requests-badge ${isActive ? 'laines-sidebar__requests-badge--active' : ''}`}
+                            aria-label={`${Math.trunc(requestsCount)} solicitações pendentes`}
+                          >
+                            {Math.trunc(requestsCount)}
+                          </span>
+                        )}
+                        {isActive && <div className="laines-sidebar__item-indicator" aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+              {!isCollapsed && groupIndex < navigationGroups.length - 1 && (
+                <div className="laines-sidebar__group-divider" aria-hidden="true" />
+              )}
+            </React.Fragment>
+          ))}
+          {canAccessStudentPortal && (
+            <section className="laines-sidebar__section" aria-label="Área acadêmica">
+              {!isCollapsed && <h3 className="laines-sidebar__section-title">Área acadêmica</h3>}
               {isCollapsed && <div className="laines-sidebar__section-divider" aria-hidden="true" />}
               <div className="laines-sidebar__section-items">
-                {group.items.map((item) => {
-                  const isActive = activeTab === item.id;
-                  const tooltipText = item.hint ? `${item.label}: ${item.hint}` : item.label;
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleSelectTab(item.id)}
-                      className={`laines-sidebar__item ${isActive ? 'laines-sidebar__item--active' : ''}`}
-                      aria-label={isCollapsed ? tooltipText : item.label}
-                      title={isCollapsed ? tooltipText : item.label}
-                      data-tooltip={isCollapsed ? tooltipText : undefined}
-                    >
-                      <div className="laines-sidebar__item-icon" aria-hidden="true">{item.icon}</div>
-                      {!isCollapsed && (
-                        <span className="laines-sidebar__item-label">{item.label}</span>
-                      )}
-                      {isActive && <div className="laines-sidebar__item-indicator" aria-hidden="true" />}
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={handleOpenStudentArea}
+                  className="laines-sidebar__item"
+                  aria-label={isCollapsed ? 'Abrir área do aluno' : 'Área do aluno'}
+                  title="Abrir área do aluno"
+                  data-tooltip={isCollapsed ? 'Abrir área do aluno' : undefined}
+                >
+                  <div className="laines-sidebar__item-icon" aria-hidden="true">
+                    <GraduationCap size={18} strokeWidth={1.8} />
+                  </div>
+                  {!isCollapsed && (
+                    <span className="laines-sidebar__item-label">Área do aluno</span>
+                  )}
+                </button>
               </div>
             </section>
-          ))}
+          )}
         </nav>
 
         <div className="laines-sidebar__footer">
@@ -259,7 +321,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }
               )}
             </div>
             <button onClick={handleLogout} className="laines-sidebar__logout" title="Encerrar sessão" aria-label="Encerrar sessão">
-              <LogOut size={17} />
+              <LogOut size={17} strokeWidth={1.8} />
             </button>
           </div>
         </div>
@@ -271,7 +333,7 @@ const Sidebar = ({ activeTab, setActiveTab, isOpen, onToggle, isMobile = false }
           className="laines-sidebar__toggle"
           aria-label="Abrir menu"
         >
-          <ChevronRight size={20} />
+          <ChevronRight size={20} strokeWidth={1.8} />
         </button>
       )}
     </>

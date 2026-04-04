@@ -21,6 +21,22 @@ const normalizeType = (value: unknown): string => (
     .replace(/\s+/g, '_')
 );
 
+const asRecord = (value: unknown): JsonRecord => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as JsonRecord;
+};
+
+const toTextArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+};
+
+const mergeRecords = (...records: JsonRecord[]): JsonRecord => (
+  records.reduce<JsonRecord>((acc, record) => ({ ...acc, ...record }), {})
+);
+
 const pick = (sources: JsonRecord[], aliases: string[]): unknown => {
   for (const source of sources) {
     for (const alias of aliases) {
@@ -54,6 +70,9 @@ type PayloadShape = {
   tipo?: string;
   dados?: JsonRecord;
   resultados?: JsonRecord;
+  meta?: JsonRecord;
+  formulaId?: string;
+  formulaVersion?: string;
   classificacao?: string;
   classificacaoLabel?: string;
 };
@@ -63,45 +82,158 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
     return payload;
   }
 
-  const dados = (payload.dados || {}) as JsonRecord;
-  const resultados = (payload.resultados || {}) as JsonRecord;
-  const sources = [dados, resultados, payload as unknown as JsonRecord];
+  const payloadRecord = asRecord(payload as unknown);
+  const dados = asRecord(payload.dados);
+  const resultados = asRecord(payload.resultados);
+  const meta = asRecord(payload.meta);
 
-  const percentualGordura = toNumber(pick(sources, ['percentual_gordura', 'percentualGordura']));
-  const pesoTotal = toNumber(pick(sources, ['peso', 'peso_total', 'pesoTotal', 'weight']));
-  const pesoGorduraRaw = toNumber(pick(sources, ['peso_gordura', 'pesoGordura', 'massaGorda']));
+  const canonicalDadosBrutos = mergeRecords(
+    asRecord(dados.dados_brutos),
+    asRecord(dados.input),
+    asRecord(payloadRecord.dados_brutos),
+    asRecord(payloadRecord.input)
+  );
+  const canonicalResultadosCalculados = mergeRecords(
+    asRecord(dados.resultados_calculados),
+    asRecord(resultados.calculated),
+    asRecord(payloadRecord.resultados_calculados)
+  );
+  const canonicalClassificacoes = mergeRecords(
+    asRecord(dados.classificacoes),
+    asRecord(resultados.output),
+    asRecord(payloadRecord.classificacoes)
+  );
+  const canonicalMetadadosFormula = mergeRecords(
+    asRecord(dados.metadados_formula),
+    asRecord(payloadRecord.metadados_formula)
+  );
+  const canonicalComparacao = mergeRecords(
+    asRecord(dados.comparacao),
+    asRecord(resultados.comparacao),
+    asRecord(payloadRecord.comparacao)
+  );
+
+  const valueSources = [
+    canonicalResultadosCalculados,
+    canonicalDadosBrutos,
+    canonicalClassificacoes,
+    canonicalMetadadosFormula,
+    canonicalComparacao,
+    dados,
+    resultados,
+    payloadRecord
+  ];
+
+  const percentualGordura = toNumber(pick(valueSources, ['percentual_gordura', 'percentualGordura', 'percentFat']));
+  const pesoTotal = toNumber(pick(valueSources, ['peso', 'peso_total', 'pesoTotal', 'weight', 'weightKg']));
+  const pesoGorduraRaw = toNumber(pick(valueSources, ['peso_gordura', 'pesoGordura', 'massaGorda', 'massa_gorda_kg', 'fatMassKg']));
   const pesoGordura = Number.isFinite(pesoGorduraRaw)
     ? pesoGorduraRaw
     : (Number.isFinite(percentualGordura) && Number.isFinite(pesoTotal)
       ? ((percentualGordura as number) / 100) * (pesoTotal as number)
       : null);
-  const massaMagra = toNumber(pick(sources, ['massa_magra', 'massaMagra']));
-  const taxaMetabolicaBasal = toNumber(pick(sources, ['taxa_metabolica_basal', 'taxaMetabolicaBasal', 'tmb']));
-  const aguaTotal = toNumber(pick(sources, ['agua_total', 'aguaTotal', 'aguaCorporal']));
-  const bioresistencia = toNumber(pick(sources, ['bioresistencia', 'bioresistencia_ohms', 'bioResistencia']));
-  const reatancia = toNumber(pick(sources, ['reatancia', 'reatancia_ohms', 'reactancia']));
-  const alvoPercentualGordura = toNumber(pick(sources, ['alvo_percentual_gordura', 'alvoPercentualGordura']));
-  const alvoPesoGordura = toNumber(pick(sources, ['alvo_peso_gordura', 'alvoPesoGordura']));
-  const alvoPesoTotal = toNumber(pick(sources, ['alvo_peso_total', 'alvoPesoTotal']));
-  const idade = toNumber(pick(sources, ['idade']));
-  const sexo = toText(pick(sources, ['sexo', 'genero', 'sex'])) || '';
+  const massaMagra = toNumber(pick(valueSources, ['massa_magra', 'massaMagra', 'massa_magra_kg', 'leanMassKg']));
+  const taxaMetabolicaBasal = toNumber(pick(valueSources, ['taxa_metabolica_basal', 'taxaMetabolicaBasal', 'tmb', 'tmb_kcal', 'deviceTmbKcal']));
+  const aguaTotal = toNumber(pick(valueSources, ['agua_total', 'aguaTotal', 'aguaCorporal', 'agua_total_l', 'tbwL']));
+  const bioresistencia = toNumber(pick(valueSources, ['bioresistencia', 'bioresistencia_ohms', 'bioResistencia', 'resistanceOhm']));
+  const reatancia = toNumber(pick(valueSources, ['reatancia', 'reatancia_ohms', 'reactancia', 'reactanceOhm']));
+  const alvoPercentualGordura = toNumber(pick(valueSources, ['alvo_percentual_gordura', 'alvoPercentualGordura']));
+  const alvoPesoGordura = toNumber(pick(valueSources, ['alvo_peso_gordura', 'alvoPesoGordura']));
+  const alvoPesoTotal = toNumber(pick(valueSources, ['alvo_peso_total', 'alvoPesoTotal']));
+  const idade = toNumber(pick(valueSources, ['idade', 'ageYears']));
+  const sexo = toText(pick(valueSources, ['sexo', 'genero', 'sex']));
+  const ffmi = toNumber(pick(valueSources, ['ffmi']));
+  const phaseAngle = toNumber(pick(valueSources, ['phaseAngle', 'anguloFase']));
+  const ecwIcwRatio = toNumber(pick(valueSources, ['ecwIcwRatio', 'ecw_icw_ratio']));
+  const tmbCunningham = toNumber(pick(valueSources, ['tmbCunningham', 'tmb_cunningham']));
+  const tmbGuedes = toNumber(pick(valueSources, ['tmbGuedes', 'tmb_guedes']));
+  const diffDeviceVsCunningham = toNumber(pick(valueSources, ['diffDeviceVsCunningham', 'diff_device_vs_cunningham']));
+  const diffDeviceVsGuedes = toNumber(pick(valueSources, ['diffDeviceVsGuedes', 'diff_device_vs_guedes']));
 
   let percentualAguaPesoCorporal = toNumber(
-    pick(sources, ['percentual_agua_peso_corporal', 'percentualAguaPesoCorporal'])
+    pick(valueSources, ['percentual_agua_peso_corporal', 'percentualAguaPesoCorporal'])
   );
   if (!Number.isFinite(percentualAguaPesoCorporal) && Number.isFinite(aguaTotal) && Number.isFinite(pesoTotal) && (pesoTotal as number) > 0) {
     percentualAguaPesoCorporal = ((aguaTotal as number) / (pesoTotal as number)) * 100;
   }
 
   let percentualAguaMassaMagra = toNumber(
-    pick(sources, ['percentual_agua_massa_magra', 'percentualAguaMassaMagra'])
+    pick(valueSources, ['percentual_agua_massa_magra', 'percentualAguaMassaMagra'])
   );
   if (!Number.isFinite(percentualAguaMassaMagra) && Number.isFinite(aguaTotal) && Number.isFinite(massaMagra) && (massaMagra as number) > 0) {
     percentualAguaMassaMagra = ((aguaTotal as number) / (massaMagra as number)) * 100;
   }
 
-  const classificacao = toText(payload.classificacao) || classifyBodyFat(percentualGordura);
-  const classificacaoLabel = toText(payload.classificacaoLabel) || classificacao;
+  const completude = toNumber(pick([dados, meta, payloadRecord], ['completude']));
+  const pendencias = toTextArray(pick([dados, meta, payloadRecord], ['pendencias']));
+
+  const formulaId = toText(payload.formulaId) || toText(pick([canonicalMetadadosFormula], ['formulaId', 'formula_id']));
+  const formulaVersion = toText(payload.formulaVersion) || toText(pick([canonicalMetadadosFormula], ['formulaVersion', 'formula_version']));
+
+  const classificacao = toText(payload.classificacao)
+    || toText(pick([canonicalClassificacoes], ['bodyFat', 'classificacaoGordura']))
+    || classifyBodyFat(percentualGordura);
+  const classificacaoLabel = toText(payload.classificacaoLabel)
+    || toText(pick([canonicalClassificacoes], ['bodyFatClassificacao', 'classificacao']))
+    || classificacao;
+
+  const deltaMetaPercentualGordura = Number.isFinite(percentualGordura) && Number.isFinite(alvoPercentualGordura)
+    ? (percentualGordura as number) - (alvoPercentualGordura as number)
+    : null;
+
+  const normalizedDadosBrutos = compact({
+    ...canonicalDadosBrutos,
+    percentFat: percentualGordura,
+    fatMassKg: pesoGordura,
+    leanMassKg: massaMagra,
+    tbwL: aguaTotal,
+    resistanceOhm: bioresistencia,
+    reactanceOhm: reatancia,
+    weightKg: pesoTotal,
+    ageYears: idade,
+    sex: sexo
+  });
+
+  const normalizedResultadosCalculados = compact({
+    ...canonicalResultadosCalculados,
+    percentual_gordura: percentualGordura,
+    percentualGordura: percentualGordura,
+    massa_gorda_kg: pesoGordura,
+    massa_magra_kg: massaMagra,
+    massaMagra: massaMagra,
+    massa_magra: massaMagra,
+    agua_total_l: aguaTotal,
+    percentual_agua_peso_corporal: percentualAguaPesoCorporal,
+    percentual_agua_massa_magra: percentualAguaMassaMagra,
+    tmb_kcal: taxaMetabolicaBasal,
+    ffmi,
+    phaseAngle,
+    ecwIcwRatio,
+    tmbCunningham,
+    tmbGuedes,
+    diffDeviceVsCunningham,
+    diffDeviceVsGuedes
+  });
+
+  const normalizedClassificacoes = compact({
+    ...canonicalClassificacoes,
+    bodyFat: classificacao,
+    bodyFatClassificacao: classificacaoLabel,
+    classificacaoGordura: classificacao
+  });
+
+  const normalizedMetadadosFormula = compact({
+    ...canonicalMetadadosFormula,
+    formulaId: formulaId || undefined,
+    formulaVersion: formulaVersion || undefined
+  });
+
+  const normalizedComparacao = compact({
+    ...canonicalComparacao,
+    delta_meta_percentual_gordura: Number.isFinite(deltaMetaPercentualGordura)
+      ? Number((deltaMetaPercentualGordura as number).toFixed(2))
+      : undefined
+  });
 
   const normalizedDados = compact({
     ...dados,
@@ -131,7 +263,14 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
     alvoPesoTotal,
     alvo_peso_total: alvoPesoTotal,
     sexo,
-    idade
+    idade,
+    dados_brutos: normalizedDadosBrutos,
+    resultados_calculados: normalizedResultadosCalculados,
+    classificacoes: normalizedClassificacoes,
+    metadados_formula: normalizedMetadadosFormula,
+    comparacao: normalizedComparacao,
+    completude: Number.isFinite(completude) ? completude : undefined,
+    pendencias: pendencias.length ? pendencias : undefined
   });
 
   const normalizedResultados = compact({
@@ -159,7 +298,27 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
     alvo_peso_gordura: alvoPesoGordura,
     alvoPesoTotal,
     alvo_peso_total: alvoPesoTotal,
-    classificacaoGordura: classificacao
+    classificacaoGordura: classificacao,
+    calculated: compact({
+      ...asRecord(resultados.calculated),
+      percentualGordura,
+      percentual_gordura: percentualGordura,
+      massaMagra,
+      massa_magra: massaMagra,
+      ffmi,
+      phaseAngle,
+      ecwIcwRatio,
+      tmbCunningham,
+      tmbGuedes,
+      diffDeviceVsCunningham,
+      diffDeviceVsGuedes
+    }),
+    output: compact({
+      ...asRecord(resultados.output),
+      classificacaoGordura: classificacao,
+      bodyFatClassificacao: classificacaoLabel
+    }),
+    comparacao: normalizedComparacao
   });
 
   return {
@@ -170,4 +329,3 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
     classificacaoLabel
   };
 };
-

@@ -13,6 +13,10 @@ export class Avaliacao {
   id!: string;
 
   @Index()
+  @Column({ name: 'sessao_id', type: 'uuid', nullable: true })
+  sessaoId?: string;
+
+  @Index()
   @Column({ length: 60 })
   tipo!: string;
 
@@ -51,6 +55,24 @@ export class Avaliacao {
 
   @Column({ name: 'auto_save', type: 'boolean', default: false })
   autoSave!: boolean;
+
+  @Column({ name: 'schema_version', type: 'smallint', default: 1 })
+  schemaVersion!: number;
+
+  @Column({ name: 'formula_id', length: 60, nullable: true })
+  formulaId?: string;
+
+  @Column({ name: 'formula_version', length: 30, nullable: true })
+  formulaVersion?: string;
+
+  @Column({ name: 'source_system', length: 40, nullable: true })
+  sourceSystem?: string;
+
+  @Column({ name: 'source_ref', length: 120, nullable: true })
+  sourceRef?: string;
+
+  @Column({ name: 'measured_at', type: 'timestamptz', nullable: true })
+  measuredAt?: Date;
 
   @Column({ name: 'total_diario', type: 'float', nullable: true })
   totalDiario?: number;

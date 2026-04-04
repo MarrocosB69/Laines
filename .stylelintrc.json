@@ -1,0 +1,21 @@
+{
+  "extends": [
+    "stylelint-config-standard"
+  ],
+  "rules": {
+    "color-no-hex": [
+      true,
+      {
+        "severity": "warning",
+        "message": "Use variáveis CSS (ex: var(--color-primary)) em vez de hex hardcoded."
+      }
+    ],
+    "alpha-value-notation": "number",
+    "color-function-notation": "modern"
+  },
+  "ignoreFiles": [
+    "dist/**",
+    "node_modules/**",
+    "src/index.css"
+  ]
+}

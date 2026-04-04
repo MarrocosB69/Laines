@@ -215,10 +215,10 @@ const seedEvaluations = async (client) => {
         $6,
         'Projeto CI Analytics',
         'concluida',
-        CURRENT_DATE - INTERVAL '1 day',
+        CURRENT_DATE,
         $7::jsonb,
-        NOW() - INTERVAL '1 day',
-        NOW() - INTERVAL '1 day'
+        NOW() - INTERVAL '1 hour',
+        NOW() - INTERVAL '1 hour'
       ),
       (
         $2,
@@ -227,10 +227,10 @@ const seedEvaluations = async (client) => {
         $6,
         'Projeto CI Analytics',
         'concluida',
-        CURRENT_DATE - INTERVAL '2 days',
+        CURRENT_DATE,
         $8::jsonb,
-        NOW() - INTERVAL '2 days',
-        NOW() - INTERVAL '2 days'
+        NOW() - INTERVAL '2 hours',
+        NOW() - INTERVAL '2 hours'
       ),
       (
         $3,
@@ -239,10 +239,10 @@ const seedEvaluations = async (client) => {
         $6,
         'Projeto CI Analytics',
         'concluida',
-        CURRENT_DATE - INTERVAL '3 days',
+        CURRENT_DATE,
         $9::jsonb,
-        NOW() - INTERVAL '3 days',
-        NOW() - INTERVAL '3 days'
+        NOW() - INTERVAL '3 hours',
+        NOW() - INTERVAL '3 hours'
       )
     ON CONFLICT (id)
     DO UPDATE SET

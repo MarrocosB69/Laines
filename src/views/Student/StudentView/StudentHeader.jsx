@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Sun, Moon, ChevronRight } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 
 import '../../admin/AdminView/AdminHeader.css';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -17,8 +17,8 @@ const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   }, [user]);
 
   const labels = {
-    dashboard: 'Visão Geral',
-    patients: 'Pacientes',
+    dashboard: 'Visão geral',
+    patients: 'Atletas',
     agenda: 'Agenda'
   };
   const currentLabel = labels[activeTab] || activeTab;
@@ -26,16 +26,11 @@ const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   return (
     <header className="admin-header">
       <div className="header-left">
-        <div className="breadcrumb">
-          <div className="breadcrumb-item">
-            <span className="breadcrumb-text mute">ÁREA DO ALUNO</span>
-          </div>
-          <ChevronRight size={14} className="breadcrumb-separator" />
-          <div className="breadcrumb-item active">
-            {activeIcon && <span className="icon-wrapper">{activeIcon}</span>}
-            <span className="breadcrumb-text capitalize">{currentLabel}</span>
-          </div>
+        <div className="header-page-title-row">
+          {activeIcon && <span className="icon-wrapper">{activeIcon}</span>}
+          <h1 className="header-page-title">{currentLabel}</h1>
         </div>
+        <p className="header-page-subtitle">Área do aluno</p>
       </div>
 
       <div className="header-controls">
@@ -44,7 +39,7 @@ const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
           className="header-btn theme-toggle"
           aria-label="Alternar tema"
         >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
         <div className="user-profile-mini">

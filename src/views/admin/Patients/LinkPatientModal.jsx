@@ -57,7 +57,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
       return true;
     });
 
-    // Ordenacao
+    // Ordenação
     filtered.sort((a, b) => {
       switch(sortBy) {
         case 'name':
@@ -82,7 +82,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
 
     const student = students.find(s => s.id === selectedStudent);
     if (student?.limiteAtingido) {
-      setError('Este aluno ja atingiu o limite maximo de pacientes');
+      setError('Este aluno já atingiu o limite máximo de atletas.');
       return;
     }
 
@@ -92,13 +92,13 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
 
     try {
       await onLink(patient.id, selectedStudent);
-      setSuccess('Paciente vinculado com sucesso!');
+      setSuccess('Atleta vinculado com sucesso!');
       
       setTimeout(() => {
         handleRequestClose();
       }, 1500);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Erro ao vincular paciente. Tente novamente.'));
+      setError(getApiErrorMessage(err, 'Erro ao vincular atleta. Tente novamente.'));
     } finally {
       setIsLinking(false);
     }
@@ -161,7 +161,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
             {/* Header */}
             <header className="modal-header app-modal-header">
               <div className="header-left app-modal-heading">
-                <h2 id="link-patient-modal-title" className="app-modal-title">Vincular Paciente</h2>
+                <h2 id="link-patient-modal-title" className="app-modal-title">Vincular Atleta</h2>
                 <p className="app-modal-subtitle">Selecione um aluno para realizar o acompanhamento</p>
               </div>
               <button 
@@ -217,7 +217,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Buscar aluno por nome, email, matricula..."
+                  placeholder="Buscar aluno por nome, e-mail, matrícula..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -228,6 +228,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                     type="button"
                     onClick={() => setSearchTerm('')}
                     className="clear-search"
+                    aria-label="Limpar busca"
                   >
                     <X size={16} />
                   </button>
@@ -255,6 +256,8 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                     onClick={() => setViewMode('list')}
                     className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
                     disabled={isLinking}
+                    aria-label="Exibir alunos em lista"
+                    title="Exibir em lista"
                   >
                     <Users size={18} />
                   </button>
@@ -263,6 +266,8 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                     onClick={() => setViewMode('grid')}
                     className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
                     disabled={isLinking}
+                    aria-label="Exibir alunos em grade"
+                    title="Exibir em grade"
                   >
                     <BookOpen size={18} />
                   </button>
@@ -273,9 +278,9 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
             {/* Lista de Alunos */}
             <div className="students-section">
               <div className="section-header">
-                <h4>Membros disponíveis</h4>
+                <h4>Alunos disponíveis</h4>
                 <span className="students-count">
-                  {filteredAndSortedStudents.length} de {students.length} membros
+                  {filteredAndSortedStudents.length} de {students.length} alunos
                 </span>
               </div>
 
@@ -395,11 +400,11 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
 
                         <div className="card-content">
                           <h5 className="student-name">{student.nome || 'Aluno sem nome'}</h5>
-                          <p className="student-email">{student.email || 'Sem email'}</p>
+                          <p className="student-email">{student.email || 'Sem e-mail'}</p>
                           
                           <div className="card-stats">
                             <div className="card-stat">
-                              <div className="stat-label">Pacientes</div>
+                              <div className="stat-label">Atletas</div>
                               <div className={`stat-value ${student.limiteAtingido ? 'limit' : ''}`}>
                                 {student.pacientesAtuais || 0}
                               </div>
@@ -430,12 +435,13 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
             {selectedStudentData && (
               <div className="selected-preview">
                 <div className="preview-header">
-                  <h4>Aluno Selecionado</h4>
+                  <h4>Aluno selecionado</h4>
                   <button
                     type="button"
                     onClick={() => setSelectedStudent('')}
                     className="clear-selection"
                     disabled={isLinking}
+                    aria-label="Remover seleção"
                   >
                     <X size={16} />
                   </button>

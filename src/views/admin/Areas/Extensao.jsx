@@ -143,12 +143,12 @@ const Extensao = () => {
           </div>
           <div className="area-list">
             {upcomingAppointments.length === 0 ? (
-              <div className="area-empty">Nenhum atendimento registrado.</div>
+              <div className="area-empty laines-feedback-state">Nenhum atendimento registrado.</div>
             ) : (
               upcomingAppointments.map((item) => (
                 <div key={item.id} className="area-list-item">
                   <div>
-                    <strong>{item.pacienteNome || 'Paciente'}</strong>
+                    <strong>{item.pacienteNome || 'Atleta'}</strong>
                     <span>{item.status || 'agendada'}</span>
                   </div>
                   <span>{item.time || '--:--'}</span>
@@ -202,13 +202,13 @@ const Extensao = () => {
           </form>
           <div className="area-list">
             {capacitacoes.length === 0 ? (
-              <div className="area-empty">Nenhuma capacitação cadastrada.</div>
+              <div className="area-empty laines-feedback-state">Nenhuma capacitação cadastrada.</div>
             ) : (
               capacitacoes.map((item) => (
                 <div key={item.id} className="area-list-item">
                   <div>
                     <strong>{item.titulo}</strong>
-                    <span>{item.publico} - {item.data || 'sem data'}</span>
+                    <span>{item.publico} - {item.data || 'Sem data'}</span>
                   </div>
                   <button type="button" onClick={() => handleDelete('capacitacoes', item.id, item.titulo)}>
                     <Trash2 size={14} />
@@ -260,7 +260,7 @@ const Extensao = () => {
           </form>
           <div className="area-list">
             {materiais.length === 0 ? (
-              <div className="area-empty">Nenhum material cadastrado.</div>
+              <div className="area-empty laines-feedback-state">Nenhum material cadastrado.</div>
             ) : (
               materiais.map((item) => (
                 <div key={item.id} className="area-list-item">

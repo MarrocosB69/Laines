@@ -87,7 +87,7 @@ export const PacienteCoreProvider = ({ children }) => {
 
   const filterPacientesByRole = useCallback((items) => {
     if (!user?.role) return items;
-    if (user.role === 'aluno') {
+    if (isStudentMemberRole(user.role)) {
       return items.filter((p) => {
         const isAlunoResponsavel = p.alunoResponsavelId === user.uid || p.alunoResponsavel?.id === user.uid;
         const isTeamMember = Array.isArray(p.equipeTecnicaIds) && p.equipeTecnicaIds.includes(user.uid);
@@ -182,7 +182,7 @@ export const PacienteCoreProvider = ({ children }) => {
       if (!allowedCreatorRoles.has(user?.role)) {
         throw new Error('Seu perfil não possui permissão para cadastrar pacientes.');
       }
-      const shouldAutoLinkAluno = user?.role === 'aluno' && !pacienteData.alunoResponsavel;
+      const shouldAutoLinkAluno = isStudentMemberRole(user?.role) && !pacienteData.alunoResponsavel;
       const alunoResponsavel = shouldAutoLinkAluno ? {
         id: user.uid,
         nome: user.name || user.email

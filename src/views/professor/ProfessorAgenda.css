@@ -300,8 +300,15 @@
   margin-top: 0.85rem;
   color: #64748b;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.day-empty-state p {
+  margin: 0;
 }
 
 .day-appointments-list {
@@ -364,23 +371,27 @@
 }
 
 .meta-pill.status-agendada {
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .meta-pill.status-realizada {
-  border-color: rgba(16, 185, 129, 0.35);
-  color: #047857;
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .meta-pill.status-remarcada {
-  border-color: rgba(245, 158, 11, 0.34);
-  color: #b45309;
+  border-color: #fde68a;
+  background: #fef9c3;
+  color: #854d0e;
 }
 
 .meta-pill.status-falta {
-  border-color: rgba(239, 68, 68, 0.34);
-  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .open-prontuario-btn {
@@ -446,4 +457,116 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* Parte 2 — normalização visual (Professor / Agenda) */
+.professor-agenda {
+  gap: 1.25rem;
+}
+
+.professor-agenda-header {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.professor-agenda-header h1 {
+  margin-top: 0.2rem;
+  font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.55rem);
+  color: var(--color-navy);
+}
+
+.professor-agenda-header p,
+.professor-agenda-sync {
+  color: var(--color-text-muted);
+}
+
+.professor-agenda-refresh {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  color: var(--color-navy);
+}
+
+.professor-agenda-refresh:hover:not(:disabled) {
+  background: rgba(16, 51, 85, 0.05);
+  border-color: rgba(16, 51, 85, 0.26);
+}
+
+.professor-agenda-stat,
+.professor-agenda-filters,
+.professor-agenda-calendar-card,
+.professor-agenda-day-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.professor-agenda-stat {
+  padding: 0.9rem 1rem;
+}
+
+.professor-agenda-stat.success {
+  background: #ecfdf5;
+  border-color: rgba(22, 163, 74, 0.24);
+}
+
+.professor-agenda-stat.warning {
+  background: #fffbeb;
+  border-color: rgba(217, 119, 6, 0.26);
+}
+
+.professor-agenda-stat.danger {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+.professor-agenda-search,
+.professor-agenda-filters select,
+.professor-agenda-filters button,
+.month-nav-btn,
+.calendar-day-btn,
+.open-prontuario-btn {
+  border-radius: var(--radius-md);
+}
+
+.professor-agenda-filters button {
+  color: var(--color-navy);
+  border-color: var(--color-border);
+}
+
+.professor-agenda-filters button:hover:not(:disabled) {
+  background: rgba(16, 51, 85, 0.06);
+}
+
+.calendar-day-btn {
+  background: #f8fafc;
+}
+
+.calendar-day-btn.is-selected {
+  border-color: rgba(16, 51, 85, 0.4);
+  background: rgba(16, 51, 85, 0.1);
+}
+
+.day-badge {
+  background: var(--color-navy);
+}
+
+.day-empty-state {
+  border-radius: var(--radius-md);
+}
+
+.day-appointment-item {
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+}
+
+.open-prontuario-btn {
+  border: 1px solid var(--color-border);
+  color: var(--color-navy);
+}
+
+.open-prontuario-btn:hover {
+  background: rgba(16, 51, 85, 0.06);
 }

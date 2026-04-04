@@ -12,6 +12,10 @@ const AVALIACAO_STATUS = ['rascunho', 'finalizada'] as const;
 
 export class AtualizarAvaliacaoDto {
   @IsOptional()
+  @IsUUID()
+  sessaoId?: string;
+
+  @IsOptional()
   @IsString()
   tipo?: string;
 
@@ -55,6 +59,30 @@ export class AtualizarAvaliacaoDto {
 
   @IsOptional()
   autoSave?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  schemaVersion?: number;
+
+  @IsOptional()
+  @IsString()
+  formulaId?: string;
+
+  @IsOptional()
+  @IsString()
+  formulaVersion?: string;
+
+  @IsOptional()
+  @IsString()
+  sourceSystem?: string;
+
+  @IsOptional()
+  @IsString()
+  sourceRef?: string;
+
+  @IsOptional()
+  @IsDateString()
+  measuredAt?: string;
 
   @IsOptional()
   @IsNumber()

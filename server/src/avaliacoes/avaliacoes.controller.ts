@@ -23,6 +23,7 @@ import { parsePagination } from '../common/pagination';
 import { ADMIN_ROLES, STUDENT_MEMBER_ROLES } from '../common/domain/access.constants';
 
 const ROLES_EDICAO = [...ADMIN_ROLES, ...STUDENT_MEMBER_ROLES];
+const ROLES_CRIACAO = [...ROLES_EDICAO, 'atleta'];
 
 @Controller('avaliacoes')
 export class AvaliacoesController {
@@ -40,8 +41,7 @@ export class AvaliacoesController {
   ) {
     const { limit: parsedLimit, offset: parsedOffset } = parsePagination({
       limit,
-      offset,
-      defaultLimit: 200
+      offset
     });
     return this.avaliacoesService.findAll(req.user, {
       pacienteId,
@@ -50,6 +50,15 @@ export class AvaliacoesController {
       limit: parsedLimit,
       offset: parsedOffset
     });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('pendencias/:pacienteId')
+  getPendencias(
+    @Req() req: { user: AuthenticatedUser },
+    @Param('pacienteId', new ParseUUIDPipe()) pacienteId: string
+  ) {
+    return this.avaliacoesService.findPendencias(pacienteId, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -63,7 +72,7 @@ export class AvaliacoesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(...ROLES_EDICAO)
+  @Roles(...ROLES_CRIACAO)
   @Post()
   create(@Req() req: { user: AuthenticatedUser }, @Body() dto: CriarAvaliacaoDto) {
     return this.avaliacoesService.create(dto, req.user);

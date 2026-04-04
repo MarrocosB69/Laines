@@ -8,7 +8,7 @@ import {
   setAccessToken,
   subscribeAuthSync
 } from '../services/sessionToken';
-import { ADMIN_ROLES, PROFESSOR_AREA_ROLES, normalizeRole } from '../constants/roles';
+import { ADMIN_ROLES, PROFESSOR_AREA_ROLES, isStudentMemberRole, normalizeRole } from '../constants/roles';
 import { normalizeUserRecord } from '../utils/userAdapter';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
       mustChangePassword: !!normalized.mustChangePassword,
       isAdmin: ADMIN_ROLES.includes(role),
       isProfessor: PROFESSOR_AREA_ROLES.includes(role),
-      isAluno: role === 'aluno',
+      isAluno: isStudentMemberRole(role),
       isTecnico: role === 'tecnico',
       isAtleta: role === 'atleta'
     };
@@ -58,8 +58,8 @@ export function AuthProvider({ children }) {
           title: 'Sessão encerrada',
           message: 'Sua sessão foi encerrada ou revogada. Faça login novamente.'
         });
+        console.error('Falha ao carregar sessão:', error);
       }
-      console.error('Falha ao carregar sessão:', error);
       saveToken(null);
       setUser(null);
     } finally {

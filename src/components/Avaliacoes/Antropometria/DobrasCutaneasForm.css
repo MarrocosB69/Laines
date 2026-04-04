@@ -1,50 +1,153 @@
+﻿.dobras-form.dobras-form--modern {
+  --domain-color: #0e7490;
+  border-radius: 20px;
+  border: 1px solid rgba(14, 116, 144, 0.2);
+}
+
 .dobras-form .eval-icon {
-  background: rgba(14, 165, 233, 0.14);
-  color: #0284c7;
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+  background: linear-gradient(165deg, rgba(14, 116, 144, 0.12), rgba(14, 116, 144, 0.06));
+  color: #0e7490;
+  border-color: rgba(14, 116, 144, 0.22);
+  box-shadow: 0 8px 20px rgba(14, 116, 144, 0.14);
 }
 
-.dobras-form .eval-card {
-  border-radius: 22px;
-  border: 1px solid rgba(14, 165, 233, 0.18);
-  background: #ffffff;
-}
-
-.dobras-form .eval-note {
-  background: rgba(14, 165, 233, 0.08);
-  border-color: rgba(14, 165, 233, 0.18);
-  color: #0369a1;
-}
-
-.dobras-form .dobras-section {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.dobras-form .dobras-section h4 {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #0f172a;
-}
-
-.dobras-form .dobras-results {
+.dobras-form .dobras-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.dobras-form .dobras-unit-badge {
+  font-size: 0.62rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.24);
+  color: #1d4ed8;
+  font-weight: 800;
+}
+
+.dobras-form .dobras-required-dot {
+  color: #dc2626;
+  margin-left: 0.2rem;
+  font-weight: 900;
+}
+
+.dobras-form .dobras-optional-badge {
+  font-size: 0.6rem;
+  padding: 0.08rem 0.34rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: #475569;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  font-weight: 800;
+}
+
+.dobras-form .dobras-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 116, 144, 0.3);
+  background: #ffffff;
+  color: #0f5a73;
+  font-size: 0.66rem;
+  font-weight: 800;
+  margin-left: 0.2rem;
+  cursor: help;
+}
+
+.dobras-form .dobras-help:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.2);
+}
+
+.dobras-form .dobras-help-tooltip {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  width: min(320px, 86vw);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: #0f2432;
+  color: #e2f1fa;
+  padding: 0.48rem 0.56rem;
+  display: grid;
+  gap: 0.22rem;
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.dobras-form .dobras-help-tooltip span {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.dobras-form .dobras-help:hover .dobras-help-tooltip,
+.dobras-form .dobras-help:focus-visible .dobras-help-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.dobras-form .dobras-input-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.dobras-form .dobras-input-warning {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.dobras-form .dobras-field-message {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.dobras-form .dobras-field-message.is-error {
+  color: #b91c1c;
+}
+
+.dobras-form .dobras-field-message.is-warning {
+  color: #b45309;
+}
+
+.dobras-form .dobras-shared-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.7rem;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.dobras-form .dobras-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dobras-form .dobras-results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
 }
 
 .dobras-form .dobras-result-card {
-  background: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.9rem;
-  padding: 0.85rem 1rem;
-  display: flex;
-  flex-direction: column;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.68rem;
+  display: grid;
   gap: 0.35rem;
 }
 
@@ -53,222 +156,209 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #64748b;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .dobras-form .dobras-result-card strong {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #0f172a;
 }
 
-.dobras-form .dobras-diagram {
-  margin-top: 0;
-}
-
-.dobras-form .dobras-diagram-figure {
-  position: relative;
-  min-height: 460px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 1.25rem;
-  background: #f8fafc;
-  padding: 1rem;
-  display: flex;
+.dobras-form .dobras-status-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  --line-length: clamp(90px, 18vw, 200px);
-}
-
-.dobras-form .dobras-layout {
-  display: grid;
-  grid-template-columns: minmax(180px, 240px) minmax(260px, 1fr) minmax(180px, 240px);
-  gap: 1.25rem;
-  align-items: start;
-  margin-top: 1.5rem;
-}
-
-.dobras-form .dobras-panel {
-  background: #ffffff;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 1rem;
-  padding: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
-}
-
-.dobras-form .dobras-panel h5 {
-  margin: 0;
-  font-size: 0.8rem;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
+  border: 1px solid transparent;
 }
 
-.dobras-form .dobras-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.75rem;
+.dobras-form .dobras-tone-success {
+  background: rgba(34, 197, 94, 0.16);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.dobras-form .dobras-tone-warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.dobras-form .dobras-tone-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dobras-form .dobras-tone-info {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0c4a6e;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.dobras-form .dobras-tone-neutral {
+  background: rgba(148, 163, 184, 0.14);
+  color: #334155;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.dobras-form .dobras-delta {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.dobras-form .is-up {
+  color: #047857;
+}
+
+.dobras-form .is-down {
+  color: #b91c1c;
+}
+
+.dobras-form .is-flat {
   color: #475569;
 }
 
-.dobras-form .dobras-field span {
-  font-weight: 600;
-  color: #334155;
+.dobras-form .dobras-warning-box {
+  margin-top: 0.64rem;
+  border-radius: 10px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(254, 249, 195, 0.82);
+  padding: 0.46rem 0.52rem;
+  color: #854d0e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.dobras-form .dobras-figure {
-  position: absolute;
-  inset: 0;
+.dobras-form .dobras-visual-grid {
+  margin-top: 0.72rem;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 0.68rem;
+}
+
+.dobras-form .dobras-radar-card,
+.dobras-form .dobras-sparkline-card {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.58rem;
+}
+
+.dobras-form .dobras-radar-card h5,
+.dobras-form .dobras-sparkline-card h5 {
+  margin: 0 0 0.35rem;
+  font-size: 0.67rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.dobras-form .dobras-radar {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  display: block;
+}
+
+.dobras-form .dobras-radar-label {
+  font-size: 8.5px;
+  fill: #334155;
+  font-weight: 700;
+}
+
+.dobras-form .dobras-radar-empty {
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: auto;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
-.dobras-form .dobras-silhouette-image {
-  width: 220px;
-  max-width: 60%;
-  height: auto;
-  object-fit: contain;
-  border-radius: 12px;
-  filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.12));
-  pointer-events: none;
+.dobras-form .mini-sparkline {
+  width: 100%;
+  height: 82px;
 }
 
-.dobras-form .dobras-point {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #0ea5e9;
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
-  cursor: help;
-  outline: none;
-  border: none;
+.dobras-form .dobras-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
 }
 
-.dobras-form .dobras-point::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: var(--line-length);
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(14, 165, 233, 0.1) 0%, #0ea5e9 100%);
-  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.25);
+.dobras-form .dobras-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
 }
 
-.dobras-form .dobras-point::before {
-  content: attr(data-label);
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0f172a;
-  color: #f8fafc;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.3rem 0.5rem;
-  border-radius: 0.5rem;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.dobras-form .dobras-table th {
+  text-align: left;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  background: #f1f5f9;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+  padding: 0.46rem 0.55rem;
 }
 
-.dobras-form .dobras-point:hover::before,
-.dobras-form .dobras-point:focus::before {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
+.dobras-form .dobras-table td {
+  padding: 0.46rem 0.55rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+  font-size: 0.74rem;
+  color: #1e293b;
 }
 
-.dobras-form .dobras-point.left::after {
-  left: calc(-1 * var(--line-length));
-  transform: translateY(-50%);
+.dobras-form .dobras-table tr:last-child td {
+  border-bottom: none;
 }
 
-.dobras-form .dobras-point.right::after {
-  right: calc(-1 * var(--line-length));
-  transform: translateY(-50%);
+.dobras-form .dobras-interpretation {
+  margin: 0.56rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #14532d;
 }
 
-.dobras-form .point-tricipital-left {
-  top: 130px;
-  left: calc(50% - 70px);
+.dobras-form .dobras-error-note {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(254, 226, 226, 0.82);
+  color: #991b1b;
 }
 
-.dobras-form .point-tricipital-right {
-  top: 130px;
-  left: calc(50% + 70px);
-}
-
-.dobras-form .point-subescapular-left {
-  top: 145px;
-  left: calc(50% - 30px);
-}
-
-.dobras-form .point-subescapular-right {
-  top: 145px;
-  left: calc(50% + 30px);
-}
-
-.dobras-form .point-suprailiaca-left {
-  top: 210px;
-  left: calc(50% - 40px);
-}
-
-.dobras-form .point-suprailiaca-right {
-  top: 210px;
-  left: calc(50% + 40px);
-}
-
-.dobras-form .point-abdominal-left {
-  top: 210px;
-  left: calc(50% - 20px);
-}
-
-.dobras-form .point-abdominal-right {
-  top: 210px;
-  left: calc(50% + 20px);
-}
-
-.dobras-form .point-coxa-left {
-  top: 285px;
-  left: calc(50% - 35px);
-}
-
-.dobras-form .point-coxa-right {
-  top: 285px;
-  left: calc(50% + 35px);
-}
-
-.dobras-form .point-peitoral-left {
-  top: 120px;
-  left: calc(50% - 15px);
-}
-
-.dobras-form .point-peitoral-right {
-  top: 120px;
-  left: calc(50% + 15px);
-}
-
-@media (max-width: 920px) {
-  .dobras-form .dobras-diagram-figure {
-    position: static;
-    display: grid;
-    gap: 1rem;
+@media (max-width: 1024px) {
+  .dobras-form .dobras-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dobras-form .dobras-figure {
-    position: relative;
-    order: -1;
-    min-height: 320px;
-  }
-
-  .dobras-form .dobras-layout {
+  .dobras-form .dobras-visual-grid {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 768px) {
+  .dobras-form .dobras-grid,
+  .dobras-form .dobras-results-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dobras-form {
+    padding: 0.75rem 0.5rem !important;
+  }
+}
+

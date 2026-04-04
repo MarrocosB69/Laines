@@ -36,6 +36,8 @@
   --color-purple-light: #a78bfa;
   --color-amber: #F59E0B;
   --color-amber-light: #fbbf24;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
   
   /* Cores neutras */
   --color-background: #F7FAFC;
@@ -198,14 +200,53 @@ html {
 }
 
 body {
-  @apply bg-[--color-background] font-inter text-[--color-text-primary];
-  font-family: var(--font-inter);
+  @apply bg-[--color-surface] font-inter text-[--color-text-primary];
+  font-family: "Inter", sans-serif;
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   min-height: 100vh;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.input-error {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+}
+
+.form-error-message {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.save-indicator {
+  font-size: var(--font-size-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.save-indicator.saving {
+  background: var(--color-surface-alt);
+}
+
+.save-indicator.saved {
+  background: #f0fdf4;
+  color: var(--color-success);
+}
+
+.save-indicator.error {
+  background: #fef2f2;
+  color: var(--color-error);
 }
 
 button,
@@ -216,6 +257,11 @@ textarea {
   font-size: inherit;
   line-height: inherit;
   color: inherit;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
 }
 
 /* ============================================
@@ -734,3 +780,238 @@ p {
   background: #f8fbff;
 }
 
+/* ============================================
+   OVERLAY DE SIDEBAR MOBILE — compartilhado entre todos os portais
+   ============================================ */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 44;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  background: rgba(2, 12, 24, 0.48);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  /* Garante que o overlay receba o clique mesmo ao lado da sidebar */
+  pointer-events: auto;
+}
+
+/* ============================================
+   ESTADOS COMPARTILHADOS — usados em toda a aplicação
+   ============================================ */
+
+/* Estado de erro em widget/card (quando API falha silenciosamente) */
+.widget-error-state {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  font-size: 0.78rem;
+  color: #7f1d1d;
+  line-height: 1.4;
+}
+
+.widget-error-state__icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.widget-error-state__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.widget-error-state__body strong {
+  display: block;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #991b1b;
+}
+
+.widget-error-state__body span {
+  font-size: 0.72rem;
+  color: #b45309;
+  opacity: 0.82;
+}
+
+.widget-error-state__action {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #dc2626;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.widget-error-state__action:hover {
+  color: #b91c1c;
+}
+
+/* Estado vazio guiado (listas sem dados) */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(100, 116, 139, 0.28);
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.empty-state__icon {
+  font-size: 2rem;
+  opacity: 0.32;
+  line-height: 1;
+}
+
+.empty-state__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-dark-blue);
+}
+
+.empty-state__body {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  max-width: 280px;
+}
+
+.empty-state__cta {
+  margin-top: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-dark-blue);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.empty-state__cta:hover {
+  border-color: var(--color-dark-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Nudge de onboarding incompleto */
+.onboarding-nudge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.22);
+}
+
+.onboarding-nudge__text {
+  flex: 1;
+  font-size: 0.8rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.onboarding-nudge__text strong {
+  display: block;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.onboarding-nudge__cta {
+  flex-shrink: 0;
+  padding: 0.38rem 0.85rem;
+  border-radius: var(--radius-full);
+  background: rgba(217, 119, 6, 0.14);
+  border: 1px solid rgba(217, 119, 6, 0.28);
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+
+.onboarding-nudge__cta:hover {
+  background: rgba(217, 119, 6, 0.22);
+}
+
+/* Error Boundary global */
+.error-boundary-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--color-background);
+}
+
+.error-boundary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  box-shadow: var(--shadow-lg);
+}
+
+.error-boundary-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.08);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.error-boundary-card h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-dark-blue);
+  background: none;
+  -webkit-text-fill-color: initial;
+}
+
+.error-boundary-card p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.error-boundary-card__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.25rem;
+}

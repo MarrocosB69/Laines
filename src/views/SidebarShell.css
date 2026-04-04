@@ -325,7 +325,7 @@
 /* Admin sidebar redesign */
 .laines-sidebar--admin {
   width: var(--admin-sidebar-width, 248px);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--color-navy) 94%, #08111d) 0%, #0f2438 100%);
+  background: #111827;
   color: rgba(255, 255, 255, 0.74);
   transition: width 0.24s ease;
 }
@@ -370,13 +370,13 @@
 
 .laines-sidebar--admin .laines-sidebar__profile-inline {
   margin: 4px 0 0;
-  padding: 3px 7px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  border: 0.5px solid rgba(29, 158, 117, 0.3);
+  background: rgba(29, 158, 117, 0.15);
+  font-size: 11px;
   line-height: 1.2;
-  color: rgba(255, 255, 255, 0.74);
+  color: #4ecda0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -434,10 +434,10 @@
 
 .laines-sidebar--admin .laines-sidebar__section-title {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.09em;
-  color: rgba(255, 255, 255, 0.4);
-  padding: 10px 14px 5px;
+  color: rgba(255, 255, 255, 0.48);
+  padding: 14px 8px 5px;
   margin: 0;
   text-transform: uppercase;
 }
@@ -449,20 +449,27 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+.laines-sidebar--admin .laines-sidebar__group-divider {
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.07);
+  margin: 4px 10px;
+  pointer-events: none;
+}
+
 .laines-sidebar--admin .laines-sidebar__section-items {
   display: grid;
   gap: 3px;
 }
 
 .laines-sidebar--admin .laines-sidebar__item {
-  margin: 0 8px;
+  margin: 0 8px 2px;
   border: 0;
   border-radius: 10px;
-  padding: 8px 11px;
+  padding: 8px 10px;
   min-height: 36px;
   gap: 10px;
   position: relative;
-  color: rgba(255, 255, 255, 0.7);
+  color: #9ca3af;
   font-size: 13px;
   font-weight: 500;
 }
@@ -471,11 +478,13 @@
   width: 18px;
   height: 18px;
   margin-right: 0;
+  color: rgba(255, 255, 255, 0.40);
 }
 
 .laines-sidebar--admin .laines-sidebar__item-icon svg {
   width: 18px;
   height: 18px;
+  stroke-width: 1.8;
 }
 
 .laines-sidebar--admin .laines-sidebar__item-label {
@@ -485,29 +494,48 @@
 }
 
 .laines-sidebar--admin .laines-sidebar__item:hover {
-  color: var(--color-white);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .laines-sidebar--admin .laines-sidebar__item--active {
-  color: var(--color-white);
-  background: color-mix(in srgb, var(--color-green) 22%, transparent);
+  color: #ecfdf5;
+  background: rgba(29, 158, 117, 0.12);
+  font-weight: 500;
+}
+
+.laines-sidebar--admin .laines-sidebar__item--active .laines-sidebar__item-icon {
+  color: #34d399;
 }
 
 .laines-sidebar--admin .laines-sidebar__item-indicator {
   display: block;
-  position: absolute;
-  left: -6px;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--color-green);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #34d399;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.laines-sidebar--admin .laines-sidebar__requests-badge {
+  margin-left: auto;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.2;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.laines-sidebar--admin .laines-sidebar__requests-badge--active {
+  margin-left: 8px;
 }
 
 .laines-sidebar--admin .laines-sidebar__footer {
   padding: 12px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.07);
 }
 
 .laines-sidebar--admin .laines-sidebar__user-card {
@@ -530,6 +558,18 @@
   flex-shrink: 0;
 }
 
+.laines-sidebar--admin .laines-sidebar__avatar {
+  border-radius: 10px;
+  background: rgba(29, 158, 117, 0.2);
+  color: #34d399;
+}
+
+.laines-sidebar--admin .laines-sidebar__collapse svg,
+.laines-sidebar--admin .laines-sidebar__logout svg,
+.laines-sidebar--admin .laines-sidebar__toggle svg {
+  stroke-width: 1.8;
+}
+
 .laines-sidebar--admin.laines-sidebar--collapsed .laines-sidebar__header {
   flex-direction: column;
   justify-content: center;
@@ -539,12 +579,12 @@
 
 .laines-sidebar--admin.laines-sidebar--collapsed .laines-sidebar__item {
   margin: 0 9px;
-  padding: 8px 0;
+  padding: 8px 10px;
   justify-content: center;
 }
 
 .laines-sidebar--admin.laines-sidebar--collapsed .laines-sidebar__item-indicator {
-  left: 3px;
+  margin-left: 0;
 }
 
 .laines-sidebar--admin.laines-sidebar--collapsed .laines-sidebar__footer {
@@ -653,8 +693,8 @@
 
   .laines-sidebar--admin .laines-sidebar__profile-inline {
     margin-top: 3px;
-    padding: 2px 6px;
-    font-size: 9px;
+    padding: 3px 10px;
+    font-size: 11px;
   }
 
   .laines-sidebar--admin .laines-sidebar__nav {
@@ -662,8 +702,8 @@
   }
 
   .laines-sidebar--admin .laines-sidebar__section-title {
-    font-size: 9px;
-    padding: 7px 12px 4px;
+    font-size: 10px;
+    padding: 14px 8px 5px;
   }
 
   .laines-sidebar--admin .laines-sidebar__section-items {

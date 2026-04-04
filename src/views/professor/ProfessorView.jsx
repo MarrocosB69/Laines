@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 
 import ProfessorSidebar from './ProfessorSidebar';
 import ProfessorHeader from './ProfessorHeader';
@@ -23,6 +24,7 @@ const ProfessorView = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const { getPacienteById } = usePacientes();
   const { user } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     const handleResize = () => {
@@ -33,6 +35,33 @@ const ProfessorView = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isSidebarOpen]);
+
+  useEffect(() => {
+    if (!isMobile || !isSidebarOpen) return;
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isMobile, isSidebarOpen]);
+
+  useEffect(() => {
+    const selectedPatientId = location.state?.selectedPatientId;
+    if (!selectedPatientId) return;
+    setProntuarioReturn({
+      view: String(location.state?.returnView || 'dashboard')
+    });
+    getPacienteById(selectedPatientId).then((patient) => {
+      if (patient) {
+        setSelectedPatient(patient);
+        setView('patients');
+      }
+    }).catch(() => {
+      // erro ja notificado no contexto
+    });
+  }, [location.state, getPacienteById]);
 
   const handleOpenPatient = async (patient, options = {}) => {
     const sourceView = String(options?.sourceView || view || 'dashboard');
@@ -58,12 +87,21 @@ const ProfessorView = () => {
     setView(prontuarioReturn?.view || 'dashboard');
   };
 
+  useEffect(() => {
+    if (view !== 'patients' && selectedPatient) {
+      setSelectedPatient(null);
+    }
+  }, [view, selectedPatient]);
+
   const renderContent = () => {
     if (view === 'patients' && selectedPatient) {
       return (
         <PatientProntuario
           patient={selectedPatient}
           onBack={handleBack}
+          originPath="/professor"
+          originView={prontuarioReturn?.view || 'dashboard'}
+          originTab="patients"
         />
       );
     }
@@ -99,7 +137,13 @@ const ProfessorView = () => {
   };
 
   return (
-    <div className={`admin-view professor-view ${darkMode ? 'dark-mode' : 'light-mode'}`}>
+    <motion.div
+      className={`admin-view professor-view ${darkMode ? 'dark-mode' : 'light-mode'}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="admin-bg-pattern"><div className="pattern-grid"></div></div>
 
       <div className="admin-container">
@@ -111,7 +155,12 @@ const ProfessorView = () => {
         />
 
         {isMobile && isSidebarOpen && (
-          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+          <button
+            type="button"
+            className="sidebar-overlay"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Fechar menu"
+          />
         )}
 
         <main className={`admin-main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
@@ -138,7 +187,7 @@ const ProfessorView = () => {
           </div>
         </main>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

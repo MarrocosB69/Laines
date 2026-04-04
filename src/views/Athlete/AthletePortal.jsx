@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Calendar, CheckCircle2, ClipboardList, LogOut, RefreshCw, TrendingUp } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Calendar, CheckCircle2, ClipboardList, FileText, LogOut, RefreshCw, TrendingUp } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePacientes } from '../../contexts/PacienteContext';
@@ -27,6 +28,16 @@ const APPOINTMENT_TYPE_LABELS = {
   retorno: 'Retorno'
 };
 const COMPLETED_EVALUATION_STATUSES = new Set(['finalizada', 'concluida', 'concluido']);
+const COMORBIDADE_LABELS = {
+  diabetes: 'Diabetes Mellitus',
+  hipertensao: 'Hipertensao arterial',
+  anemia: 'Anemia',
+  cardio: 'Doenca cardiovascular',
+  dislipidemia: 'Dislipidemia',
+  renal_hepatica: 'Doenca renal ou hepatica',
+  tireoide: 'Doenca da tireoide',
+  nenhum: 'Sem diagnostico conhecido'
+};
 
 const normalizeStatusToken = (value) => String(value || '')
   .trim()
@@ -37,7 +48,73 @@ const normalizeStatusToken = (value) => String(value || '')
 
 const isCompletedEvaluationStatus = (status) => COMPLETED_EVALUATION_STATUSES.has(normalizeStatusToken(status));
 
-const AthletePortal = () => {
+const normalizeToArray = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const formatPortalValue = (value, fallback = 'Nao informado') => {
+  if (Array.isArray(value)) {
+    const normalized = value.map((item) => String(item || '').trim()).filter(Boolean);
+    return normalized.length ? normalized.join(', ') : fallback;
+  }
+  if (value === null || value === undefined) return fallback;
+  const text = String(value).trim();
+  return text || fallback;
+};
+
+const mapComorbidadesToLabels = (value) => (
+  normalizeToArray(value).map((item) => COMORBIDADE_LABELS[item] || item)
+);
+
+const parseProfileDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  const direct = new Date(value);
+  if (!Number.isNaN(direct.getTime())) return direct;
+
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    const slashMatch = normalized.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (slashMatch) {
+      const [, day, month, year] = slashMatch;
+      const converted = new Date(`${year}-${month}-${day}T00:00:00`);
+      if (!Number.isNaN(converted.getTime())) return converted;
+    }
+  }
+  return null;
+};
+
+const calculateAge = (birthDateValue) => {
+  const parsed = parseProfileDate(birthDateValue);
+  if (!parsed) return null;
+  const now = new Date();
+  let age = now.getFullYear() - parsed.getFullYear();
+  const monthDiff = now.getMonth() - parsed.getMonth();
+  const beforeBirthday = monthDiff < 0 || (monthDiff === 0 && now.getDate() < parsed.getDate());
+  if (beforeBirthday) age -= 1;
+  return age >= 0 ? age : null;
+};
+
+const buildInitials = (fullName = '') => {
+  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return 'AT';
+  const first = parts[0][0] || '';
+  const last = parts.length > 1 ? (parts[parts.length - 1][0] || '') : (parts[0][1] || '');
+  return `${first}${last}`.toUpperCase() || 'AT';
+};
+
+const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false }) => {
   const { user, logout } = useAuth();
   const { notify } = useUiFeedback();
   const { formatDate, convertFirebaseDate } = usePacientes();
@@ -52,6 +129,11 @@ const AthletePortal = () => {
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isNoShowLoading, setIsNoShowLoading] = useState(false);
+  const overviewSectionRef = useRef(null);
+  const agendaSectionRef = useRef(null);
+  const pendingSectionRef = useRef(null);
+  const prontuarioSectionRef = useRef(null);
+  const avaliacoesSectionRef = useRef(null);
 
   const loadLinkedPatient = useCallback(async () => {
     if (!user?.uid) {
@@ -96,7 +178,10 @@ const AthletePortal = () => {
         submittedAt: new Date().toISOString()
       }
     };
-    await api.patch(`/pacientes/${patient.id}/onboarding`, payload);
+    const response = await api.patch(`/pacientes/${patient.id}/onboarding`, payload);
+    if (response?.data) {
+      setPatient(response.data);
+    }
     setShowOnboarding(false);
   };
 
@@ -158,6 +243,91 @@ const AthletePortal = () => {
   }, [appointments, convertFirebaseDate]);
 
   const nextAppointment = useMemo(() => upcomingAppointments[0], [upcomingAppointments]);
+  const athleteInitialData = useMemo(() => {
+    const raw = patient?.confirmacaoAtleta?.dados;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return {};
+    }
+    return raw;
+  }, [patient?.confirmacaoAtleta?.dados]);
+
+  const athleteProntuario = useMemo(() => {
+    const observacoes = formatPortalValue(patient?.observacoes || athleteInitialData?.observacoes, 'Sem observacoes registradas');
+    const historicoSaude = formatPortalValue(patient?.historicoSaude || athleteInitialData?.historicoSaude, 'Historico nao informado');
+    const comorbidadesPessoais = mapComorbidadesToLabels(
+      (patient?.comorbidadesPessoais || []).length
+        ? patient?.comorbidadesPessoais
+        : athleteInitialData?.comorbidadesPessoais
+    );
+    const comorbidadesFamiliares = mapComorbidadesToLabels(
+      (patient?.comorbidadesFamiliares || []).length
+        ? patient?.comorbidadesFamiliares
+        : athleteInitialData?.comorbidadesFamiliares
+    );
+    return {
+      observacoes,
+      historicoSaude,
+      comorbidadesPessoais,
+      comorbidadesFamiliares
+    };
+  }, [
+    athleteInitialData?.comorbidadesFamiliares,
+    athleteInitialData?.comorbidadesPessoais,
+    athleteInitialData?.historicoSaude,
+    athleteInitialData?.observacoes,
+    patient?.comorbidadesFamiliares,
+    patient?.comorbidadesPessoais,
+    patient?.historicoSaude,
+    patient?.observacoes
+  ]);
+
+  const prontuarioIdentityItems = useMemo(() => ([
+    { label: 'Prontuario', value: formatPortalValue(patient?.prontuario, 'Em geracao') },
+    { label: 'Nome completo', value: formatPortalValue(athleteInitialData?.nomeCompleto || patient?.nome) },
+    { label: 'Data de nascimento', value: formatPortalValue(athleteInitialData?.dataNascimento || patient?.dataNascimento) },
+    { label: 'CPF', value: formatPortalValue(patient?.cpf) },
+    { label: 'Genero', value: formatPortalValue(patient?.genero) },
+    { label: 'Modalidade principal', value: formatPortalValue(patient?.modalidadePrincipal) },
+    { label: 'Projeto', value: formatPortalValue(patient?.projetoNome, 'Nao vinculado') },
+    { label: 'Status do atendimento', value: formatPortalValue(patient?.status) }
+  ]), [
+    athleteInitialData?.dataNascimento,
+    athleteInitialData?.nomeCompleto,
+    patient?.cpf,
+    patient?.dataNascimento,
+    patient?.genero,
+    patient?.modalidadePrincipal,
+    patient?.nome,
+    patient?.projetoNome,
+    patient?.prontuario,
+    patient?.status
+  ]);
+
+  const athleteDisplayName = useMemo(
+    () => formatPortalValue(athleteInitialData?.nomeCompleto || patient?.nome, 'Atleta'),
+    [athleteInitialData?.nomeCompleto, patient?.nome]
+  );
+
+  const athleteBirthDate = useMemo(
+    () => athleteInitialData?.dataNascimento || patient?.dataNascimento || '',
+    [athleteInitialData?.dataNascimento, patient?.dataNascimento]
+  );
+
+  const athleteAge = useMemo(() => calculateAge(athleteBirthDate), [athleteBirthDate]);
+
+  const athleteInitials = useMemo(() => buildInitials(athleteDisplayName), [athleteDisplayName]);
+
+  const latestEvaluationDateLabel = useMemo(() => {
+    const latest = evaluationsSorted[0];
+    if (!latest) return 'Sem registro';
+    const date = convertFirebaseDate(latest.updatedAt || latest.createdAt || latest.data);
+    return date ? formatDate(date) : 'Sem registro';
+  }, [convertFirebaseDate, evaluationsSorted, formatDate]);
+
+  const nextAppointmentDateLabel = useMemo(() => {
+    if (!nextAppointment?.dateObj) return 'Sem agenda';
+    return formatDate(nextAppointment.dateObj);
+  }, [formatDate, nextAppointment?.dateObj]);
 
   const plannedEvaluationItems = useMemo(() => {
     const items = [];
@@ -170,7 +340,7 @@ const AthletePortal = () => {
         items.push({
           id: `agenda-avaliacao-${appointment.id || 'consulta'}-${normalizedType || index}-${index}`,
           title: `Avaliação planejada: ${typeLabel}`,
-          description: `Consulta ${scheduledDate ? formatDate(scheduledDate) : 'sem data'}${appointment.time ? ` - ${appointment.time}` : ''}`,
+          description: `Consulta ${scheduledDate ? formatDate(scheduledDate) : 'Sem data'}${appointment.time ? ` - ${appointment.time}` : ''}`,
           level: 'info'
         });
       });
@@ -195,7 +365,7 @@ const AthletePortal = () => {
       items.push({
         id: 'ebia-liberado',
         title: 'EBIA aguardando preenchimento',
-        description: 'A equipe liberou o formulario EBIA para voce responder.',
+        description: 'A equipe liberou o formulário EBIA para você responder.',
         level: 'high'
       });
     }
@@ -230,8 +400,8 @@ const AthletePortal = () => {
     if (!nextAppointment) {
       items.push({
         id: 'agenda',
-        title: 'Sem proxima consulta agendada',
-        description: 'Solicite um novo horario para manter o acompanhamento em dia.',
+        title: 'Sem próxima consulta agendada',
+        description: 'Solicite um novo horário para manter o acompanhamento em dia.',
         level: 'medium'
       });
     }
@@ -239,7 +409,7 @@ const AthletePortal = () => {
     if (String(patient.status || '').toLowerCase() === 'lista de espera') {
       items.push({
         id: 'status',
-        title: 'Paciente em lista de espera',
+        title: 'Atleta em lista de espera',
         description: 'Seu atendimento ainda não foi reativado pela equipe.',
         level: 'high'
       });
@@ -336,7 +506,7 @@ const AthletePortal = () => {
       status: latestEvaluation.status || 'rascunho',
       items: [
         { label: 'Tipo', value: getEvaluationTypeLabel(latestEvaluation.tipo) },
-        { label: 'Responsavel', value: responsible },
+        { label: 'Responsável', value: responsible },
         { label: 'Data', value: evaluationDate ? formatDate(evaluationDate) : 'Não informada' },
         {
           label: 'Completude',
@@ -412,8 +582,32 @@ const AthletePortal = () => {
     }
   }, [isSubmittingEbia, loadAthleteDetails, loadLinkedPatient, notify, patient?.id, patient?.projetoId, patient?.projetoNome]);
 
+  useEffect(() => {
+    if (!patient || loadingPatient) return;
+    if (!focusSection || focusSection === 'dashboard') return;
+
+    const sectionMap = {
+      resumo: overviewSectionRef,
+      agenda: agendaSectionRef,
+      pendencias: pendingSectionRef,
+      prontuario: prontuarioSectionRef,
+      avaliacoes: avaliacoesSectionRef
+    };
+    const targetRef = sectionMap[focusSection];
+    if (targetRef?.current) {
+      targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [focusSection, loadingPatient, patient]);
+
   return (
-    <div className="athlete-portal laines-page-shell">
+    <motion.div
+      className="athlete-portal laines-page-shell"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
+      {!hideInternalHeader && (
       <header className="athlete-header laines-page-header">
         <div>
           <h1 className="laines-page-title">Portal do atleta</h1>
@@ -425,7 +619,7 @@ const AthletePortal = () => {
               <ClipboardList size={14} /> {evaluationsSorted.length} avaliações
             </span>
             <span className="athlete-badge">
-              <TrendingUp size={14} /> {pendingItems.length} pendencias
+              <TrendingUp size={14} /> {pendingItems.length} pendências
             </span>
           </div>
           <button type="button" className="athlete-logout-btn" onClick={handleLogout}>
@@ -434,6 +628,7 @@ const AthletePortal = () => {
           </button>
         </div>
       </header>
+      )}
 
       {loadingPatient ? (
         <div className="athlete-empty laines-feedback-state">Carregando dados...</div>
@@ -441,19 +636,19 @@ const AthletePortal = () => {
         <div className="athlete-empty laines-feedback-state">Nenhum atleta vinculado a este acesso.</div>
       ) : (
         <div className="athlete-body">
-          <div className="athlete-card">
+          <div className="athlete-card" ref={overviewSectionRef}>
             <div className="athlete-card-header">
               <ClipboardList size={18} />
-              <span>Resumo clinico</span>
+              <span>Resumo clínico</span>
             </div>
             <h2>{patient.nome}</h2>
             <p className="athlete-subtext">{patient.modalidadePrincipal || 'Modalidade não informada'}</p>
             <p className="athlete-text">
-              {patient.observacoes || 'Sem observacoes registradas.'}
+              {patient.observacoes || 'Sem observações registradas.'}
             </p>
           </div>
 
-          <div className="athlete-card">
+          <div className="athlete-card" ref={agendaSectionRef}>
             <div className="athlete-card-header">
               <Calendar size={18} />
               <span>Próxima consulta</span>
@@ -474,7 +669,7 @@ const AthletePortal = () => {
                 </small>
                 {nextAppointmentDeadline && (
                   <small className="athlete-deadline-note">
-                    Remarcacao ate {formatDate(nextAppointmentDeadline)}
+                    Remarcação até {formatDate(nextAppointmentDeadline)}
                   </small>
                 )}
                 <div className="athlete-appointment-actions">
@@ -505,17 +700,17 @@ const AthletePortal = () => {
             )}
           </div>
 
-          <div className="athlete-card">
+          <div className="athlete-card" ref={pendingSectionRef}>
             <div className="athlete-card-header">
               <AlertTriangle size={18} />
-              <span>Pendencias</span>
+              <span>Pendências</span>
             </div>
             {loadingDetails ? (
-              <p className="athlete-text">Carregando pendencias...</p>
+              <p className="athlete-text">Carregando pendências...</p>
             ) : pendingItems.length === 0 ? (
               <div className="athlete-empty-inline">
                 <CheckCircle2 size={16} />
-                <span>Nenhuma pendencia no momento.</span>
+                <span>Nenhuma pendência no momento.</span>
               </div>
             ) : (
               <div className="athlete-pending-list">
@@ -532,14 +727,157 @@ const AthletePortal = () => {
             )}
           </div>
 
-          <div className="athlete-card full">
+          <div className="athlete-card full athlete-prontuario-card" ref={prontuarioSectionRef}>
+            <div className="athlete-card-header">
+              <FileText size={18} />
+              <span>Meu prontuario</span>
+            </div>
+
+            <div className="athlete-prontuario-shell">
+              <section className="athlete-prontuario-hero">
+                <div className="athlete-prontuario-head">
+                  <div className="athlete-prontuario-heading">
+                    <p className="athlete-prontuario-eyebrow">Prontuario do atleta</p>
+                    <strong className="athlete-prontuario-id">{athleteDisplayName}</strong>
+                    <p className="athlete-prontuario-note">
+                      Registro clinico #{formatPortalValue(patient?.prontuario, 'Em geracao')}
+                    </p>
+                  </div>
+                  <div className="athlete-prontuario-badges">
+                    <span className="athlete-pill ok">Prontuario ativo</span>
+                    <span className="athlete-pill neutral">
+                      Nº {formatPortalValue(patient?.prontuario, 'Pendente')}
+                    </span>
+                    <span className={`athlete-pill ${patient?.confirmacaoAtleta?.completed ? 'ok' : 'pending'}`}>
+                      {patient?.confirmacaoAtleta?.completed ? 'Cadastro inicial concluido' : 'Cadastro inicial pendente'}
+                    </span>
+                    <span className={`athlete-pill ${String(patient?.consentimentoPesquisa || '').toLowerCase() === 'aceito' ? 'ok' : 'pending'}`}>
+                      {String(patient?.consentimentoPesquisa || '').toLowerCase() === 'aceito'
+                        ? 'Consentimento aceito'
+                        : 'Consentimento pendente'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="athlete-prontuario-hero-main">
+                  <article className="athlete-prontuario-patient-card">
+                    <div className="athlete-prontuario-avatar">{athleteInitials}</div>
+                    <div className="athlete-prontuario-patient-info">
+                      <p className="athlete-prontuario-patient-meta">
+                        CPF: {formatPortalValue(patient?.cpf, '---')} - {formatPortalValue(athleteBirthDate, '---')}
+                      </p>
+                      <p className="athlete-prontuario-patient-meta">
+                        Modalidade: {formatPortalValue(patient?.modalidadePrincipal)}
+                      </p>
+                      <p className="athlete-prontuario-patient-meta">
+                        Projeto: {formatPortalValue(patient?.projetoNome, 'Nao vinculado')}
+                      </p>
+                      <p className="athlete-prontuario-patient-meta">
+                        Responsavel: {formatPortalValue(patient?.alunoResponsavelNome || patient?.alunoResponsavel?.nome, 'Equipe LAINES')}
+                      </p>
+                    </div>
+                  </article>
+
+                  <div className="athlete-prontuario-stats-grid">
+                    <article className="athlete-prontuario-stat">
+                      <span>Idade</span>
+                      <strong>{typeof athleteAge === 'number' ? `${athleteAge} anos` : '---'}</strong>
+                    </article>
+                    <article className="athlete-prontuario-stat">
+                      <span>Avaliacoes</span>
+                      <strong>{evaluationsSorted.length}</strong>
+                    </article>
+                    <article className="athlete-prontuario-stat">
+                      <span>Ultima avaliacao</span>
+                      <strong>{latestEvaluationDateLabel}</strong>
+                    </article>
+                    <article className="athlete-prontuario-stat athlete-prontuario-stat--highlight">
+                      <span>Proxima consulta</span>
+                      <strong>{nextAppointmentDateLabel}</strong>
+                    </article>
+                  </div>
+                </div>
+              </section>
+
+              <div className="athlete-prontuario-summary">
+                <article className="athlete-prontuario-summary-item">
+                  <span>Status de atendimento</span>
+                  <strong>{formatPortalValue(patient?.status)}</strong>
+                </article>
+                <article className="athlete-prontuario-summary-item">
+                  <span>Ingestao de agua</span>
+                  <strong>{formatPortalValue(athleteInitialData?.ingestaoAgua)}</strong>
+                </article>
+                <article className="athlete-prontuario-summary-item">
+                  <span>Litros por dia</span>
+                  <strong>{formatPortalValue(athleteInitialData?.litrosAguaDia)}</strong>
+                </article>
+                <article className="athlete-prontuario-summary-item">
+                  <span>Qualidade do sono</span>
+                  <strong>{formatPortalValue(athleteInitialData?.dificuldadeDormir)}</strong>
+                </article>
+              </div>
+
+              <div className="athlete-prontuario-layout">
+                <section className="athlete-prontuario-section athlete-prontuario-section--identity">
+                  <h3>Identificacao</h3>
+                  <div className="athlete-prontuario-grid">
+                    {prontuarioIdentityItems.map((item) => (
+                      <div key={item.label} className="athlete-prontuario-item">
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="athlete-prontuario-section athlete-prontuario-section--clinical">
+                  <h3>Resumo clinico</h3>
+                  <p><strong>Queixa principal:</strong> {athleteProntuario.observacoes}</p>
+                  <p><strong>Historico de saude:</strong> {athleteProntuario.historicoSaude}</p>
+                  <p><strong>Atividade fisica:</strong> {formatPortalValue(athleteInitialData?.atividadeFisica)}</p>
+                  <p><strong>Ingestao de agua:</strong> {formatPortalValue(athleteInitialData?.ingestaoAgua)}</p>
+                  <p><strong>Litros por dia:</strong> {formatPortalValue(athleteInitialData?.litrosAguaDia)}</p>
+                  <p><strong>Sono:</strong> {formatPortalValue(athleteInitialData?.dificuldadeDormir)}</p>
+                </section>
+
+                <section className="athlete-prontuario-section athlete-prontuario-section--risk">
+                  <h3>Comorbidades pessoais</h3>
+                  {athleteProntuario.comorbidadesPessoais.length === 0 ? (
+                    <p>Nenhuma comorbidade pessoal informada.</p>
+                  ) : (
+                    <div className="athlete-prontuario-chip-list">
+                      {athleteProntuario.comorbidadesPessoais.map((item) => (
+                        <span key={`pessoal-${item}`} className="athlete-prontuario-chip">{item}</span>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="athlete-prontuario-section athlete-prontuario-section--risk">
+                  <h3>Comorbidades familiares</h3>
+                  {athleteProntuario.comorbidadesFamiliares.length === 0 ? (
+                    <p>Nenhuma comorbidade familiar informada.</p>
+                  ) : (
+                    <div className="athlete-prontuario-chip-list">
+                      {athleteProntuario.comorbidadesFamiliares.map((item) => (
+                        <span key={`familiar-${item}`} className="athlete-prontuario-chip">{item}</span>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </div>
+            </div>
+          </div>
+
+          <div className="athlete-card full" ref={avaliacoesSectionRef}>
             <div className="athlete-card-header">
               <ClipboardList size={18} />
-              <span>Avaliacoes recentes</span>
+              <span>Avaliações recentes</span>
             </div>
             <EvaluationSummaryStrip
               title="Resumo da avaliação mais recente"
-              subtitle="Panorama clinico padronizado do ultimo registro."
+              subtitle="Panorama clínico padronizado do último registro."
               status={latestEvaluationSummary.status}
               empty={latestEvaluationSummary.empty}
               emptyMessage="Sem avaliação para gerar resumo clínico."
@@ -578,6 +916,7 @@ const AthletePortal = () => {
         isOpen={showOnboarding}
         patient={patient}
         onSave={handleSaveOnboarding}
+        onClose={() => setShowOnboarding(false)}
       />
       <AppointmentModal
         isOpen={isRescheduleOpen}
@@ -599,7 +938,7 @@ const AthletePortal = () => {
         onClose={() => setShowEbiaModal(false)}
         onSubmit={handleSubmitEbia}
       />
-    </div>
+    </motion.div>
   );
 };
 

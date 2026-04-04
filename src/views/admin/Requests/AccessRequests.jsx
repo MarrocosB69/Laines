@@ -54,7 +54,7 @@ const AccessRequests = () => {
 
   const updateStatus = useCallback(async (request, status) => {
     const accepted = await confirm({
-      title: status === 'recusado' ? 'Recusar solicitacao' : 'Atualizar solicitacao',
+      title: status === 'recusado' ? 'Recusar solicitação' : 'Atualizar solicitação',
       message: status === 'recusado'
         ? `Deseja recusar a solicitação de ${request?.nome || 'usuário'}?`
         : 'Deseja atualizar o status desta solicitação?',
@@ -74,7 +74,7 @@ const AccessRequests = () => {
       notify({
         type: 'success',
         title: 'Solicitação atualizada',
-        message: `Solicitação ${status} com sucesso.`
+        message: `Solicitação marcada como ${STATUS_LABELS[status] || status}.`
       });
     } catch (error) {
       console.error('Erro ao atualizar solicitação:', error);
@@ -90,8 +90,8 @@ const AccessRequests = () => {
     if (!request?.email) {
       notify({
         type: 'error',
-        title: 'Email ausente',
-        message: 'Não foi possível criar o acesso sem email.'
+        title: 'E-mail ausente',
+        message: 'Não foi possível criar o acesso sem e-mail.'
       });
       return;
     }
@@ -129,7 +129,7 @@ const AccessRequests = () => {
         type: 'success',
         title: 'Acesso criado',
         message: data?.user?.existed
-          ? 'Solicitação aprovada. Usuário existente vinculado pelo email.'
+          ? 'Solicitação aprovada. Usuário existente vinculado pelo e-mail.'
           : 'Solicitação aprovada. Consulte login e senha provisória na lista de usuários.'
       });
     } catch (error) {
@@ -140,7 +140,7 @@ const AccessRequests = () => {
         message: getApiErrorMessage(error, 'Não foi possível criar o usuário a partir da solicitação.')
       });
     } finally {
-      // sem sessao secundaria no backend
+      // Sem sessão secundária no backend.
     }
   }, [confirm, notify, user]);
 
@@ -187,7 +187,7 @@ const AccessRequests = () => {
           <div>
             <h4>{request.nome || 'Nome não informado'}</h4>
             <div className="requester-meta">
-              <span><Mail size={12} /> {request.email || 'Email não informado'}</span>
+              <span><Mail size={12} /> {request.email || 'E-mail não informado'}</span>
               {request.telefone && (
                 <>
                   <span className="meta-separator">.</span>
@@ -316,10 +316,11 @@ const AccessRequests = () => {
       <div className="requests-controls">
         <input
           type="text"
-          placeholder="Buscar por nome, email, área..."
+          placeholder="Buscar por nome, e-mail, área..."
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           className="requests-search"
+          aria-label="Buscar solicitações por nome, e-mail ou área"
         />
         <div className="requests-filters">
           {filters.map((filter) => (

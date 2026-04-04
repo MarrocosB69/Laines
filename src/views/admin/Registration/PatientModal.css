@@ -1,3 +1,7 @@
+.patient-modal-container {
+  --app-modal-content-max-width: 920px;
+}
+
 .patient-modal-form {
   display: flex;
   flex-direction: column;
@@ -17,11 +21,11 @@
   margin-top: 0.16rem;
 }
 
-.patient-modal-form label {
+.patient-field-label {
   margin: 0;
   font-size: 0.79rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .patient-modal-form .space-y-2 {
@@ -31,79 +35,55 @@
   gap: 0.3rem;
 }
 
-.patient-modal-form input:not([type='checkbox']),
-.patient-modal-form select,
-.patient-modal-form textarea {
-  width: 100%;
-  min-height: 2.62rem;
-  border-radius: 0.82rem;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.84rem;
-  font-weight: 500;
-  padding: 0.56rem 0.74rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+.patient-field-input,
+.patient-field-select,
+.patient-field-textarea {
+  border-radius: var(--radius-md);
 }
 
-.patient-modal-form textarea {
-  min-height: 6.2rem;
-  resize: vertical;
+.patient-field-textarea {
+  resize: none;
 }
 
-.patient-modal-form input::placeholder,
-.patient-modal-form textarea::placeholder {
-  color: #94a3b8;
-}
-
-.patient-modal-form input:not([type='checkbox']):focus,
-.patient-modal-form select:focus,
-.patient-modal-form textarea:focus {
-  outline: none;
-  border-color: #103355;
-  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.13);
-}
-
-.patient-modal-form input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: #103355;
-}
-
-.patient-modal-form .group {
-  min-width: 0;
-}
-
-.patient-modal-form .group span,
-.patient-modal-form .space-y-2 > span {
-  min-width: 0;
+.patient-team-empty {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
 }
 
 .patient-modal-form .grid.grid-cols-1.sm\:grid-cols-2.gap-3 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.56rem;
 }
 
-.patient-modal-form .grid.grid-cols-1.sm\:grid-cols-2.gap-3 label {
-  border-radius: 0.82rem;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
-  padding: 0.5rem 0.62rem;
+.patient-team-option {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  padding: 0.56rem 0.66rem;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   cursor: pointer;
+  transition: var(--transition);
 }
 
-.patient-modal-form .grid.grid-cols-1.sm\:grid-cols-2.gap-3 label:hover {
-  border-color: #cbd5e1;
+.patient-team-option:hover {
+  border-color: rgba(16, 51, 85, 0.3);
+  background: rgba(16, 51, 85, 0.03);
 }
 
-.patient-modal-form .grid.grid-cols-1.sm\:grid-cols-2.gap-3 label span {
-  font-size: 0.78rem;
+.patient-team-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-navy);
+}
+
+.patient-team-name {
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-primary);
 }
 
 .patient-modal-error {

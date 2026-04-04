@@ -24,3 +24,16 @@
 .athlete-ebia-body .avaliacao-socioeconomica {
   margin: 0;
 }
+
+/* Parte 3 — harmonização visual (Modal EBIA atleta) */
+.athlete-ebia-header-icon {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 51, 85, 0.2);
+  background: rgba(16, 51, 85, 0.1);
+  color: var(--color-navy);
+}
+
+.athlete-ebia-body {
+  border-top: 1px solid #edf2f7;
+  padding-top: 0.95rem;
+}

@@ -87,51 +87,33 @@
   padding: 0.62rem 0.78rem;
 }
 
-.research-projects .primary-btn,
-.research-projects .secondary-btn,
 .research-projects .filter-toggle {
-  min-height: 2.48rem;
-  border-radius: 0.82rem;
+  min-height: 38px;
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0 0.82rem;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 9px 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.32rem;
+  gap: 8px;
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
-.research-projects .primary-btn {
-  background: linear-gradient(135deg, #2f6fa6 0%, #1d4f79 100%);
-  color: #ffffff;
-  box-shadow: 0 16px 34px -24px rgba(47, 111, 166, 0.78);
-}
-
-.research-projects .primary-btn:hover {
-  transform: translateY(-1px);
-}
-
-.research-projects .secondary-btn,
 .research-projects .filter-toggle {
-  border-color: var(--research-border);
-  background: var(--research-surface);
-  color: color-mix(in srgb, var(--research-text) 76%, transparent);
+  border-color: var(--color-navy);
+  border-width: 1.5px;
+  background: transparent;
+  color: var(--color-navy);
 }
 
-.research-projects .secondary-btn:hover:not(:disabled),
 .research-projects .filter-toggle:hover {
-  border-color: color-mix(in srgb, var(--research-border) 72%, #2f6fa6 28%);
-  background: var(--research-surface-soft);
-}
-
-.research-projects .secondary-btn:disabled {
-  opacity: 0.56;
-  cursor: not-allowed;
+  border-color: var(--color-navy);
+  background: rgba(16, 51, 85, 0.05);
 }
 
 .research-projects .research-stats {
@@ -525,6 +507,7 @@
 
 .research-project-modal {
   --app-modal-width: 980px;
+  --app-modal-content-max-width: 840px;
   overflow: auto;
 }
 
@@ -547,6 +530,8 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  width: min(100%, var(--app-modal-content-max-width));
+  margin-inline: auto;
   padding: 0.95rem var(--app-modal-padding-x) 1.15rem;
 }
 
@@ -691,11 +676,6 @@
   }
 
   .research-projects .research-actions {
-    width: 100%;
-  }
-
-  .research-projects .primary-btn,
-  .research-projects .secondary-btn {
     width: 100%;
   }
 

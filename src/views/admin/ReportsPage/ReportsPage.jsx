@@ -426,7 +426,7 @@ const ReportsPage = () => {
                 </motion.div>
               ))}
             {!isLoading && visibleStatCards.length === 0 && (
-              <div className="reports-empty-state">
+              <div className="reports-empty-state laines-feedback-state">
                 Nenhum indicador encontrado para a busca atual.
               </div>
             )}

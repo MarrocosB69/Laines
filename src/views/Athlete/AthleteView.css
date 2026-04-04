@@ -1,0 +1,28 @@
+.athlete-view {
+  --athlete-primary: #1d3350;
+  --athlete-muted: #64748b;
+}
+
+.athlete-view .admin-bg-pattern {
+  background: radial-gradient(circle at top left, rgba(116, 168, 101, 0.1), transparent 45%),
+              linear-gradient(180deg, rgba(247, 250, 252, 0.62), rgba(247, 250, 252, 1));
+}
+
+.athlete-view .admin-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+}
+
+.athlete-view .icon-wrapper {
+  color: var(--athlete-primary);
+}
+
+.athlete-view .header-page-subtitle {
+  color: var(--athlete-muted);
+}
+
+.athlete-view .content-area {
+  background: var(--color-surface);
+}
+

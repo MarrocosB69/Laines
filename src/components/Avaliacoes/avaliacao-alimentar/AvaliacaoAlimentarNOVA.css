@@ -16,17 +16,61 @@
 
 .avaliacao-alimentar__date-row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .avaliacao-alimentar__date-field {
-  max-width: 220px;
+  flex: 1 1 220px;
+  max-width: 280px;
 }
 
 .avaliacao-alimentar__content-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.avaliacao-alimentar__group-card {
+  padding: 1.2rem;
+}
+
+.avaliacao-alimentar__group-header h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.avaliacao-alimentar__group-header p {
+  margin: 0.35rem 0 0.9rem;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.avaliacao-alimentar__group-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.avaliacao-alimentar__group-field .eval-input {
+  width: 100%;
+}
+
+.avaliacao-alimentar__group-meta {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  font-size: 0.68rem;
+  color: #475569;
+  letter-spacing: 0.01em;
+}
+
+.avaliacao-alimentar__group-meta-sub {
+  color: #64748b;
 }
 
 .avaliacao-alimentar__summary-card {
@@ -151,9 +195,9 @@
 }
 
 .avaliacao-alimentar .eval-icon {
-  background: rgba(14, 165, 233, 0.14);
-  color: #0284c7;
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+  background: rgba(22, 163, 74, 0.13);
+  color: #15803d;
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.14);
 }
 
 .avaliacao-alimentar .resumo-pill {
@@ -176,7 +220,24 @@
   }
 }
 
+@media (max-width: 768px) {
+  .avaliacao-alimentar__content-grid,
+  .avaliacao-alimentar__group-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .avaliacao-alimentar__header-card,
+  .avaliacao-alimentar__group-card,
+  .avaliacao-alimentar__summary-card {
+    padding: 0.95rem;
+  }
+}
+
 @media (max-width: 640px) {
+  .avaliacao-alimentar__group-grid {
+    grid-template-columns: 1fr;
+  }
+
   .avaliacao-alimentar__footer-top {
     flex-direction: column;
     align-items: flex-start;
@@ -184,5 +245,17 @@
 
   .avaliacao-alimentar__classification-wrap {
     text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .avaliacao-alimentar {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .avaliacao-alimentar__header-card,
+  .avaliacao-alimentar__group-card,
+  .avaliacao-alimentar__summary-card {
+    padding: 0.75rem !important;
   }
 }

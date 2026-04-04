@@ -39,7 +39,7 @@ const UsagePanel = ({
         />
       ))}
       {visibleUsageData.length === 0 && (
-        <div className="reports-empty-state">
+        <div className="reports-empty-state laines-feedback-state">
           Nenhuma categoria encontrada com os filtros atuais.
         </div>
       )}

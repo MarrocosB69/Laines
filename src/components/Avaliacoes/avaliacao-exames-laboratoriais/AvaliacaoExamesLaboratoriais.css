@@ -1,0 +1,59 @@
+.avaliacao-exames-laboratoriais__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.avaliacao-exames-laboratoriais__rows {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.avaliacao-exames-laboratoriais__row {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1.3fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr auto;
+  align-items: center;
+}
+
+.avaliacao-exames-laboratoriais__row .eval-btn {
+  padding: 0.55rem;
+  min-width: 2.25rem;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .avaliacao-exames-laboratoriais__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Domain color: clinica ── */
+.avaliacao-exames-laboratoriais .eval-icon {
+  background: rgba(225, 29, 72, 0.10);
+  color: #be123c;
+  box-shadow: 0 8px 20px rgba(225, 29, 72, 0.12);
+}
+
+@media (max-width: 768px) {
+  .avaliacao-exames-laboratoriais__row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .avaliacao-exames-laboratoriais .eval-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .avaliacao-exames-laboratoriais {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .avaliacao-exames-laboratoriais .eval-card,
+  .avaliacao-exames-laboratoriais .eval-section {
+    padding: 0.75rem !important;
+  }
+}

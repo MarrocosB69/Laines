@@ -245,7 +245,7 @@ const ResearchProjectModal = ({
                 type="text"
                 value={studentSearch}
                 onChange={(event) => setStudentSearch(event.target.value)}
-                placeholder="Buscar aluno por nome ou email"
+                placeholder="Buscar aluno por nome ou e-mail"
                 className="app-modal-input research-project-modal__search"
               />
               <div className="research-project-modal__student-list">

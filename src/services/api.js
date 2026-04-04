@@ -7,8 +7,12 @@ import {
   setAccessToken
 } from './sessionToken';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 20000);
+const configuredApiBaseUrl = String(import.meta.env.VITE_API_URL || '').trim();
+if (import.meta.env.MODE === 'production' && !configuredApiBaseUrl) {
+  throw new Error('[LAINES] VITE_API_URL não definida. Configure a variável antes do build de produção.');
+}
+const API_BASE_URL = configuredApiBaseUrl || 'http://localhost:4000';
+const API_TIMEOUT_MS = Number(import.meta.env.VITE_API_TIMEOUT_MS || 15000);
 export const AUTH_EXPIRED_EVENT = 'laines:auth-expired';
 
 let inFlightRefresh = null;

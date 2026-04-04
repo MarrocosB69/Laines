@@ -164,7 +164,7 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
 
   const syncLabel = useMemo(() => {
     if (!lastSyncedAt) return 'Sincronização pendente';
-    return `Atualizado as ${lastSyncedAt.toLocaleTimeString('pt-BR', {
+    return `Atualizado às ${lastSyncedAt.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit'
     })}`;
@@ -195,13 +195,13 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
   const handleOpenProntuario = useCallback((item) => {
     const hasPatient = guardAction(notify, Boolean(item?.pacienteId), {
       actionLabel: 'Abrir prontuário',
-      reason: 'Consulta sem paciente vinculado.'
+      reason: 'Consulta sem atleta vinculado.'
     });
     if (!hasPatient) return;
     onSelectPatient?.(
       {
         id: item.pacienteId,
-        nome: item.pacienteNome || 'Paciente'
+        nome: item.pacienteNome || 'Atleta'
       },
       {
         source: 'agenda',
@@ -230,8 +230,8 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
     <div className="professor-agenda">
       <header className="professor-agenda-header">
         <div>
-          <span className="section-label">AGENDA CLINICA</span>
-          <h1>Calendario do professor</h1>
+          <span className="section-label">AGENDA CLÍNICA</span>
+          <h1>Calendário do professor</h1>
           <p>Acompanhe consultas por dia, aluno responsável e status.</p>
         </div>
         <div className="professor-agenda-header-actions">
@@ -272,7 +272,7 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
           <Search size={16} />
           <input
             type="text"
-            placeholder="Buscar por paciente, aluno ou horario..."
+            placeholder="Buscar por atleta, aluno ou horário..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />

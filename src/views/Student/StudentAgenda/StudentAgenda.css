@@ -532,18 +532,23 @@
 }
 
 .agenda-slot-card.status-realizada {
-  background: rgba(34, 197, 94, 0.16);
-  color: #15803d;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .agenda-slot-card.status-remarcada {
-  background: rgba(245, 158, 11, 0.16);
-  color: #b45309;
+  background: #fef9c3;
+  color: #854d0e;
 }
 
 .agenda-slot-card.status-falta {
-  background: rgba(239, 68, 68, 0.16);
-  color: #b91c1c;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.agenda-slot-card.status-agendada {
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .agenda-detail {
@@ -882,19 +887,19 @@
 }
 
 .status-text.status-agendada {
-  color: #1d4ed8;
+  color: #1e40af;
 }
 
 .status-text.status-realizada {
-  color: #15803d;
+  color: #166534;
 }
 
 .status-text.status-remarcada {
-  color: #b45309;
+  color: #854d0e;
 }
 
 .status-text.status-falta {
-  color: #b91c1c;
+  color: #991b1b;
 }
 
 @media (max-width: 640px) {
@@ -980,4 +985,184 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Parte 2 — normalização visual (Aluno / Agenda) */
+.student-agenda {
+  --agenda-surface: var(--color-white);
+  --agenda-surface-strong: var(--color-white);
+  --agenda-surface-soft: #f8fafc;
+  --agenda-border: var(--color-border);
+  --agenda-muted: var(--color-text-muted);
+  --agenda-title: var(--color-navy);
+  --agenda-shadow: var(--shadow-md);
+  --agenda-shadow-soft: var(--shadow-sm);
+  --agenda-ring: 0 0 0 3px rgba(116, 168, 101, 0.18);
+}
+
+.student-agenda::before,
+.student-agenda::after {
+  display: none;
+}
+
+.agenda-header,
+.agenda-filters,
+.agenda-timeline,
+.agenda-detail,
+.agenda-day,
+.agenda-empty,
+.agenda-loading {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+}
+
+.agenda-header {
+  padding: 1.35rem 1.5rem;
+}
+
+.agenda-icon {
+  border-radius: var(--radius-md);
+  background: rgba(16, 51, 85, 0.1);
+  color: var(--color-navy);
+  box-shadow: none;
+}
+
+.agenda-title h1 {
+  color: var(--color-navy);
+  font-weight: 700;
+}
+
+.agenda-next-card {
+  border-radius: var(--radius-md);
+}
+
+.agenda-refresh-btn,
+.agenda-empty-action,
+.agenda-action.ghost {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  color: var(--color-navy);
+}
+
+.agenda-refresh-btn:hover:not(:disabled),
+.agenda-empty-action:hover,
+.agenda-action.ghost:hover {
+  background: rgba(16, 51, 85, 0.05);
+  border-color: rgba(16, 51, 85, 0.24);
+}
+
+.agenda-summary .summary-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.agenda-summary .summary-card::before {
+  opacity: 0.55;
+}
+
+.agenda-summary .summary-card.success {
+  background: #ecfdf5;
+  border-color: rgba(22, 163, 74, 0.26);
+}
+
+.agenda-summary .summary-card.warning {
+  background: #fffbeb;
+  border-color: rgba(217, 119, 6, 0.26);
+}
+
+.agenda-summary .summary-card.danger {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.24);
+}
+
+.agenda-filters {
+  gap: 0.9rem;
+}
+
+.filter-btn {
+  border-radius: var(--radius-md);
+  letter-spacing: 0.04em;
+}
+
+.filter-btn.active {
+  background: var(--color-green);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-btn:hover {
+  border-color: rgba(16, 51, 85, 0.2);
+  transform: none;
+}
+
+.agenda-search-input {
+  border-radius: var(--radius-md);
+  min-height: 2.5rem;
+}
+
+.agenda-filter-meta {
+  border-top: 1px solid #e5e7eb;
+}
+
+.agenda-slot,
+.agenda-card {
+  border-radius: var(--radius-md);
+}
+
+.agenda-slot {
+  border: 1px solid #e2e8f0;
+}
+
+.agenda-slot.has-event {
+  box-shadow: none;
+}
+
+.agenda-slot-card {
+  background: rgba(16, 51, 85, 0.1);
+  color: var(--color-navy);
+}
+
+.agenda-slot-card .status-pill {
+  background: rgba(16, 51, 85, 0.08);
+  color: var(--color-navy);
+}
+
+.agenda-chip {
+  background: rgba(16, 51, 85, 0.1);
+  color: var(--color-navy);
+}
+
+.agenda-chip.status-realizada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.agenda-chip.status-remarcada {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.agenda-chip.status-falta {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.agenda-chip.status-agendada {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.agenda-action.primary {
+  background: var(--color-green);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.agenda-action.primary:hover:not(:disabled) {
+  background: var(--color-green-dark);
 }

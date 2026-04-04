@@ -1,59 +1,565 @@
+.perimetros-form.perimetros-form--modern {
+  --domain-color: #0e7490;
+  border-radius: var(--radius-xl);
+  border: 1px solid color-mix(in srgb, var(--domain-color) 20%, transparent);
+}
+
 .perimetros-form .eval-icon {
-  background: rgba(14, 165, 233, 0.14);
-  color: #0284c7;
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--domain-color) 12%, transparent), color-mix(in srgb, var(--domain-color) 6%, transparent));
+  color: var(--domain-color);
+  border-color: color-mix(in srgb, var(--domain-color) 22%, transparent);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--domain-color) 14%, transparent);
 }
 
-.perimetros-form .eval-card {
-  border-radius: 22px;
-  border: 1px solid rgba(14, 165, 233, 0.18);
-  background: #ffffff;
-}
-
-.perimetros-form .perimetros-basicos-grid {
+.perimetros-form .perimetros-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-.perimetros-form .perimetros-field {
-  background: rgba(248, 250, 252, 0.8);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 14px;
-  padding: 0.65rem;
-}
-
-.perimetros-form .perimetros-field .eval-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.perimetros-form .perimetros-field__unit {
+.perimetros-form .perimetros-unit-badge {
   font-size: 0.62rem;
-  padding: 0.1rem 0.35rem;
+  padding: 0.08rem 0.36rem;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.24);
   color: #1d4ed8;
-  border: 1px solid rgba(59, 130, 246, 0.2);
   font-weight: 800;
 }
 
-.perimetros-form .perimetros-field__optional {
+.perimetros-form .perimetros-required-dot {
+  color: #dc2626;
+  margin-left: 0.2rem;
+  font-weight: 900;
+}
+
+.perimetros-form .perimetros-optional-badge {
   font-size: 0.6rem;
-  padding: 0.1rem 0.35rem;
+  padding: 0.08rem 0.34rem;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.16);
   color: #475569;
-  border: 1px solid rgba(148, 163, 184, 0.26);
+  border: 1px solid rgba(148, 163, 184, 0.28);
   font-weight: 800;
 }
 
-.perimetros-form .perimetros-field__hint {
-  display: block;
-  margin-top: 0.32rem;
-  color: #64748b;
+.perimetros-form .perimetros-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--domain-color) 30%, transparent);
+  background: #ffffff;
+  color: #0f5a73;
+  font-size: 0.66rem;
+  font-weight: 800;
+  margin-left: 0.2rem;
+  cursor: help;
+}
+
+.perimetros-form .perimetros-help:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--domain-color) 20%, transparent);
+}
+
+.perimetros-form .perimetros-help-tooltip {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  width: min(320px, 85vw);
+  background: #0f2432;
+  color: #e2f1fa;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 10px;
+  padding: 0.5rem 0.56rem;
+  display: grid;
+  gap: 0.24rem;
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.perimetros-form .perimetros-help-tooltip span {
   font-size: 0.69rem;
+  line-height: 1.35;
   font-weight: 600;
 }
+
+.perimetros-form .perimetros-help:hover .perimetros-help-tooltip,
+.perimetros-form .perimetros-help:focus-visible .perimetros-help-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.perimetros-form .perimetros-input-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.perimetros-form .perimetros-input-warning {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.perimetros-form .perimetros-field-message {
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.perimetros-form .perimetros-field-message.is-error {
+  color: #b91c1c;
+}
+
+.perimetros-form .perimetros-field-message.is-warning {
+  color: #b45309;
+}
+
+.perimetros-form .perimetros-shared-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.7rem;
+  color: #1e40af;
+  font-weight: 700;
+}
+
+.perimetros-form .perimetros-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.52rem;
+  min-height: 40px;
+  padding: 0.42rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: #f8fafc;
+}
+
+.perimetros-form .perimetros-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f766e;
+}
+
+.perimetros-form .perimetros-toggle span {
+  font-size: 0.7rem;
+  color: #334155;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.perimetros-form .perimetros-results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.68rem;
+}
+
+.perimetros-form .perimetros-result-card {
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.72rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.perimetros-form .perimetros-result-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.perimetros-form .perimetros-result-card__header h6 {
+  margin: 0;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-result-card__value {
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-result-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.perimetros-form .perimetros-result-card__meta small {
+  color: #64748b;
+  font-size: 0.67rem;
+  font-weight: 600;
+}
+
+.perimetros-form .perimetros-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.14rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.63rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.perimetros-form .perimetros-tone-success {
+  background: rgba(34, 197, 94, 0.16);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.perimetros-form .perimetros-tone-warning {
+  background: rgba(234, 179, 8, 0.18);
+  color: #854d0e;
+  border-color: rgba(234, 179, 8, 0.34);
+}
+
+.perimetros-form .perimetros-tone-danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #991b1b;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.perimetros-form .perimetros-tone-info {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0c4a6e;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.perimetros-form .perimetros-tone-neutral {
+  background: rgba(148, 163, 184, 0.14);
+  color: #334155;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.perimetros-form .perimetros-delta {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-delta.is-up,
+.perimetros-form .is-up {
+  color: #047857;
+}
+
+.perimetros-form .perimetros-delta.is-down,
+.perimetros-form .is-down {
+  color: #b91c1c;
+}
+
+.perimetros-form .perimetros-delta.is-flat,
+.perimetros-form .is-flat {
+  color: #475569;
+}
+
+.perimetros-form .perimetros-waist-alert {
+  margin-top: 0.76rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: #f8fafc;
+  padding: 0.58rem 0.64rem;
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.perimetros-form .perimetros-waist-alert strong {
+  display: block;
+  font-size: 0.76rem;
+  margin-bottom: 0.15rem;
+}
+
+.perimetros-form .perimetros-waist-alert p {
+  margin: 0;
+  font-size: 0.69rem;
+  color: #475569;
+}
+
+.perimetros-form .perimetros-comparison {
+  margin-top: 0.92rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.24);
+  padding-top: 0.76rem;
+}
+
+.perimetros-form .perimetros-comparison h5 {
+  margin: 0 0 0.45rem;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #334155;
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-comparison-table-wrap,
+.perimetros-form .perimetros-tmb-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+}
+
+.perimetros-form .perimetros-comparison-table,
+.perimetros-form .perimetros-tmb-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.perimetros-form .perimetros-comparison-table th,
+.perimetros-form .perimetros-tmb-table th {
+  text-align: left;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #475569;
+  padding: 0.48rem 0.55rem;
+  background: #f1f5f9;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.perimetros-form .perimetros-comparison-table td,
+.perimetros-form .perimetros-tmb-table td {
+  padding: 0.48rem 0.55rem;
+  font-size: 0.74rem;
+  color: #1e293b;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+}
+
+.perimetros-form .perimetros-comparison-table tr:last-child td,
+.perimetros-form .perimetros-tmb-table tr:last-child td {
+  border-bottom: none;
+}
+
+.perimetros-form .perimetros-sparklines {
+  margin-top: 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.perimetros-form .perimetros-sparkline-card {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.52rem;
+}
+
+.perimetros-form .perimetros-sparkline-card p {
+  margin: 0 0 0.35rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.perimetros-form .mini-sparkline {
+  width: 100%;
+  height: 72px;
+}
+
+.perimetros-form .mini-sparkline--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.perimetros-form .perimetros-interpretation {
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.perimetros-form .perimetros-circ-layout {
+  display: grid;
+  grid-template-columns: 0.95fr 1.35fr;
+  gap: 0.7rem;
+  margin-bottom: 0.72rem;
+}
+
+.perimetros-form .perimetros-silhouette-card,
+.perimetros-form .perimetros-meta-card {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.62rem;
+}
+
+.perimetros-form .perimetros-silhouette-card h5,
+.perimetros-form .perimetros-meta-card h5 {
+  margin: 0 0 0.45rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.perimetros-form .perimetros-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.perimetros-form .perimetros-silhouette {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.perimetros-form .perimetros-silhouette > * {
+  stroke: rgba(15, 23, 42, 0.15);
+  stroke-width: 1;
+}
+
+.perimetros-form .perimetros-segment-success {
+  fill: rgba(34, 197, 94, 0.34);
+}
+
+.perimetros-form .perimetros-segment-warning {
+  fill: rgba(234, 179, 8, 0.38);
+}
+
+.perimetros-form .perimetros-segment-danger {
+  fill: rgba(239, 68, 68, 0.34);
+}
+
+.perimetros-form .perimetros-segment-neutral {
+  fill: rgba(148, 163, 184, 0.28);
+}
+
+.perimetros-form .perimetros-formula-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.perimetros-form .perimetros-tmb-table tr {
+  transition: background 0.14s ease;
+}
+
+.perimetros-form .perimetros-tmb-table tr.is-selected {
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.perimetros-form .perimetros-tmb-table tr.is-disabled {
+  opacity: 0.6;
+}
+
+.perimetros-form .perimetros-tmb-table tr[role='button'] {
+  cursor: pointer;
+}
+
+.perimetros-form .perimetros-tmb-table tr[role='button']:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--domain-color) 45%, transparent);
+  outline-offset: -2px;
+}
+
+.perimetros-form .perimetros-selected-formula {
+  margin-top: 0.62rem;
+  border: 1px solid color-mix(in srgb, var(--domain-color) 25%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--domain-color) 8%, transparent);
+  padding: 0.56rem 0.62rem;
+}
+
+.perimetros-form .perimetros-selected-formula strong {
+  display: block;
+  font-size: 0.75rem;
+  color: #0f172a;
+}
+
+.perimetros-form .perimetros-selected-formula p {
+  margin: 0.22rem 0 0;
+  font-size: 0.68rem;
+  color: #475569;
+  font-weight: 700;
+}
+
+.perimetros-form .perimetros-tmb-warning {
+  margin-top: 0.58rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  background: rgba(254, 249, 195, 0.8);
+  color: #854d0e;
+  padding: 0.44rem 0.52rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.perimetros-form .perimetros-error-note {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: rgba(254, 226, 226, 0.8);
+  color: #991b1b;
+}
+
+@media (max-width: 1024px) {
+  .perimetros-form .perimetros-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .perimetros-form .perimetros-sparklines {
+    grid-template-columns: 1fr;
+  }
+
+  .perimetros-form .perimetros-circ-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .perimetros-form .perimetros-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .perimetros-form .perimetros-results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .perimetros-form .perimetros-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .perimetros-form {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .perimetros-form .eval-card,
+  .perimetros-form .eval-section,
+  .perimetros-form .perimetros-section {
+    padding: 0.75rem !important;
+  }
+
+  .perimetros-form .eval-card-header,
+  .perimetros-form .perimetros-header {
+    padding: 0.75rem 0.75rem 0 !important;
+  }
+}
+
+
+

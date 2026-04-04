@@ -5,9 +5,9 @@
 }
 
 .avaliacao-socioeconomica .eval-icon {
-  background: rgba(14, 165, 233, 0.14);
-  color: #0284c7;
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.15);
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  box-shadow: 0 8px 20px rgba(217, 119, 6, 0.13);
 }
 
 .avaliacao-socioeconomica .card-header {
@@ -133,4 +133,31 @@
   background: #fee2e2;
   border-color: rgba(239, 68, 68, 0.4);
   color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .avaliacao-socioeconomica .eval-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .avaliacao-socioeconomica .ebia-options {
+    flex-direction: column;
+  }
+
+  .avaliacao-socioeconomica .ebia-result {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .avaliacao-socioeconomica {
+    padding: 0.75rem 0.5rem !important;
+  }
+
+  .avaliacao-socioeconomica .ebia-intro,
+  .avaliacao-socioeconomica .ebia-question,
+  .avaliacao-socioeconomica .ebia-score,
+  .avaliacao-socioeconomica .ebia-status {
+    padding: 0.75rem !important;
+  }
 }

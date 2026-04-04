@@ -1,0 +1,1388 @@
+/* ProntuarioPatch.css - v1.0.0 - 2026-03-31 */
+
+/* === TOKENS (ROOT) === */
+:root {
+  --pron-bg: #f8fafc;
+  --pron-card-bg: #ffffff;
+  --pron-border: rgba(0, 0, 0, 0.07);
+  --pron-border-hover: rgba(0, 0, 0, 0.15);
+  --pron-text-primary: #0f172a;
+  --pron-text-secondary: #64748b;
+  --pron-text-muted: #94a3b8;
+  --pron-accent: #1d9e75;
+  --pron-accent-light: rgba(29, 158, 117, 0.08);
+  --pron-radius-sm: 8px;
+  --pron-radius-md: 12px;
+  --pron-radius-lg: 16px;
+  --pron-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --pron-ok: #16a34a;
+  --pron-ok-bg: #f0fdf4;
+  --pron-warn: #d97706;
+  --pron-warn-bg: #fffbeb;
+  --pron-danger: #dc2626;
+  --pron-danger-bg: #fef2f2;
+  --pron-info: #2563eb;
+  --pron-info-bg: #eff6ff;
+}
+
+/* === SECAO 1 - RESET E BASE DO PRONTUARIO === */
+.prontuario-root {
+  background: var(--pron-bg);
+  color: var(--pron-text-primary);
+  line-height: 1.45;
+  min-height: 100vh;
+}
+
+.prontuario-root,
+.prontuario-root * {
+  box-sizing: border-box;
+}
+
+.prontuario-root :where(h1, h2, h3, h4, p, ul, ol, dl) {
+  margin: 0;
+}
+
+.prontuario-root :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.prontuario-root :where(input, select, textarea) {
+  background: var(--pron-card-bg);
+  border: 0.5px solid var(--pron-border-hover);
+  border-radius: var(--pron-radius-sm);
+}
+
+.prontuario-root .pron-page {
+  background: var(--pron-bg);
+  padding: 20px;
+}
+
+.prontuario-root .pron-shell {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* === SECAO 2 - LAYOUT DE 2 COLUNAS === */
+.prontuario-root .pron-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.prontuario-root .pron-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 20px;
+  align-self: start;
+}
+
+/* === SECAO 3 - HEADER DO PRONTUARIO === */
+.prontuario-root .pron-header {
+  background: var(--pron-card-bg);
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-lg);
+  box-shadow: var(--pron-shadow);
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.prontuario-root .pron-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.prontuario-root .pron-header-title h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--pron-text-primary);
+  line-height: 1.2;
+}
+
+.prontuario-root .pron-header-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--pron-text-secondary);
+}
+
+.prontuario-root .pron-header-badges {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prontuario-root .pron-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--pron-accent-light);
+  color: var(--pron-accent);
+  font-size: 16px;
+  font-weight: 600;
+  flex: 0 0 44px;
+}
+
+.prontuario-root .pron-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.prontuario-root .pron-header-actions .pron-btn {
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: var(--pron-radius-sm);
+  border: 0.5px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.prontuario-root .pron-header-actions .pron-btn-primary {
+  background: var(--pron-accent);
+  color: #fff;
+  box-shadow: var(--pron-shadow);
+}
+
+.prontuario-root .pron-header-actions .pron-btn-primary:hover {
+  background: #178762;
+}
+
+.prontuario-root .pron-header-actions .pron-btn-secondary {
+  background: transparent;
+  color: var(--pron-text-secondary);
+  border-color: var(--pron-border-hover);
+}
+
+.prontuario-root .pron-header-actions .pron-btn-secondary:hover {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--pron-text-primary);
+}
+
+/* === SECAO 4 - TABS DE NAVEGACAO === */
+.prontuario-root .pron-tabs {
+  background: var(--pron-card-bg);
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-md);
+  padding: 4px 8px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.prontuario-root .pron-tab {
+  position: relative;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: var(--pron-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.prontuario-root .pron-tab:hover {
+  background: rgba(15, 23, 42, 0.05);
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-tab.active {
+  color: var(--pron-accent);
+  background: rgba(29, 158, 117, 0.08);
+}
+
+.prontuario-root .pron-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--pron-accent);
+}
+
+/* === SECAO 5 - CARDS DE METRICA === */
+.prontuario-root .pron-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.prontuario-root .pron-dashboard-overview {
+  margin-bottom: 2px;
+}
+
+.prontuario-root .metric-card {
+  background: var(--pron-card-bg);
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-md);
+  box-shadow: none;
+  padding: 18px 20px;
+}
+
+.prontuario-root .metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  color: var(--pron-text-muted);
+  margin-bottom: 6px;
+}
+
+.prontuario-root .metric-value {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .metric-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--pron-text-secondary);
+}
+
+.prontuario-root .metric-card::after {
+  content: none;
+}
+
+/* === SECAO 6 - CARDS DE AVALIACAO === */
+.prontuario-root .pron-dashboard-panel {
+  padding: 16px 18px;
+}
+
+.prontuario-root .pron-dashboard-panel .pron-panel-header {
+  align-items: flex-end;
+}
+
+.prontuario-root .pron-dashboard-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.prontuario-root .pron-dashboard-summary .pron-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+}
+
+.prontuario-root .avaliacoes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.prontuario-root .pron-avaliacao-card {
+  border-radius: var(--pron-radius-md);
+  border: 0.5px solid var(--pron-border);
+  background: var(--pron-card-bg);
+  box-shadow: none;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.prontuario-root .pron-card-avaliacao--realizada,
+.prontuario-root .pron-avaliacao-card.status-realizada {
+  border-left: 3px solid var(--pron-ok);
+}
+
+.prontuario-root .pron-card-avaliacao--pendente,
+.prontuario-root .pron-avaliacao-card.status-pendente {
+  border-left: 3px solid var(--pron-warn);
+}
+
+.prontuario-root .pron-card-avaliacao--nao-realizada,
+.prontuario-root .pron-avaliacao-card.status-nao_realizada {
+  border-left: 3px dashed rgba(15, 23, 42, 0.2);
+  background: rgba(15, 23, 42, 0.03);
+  box-shadow: none;
+  cursor: default;
+}
+
+.prontuario-root .pron-card-avaliacao--realizada:hover,
+.prontuario-root .pron-avaliacao-card.status-realizada:hover,
+.prontuario-root .pron-card-avaliacao--pendente:hover,
+.prontuario-root .pron-avaliacao-card.status-pendente:hover {
+  border-color: var(--pron-border-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.prontuario-root .pron-card-avaliacao--realizada:active,
+.prontuario-root .pron-avaliacao-card.status-realizada:active,
+.prontuario-root .pron-card-avaliacao--pendente:active,
+.prontuario-root .pron-avaliacao-card.status-pendente:active {
+  transform: scale(0.99);
+}
+
+.prontuario-root .pron-card-avaliacao--pendente .pron-badge,
+.prontuario-root .pron-avaliacao-card.status-pendente .pron-badge {
+  background: #f8fafc;
+  color: var(--pron-text-secondary);
+  border-color: var(--pron-border);
+}
+
+.prontuario-root .pron-avaliacao-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.prontuario-root .pron-title-inline strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-title-inline svg {
+  color: var(--pron-text-secondary);
+}
+
+.prontuario-root .pron-avaliacao-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.prontuario-root .pron-avaliacao-metric span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pron-text-muted);
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.prontuario-root .pron-avaliacao-metric strong {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--pron-text-primary);
+  line-height: 1.2;
+}
+
+.prontuario-root .pron-avaliacao-metric--primary strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.prontuario-root .pron-avaliacao-metric.is-empty span {
+  color: #a3afbf;
+}
+
+.prontuario-root .pron-avaliacao-metric.is-empty strong {
+  color: var(--pron-text-muted);
+  font-weight: 500;
+}
+
+.prontuario-root .pron-avaliacao-card__footer {
+  border-top: 0.5px solid var(--pron-border);
+  padding-top: 10px;
+  font-size: 12px;
+  color: var(--pron-text-secondary);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.prontuario-root .pron-avaliacao-card__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.prontuario-root .pron-link-btn {
+  color: var(--pron-accent);
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 0;
+}
+
+.prontuario-root .pron-link-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prontuario-root .pron-dashboard-composition .pron-comp-grid {
+  margin-top: 12px;
+  gap: 10px;
+}
+
+.prontuario-root .pron-dashboard-composition .pron-comp-row strong {
+  font-size: 13px;
+  color: var(--pron-text-primary);
+  font-weight: 500;
+}
+
+.prontuario-root .pron-dashboard-composition .pron-comp-summary {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.prontuario-root .pron-dashboard-evolution .pron-spark-grid {
+  margin-top: 12px;
+  gap: 10px;
+}
+
+.prontuario-root .pron-spark-card {
+  padding: 12px;
+}
+
+.prontuario-root .pron-spark-value {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-spark-wrap {
+  margin-top: 8px;
+  padding-top: 4px;
+}
+
+/* === SECAO 7 - SIDEBAR CLINICA === */
+.prontuario-root .pron-side-column > .pron-card {
+  background: var(--pron-bg);
+  border: 0.5px solid var(--pron-border);
+  box-shadow: none;
+}
+
+.prontuario-root .pron-side-column .pron-panel-header h2 {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-side-column .pron-panel-header p {
+  font-size: 13px;
+  color: var(--pron-text-secondary);
+}
+
+.prontuario-root .pron-signal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.prontuario-root .pron-signal-card {
+  background: var(--pron-card-bg);
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-sm);
+  box-shadow: none;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.prontuario-root .pron-signal-card span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pron-text-muted);
+}
+
+.prontuario-root .pron-signal-card strong {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--pron-text-primary);
+}
+
+/* === SECAO 8 - TIMELINE DE CONSULTAS === */
+.prontuario-root .timeline {
+  position: relative;
+  padding-left: 24px;
+  margin-top: 12px;
+}
+
+.prontuario-root .timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--pron-border);
+}
+
+.prontuario-root .timeline-item {
+  position: relative;
+  border-bottom: 0.5px solid var(--pron-border);
+  padding: 0 0 14px 2px;
+  margin-bottom: 14px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.prontuario-root .timeline-item:hover {
+  background: rgba(15, 23, 42, 0.02);
+  box-shadow: none;
+}
+
+.prontuario-root .timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--pron-accent);
+  background: var(--pron-card-bg);
+}
+
+.prontuario-root .timeline-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.prontuario-root .timeline .pron-badge.status-realizada {
+  background: var(--pron-ok-bg);
+  color: var(--pron-ok);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.prontuario-root .timeline .pron-badge.status-agendada {
+  background: var(--pron-info-bg);
+  color: var(--pron-info);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.prontuario-root .timeline .pron-badge.status-falta {
+  background: var(--pron-danger-bg);
+  color: var(--pron-danger);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.prontuario-root .timeline .pron-badge.status-remarcada {
+  background: var(--pron-warn-bg);
+  color: var(--pron-warn);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+/* --- Evaluation status badges (timeline) --- */
+.prontuario-root .timeline .pron-badge.status-finalizada {
+  background: var(--pron-ok-bg);
+  color: var(--pron-ok);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.prontuario-root .timeline .pron-badge.status-pendente {
+  background: var(--pron-warn-bg);
+  color: var(--pron-warn);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+.prontuario-root .timeline .pron-badge.status-em_analise {
+  background: var(--pron-info-bg);
+  color: var(--pron-info);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.prontuario-root .timeline .pron-badge.status-rascunho {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--pron-text-muted);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+/* === SECAO 9 - RESUMO CLINICO E CAMPOS === */
+.prontuario-root .pron-panel {
+  background: var(--pron-card-bg);
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-md);
+  box-shadow: none;
+  padding: 16px 18px;
+}
+
+.prontuario-root .pron-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--pron-border);
+}
+
+.prontuario-root .dados-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+}
+
+.prontuario-root .campo-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pron-text-muted);
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+.prontuario-root .campo-valor {
+  font-size: 14px;
+  color: var(--pron-text-primary);
+  line-height: 1.35;
+}
+
+.prontuario-root .chip,
+.prontuario-root .pron-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  background: var(--pron-warn-bg);
+  color: var(--pron-warn);
+  border: 0.5px solid rgba(217, 119, 6, 0.22);
+}
+
+.prontuario-root .anamnese-card {
+  margin-top: 12px;
+  border-left: 3px solid var(--pron-accent);
+  border-top: 0.5px solid var(--pron-border);
+  border-right: 0.5px solid var(--pron-border);
+  border-bottom: 0.5px solid var(--pron-border);
+  border-radius: 0 var(--pron-radius-md) var(--pron-radius-md) 0;
+  background: var(--pron-card-bg);
+  padding: 14px 16px;
+}
+
+.prontuario-root .pron-textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: 0.5px solid var(--pron-border-hover);
+  border-radius: var(--pron-radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-textarea:focus {
+  outline: none;
+  border-color: rgba(29, 158, 117, 0.45);
+  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12);
+}
+
+.prontuario-root .dados-grid + .pron-panel-footer .pron-btn-secondary {
+  background: transparent;
+  border: 0;
+  color: var(--pron-accent);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0;
+  min-height: auto;
+}
+
+.prontuario-root .dados-grid + .pron-panel-footer .pron-btn-secondary:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* === SECAO 10 - PAINEL DE PENDENCIAS === */
+.prontuario-root .pron-pendencias-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.prontuario-root .pron-pendencia-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-sm);
+  padding: 12px 14px;
+  background: var(--pron-card-bg);
+}
+
+.prontuario-root .pron-pendencia-item.severity-alta {
+  border-left: 3px solid var(--pron-danger);
+}
+
+.prontuario-root .pron-pendencia-item.severity-media {
+  border-left: 3px solid var(--pron-warn);
+}
+
+.prontuario-root .pron-pendencia-item.severity-baixa {
+  border-left: 3px solid var(--pron-info);
+}
+
+.prontuario-root .pron-pendencia-item .pron-link-btn {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* === SECAO 11 - ESTADOS GLOBAIS REUTILIZAVEIS === */
+.prontuario-root .pron-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 0.5px solid var(--pron-border);
+  background: #fff;
+  color: var(--pron-text-secondary);
+}
+
+.prontuario-root .pron-badge--ok {
+  background: var(--pron-ok-bg);
+  color: var(--pron-ok);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
+.prontuario-root .pron-badge--warn {
+  background: var(--pron-warn-bg);
+  color: var(--pron-warn);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+.prontuario-root .pron-badge--danger {
+  background: var(--pron-danger-bg);
+  color: var(--pron-danger);
+  border-color: rgba(220, 38, 38, 0.25);
+}
+
+.prontuario-root .pron-badge--info {
+  background: var(--pron-info-bg);
+  color: var(--pron-info);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.prontuario-root .pron-badge--neutral {
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--pron-text-secondary);
+  border-color: var(--pron-border);
+}
+
+.prontuario-root .pron-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 0.5px solid var(--pron-border);
+  background: rgba(15, 23, 42, 0.04);
+  color: var(--pron-text-secondary);
+  font-size: 12px;
+}
+
+.prontuario-root .pron-empty {
+  border: 0.5px dashed var(--pron-border-hover);
+  border-radius: var(--pron-radius-sm);
+  background: rgba(15, 23, 42, 0.02);
+  color: var(--pron-text-secondary);
+  font-size: 13px;
+  padding: 14px;
+}
+
+.prontuario-root .pron-skeleton {
+  border-radius: var(--pron-radius-sm);
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.25) 0%,
+    rgba(148, 163, 184, 0.4) 50%,
+    rgba(148, 163, 184, 0.25) 100%
+  );
+  animation: pron-pulse 1.3s ease-in-out infinite;
+}
+
+.prontuario-root .pron-link {
+  color: var(--pron-accent);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.prontuario-root .pron-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* === SECAO 12 - RESPONSIVIDADE === */
+@media (max-width: 1024px) {
+  .prontuario-root .pron-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prontuario-root .pron-side-column {
+    position: static;
+    top: auto;
+  }
+
+  .prontuario-root .pron-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .prontuario-root .pron-header-actions {
+    justify-content: flex-start;
+  }
+
+  .prontuario-root .dados-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prontuario-root .pron-avaliacao-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prontuario-root .pron-dashboard-panel .pron-panel-header {
+    align-items: flex-start;
+  }
+
+  .prontuario-root .pron-dashboard-summary {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .prontuario-root .pron-page {
+    padding: 14px;
+  }
+
+  .prontuario-root .pron-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .prontuario-root .metric-card {
+    padding: 16px;
+  }
+
+  .prontuario-root .metric-value {
+    font-size: 24px;
+  }
+
+  .prontuario-root .pron-signal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prontuario-root .pron-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prontuario-root .pron-avaliacao-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .prontuario-root .pron-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prontuario-root .pron-panel {
+    padding: 12px 14px;
+  }
+
+  .prontuario-root .metric-card {
+    padding: 14px 16px;
+  }
+
+  .prontuario-root .pron-header-title h1 {
+    font-size: 20px;
+  }
+
+  .prontuario-root .pron-header-actions .pron-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* === SECAO 13 - ANIMACOES E TRANSICOES === */
+.prontuario-root .pron-card--interactive {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.prontuario-root .pron-card--interactive:hover {
+  border-color: var(--pron-border-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.prontuario-root .pron-card--interactive:active {
+  transform: scale(0.99);
+}
+
+.prontuario-root .pron-card--static {
+  cursor: default;
+  box-shadow: none;
+  border: 0.5px solid var(--pron-border);
+}
+
+.prontuario-root .pron-fadein {
+  animation: pron-fadein 0.2s ease-out;
+}
+
+@keyframes pron-pulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes pron-fadein {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === UTILITARIOS === */
+.prontuario-root .pron-divider {
+  border-top: 0.5px solid var(--pron-border);
+  margin: 12px 0;
+}
+
+.prontuario-root .pron-text-primary {
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-text-secondary {
+  color: var(--pron-text-secondary);
+}
+
+.prontuario-root .pron-text-muted {
+  color: var(--pron-text-muted);
+}
+
+.prontuario-root .pron-panel-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--pron-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.prontuario-root .pron-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* === SECAO 14 - BADGE INFO (alias single-dash) === */
+.pron-badge-info,
+.prontuario-root .pron-badge-info {
+  background: var(--pron-info-bg);
+  color: var(--pron-info);
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+/* === SECAO 15 - GRUPOS DE DADOS CLINICOS === */
+.prontuario-root .pron-dados-grupos {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.prontuario-root .pron-dados-grupo {
+  border-top: 0.5px solid var(--pron-border);
+  padding-top: 14px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.prontuario-root .pron-dados-grupo:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.prontuario-root .pron-dados-grupo__header {
+  margin-bottom: 10px;
+}
+
+.prontuario-root .pron-dados-grupo__header span {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pron-text-secondary);
+}
+
+/* === SECAO 16 - DASHBOARD AVALIACOES: SECAO NAO INICIADAS === */
+.prontuario-root .pron-dashboard-nao-iniciadas {
+  margin-top: 16px;
+  border-top: 0.5px solid var(--pron-border);
+  padding-top: 12px;
+}
+
+.prontuario-root .pron-dashboard-nao-iniciadas__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  color: var(--pron-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-bottom: 12px;
+  transition: color 0.15s ease;
+}
+
+.prontuario-root .pron-dashboard-nao-iniciadas__toggle:hover {
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-dashboard-grid--inactive .pron-avaliacao-card {
+  opacity: 0.7;
+}
+
+.prontuario-root .pron-dashboard-grid--inactive .pron-avaliacao-card:hover {
+  opacity: 1;
+}
+
+/* === SECAO 17 - CONTADOR NAS ABAS === */
+.prontuario-root .pron-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--pron-text-secondary);
+  margin-left: 5px;
+  line-height: 1;
+}
+
+.prontuario-root .pron-tab.active .pron-tab-count {
+  background: rgba(29, 158, 117, 0.15);
+  color: var(--pron-accent);
+}
+
+/* === SECAO 18 - SPARKLINE RANGE === */
+.prontuario-root .pron-spark-range {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--pron-text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   SECAO 19 — GLOWUP VISUAL
+   Refinamentos de superficie, profundidade e hierarquia.
+   Nenhuma alteracao de layout ou logica.
+   ============================================================ */
+
+/* --- 19.1 Pagina — fundo com gradiente sutil de ambiencia --- */
+.prontuario-root .pron-page {
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(29, 158, 117, 0.07) 0%, transparent 40%),
+    radial-gradient(ellipse at 100% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 36%),
+    var(--pron-bg);
+}
+
+/* --- 19.2 Header do prontuário --- */
+.prontuario-root .pron-header {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(29, 158, 117, 0.03) 100%);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 4px 16px rgba(15, 23, 42, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+.prontuario-root .pron-header::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(29, 158, 117, 0.35) 60%, transparent 100%);
+  border-radius: var(--pron-radius-lg) var(--pron-radius-lg) 0 0;
+}
+
+.prontuario-root .pron-header::after {
+  content: '';
+  position: absolute;
+  right: -60px;
+  top: -60px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(29, 158, 117, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.prontuario-root .pron-avatar {
+  box-shadow:
+    0 0 0 3px rgba(29, 158, 117, 0.18),
+    0 2px 6px rgba(29, 158, 117, 0.12);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.prontuario-root .pron-header-title h1 {
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, var(--pron-text-primary) 60%, rgba(29, 158, 117, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- 19.3 Metric cards — acento colorido por posicao --- */
+.prontuario-root .metric-card {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Barra de acento no topo — usa ::before para nao conflitar com SECAO 5 */
+.prontuario-root .metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 2.5px;
+  pointer-events: none;
+}
+
+.prontuario-root .metric-card:nth-child(1)::before {
+  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(29, 158, 117, 0.2) 100%);
+}
+.prontuario-root .metric-card:nth-child(2)::before {
+  background: linear-gradient(90deg, var(--pron-info) 0%, rgba(37, 99, 235, 0.2) 100%);
+}
+.prontuario-root .metric-card:nth-child(3)::before {
+  background: linear-gradient(90deg, #7c3aed 0%, rgba(124, 58, 237, 0.2) 100%);
+}
+.prontuario-root .metric-card:nth-child(4)::before {
+  background: linear-gradient(90deg, var(--pron-warn) 0%, rgba(217, 119, 6, 0.2) 100%);
+}
+
+.prontuario-root .metric-card:hover {
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1);
+  transform: translateY(-2px);
+}
+
+.prontuario-root .metric-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* --- 19.4 Cards de avaliacao --- */
+.prontuario-root .pron-avaliacao-card.status-realizada {
+  background: linear-gradient(155deg, #ffffff 45%, rgba(29, 158, 117, 0.04) 100%);
+}
+
+.prontuario-root .pron-avaliacao-card.status-realizada:hover {
+  box-shadow: 0 6px 20px rgba(29, 158, 117, 0.12);
+  border-color: rgba(29, 158, 117, 0.3);
+}
+
+.prontuario-root .pron-avaliacao-card.status-pendente:hover {
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+.prontuario-root .pron-avaliacao-card__actions .pron-link-btn {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.prontuario-root .pron-avaliacao-card__actions .pron-link-btn::after {
+  content: '→';
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.prontuario-root .pron-avaliacao-card:hover .pron-avaliacao-card__actions .pron-link-btn::after {
+  transform: translateX(3px);
+}
+
+/* --- 19.5 Secoes de grupo (dados clinicos) --- */
+.prontuario-root .pron-dados-grupo__header span {
+  padding-left: 10px;
+  border-left: 3px solid var(--pron-accent);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--pron-text-primary);
+  text-transform: uppercase;
+}
+
+.prontuario-root .pron-dados-grupo .dados-grid {
+  margin-top: 10px;
+}
+
+/* --- 19.6 Tabs de navegacao --- */
+.prontuario-root .pron-tabs {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.prontuario-root .pron-tab.active {
+  background: rgba(29, 158, 117, 0.1);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(29, 158, 117, 0.12) inset;
+}
+
+.prontuario-root .pron-tab.active::after {
+  height: 2.5px;
+  background: var(--pron-accent);
+  box-shadow: 0 0 6px rgba(29, 158, 117, 0.4);
+}
+
+/* --- 19.7 Sparkline cards — acento por metrica --- */
+.prontuario-root .pron-spark-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.prontuario-root .pron-spark-grid .pron-spark-card:nth-child(1) {
+  border-top: 2.5px solid var(--pron-accent);
+}
+
+.prontuario-root .pron-spark-grid .pron-spark-card:nth-child(2) {
+  border-top: 2.5px solid var(--pron-warn);
+}
+
+.prontuario-root .pron-spark-grid .pron-spark-card:nth-child(3) {
+  border-top: 2.5px solid var(--pron-info);
+}
+
+.prontuario-root .pron-spark-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* --- 19.8 Signal cards (sidebar) --- */
+.prontuario-root .pron-signal-card.tone-ok {
+  background: linear-gradient(135deg, var(--pron-ok-bg) 0%, rgba(240, 253, 244, 0.4) 100%);
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.prontuario-root .pron-signal-card.tone-ok strong {
+  color: var(--pron-ok);
+}
+
+.prontuario-root .pron-signal-card.tone-attention {
+  background: linear-gradient(135deg, var(--pron-warn-bg) 0%, rgba(255, 251, 235, 0.4) 100%);
+  border-color: rgba(217, 119, 6, 0.18);
+}
+
+.prontuario-root .pron-signal-card.tone-attention strong {
+  color: var(--pron-warn);
+}
+
+.prontuario-root .pron-signal-card.tone-warning {
+  background: linear-gradient(135deg, var(--pron-danger-bg) 0%, rgba(254, 242, 242, 0.4) 100%);
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+.prontuario-root .pron-signal-card.tone-warning strong {
+  color: var(--pron-danger);
+}
+
+/* --- 19.9 Composicao corporal — barras com gradiente --- */
+.prontuario-root .comp-bar-fill {
+  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(29, 158, 117, 0.65) 100%);
+}
+
+.prontuario-root .pron-comp-bar-warn {
+  background: linear-gradient(90deg, var(--pron-warn) 0%, rgba(217, 119, 6, 0.65) 100%);
+}
+
+.prontuario-root .comp-bar {
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+/* --- 19.10 Timeline — dot com preenchimento por status --- */
+.prontuario-root .timeline-item:first-child .timeline-dot {
+  background: var(--pron-accent);
+  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
+}
+
+/* --- 19.11 Pendencias — backgrounds semanticos suaves --- */
+.prontuario-root .pron-pendencia-item.severity-alta {
+  background: linear-gradient(90deg, rgba(220, 38, 38, 0.025) 0%, transparent 40%);
+}
+
+.prontuario-root .pron-pendencia-item.severity-media {
+  background: linear-gradient(90deg, rgba(217, 119, 6, 0.025) 0%, transparent 40%);
+}
+
+.prontuario-root .pron-pendencia-item.severity-baixa {
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.025) 0%, transparent 40%);
+}
+
+/* --- 19.12 Panel headers — ancora tipografica --- */
+.prontuario-root .pron-panel-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--pron-text-primary);
+}
+
+/* --- 19.13 Painel lateral — separacao mais clara do conteudo principal --- */
+.prontuario-root .pron-side-column > .pron-card {
+  border: 0.5px solid var(--pron-border);
+  background: #fdfdfd;
+}
+
+/* --- 19.14 Fade-in suave na troca de abas --- */
+.prontuario-root .pron-stack > *,
+.prontuario-root .pron-card.pron-panel {
+  animation: pron-fadein 0.18s ease-out both;
+}

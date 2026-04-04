@@ -36,6 +36,17 @@ const StudentView = () => {
   }, [isSidebarOpen]);
 
   useEffect(() => {
+    if (!isMobile || !isSidebarOpen) return;
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isMobile, isSidebarOpen]);
+
+  useEffect(() => {
     const selectedPatientId = location.state?.selectedPatientId;
     if (selectedPatientId) {
       setProntuarioReturn({
@@ -51,6 +62,12 @@ const StudentView = () => {
       });
     }
   }, [location.state, getPacienteById]);
+
+  useEffect(() => {
+    if (view !== 'patients' && selectedPatient) {
+      setSelectedPatient(null);
+    }
+  }, [view, selectedPatient]);
 
   const handleOpenPatient = async (patient, options = {}) => {
     const sourceView = String(options?.sourceView || view || 'dashboard');
@@ -91,6 +108,9 @@ const StudentView = () => {
           <PatientProntuario
             patient={selectedPatient}
             onBack={handleBackToOrigin}
+            originPath="/aluno"
+            originView={prontuarioReturn?.view || 'dashboard'}
+            originTab="patients"
           />
         );
       }
@@ -122,7 +142,13 @@ const StudentView = () => {
   };
 
   return (
-    <div className={`admin-view student-view ${darkMode ? 'dark-mode' : 'light-mode'}`}>
+    <motion.div
+      className={`admin-view student-view ${darkMode ? 'dark-mode' : 'light-mode'}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
       <div className="admin-bg-pattern"><div className="pattern-grid"></div></div>
 
       <div className="admin-container">
@@ -134,7 +160,12 @@ const StudentView = () => {
         />
 
         {isMobile && isSidebarOpen && (
-          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+          <button
+            type="button"
+            className="sidebar-overlay"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Fechar menu"
+          />
         )}
 
         <main className={`admin-main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
@@ -161,7 +192,7 @@ const StudentView = () => {
           </div>
         </main>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

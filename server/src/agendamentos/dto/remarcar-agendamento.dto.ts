@@ -1,4 +1,4 @@
-import { ArrayMinSize, IsArray, IsIn, IsOptional, IsString, Matches } from 'class-validator';
+import { IsArray, IsIn, IsOptional, IsString, Matches } from 'class-validator';
 
 const APPOINTMENT_TYPES = ['primeira_consulta', 'retorno'] as const;
 
@@ -8,13 +8,13 @@ export class RemarcarAgendamentoDto {
   date!: string;
 
   @IsString()
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/)
   time!: string;
 
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @IsString({ each: true })
-  evaluations!: string[];
+  evaluations?: string[];
 
   @IsOptional()
   @IsString()

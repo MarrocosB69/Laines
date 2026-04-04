@@ -8,21 +8,40 @@ import { getApiErrorMessage } from '../services/api';
 import BioimpedanciaForm from '../components/Avaliacoes/Antropometria/BioimpedanciaForm';
 import DobrasCutaneasForm from '../components/Avaliacoes/Antropometria/DobrasCutaneasForm';
 import PerimetrosCorporaisForm from '../components/Avaliacoes/Antropometria/PerimetrosCorporaisForm';
+import ComposicaoCorporalIntegradaForm from '../components/Avaliacoes/Antropometria/ComposicaoCorporalIntegradaForm';
+import GastoEnergeticoTotalForm from '../components/Avaliacoes/Antropometria/GastoEnergeticoTotalForm';
 import AvaliacaoAlimentarNOVA from '../components/Avaliacoes/avaliacao-alimentar/AvaliacaoAlimentarNOVA';
 import AvaliacaoHidratacao from '../components/Avaliacoes/avaliacao-hidratacao/AvaliacaoHidratacao';
 import AvaliacaoSocioeconomica from '../components/Avaliacoes/avaliacao-socioeconomica/AvaliacaoSocioeconomica';
 import AvaliacaoFisioterapia from '../components/Avaliacoes/avaliacao-fisioterapia/AvaliacaoFisioterapia';
 import AvaliacaoPsicologia from '../components/Avaliacoes/avaliacao-psicologia/AvaliacaoPsicologia';
+import AvaliacaoExamesLaboratoriais from '../components/Avaliacoes/avaliacao-exames-laboratoriais/AvaliacaoExamesLaboratoriais';
+import AvaliacaoEvolucaoRetorno from '../components/Avaliacoes/avaliacao-evolucao-retorno/AvaliacaoEvolucaoRetorno';
+import AnamneseInicialForm from '../components/Avaliacoes/anamnese/AnamneseInicialForm';
+import AvaliacaoClinicaForm from '../components/Avaliacoes/clinica/AvaliacaoClinicaForm';
 import EvaluationSummaryStrip from '../components/shared/EvaluationSummaryStrip';
 import {
   getEvaluationStatusLabel,
   getEvaluationTypeLabel
 } from '../components/shared/evaluationSummaryUtils';
+import {
+  listEvaluationRegistryByContext
+} from '../constants/evaluationRegistry';
+import { isStudentMemberRole, normalizeRole } from '../constants/roles';
+import {
+  buildClinicalReportModel,
+  buildClinicalReportHtml,
+  buildReportFilename,
+  downloadTextFile
+} from '../services/clinicalReportService';
 
 import {
   ArrowLeft,
   FileText,
+  Download,
   Scale,
+  Layers,
+  Flame,
   Activity,
   Apple,
   Droplets,
@@ -31,6 +50,7 @@ import {
   Clock,
   CheckCircle2,
   CircleDashed,
+  ClipboardList,
   ChevronLeft,
   ChevronRight,
   Printer
@@ -38,72 +58,31 @@ import {
 
 import './AvaliacaoCompleta.css';
 
-const MODULE_CONFIG = [
-  {
-    id: 'bioimpedancia',
-    tipo: 'bioimpedancia',
-    label: 'Bioimpedancia',
-    icon: Scale,
-    group: 'Antropometria',
-    description: 'Composição corporal e bioimpedância'
-  },
-  {
-    id: 'dobras-cutaneas',
-    tipo: 'dobras_cutaneas',
-    label: 'Dobras cutâneas',
-    icon: Activity,
-    group: 'Antropometria',
-    description: 'Dobras e estimativas de composição corporal'
-  },
-  {
-    id: 'perimetros',
-    tipo: 'perimetros',
-    label: 'Perímetros',
-    icon: Scale,
-    group: 'Antropometria',
-    description: 'Circunferências e proporções corporais'
-  },
-  {
-    id: 'alimentar',
-    tipo: 'alimentar',
-    label: 'Avaliação alimentar',
-    icon: Apple,
-    group: 'Nutrição e hábitos',
-    description: 'Registro alimentar e consumo'
-  },
-  {
-    id: 'hidratacao',
-    tipo: 'hidratacao',
-    label: 'Hidratação',
-    icon: Droplets,
-    group: 'Nutrição e hábitos',
-    description: 'Perda hídrica e estratégia de reposição'
-  },
-  {
-    id: 'socioeconomica',
-    tipo: 'avaliacao_socioeconomica',
-    label: 'Socioeconômica (EBIA)',
-    icon: Heart,
-    group: 'Nutrição e hábitos',
-    description: 'Contexto socioeconômico e segurança alimentar'
-  },
-  {
-    id: 'fisioterapia',
-    tipo: 'fisioterapia',
-    label: 'Fisioterapia',
-    icon: Activity,
-    group: 'Equipe multiprofissional',
-    description: 'Aspectos funcionais e dor'
-  },
-  {
-    id: 'psicologia',
-    tipo: 'psicologia',
-    label: 'Psicologia',
-    icon: Heart,
-    group: 'Equipe multiprofissional',
-    description: 'Estado emocional e comportamento'
-  }
-];
+const MODULE_ICON_MAP = {
+  bioimpedancia: Scale,
+  dobras_cutaneas: Activity,
+  perimetros: Scale,
+  composicao_corporal_integrada: Layers,
+  gasto_energetico_total: Flame,
+  anamnese_inicial: ClipboardList,
+  avaliacao_clinica: Heart,
+  alimentar: Apple,
+  hidratacao: Droplets,
+  avaliacao_socioeconomica: FileText,
+  fisioterapia: Activity,
+  psicologia: Heart,
+  exames_laboratoriais: FileText,
+  evolucao_retorno: Clock
+};
+
+const MODULE_CONFIG = listEvaluationRegistryByContext('avaliacaoCompleta').map((item) => ({
+  id: item.moduleId || item.type,
+  tipo: item.type,
+  label: item.label,
+  icon: MODULE_ICON_MAP[item.type] || FileText,
+  group: item.groupLabel,
+  description: item.description
+}));
 
 const getCurrentDate = () => new Date().toISOString();
 
@@ -119,7 +98,7 @@ const AvaliacaoCompleta = () => {
     convertFirebaseDate,
     formatDate
   } = usePacientes();
-  const { isAluno, isProfessor, isAdmin, user } = useAuth();
+  const { user } = useAuth();
   const { notify } = useUiFeedback();
 
   const [activeTab, setActiveTab] = useState(() => location.state?.startTab || 'bioimpedancia');
@@ -154,7 +133,11 @@ const AvaliacaoCompleta = () => {
   );
 
   const returnToPath = location.state?.returnTo || '/aluno';
-  const returnState = useMemo(() => ({ selectedPatientId: id }), [id]);
+  const returnState = useMemo(() => ({
+    selectedPatientId: id,
+    returnView: String(location.state?.returnView || 'dashboard'),
+    returnTab: String(location.state?.returnTab || 'patients')
+  }), [id, location.state?.returnTab, location.state?.returnView]);
 
   const loadEvaluationContext = useCallback(async () => {
     if (!id) return;
@@ -265,10 +248,6 @@ const AvaliacaoCompleta = () => {
     [activeTab, moduleStates]
   );
 
-  const activeModuleStatus = activeModule?.status || 'pendente';
-  const podeEditar = isAluno && activeModuleStatus !== 'finalizada';
-  const somenteLeitura = isProfessor || isAdmin || activeModuleStatus === 'finalizada';
-
   const sortedHistory = useMemo(() => {
     return [...evaluationHistory].sort((a, b) => {
       const aDate = getRecordDate(a) || 0;
@@ -276,6 +255,46 @@ const AvaliacaoCompleta = () => {
       return bDate - aDate;
     });
   }, [evaluationHistory, getRecordDate]);
+
+  const currentSessionId = useMemo(() => {
+    const draftRows = sortedHistory.filter((item) => {
+      const status = String(item?.status || '').toLowerCase();
+      return Boolean(item?.sessaoId) && status !== 'finalizada';
+    });
+    if (!draftRows.length) return '';
+    const sorted = [...draftRows].sort((a, b) => {
+      const aDate = getRecordDate(a) || 0;
+      const bDate = getRecordDate(b) || 0;
+      return bDate - aDate;
+    });
+    return sorted[0]?.sessaoId || '';
+  }, [getRecordDate, sortedHistory]);
+
+  const normalizedUserRole = useMemo(() => normalizeRole(user?.role), [user?.role]);
+  const currentUserId = user?.uid || user?.id || '';
+  const isPatientResponsible = useMemo(
+    () => Boolean(
+      currentUserId
+      && (patient?.alunoResponsavelId === currentUserId || patient?.alunoResponsavel?.id === currentUserId)
+    ),
+    [currentUserId, patient?.alunoResponsavel?.id, patient?.alunoResponsavelId]
+  );
+  const isPatientTeamMember = useMemo(
+    () => Boolean(
+      currentUserId
+      && Array.isArray(patient?.equipeTecnicaIds)
+      && patient.equipeTecnicaIds.includes(currentUserId)
+    ),
+    [currentUserId, patient?.equipeTecnicaIds]
+  );
+  const canManagePatientFlow = useMemo(
+    () => isStudentMemberRole(normalizedUserRole) && (isPatientResponsible || isPatientTeamMember),
+    [isPatientResponsible, isPatientTeamMember, normalizedUserRole]
+  );
+
+  const activeModuleStatus = activeModule?.status || 'pendente';
+  const podeEditar = canManagePatientFlow && activeModuleStatus !== 'finalizada';
+  const somenteLeitura = !canManagePatientFlow || activeModuleStatus === 'finalizada';
 
   const anthropometryBaseline = useMemo(() => {
     const latestFromEvaluations = (keys = []) => {
@@ -457,6 +476,78 @@ const AvaliacaoCompleta = () => {
     user?.nome
   ]);
 
+  const reportPeriodLabel = useMemo(() => {
+    if (!sortedHistory.length) return 'Sem registros avaliativos.';
+    const latest = getRecordDate(sortedHistory[0]);
+    const oldest = getRecordDate(sortedHistory[sortedHistory.length - 1]);
+    if (!latest || !oldest) return 'Periodo nao identificado.';
+    const firstLabel = formatDate(oldest);
+    const lastLabel = formatDate(latest);
+    return firstLabel === lastLabel ? firstLabel : `${firstLabel} a ${lastLabel}`;
+  }, [formatDate, getRecordDate, sortedHistory]);
+
+  const reportModel = useMemo(() => buildClinicalReportModel({
+    patient,
+    patientId: id,
+    user,
+    activeModule,
+    moduleStates,
+    progress,
+    sortedHistory,
+    baseline: sharedAnthropometryBaseline,
+    getRecordDate,
+    formatDate
+  }), [
+    activeModule,
+    formatDate,
+    getRecordDate,
+    id,
+    moduleStates,
+    patient,
+    progress,
+    sharedAnthropometryBaseline,
+    sortedHistory,
+    user
+  ]);
+
+  const handleExportClinicalReportHtml = useCallback(() => {
+    try {
+      const filename = buildReportFilename(patient?.nome || id, 'html');
+      const html = buildClinicalReportHtml(reportModel);
+      downloadTextFile(html, filename, 'text/html;charset=utf-8;');
+      notify({
+        type: 'success',
+        title: 'Relatorio exportado',
+        message: 'Modelo clinico exportado em HTML com sucesso.'
+      });
+    } catch (error) {
+      notify({
+        type: 'error',
+        title: 'Falha na exportacao',
+        message: getApiErrorMessage(error, 'Nao foi possivel exportar o relatorio clinico.')
+      });
+    }
+  }, [id, notify, patient?.nome, reportModel]);
+
+  const handleExportClinicalReportJson = useCallback(() => {
+    try {
+      const filename = buildReportFilename(patient?.nome || id, 'json');
+      const payload = `${JSON.stringify(reportModel, null, 2)}\n`;
+      downloadTextFile(payload, filename, 'application/json;charset=utf-8;');
+      notify({
+        type: 'success',
+        title: 'Modelo tecnico exportado',
+        message: 'Estrutura do relatorio exportada em JSON.'
+      });
+    } catch (error) {
+      notify({
+        type: 'error',
+        title: 'Falha na exportacao',
+        message: getApiErrorMessage(error, 'Nao foi possivel exportar o modelo tecnico.')
+      });
+    }
+  }, [id, notify, patient?.nome, reportModel]);
+
   const updateLocalModuleSnapshot = useCallback((tipo, changes) => {
     const key = normalizeType(tipo);
     if (!key) return;
@@ -483,6 +574,7 @@ const AvaliacaoCompleta = () => {
         pacienteId: id,
         projetoId: patient?.projetoId || null,
         projetoNome: patient?.projetoNome || '',
+        sessaoId: avaliacao?.sessaoId || currentSessionId || undefined,
         status: finalizar ? 'finalizada' : 'rascunho'
       };
 
@@ -533,7 +625,8 @@ const AvaliacaoCompleta = () => {
     user?.nome,
     notify,
     loadEvaluationContext,
-    attachSharedAnthropometryToPayload
+    attachSharedAnthropometryToPayload,
+    currentSessionId
   ]);
 
   const handleAutoSave = useCallback(async (avaliacao) => {
@@ -547,6 +640,7 @@ const AvaliacaoCompleta = () => {
         pacienteId: id,
         projetoId: patient?.projetoId || null,
         projetoNome: patient?.projetoNome || '',
+        sessaoId: avaliacao?.sessaoId || currentSessionId || undefined,
         status: 'rascunho',
         autoSave: true
       };
@@ -581,7 +675,8 @@ const AvaliacaoCompleta = () => {
     user?.email,
     user?.name,
     user?.nome,
-    attachSharedAnthropometryToPayload
+    attachSharedAnthropometryToPayload,
+    currentSessionId
   ]);
 
   const activeTabIndex = useMemo(
@@ -604,7 +699,7 @@ const AvaliacaoCompleta = () => {
   }, [activeTabIndex, moduleStates]);
 
   const handleFinalizeCurrentModule = useCallback(async () => {
-    if (!isAluno || !activeModule) return;
+    if (!canManagePatientFlow || !activeModule) return;
     if (!activeModule.snapshot?.id) {
       notify({
         type: 'warning',
@@ -616,16 +711,7 @@ const AvaliacaoCompleta = () => {
 
     setIsFinalizingModule(true);
     try {
-      const payload = {
-        tipo: activeModule.tipo,
-        dados: activeModule.snapshot.dados || {},
-        resultados: activeModule.snapshot.resultados || {},
-        data: activeModule.snapshot.data || activeModule.snapshot.createdAt || getCurrentDate(),
-        pacienteId: id,
-        projetoId: patient?.projetoId || activeModule.snapshot.projetoId || null,
-        projetoNome: patient?.projetoNome || activeModule.snapshot.projetoNome || '',
-        status: 'finalizada'
-      };
+      const payload = { status: 'finalizada' };
       await updateAvaliacao(activeModule.snapshot.id, payload);
       notify({
         type: 'success',
@@ -643,30 +729,18 @@ const AvaliacaoCompleta = () => {
       setIsFinalizingModule(false);
     }
   }, [
-    isAluno,
+    canManagePatientFlow,
     activeModule,
     notify,
-    id,
-    patient?.projetoId,
-    patient?.projetoNome,
     updateAvaliacao,
     loadEvaluationContext
   ]);
 
   const handleReopenCurrentModule = useCallback(async () => {
-    if (!isAluno || !activeModule?.snapshot?.id) return;
+    if (!canManagePatientFlow || !activeModule?.snapshot?.id) return;
     setIsFinalizingModule(true);
     try {
-      const payload = {
-        tipo: activeModule.tipo,
-        dados: activeModule.snapshot.dados || {},
-        resultados: activeModule.snapshot.resultados || {},
-        data: activeModule.snapshot.data || activeModule.snapshot.createdAt || getCurrentDate(),
-        pacienteId: id,
-        projetoId: patient?.projetoId || activeModule.snapshot.projetoId || null,
-        projetoNome: patient?.projetoNome || activeModule.snapshot.projetoNome || '',
-        status: 'rascunho'
-      };
+      const payload = { status: 'rascunho' };
       await updateAvaliacao(activeModule.snapshot.id, payload);
       notify({
         type: 'success',
@@ -684,12 +758,9 @@ const AvaliacaoCompleta = () => {
       setIsFinalizingModule(false);
     }
   }, [
-    isAluno,
+    canManagePatientFlow,
     activeModule,
-    id,
     notify,
-    patient?.projetoId,
-    patient?.projetoNome,
     updateAvaliacao,
     loadEvaluationContext
   ]);
@@ -702,7 +773,11 @@ const AvaliacaoCompleta = () => {
       patient,
       onAutoSave: handleAutoSave,
       baselineAnthropometry: sharedAnthropometryBaseline,
-      lockSharedAnthropometry: true
+      lockSharedAnthropometry: true,
+      moduleSnapshot: activeModule?.snapshot || null,
+      currentSessionId: currentSessionId || undefined,
+      moduleHistory: activeModuleTimeline,
+      allEvaluationHistory: sortedHistory
     };
 
     switch (activeTab) {
@@ -712,6 +787,14 @@ const AvaliacaoCompleta = () => {
         return <DobrasCutaneasForm {...formProps} />;
       case 'perimetros':
         return <PerimetrosCorporaisForm {...formProps} />;
+      case 'composicao-integrada':
+        return <ComposicaoCorporalIntegradaForm {...formProps} />;
+      case 'gasto-energetico':
+        return <GastoEnergeticoTotalForm {...formProps} />;
+      case 'anamnese-inicial':
+        return <AnamneseInicialForm {...formProps} />;
+      case 'avaliacao-clinica':
+        return <AvaliacaoClinicaForm {...formProps} />;
       case 'alimentar':
         return <AvaliacaoAlimentarNOVA {...formProps} />;
       case 'hidratacao':
@@ -722,6 +805,10 @@ const AvaliacaoCompleta = () => {
         return <AvaliacaoFisioterapia {...formProps} />;
       case 'psicologia':
         return <AvaliacaoPsicologia {...formProps} />;
+      case 'exames-laboratoriais':
+        return <AvaliacaoExamesLaboratoriais {...formProps} />;
+      case 'evolucao-retorno':
+        return <AvaliacaoEvolucaoRetorno {...formProps} />;
       default:
         return null;
     }
@@ -748,18 +835,20 @@ const AvaliacaoCompleta = () => {
           </button>
           <div className="avaliacao-title">
             <h2>Avaliação completa</h2>
-            <p className="sub">Paciente: {patient?.nome || id}</p>
+            <p className="sub">Atleta: {patient?.nome || id}</p>
             {patient?.projetoNome && (
               <span className="sub">Projeto: {patient.projetoNome}</span>
             )}
           </div>
         </div>
         <div className="avaliacao-header-meta">
-          <span className={`status-pill ${progress.overallStatus === 'finalizada' ? 'status-final' : 'status-draft'}`}>
-            <ShieldCheck size={14} /> {overallStatusLabel}
+          <span className={`eval-status-badge ${progress.overallStatus === 'finalizada' ? 'eval-status-badge--finalizada' : 'eval-status-badge--andamento'}`}>
+            <span className="eval-status-badge__dot" />
+            {overallStatusLabel}
           </span>
           {somenteLeitura && (
-            <span className="status-pill status-readonly">
+            <span className="eval-status-badge eval-status-badge--leitura">
+              <span className="eval-status-badge__dot" />
               Somente leitura
             </span>
           )}
@@ -804,18 +893,21 @@ const AvaliacaoCompleta = () => {
 
       <div className="avaliacao-layout-grid">
         <aside className="avaliacao-sidebar">
-          <section className="avaliacao-sidebar-card">
+          <section className="avaliacao-sidebar-card avaliacao-progress-card">
             <div className="avaliacao-sidebar-card__header">
               <h3>Progresso clínico</h3>
-              <span>{progress.completion}%</span>
+            </div>
+            <div className="avaliacao-progress-kpi">
+              <span className="avaliacao-progress-kpi__number">{progress.completion}%</span>
+              <span className="avaliacao-progress-kpi__label">concluído</span>
             </div>
             <div className="avaliacao-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.completion}>
               <span style={{ width: `${progress.completion}%` }} />
             </div>
             <div className="avaliacao-progress-meta">
-              <span><CheckCircle2 size={14} /> Finalizados: {progress.finalized}</span>
-              <span><CircleDashed size={14} /> Em andamento: {progress.inProgress}</span>
-              <span><Clock size={14} /> Pendentes: {progress.pending}</span>
+              <span><CheckCircle2 size={13} /> {progress.finalized} finalizado{progress.finalized !== 1 ? 's' : ''}</span>
+              <span><CircleDashed size={13} /> {progress.inProgress} em andamento</span>
+              <span><Clock size={13} /> {progress.pending} pendente{progress.pending !== 1 ? 's' : ''}</span>
             </div>
           </section>
 
@@ -833,18 +925,22 @@ const AvaliacaoCompleta = () => {
                       <button
                         key={module.id}
                         type="button"
-                        className={`avaliacao-module-btn ${module.id === activeTab ? 'active' : ''}`}
+                        className={`avaliacao-module-btn ${module.id === activeTab ? 'active' : ''} status-${module.status}`}
+                        style={{ '--fill': `${module.completion}%` }}
                         onClick={() => setActiveTab(module.id)}
+                        title={`${module.label} — ${module.completion}% completo`}
                       >
                         <div className="avaliacao-module-btn__main">
-                          <module.icon size={15} />
+                          <module.icon size={14} />
                           <span>{module.label}</span>
                         </div>
                         <div className="avaliacao-module-btn__meta">
                           <small>{module.completion}%</small>
-                          <span className={`module-status status-${module.status}`}>
-                            {getEvaluationStatusLabel(module.status)}
-                          </span>
+                          {module.status === 'finalizada'
+                            ? <CheckCircle2 size={13} className="module-icon-status module-icon-finalizada" />
+                            : module.status === 'rascunho'
+                              ? <CircleDashed size={13} className="module-icon-status module-icon-rascunho" />
+                              : <Clock size={13} className="module-icon-status module-icon-pendente" />}
                         </div>
                       </button>
                     ))}
@@ -945,11 +1041,63 @@ const AvaliacaoCompleta = () => {
               )}
             </div>
           </section>
+
+          <section className="avaliacao-sidebar-card avaliacao-report-card">
+            <div className="avaliacao-sidebar-card__header">
+              <h3>Relatorio clinico</h3>
+              <span>v1</span>
+            </div>
+            <p className="avaliacao-report-card__description">
+              Exporte um relatorio estruturado com cabecalho clinico, progresso dos modulos, ficha base e historico.
+            </p>
+            <div className="avaliacao-report-card__meta">
+              <div>
+                <small>Periodo</small>
+                <strong>{reportPeriodLabel}</strong>
+              </div>
+              <div>
+                <small>Registros</small>
+                <strong>{sortedHistory.length}</strong>
+              </div>
+              <div>
+                <small>Status geral</small>
+                <strong>{overallStatusLabel}</strong>
+              </div>
+            </div>
+            <div className="avaliacao-report-card__actions">
+              <button
+                type="button"
+                className="tab-btn tab-btn--primary"
+                onClick={handleExportClinicalReportHtml}
+              >
+                <Download size={15} />
+                Exportar relatorio HTML
+              </button>
+              <button
+                type="button"
+                className="tab-btn tab-btn--secondary"
+                onClick={handleExportClinicalReportJson}
+              >
+                <FileText size={15} />
+                Exportar modelo JSON
+              </button>
+            </div>
+            <p className="avaliacao-report-card__hint">
+              O arquivo HTML pode ser aberto no navegador e salvo como PDF.
+            </p>
+          </section>
         </aside>
 
         <section className="avaliacao-main">
           <div className="avaliacao-main-toolbar">
             <div className="avaliacao-main-toolbar__title">
+              {activeModule?.group && (
+                <p className="avaliacao-module-breadcrumb">
+                  {activeModule.group}
+                  <span aria-hidden="true"> / </span>
+                  {activeTabIndex + 1} de {moduleStates.length}
+                </p>
+              )}
               <h3>{activeModule ? activeModule.label : 'Módulo clínico'}</h3>
               <p>{activeModule?.description || 'Preencha e salve os dados clínicos deste módulo.'}</p>
             </div>
@@ -972,7 +1120,7 @@ const AvaliacaoCompleta = () => {
                 Próximo módulo
                 <ChevronRight size={15} />
               </button>
-              {isAluno && activeModuleStatus !== 'finalizada' && (
+              {canManagePatientFlow && activeModuleStatus !== 'finalizada' && (
                 <button
                   type="button"
                   className="tab-btn tab-btn--primary"
@@ -983,7 +1131,7 @@ const AvaliacaoCompleta = () => {
                   {isFinalizingModule ? 'Finalizando...' : 'Finalizar módulo'}
                 </button>
               )}
-              {isAluno && activeModuleStatus === 'finalizada' && (
+              {canManagePatientFlow && activeModuleStatus === 'finalizada' && (
                 <button
                   type="button"
                   className="tab-btn tab-btn--secondary"
@@ -1173,3 +1321,4 @@ function buildSharedAnthropometryData(source) {
 
   return payload;
 }
+

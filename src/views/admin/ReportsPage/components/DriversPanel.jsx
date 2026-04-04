@@ -17,7 +17,7 @@ const toPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
 
 const renderTopRows = (rows, kind = 'rate') => {
   if (!Array.isArray(rows) || rows.length === 0) {
-    return <div className="reports-empty-state">Dados insuficientes para correlação neste recorte.</div>;
+    return <div className="reports-empty-state laines-feedback-state">Dados insuficientes para correlação neste recorte.</div>;
   }
 
   return (
@@ -62,7 +62,7 @@ const DriversPanel = ({ correlations }) => {
 
       <div className="drivers-grid">
         {drivers.length === 0 && (
-          <div className="reports-empty-state">Sem drivers suficientes para o escopo atual.</div>
+          <div className="reports-empty-state laines-feedback-state">Sem drivers suficientes para o escopo atual.</div>
         )}
         {drivers.map((driver) => (
           <article key={driver.id} className="driver-card">

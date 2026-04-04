@@ -5,18 +5,138 @@ import {
   LayoutGrid,
   List,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserPlus
 } from 'lucide-react';
-import api from '../../../services/api';
+import api, { getApiErrorMessage } from '../../../services/api';
 import { usePacientes } from '../../../contexts/PacienteContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { toDateKey } from '../../../utils/dateUtils';
 
 import './StudentDashboard.css';
 
+const CalendarWidget = ({ items }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+  const monthName = currentDate.toLocaleString('pt-BR', { month: 'long' });
+  const year = currentDate.getFullYear();
+
+  const getDaysInMonth = (date) => {
+    const yearValue = date.getFullYear();
+    const monthValue = date.getMonth();
+    return {
+      days: new Date(yearValue, monthValue + 1, 0).getDate(),
+      firstDay: new Date(yearValue, monthValue, 1).getDay()
+    };
+  };
+
+  const { days, firstDay } = getDaysInMonth(currentDate);
+  const today = new Date().getDate();
+  const isCurrentMonth = new Date().getMonth() === currentDate.getMonth();
+
+  const changeMonth = (offset) => {
+    const newDate = new Date(currentDate.setMonth(currentDate.getMonth() + offset));
+    setCurrentDate(new Date(newDate));
+  };
+
+  const appointmentsByDay = useMemo(() => {
+    const map = new Map();
+    (items || []).forEach((item) => {
+      if (!item.dateObj) return;
+      const key = toDateKey(item.dateObj);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    });
+    return map;
+  }, [items]);
+
+  const getDayKey = (day) => {
+    const month = currentDate.getMonth() + 1;
+    const yearValue = currentDate.getFullYear();
+    return `${yearValue}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
+  const statusLabel = {
+    agendada: 'Agendada',
+    remarcada: 'Remarcada',
+    falta: 'Falta',
+    realizada: 'Realizada'
+  };
+
+  return (
+    <div className="student-calendar">
+      <div className="student-calendar-header">
+        <div className="student-calendar-title">
+          <span className="month">{monthName}</span>
+          <span className="year">{year}</span>
+        </div>
+        <div className="student-calendar-nav">
+          <button type="button" onClick={() => changeMonth(-1)} aria-label="Mês anterior">
+            <ChevronLeft size={16} />
+          </button>
+          <button type="button" onClick={() => changeMonth(1)} aria-label="Próximo mês">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="student-calendar-grid">
+        {weekDays.map((day) => (
+          <div key={day} className="student-weekday">{day}</div>
+        ))}
+        {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
+        {Array.from({ length: days }).map((_, i) => {
+          const day = i + 1;
+          const isToday = isCurrentMonth && day === today;
+          const key = getDayKey(day);
+          const dayAppointments = appointmentsByDay.get(key) || [];
+          const hasAppointments = dayAppointments.length > 0;
+          const statusCounts = dayAppointments.reduce((acc, item) => {
+            const status = item.status || 'agendada';
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+          }, {});
+          const groupedStatuses = Object.entries(statusCounts).map(([status, count]) => ({
+            status,
+            count
+          }));
+
+          return (
+            <div key={day} className={`student-calendar-day ${isToday ? 'today' : ''} ${hasAppointments ? 'has-event' : ''}`}>
+              {day}
+              {hasAppointments && (
+                <>
+                  <div className="student-event-dots">
+                    {groupedStatuses.slice(0, 3).map((item) => (
+                      <span key={item.status} className={`student-event-dot status-${item.status || 'agendada'}`}>
+                        {item.count > 1 && <span className="student-dot-count">{item.count}</span>}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="student-calendar-tooltip">
+                    <strong>{`${dayAppointments.length} compromisso(s)`}</strong>
+                    <ul>
+                      {groupedStatuses.map((item) => (
+                        <li key={item.status} className={`status-${item.status || 'agendada'}`}>
+                          {item.count}x {statusLabel[item.status] || item.status}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips = true }) => {
   const { pacientes, loading, convertFirebaseDate, formatDate } = usePacientes();
   const { user } = useAuth();
+  const { notify } = useUiFeedback();
   const [viewMode, setViewMode] = useState(defaultViewMode);
   const [searchTerm, setSearchTerm] = useState('');
   const [nextAppointment, setNextAppointment] = useState(null);
@@ -63,143 +183,30 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
     } catch (error) {
       setAppointments([]);
       setNextAppointment(null);
+      notify({
+        type: 'warning',
+        title: 'Agenda indisponível',
+        message: getApiErrorMessage(error, 'Não foi possível carregar os agendamentos agora.')
+      });
     }
-  }, [convertFirebaseDate, user?.uid]);
+  }, [convertFirebaseDate, notify, user?.uid]);
 
   useEffect(() => {
     loadAppointments();
   }, [loadAppointments]);
 
-  const CalendarWidget = ({ items }) => {
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-    const monthName = currentDate.toLocaleString('pt-BR', { month: 'long' });
-    const year = currentDate.getFullYear();
-
-    const getDaysInMonth = (date) => {
-      const yearValue = date.getFullYear();
-      const monthValue = date.getMonth();
-      return {
-        days: new Date(yearValue, monthValue + 1, 0).getDate(),
-        firstDay: new Date(yearValue, monthValue, 1).getDay()
-      };
-    };
-
-    const { days, firstDay } = getDaysInMonth(currentDate);
-    const today = new Date().getDate();
-    const isCurrentMonth = new Date().getMonth() === currentDate.getMonth();
-
-    const changeMonth = (offset) => {
-      const newDate = new Date(currentDate.setMonth(currentDate.getMonth() + offset));
-      setCurrentDate(new Date(newDate));
-    };
-
-    const appointmentsByDay = useMemo(() => {
-      const map = new Map();
-      (items || []).forEach((item) => {
-        if (!item.dateObj) return;
-        const key = toDateKey(item.dateObj);
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(item);
-      });
-      return map;
-    }, [items]);
-
-    const getDayKey = (day) => {
-      const month = currentDate.getMonth() + 1;
-      const yearValue = currentDate.getFullYear();
-      return `${yearValue}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    };
-
-    const statusLabel = {
-      agendada: 'Agendada',
-      remarcada: 'Remarcada',
-      falta: 'Falta',
-      realizada: 'Realizada'
-    };
-
-    return (
-      <div className="student-calendar">
-        <div className="student-calendar-header">
-          <div className="student-calendar-title">
-            <span className="month">{monthName}</span>
-            <span className="year">{year}</span>
-          </div>
-          <div className="student-calendar-nav">
-            <button type="button" onClick={() => changeMonth(-1)}>
-              <ChevronLeft size={16} />
-            </button>
-            <button type="button" onClick={() => changeMonth(1)}>
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        <div className="student-calendar-grid">
-          {weekDays.map((day) => (
-            <div key={day} className="student-weekday">{day}</div>
-          ))}
-          {Array.from({ length: firstDay }).map((_, i) => <div key={`e-${i}`} />)}
-          {Array.from({ length: days }).map((_, i) => {
-            const day = i + 1;
-            const isToday = isCurrentMonth && day === today;
-            const key = getDayKey(day);
-            const dayAppointments = appointmentsByDay.get(key) || [];
-            const hasAppointments = dayAppointments.length > 0;
-            const statusCounts = dayAppointments.reduce((acc, item) => {
-              const status = item.status || 'agendada';
-              acc[status] = (acc[status] || 0) + 1;
-              return acc;
-            }, {});
-            const groupedStatuses = Object.entries(statusCounts).map(([status, count]) => ({
-              status,
-              count
-            }));
-
-            return (
-              <div key={day} className={`student-calendar-day ${isToday ? 'today' : ''} ${hasAppointments ? 'has-event' : ''}`}>
-                {day}
-                {hasAppointments && (
-                  <>
-                    <div className="student-event-dots">
-                      {groupedStatuses.slice(0, 3).map((item) => (
-                        <span key={item.status} className={`student-event-dot status-${item.status || 'agendada'}`}>
-                          {item.count > 1 && <span className="student-dot-count">{item.count}</span>}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="student-calendar-tooltip">
-                      <strong>{`${dayAppointments.length} compromisso(s)`}</strong>
-                      <ul>
-                        {groupedStatuses.map((item) => (
-                          <li key={item.status} className={`status-${item.status || 'agendada'}`}>
-                            {item.count}x {statusLabel[item.status] || item.status}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="student-dashboard">
       <div className="dashboard-header">
         <div className="welcome-text">
-          <h1>Ola, {firstName}</h1>
-          <p>Aqui estao seus pacientes vinculados.</p>
+          <h1>Olá, {firstName}</h1>
+          <p>Aqui estão seus atletas vinculados.</p>
         </div>
         <div className="header-actions">
           <div className="search-box">
             <input
               type="text"
-              placeholder="Buscar paciente..."
+              placeholder="Buscar atleta..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -233,13 +240,17 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
             <div className="section-icon icon-blue">
               <Users size={20} />
             </div>
-            <h3 className="section-title">Meus Pacientes</h3>
+            <h3 className="section-title">Meus Atletas</h3>
           </div>
 
           {loading ? (
-            <div className="loading-state laines-feedback-state">Carregando pacientes...</div>
+            <div className="loading-state laines-feedback-state">Carregando atletas...</div>
           ) : pacientesOrdenados.length === 0 ? (
-            <div className="empty-state laines-feedback-state">Nenhum paciente vinculado ainda.</div>
+            <div className="empty-state laines-feedback-state">
+              <UserPlus size={36} aria-hidden="true" />
+              <strong>Nenhum atleta vinculado ainda.</strong>
+              <span>Acesse "Meus Atletas" na barra lateral para adicionar o primeiro.</span>
+            </div>
           ) : viewMode === 'list' ? (
             <div className="patients-list">
               {pacientesOrdenados.map((p) => (
@@ -254,7 +265,7 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
                       {p.nome?.charAt(0).toUpperCase() || 'P'}
                     </div>
                     <div className="patient-list-info">
-                      <h4 className="patient-name">{p.nome || 'Paciente'}</h4>
+                      <h4 className="patient-name">{p.nome || 'Atleta'}</h4>
                       <p className="last-visit">
                         Cadastro: {p.dataCadastroFormatada || p.dataCadastro || '---'}
                       </p>
@@ -281,7 +292,7 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
                       {p.nome?.charAt(0).toUpperCase() || 'P'}
                     </div>
                   </div>
-                  <h4 className="patient-name">{p.nome || 'Paciente'}</h4>
+                  <h4 className="patient-name">{p.nome || 'Atleta'}</h4>
                   <p className="last-visit">
                     Cadastro: {p.dataCadastroFormatada || p.dataCadastro || '---'}
                   </p>
@@ -316,7 +327,7 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
               {nextAppointment ? (
                 <>
                   <p className="next-action-label">Consulta agendada</p>
-                  <h4 className="next-action-title">{nextAppointment.pacienteNome || 'Paciente'}</h4>
+                  <h4 className="next-action-title">{nextAppointment.pacienteNome || 'Atleta'}</h4>
                   <p className="next-action-meta">
                     {formatDate(nextAppointment.dateObj)} - {nextAppointment.time || '--:--'}
                   </p>
@@ -339,3 +350,4 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
 };
 
 export default StudentDashboard;
+

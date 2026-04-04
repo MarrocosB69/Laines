@@ -209,7 +209,12 @@ const AdminView = () => {
 
         {/* Overlay para Mobile (Melhoria de UX) */}
         {isMobile && isSidebarOpen && (
-          <div className="sidebar-overlay" onClick={toggleSidebar} />
+          <button
+            type="button"
+            className="sidebar-overlay"
+            onClick={toggleSidebar}
+            aria-label="Fechar menu"
+          />
         )}
 
         <main className={mainContentClassName}>

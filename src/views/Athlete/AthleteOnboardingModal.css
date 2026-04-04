@@ -12,7 +12,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  padding: 0;
+  padding: 0.95rem var(--app-modal-padding-x) 1.15rem;
 }
 
 .athlete-onboarding-header {
@@ -48,6 +48,71 @@
   border-radius: 999px;
   background: #e6edf7;
   overflow: hidden;
+}
+
+.athlete-onboarding-stepper {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+.athlete-onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: #ffffff;
+  padding: 0.32rem 0.42rem;
+}
+
+.athlete-onboarding-step.is-active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(24, 102, 179, 0.12);
+}
+
+.athlete-onboarding-step.is-done {
+  border-color: var(--color-success);
+  background: #f0fdf4;
+}
+
+.athlete-onboarding-step-index {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.athlete-onboarding-step.is-active .athlete-onboarding-step-index {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.athlete-onboarding-step.is-done .athlete-onboarding-step-index {
+  background: var(--color-success);
+  color: #ffffff;
+}
+
+.athlete-onboarding-step-content {
+  display: grid;
+  line-height: 1.2;
+}
+
+.athlete-onboarding-step-content strong {
+  font-size: 0.68rem;
+  color: var(--color-text-primary);
+}
+
+.athlete-onboarding-step-content small {
+  font-size: 0.64rem;
+  color: var(--color-text-muted);
 }
 
 .athlete-onboarding-progress-fill {
@@ -183,7 +248,76 @@
     padding-top: 0.5rem;
   }
 
+  .athlete-onboarding-form {
+    padding-left: 0.86rem;
+    padding-right: 0.86rem;
+  }
+
   .athlete-onboarding-check-grid {
     grid-template-columns: 1fr;
   }
+
+  .athlete-onboarding-stepper {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Parte 3 — harmonização visual (Onboarding atleta) */
+.athlete-onboarding-progress {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #f8fafc;
+}
+
+.athlete-onboarding-progress-label {
+  color: var(--color-text-muted);
+}
+
+.athlete-onboarding-progress-label strong {
+  color: var(--color-navy);
+}
+
+.athlete-onboarding-progress-fill {
+  background: linear-gradient(90deg, var(--color-navy) 0%, var(--color-green) 100%);
+}
+
+.athlete-onboarding-section-label {
+  color: var(--color-text-muted);
+}
+
+.athlete-onboarding-field > span {
+  color: var(--color-text-muted);
+}
+
+.athlete-onboarding-input,
+.athlete-onboarding-textarea {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+}
+
+.athlete-onboarding-input:focus,
+.athlete-onboarding-textarea:focus {
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.15);
+}
+
+.athlete-onboarding-toggle,
+.athlete-onboarding-check-item {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: #f8fafc;
+}
+
+.athlete-onboarding-checkbox {
+  color: var(--color-navy);
+}
+
+.athlete-onboarding-checkbox input[type='checkbox'],
+.athlete-onboarding-check-item input[type='checkbox'] {
+  accent-color: var(--color-green);
+}
+
+.athlete-onboarding-error {
+  border-radius: var(--radius-md);
 }
