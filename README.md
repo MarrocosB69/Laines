@@ -60,6 +60,21 @@ npm run dev
 
 Frontend padrao: `http://localhost:5173`
 
+## Seed de METs e TACO
+
+Execute uma unica vez por ambiente (ou novamente apenas para atualizar catalogo):
+
+```bash
+npm run seed
+```
+
+Esse comando popula/atualiza:
+- catalogo base de METs (Compendio de Ainsworth 2011) usado no modulo de GET esportivo;
+- base TACO 4a edicao (alimentos e nutrientes) usada no R24h do modulo alimentar.
+
+Arquivo esperado para seed TACO:
+- `server/src/database/seeds/data/taco.csv`
+
 ## Build
 
 ### Frontend

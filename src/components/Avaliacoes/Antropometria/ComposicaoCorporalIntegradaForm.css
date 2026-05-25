@@ -1,14 +1,14 @@
 .composicao-integrada-form.composicao-integrada-form--modern {
-  --domain-color: #0e7490;
+  --domain-color: var(--color-accent, #56ADDB);
   border-radius: 20px;
-  border: 1px solid rgba(14, 116, 144, 0.2);
+  border: 1px solid rgba(86, 173, 219, 0.2);
 }
 
 .composicao-integrada-form .eval-icon {
-  background: linear-gradient(165deg, rgba(14, 116, 144, 0.12), rgba(14, 116, 144, 0.06));
-  color: #0e7490;
-  border-color: rgba(14, 116, 144, 0.22);
-  box-shadow: 0 8px 20px rgba(14, 116, 144, 0.14);
+  background: linear-gradient(165deg, rgba(86, 173, 219, 0.12), rgba(86, 173, 219, 0.06));
+  color: var(--color-accent, #56ADDB);
+  border-color: rgba(86, 173, 219, 0.22);
+  box-shadow: 0 8px 20px rgba(86, 173, 219, 0.14);
 }
 
 .composicao-integrada-form .composicao-grid {

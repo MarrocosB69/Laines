@@ -6,31 +6,31 @@ import '../avaliacoes.css';
 import './AvaliacaoSocioeconomica.css';
 
 const EBIA_QUESTIONS = [
-  { id: 'q1', text: 'Nos ultimos tres meses, houve preocupacao de que os alimentos acabassem antes de poder comprar ou receber mais comida?' },
-  { id: 'q2', text: 'Nos ultimos tres meses, os alimentos acabaram antes de haver dinheiro para comprar mais comida?' },
-  { id: 'q3', text: 'Nos ultimos tres meses, faltou dinheiro para manter alimentacao saudavel e variada?' },
-  { id: 'q4', text: 'Nos ultimos tres meses, os moradores comeram apenas alguns alimentos restantes porque o dinheiro acabou?' },
-  { id: 'q5', text: 'Nos ultimos tres meses, algum morador de 18 anos ou mais deixou de fazer refeicao por falta de dinheiro para comida?' },
-  { id: 'q6', text: 'Nos ultimos tres meses, algum morador de 18 anos ou mais comeu menos do que deveria por falta de dinheiro para comida?' },
-  { id: 'q7', text: 'Nos ultimos tres meses, algum morador de 18 anos ou mais sentiu fome e nao comeu por falta de dinheiro para comida?' },
-  { id: 'q8', text: 'Nos ultimos tres meses, algum morador de 18 anos ou mais fez apenas uma refeicao ao dia ou ficou um dia inteiro sem comer por falta de dinheiro?' },
-  { id: 'q9', text: 'Nos ultimos tres meses, algum morador menor de 18 anos deixou de ter alimentacao saudavel e variada por falta de dinheiro para comida?' },
-  { id: 'q10', text: 'Nos ultimos tres meses, algum morador menor de 18 anos nao comeu quantidade suficiente por falta de dinheiro para comida?' },
-  { id: 'q11', text: 'Nos ultimos tres meses, foi reduzida a quantidade de alimentos de refeicoes de algum morador menor de 18 anos por falta de dinheiro?' },
-  { id: 'q12', text: 'Nos ultimos tres meses, algum morador menor de 18 anos deixou de fazer refeicao por falta de dinheiro para comida?' },
-  { id: 'q13', text: 'Nos ultimos tres meses, algum morador menor de 18 anos sentiu fome e nao comeu por falta de dinheiro para comida?' },
-  { id: 'q14', text: 'Nos ultimos tres meses, algum morador menor de 18 anos fez apenas uma refeicao ao dia ou ficou um dia inteiro sem comer por falta de dinheiro?' }
+  { id: 'q1', text: 'Nos últimos três meses, houve preocupação de que os alimentos acabassem antes de poder comprar ou receber mais comida?' },
+  { id: 'q2', text: 'Nos últimos três meses, os alimentos acabaram antes de haver dinheiro para comprar mais comida?' },
+  { id: 'q3', text: 'Nos últimos três meses, faltou dinheiro para manter alimentação saudável e variada?' },
+  { id: 'q4', text: 'Nos últimos três meses, os moradores comeram apenas alguns alimentos restantes porque o dinheiro acabou?' },
+  { id: 'q5', text: 'Nos últimos três meses, algum morador de 18 anos ou mais deixou de fazer refeição por falta de dinheiro para comida?' },
+  { id: 'q6', text: 'Nos últimos três meses, algum morador de 18 anos ou mais comeu menos do que deveria por falta de dinheiro para comida?' },
+  { id: 'q7', text: 'Nos últimos três meses, algum morador de 18 anos ou mais sentiu fome e não comeu por falta de dinheiro para comida?' },
+  { id: 'q8', text: 'Nos últimos três meses, algum morador de 18 anos ou mais fez apenas uma refeição ao dia ou ficou um dia inteiro sem comer por falta de dinheiro?' },
+  { id: 'q9', text: 'Nos últimos três meses, algum morador menor de 18 anos deixou de ter alimentação saudável e variada por falta de dinheiro para comida?' },
+  { id: 'q10', text: 'Nos últimos três meses, algum morador menor de 18 anos não comeu quantidade suficiente por falta de dinheiro para comida?' },
+  { id: 'q11', text: 'Nos últimos três meses, foi reduzida a quantidade de alimentos de refeições de algum morador menor de 18 anos por falta de dinheiro?' },
+  { id: 'q12', text: 'Nos últimos três meses, algum morador menor de 18 anos deixou de fazer refeição por falta de dinheiro para comida?' },
+  { id: 'q13', text: 'Nos últimos três meses, algum morador menor de 18 anos sentiu fome e não comeu por falta de dinheiro para comida?' },
+  { id: 'q14', text: 'Nos últimos três meses, algum morador menor de 18 anos fez apenas uma refeição ao dia ou ficou um dia inteiro sem comer por falta de dinheiro?' }
 ];
 
 const EBIA_RANGE = {
   comMenores: [
-    { code: 'SA', label: 'Seguranca Alimentar', min: 0, max: 0 },
+    { code: 'SA', label: 'Segurança Alimentar', min: 0, max: 0 },
     { code: 'IL', label: 'Insegurança Alimentar Leve', min: 1, max: 5 },
     { code: 'IM', label: 'Insegurança Alimentar Moderada', min: 6, max: 9 },
     { code: 'IG', label: 'Insegurança Alimentar Grave', min: 10, max: 14 }
   ],
   semMenores: [
-    { code: 'SA', label: 'Seguranca Alimentar', min: 0, max: 0 },
+    { code: 'SA', label: 'Segurança Alimentar', min: 0, max: 0 },
     { code: 'IL', label: 'Insegurança Alimentar Leve', min: 1, max: 3 },
     { code: 'IM', label: 'Insegurança Alimentar Moderada', min: 4, max: 5 },
     { code: 'IG', label: 'Insegurança Alimentar Grave', min: 6, max: 8 }
@@ -61,6 +61,8 @@ const AvaliacaoSocioeconomica = ({
   onSalvar,
   onAutoSave,
   readOnly = false,
+  patient,
+  onboardingContext,
   moduleSnapshot,
   currentSessionId
 }) => {
@@ -70,6 +72,7 @@ const AvaliacaoSocioeconomica = ({
   const autoSaveRef = useRef(null);
   const saveStatusResetRef = useRef(null);
   const loadedSnapshotIdRef = useRef('');
+  const loadedOnboardingPrefillRef = useRef('');
 
   useEffect(() => {
     const snapshotId = moduleSnapshot?.id || '';
@@ -89,6 +92,35 @@ const AvaliacaoSocioeconomica = ({
 
     loadedSnapshotIdRef.current = snapshotId;
   }, [moduleSnapshot]);
+
+  useEffect(() => {
+    if (moduleSnapshot?.id) return;
+
+    const contextKey = JSON.stringify({
+      pacienteId,
+      temMenoresOnboarding: onboardingContext?.raw?.temMenores ?? onboardingContext?.raw?.dependentesMenores ?? '',
+      temMenoresPaciente: patient?.temMenores ?? patient?.dependentesMenores ?? '',
+      status: onboardingContext?.status || ''
+    });
+
+    if (loadedOnboardingPrefillRef.current === contextKey) return;
+
+    const temMenoresPrefill = resolveTemMenores(
+      onboardingContext?.raw?.temMenores
+      ?? onboardingContext?.raw?.dependentesMenores
+      ?? patient?.temMenores
+      ?? patient?.dependentesMenores
+    );
+
+    if (temMenoresPrefill) {
+      setDados((prev) => ({
+        ...prev,
+        temMenores: prev.temMenores || temMenoresPrefill
+      }));
+    }
+
+    loadedOnboardingPrefillRef.current = contextKey;
+  }, [moduleSnapshot?.id, onboardingContext, pacienteId, patient]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -127,6 +159,21 @@ const AvaliacaoSocioeconomica = ({
     return requiredQuestions.filter((item) => Boolean(dados[item.id])).length;
   }, [dados, requiredQuestions]);
 
+  const onboardingSummary = useMemo(() => {
+    if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+    const summary = [];
+    const modalidade = String(onboardingContext?.modalidadePrincipal || '').trim();
+    const frequenciaRaw = onboardingContext?.frequenciaSemanal;
+    const frequencia = frequenciaRaw === '' || frequenciaRaw === null || frequenciaRaw === undefined
+      ? null
+      : Number(frequenciaRaw);
+    const status = String(onboardingContext?.status || '').trim();
+    if (modalidade) summary.push(`Modalidade: ${modalidade}`);
+    if (Number.isFinite(frequencia)) summary.push(`Frequência semanal: ${frequencia}x`);
+    if (status) summary.push(`Status de cadastro: ${status}`);
+    return summary.slice(0, 3);
+  }, [onboardingContext]);
+
   const payloadDados = useMemo(() => ({
     dataAvaliacao: dados.dataAvaliacao,
     temMenores: hasMinors,
@@ -160,12 +207,12 @@ const AvaliacaoSocioeconomica = ({
     if (!dispatch) return;
 
     if (!dados.temMenores) {
-      if (!auto) setError('Informe se ha menores de 18 anos no domicilio.');
+      if (!auto) setError('Informe se há menores de 18 anos no domicílio.');
       return;
     }
 
     if (missingAnswers.length > 0) {
-      if (!auto) setError('Responda todas as perguntas obrigatorias da EBIA.');
+      if (!auto) setError('Responda todas as perguntas obrigatórias da EBIA.');
       return;
     }
 
@@ -190,10 +237,10 @@ const AvaliacaoSocioeconomica = ({
       }));
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (dispatchError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
-        setError('Nao foi possivel salvar o questionario EBIA.');
+        setError('Não foi possível salvar o questionário EBIA.');
       }
     }
   }, [
@@ -203,7 +250,7 @@ const AvaliacaoSocioeconomica = ({
     dados.dataAvaliacao,
     dados.temMenores,
     missingAnswers.length,
-    moduleSnapshot?.sessaoId,
+    moduleSnapshot,
     onAutoSave,
     onSalvar,
     pacienteId,
@@ -220,7 +267,7 @@ const AvaliacaoSocioeconomica = ({
     if (missingAnswers.length > 0) return undefined;
 
     clearTimeout(autoSaveRef.current);
-    autoSaveRef.current = setTimeout(() => dispatchSalvar(true), 900);
+    autoSaveRef.current = setTimeout(() => dispatchSalvar(true), 3500);
     return () => clearTimeout(autoSaveRef.current);
   }, [answeredCount, dados.temMenores, dispatchSalvar, missingAnswers.length, onAutoSave, readOnly]);
 
@@ -240,6 +287,12 @@ const AvaliacaoSocioeconomica = ({
         </div>
       </div>
 
+      {onboardingSummary.length > 0 ? (
+        <div className="eval-note">
+          <strong>Contexto do onboarding:</strong> {onboardingSummary.join(' · ')}
+        </div>
+      ) : null}
+
       <div className="ebia-intro">
         <div className="eval-field" style={{ maxWidth: '280px' }}>
           <label className="eval-label">Data da coleta</label>
@@ -253,7 +306,7 @@ const AvaliacaoSocioeconomica = ({
           />
         </div>
 
-        <label className="eval-label" style={{ marginTop: '0.75rem' }}>Ha moradores menores de 18 anos no domicilio?</label>
+        <label className="eval-label" style={{ marginTop: '0.75rem' }}>Há moradores menores de 18 anos no domicílio?</label>
         <div className="ebia-options">
           <label className="ebia-option">
             <input
@@ -275,13 +328,13 @@ const AvaliacaoSocioeconomica = ({
               onChange={handleChange}
               disabled={readOnly}
             />
-            <span>Nao</span>
+            <span>Não</span>
           </label>
         </div>
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Progresso do questionario</h4>
+        <h4 className="eval-section-title">Progresso do questionário</h4>
         <p className="eval-section-subtitle">Acompanhe o preenchimento para evitar respostas incompletas.</p>
         <div className="eval-summary-grid">
           <div className="eval-summary-item">
@@ -323,7 +376,7 @@ const AvaliacaoSocioeconomica = ({
             />
           ))
         ) : (
-          <div className="ebia-note">As perguntas 9 a 14 so se aplicam quando ha menores de 18 anos no domicilio.</div>
+          <div className="ebia-note">As perguntas 9 a 14 só se aplicam quando há menores de 18 anos no domicílio.</div>
         )}
       </div>
 
@@ -378,7 +431,7 @@ function QuestionRow({ item, index, value, onChange, readOnly }) {
             onChange={onChange}
             disabled={readOnly}
           />
-          <span>Nao</span>
+          <span>Não</span>
         </label>
       </div>
     </div>
@@ -420,3 +473,4 @@ function normalizeDateValue(value) {
 }
 
 export default AvaliacaoSocioeconomica;
+

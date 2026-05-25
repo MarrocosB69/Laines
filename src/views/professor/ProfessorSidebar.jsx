@@ -5,17 +5,28 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUiFeedback } from '../../contexts/UiFeedbackContext';
 import { getApiErrorMessage } from '../../services/api';
 import '../SidebarShell.css';
+import '../shared/sidebar-tokens.css';
+import SidebarHeader from '../shared/SidebarHeader';
+import SidebarFooter from '../shared/SidebarFooter';
 
 import {
   LayoutDashboard,
-  CalendarDays,
   Users,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
+  CalendarDays,
+  FlaskConical,
   GraduationCap,
-  FlaskConical
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+
+const navIcon = (Icon) => <Icon size={18} strokeWidth={1.8} />;
+
+const MENU_ITEMS = [
+  { id: 'dashboard', label: 'Visão Geral',        icon: navIcon(LayoutDashboard) },
+  { id: 'patients',  label: 'Alunos e Atletas',   icon: navIcon(Users) },
+  { id: 'agenda',    label: 'Agenda',              icon: navIcon(CalendarDays) },
+  { id: 'research',  label: 'Projetos vinculados', icon: navIcon(FlaskConical) }
+];
 
 const ProfessorSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
   const navigate = useNavigate();
@@ -30,44 +41,25 @@ const ProfessorSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
     return `${first}${last}`.toUpperCase();
   };
 
-  const displayName = user?.name || user?.nome || '';
+  const displayName  = user?.name || user?.nome || '';
   const userInitials = getInitials(displayName);
-
-  const menuItems = [
-    {
-      id: 'dashboard',
-      label: 'Visão Geral',
-      icon: <LayoutDashboard size={20} />
-    },
-    {
-      id: 'patients',
-      label: 'Alunos e Atletas',
-      icon: <Users size={20} />
-    },
-    {
-      id: 'agenda',
-      label: 'Agenda',
-      icon: <CalendarDays size={20} />
-    },
-    {
-      id: 'research',
-      label: 'Pesquisas',
-      icon: <FlaskConical size={20} />
-    }
-  ];
 
   const handleLogout = async () => {
     try {
       await logout();
       navigate('/');
     } catch (error) {
-      console.error('Erro ao sair', error);
       notify({
         type: 'error',
         title: 'Falha ao sair',
         message: getApiErrorMessage(error, 'Não foi possível sair do sistema.')
       });
     }
+  };
+
+  const handleSelectTab = (id) => {
+    setActiveTab(id);
+    if (window.innerWidth <= 768 && isOpen) onToggle();
   };
 
   return (
@@ -80,75 +72,74 @@ const ProfessorSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
       >
         <div className="laines-sidebar__header">
           <div className="laines-sidebar__brand">
-            <span className="laines-sidebar__logo-chip" aria-hidden="true">L</span>
-            <div>
-              <h1 className="laines-sidebar__title">LAINES</h1>
-              <p className="laines-sidebar__subtitle">Liga acadêmica interprofissional</p>
-            </div>
+            <SidebarHeader roleLabel="Professor" />
           </div>
-          <button onClick={onToggle} className="laines-sidebar__collapse md:hidden" aria-label="Fechar menu">
-            <ChevronLeft size={20} />
+          <button
+            type="button"
+            onClick={onToggle}
+            className="laines-sidebar__collapse"
+            aria-label="Fechar menu"
+          >
+            <ChevronLeft size={18} strokeWidth={1.8} />
           </button>
         </div>
 
-        <div className="laines-sidebar__role-card">
-          <div className="laines-sidebar__role-icon">
-            <GraduationCap size={20} />
+        <div className="sb-identity">
+          <div className="sb-identity__icon-box" aria-hidden="true">
+            <GraduationCap size={16} strokeWidth={1.8} color="#60a5fa" />
           </div>
           <div>
-            <h4 className="laines-sidebar__role-title">Professor</h4>
-            <p className="laines-sidebar__role-subtitle">Supervisão ativa</p>
+            <p className="sb-identity__role">Professor</p>
+            <p className="sb-identity__profile-name">Supervisão ativa</p>
           </div>
         </div>
 
-        <nav className="laines-sidebar__nav custom-scrollbar">
-          <div>
+        <nav className="laines-sidebar__nav custom-scrollbar" aria-label="Navegação principal">
+          <section className="laines-sidebar__section" aria-label="Acadêmico">
             <h3 className="laines-sidebar__section-title">Acadêmico</h3>
-            <div className="space-y-0.5">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (window.innerWidth <= 768 && isOpen) onToggle();
-                  }}
-                  className={`laines-sidebar__item ${activeTab === item.id ? 'laines-sidebar__item--active' : ''}`}
-                >
-                  <div className="laines-sidebar__item-icon">
-                    {item.icon}
-                  </div>
-                  <span>{item.label}</span>
-                  {activeTab === item.id && (
-                    <div className="laines-sidebar__item-indicator" />
-                  )}
-                </button>
-              ))}
+            <div className="laines-sidebar__section-items">
+              {MENU_ITEMS.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectTab(item.id)}
+                    className={`laines-sidebar__item ${isActive ? 'laines-sidebar__item--active' : ''}`}
+                    aria-label={item.label}
+                    title={item.label}
+                  >
+                    <div className="laines-sidebar__item-icon" aria-hidden="true">
+                      {item.icon}
+                    </div>
+                    <span className="laines-sidebar__item-label">{item.label}</span>
+                    {isActive && (
+                      <div className="laines-sidebar__item-indicator" aria-hidden="true" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </section>
         </nav>
 
-        <div className="laines-sidebar__footer">
-          <div className="laines-sidebar__user-card">
-            <div className="laines-sidebar__user-info">
-              <div className="laines-sidebar__avatar">
-                {userInitials}
-              </div>
-              <div>
-                <p className="laines-sidebar__user-name">{displayName || 'Professor'}</p>
-                <p className="laines-sidebar__user-status">Online</p>
-              </div>
-            </div>
-            <button onClick={handleLogout} className="laines-sidebar__logout" title="Sair" aria-label="Sair">
-              <LogOut size={18} />
-            </button>
-          </div>
-          <p className="laines-sidebar__footer-note">LAINES • Área do professor</p>
-        </div>
+        <SidebarFooter
+          displayName={displayName || 'Professor'}
+          userInitials={userInitials}
+          onLogout={handleLogout}
+        />
+
+        <p className="sb-bottom-tag">LAINES · Área do professor</p>
       </motion.aside>
 
       {!isOpen && (
-        <button onClick={onToggle} className="laines-sidebar__toggle" aria-label="Abrir menu">
-          <ChevronRight size={20} />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="laines-sidebar__toggle"
+          aria-label="Abrir menu"
+        >
+          <ChevronRight size={20} strokeWidth={1.8} />
         </button>
       )}
     </>

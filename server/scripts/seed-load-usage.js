@@ -20,6 +20,11 @@ const parseEnvFile = (filePath) => {
 
 const envFileValues = parseEnvFile(path.resolve(process.cwd(), 'server', '.env'));
 
+if (process.env.NODE_ENV === 'production' || envFileValues.NODE_ENV === 'production') {
+  console.error('BLOQUEADO: seed-load-usage não pode rodar em produção.');
+  process.exit(1);
+}
+
 const toInt = (value, fallback) => {
   const parsed = Number.parseInt(String(value ?? ''), 10);
   return Number.isFinite(parsed) ? parsed : fallback;

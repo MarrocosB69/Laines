@@ -2,12 +2,14 @@ import React, { useMemo, useState } from 'react';
 import {
   Activity,
   Apple,
+  Brain,
   ChevronDown,
   ChevronRight,
   Droplets,
   FileSpreadsheet,
   FlaskConical,
   HeartPulse,
+  PersonStanding,
   RefreshCcw,
   Ruler,
   Scale,
@@ -16,18 +18,20 @@ import {
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
 import { EVALUATION_REGISTRY } from '../../constants/evaluationRegistry';
 import { getEvaluationTypeLabel } from '../shared/evaluationSummaryUtils';
+import { FeedbackState } from '../ui';
 
 const ICONS_BY_TYPE = {
   bioimpedancia: Scale,
   dobras_cutaneas: Activity,
   perimetros: Ruler,
-  composicao_corporal_integrada: Scale,
   gasto_energetico_total: Activity,
   anamnese_inicial: FileSpreadsheet,
   avaliacao_clinica: HeartPulse,
   alimentar: Apple,
   hidratacao: Droplets,
   avaliacao_socioeconomica: ShieldCheck,
+  fisioterapia: PersonStanding,
+  psicologia: Brain,
   exames_laboratoriais: FlaskConical,
   evolucao_retorno: RefreshCcw
 };
@@ -47,11 +51,6 @@ const METRIC_SPECS = {
     { label: 'IMC', unit: '', keys: ['imc'] },
     { label: 'Cintura', unit: 'cm', keys: ['cintura', 'cintura_cm'] },
     { label: 'RCQ', unit: '', keys: ['rcq'] }
-  ],
-  composicao_corporal_integrada: [
-    { label: '% Gordura', unit: '%', keys: ['percentualGorduraOficial', 'percentual_gordura'] },
-    { label: 'Massa Magra', unit: 'kg', keys: ['massaMagraOficialKg', 'massa_magra'] },
-    { label: 'Fonte', unit: '', keys: ['fonte_oficial', 'fonteOficial'] }
   ],
   gasto_energetico_total: [
     { label: 'GET', unit: 'kcal', keys: ['getEstimadoKcal', 'get_estimado', 'getKcal'] },
@@ -83,6 +82,16 @@ const METRIC_SPECS = {
     { label: 'Pontuacao', unit: '', keys: ['pontuacaoEBIA', 'pontuacao'] },
     { label: 'Faixa', unit: '', keys: ['faixa', 'nivel'] }
   ],
+  fisioterapia: [
+    { label: 'Queixa', unit: '', keys: ['queixaPrincipal', 'queixa_principal'] },
+    { label: 'Dor', unit: '/10', keys: ['intensidadeDor', 'intensidade_dor', 'nivelDor'] },
+    { label: 'Funcional', unit: '', keys: ['classificacaoFuncional', 'nivelFuncional', 'funcionalidade'] }
+  ],
+  psicologia: [
+    { label: 'Objetivo', unit: '', keys: ['objetivo', 'objetivoPrincipal'] },
+    { label: 'Estresse', unit: '/10', keys: ['estresse', 'nivelEstresse', 'estressePercebido'] },
+    { label: 'Humor', unit: '', keys: ['humor', 'estadoHumor', 'classificacaoHumor'] }
+  ],
   exames_laboratoriais: [
     { label: 'Analitos', unit: '', keys: ['totalAnalitos', 'analitos_total'] },
     { label: 'Alterados', unit: '', keys: ['totalAlterados', 'alterados_total'] },
@@ -94,6 +103,14 @@ const METRIC_SPECS = {
     { label: 'Conduta', unit: '', keys: ['conduta'] }
   ]
 };
+
+const PRONTUARIO_SUMMARY_TYPES = Object.freeze({
+  CLINICA: 'avaliacao_clinica',
+  ANAMNESE: 'anamnese_inicial',
+  GET: 'gasto_energetico_total',
+  COMPOSICAO: 'bioimpedancia',
+  PSICOLOGIA: 'psicologia'
+});
 
 const toToken = (value) => String(value || '').trim().toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -112,6 +129,128 @@ const toDate = (value) => {
   if (typeof value?.toDate === 'function') return value.toDate();
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const readPath = (source, path) => {
+  if (!source || !path) return undefined;
+  return path.split('.').reduce((acc, key) => (
+    acc === null || acc === undefined ? undefined : acc[key]
+  ), source);
+};
+
+const getResultSources = (evaluation) => {
+  const resultados = evaluation?.resultados;
+  if (!resultados || typeof resultados !== 'object') return [];
+  return [resultados?.calculated, resultados?.output, resultados]
+    .filter((item) => item && typeof item === 'object');
+};
+
+const readResultValue = (evaluation, keys = []) => {
+  const sources = getResultSources(evaluation);
+  for (const key of keys) {
+    for (const source of sources) {
+      const value = key.includes('.') ? readPath(source, key) : source?.[key];
+      if (value !== null && value !== undefined && String(value).trim() !== '') {
+        return value;
+      }
+    }
+  }
+  return null;
+};
+
+const toStringList = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((item) => toStringList(item))
+      .map((item) => String(item || '').trim())
+      .filter(Boolean);
+  }
+  if (value && typeof value === 'object') {
+    const named = value.nome || value.name || value.label || value.descricao || value.description || value.valor;
+    if (named) return [String(named).trim()];
+    return Object.entries(value)
+      .filter(([, item]) => Boolean(item))
+      .map(([key]) => String(key || '').trim())
+      .filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value
+      .split(/[;,|]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return [String(value)];
+  return [];
+};
+
+const formatListPreview = (items = []) => {
+  if (!items.length) return 'Sem registro';
+  if (items.length <= 2) return items.join(' · ');
+  return `${items.slice(0, 2).join(' · ')} +${items.length - 2}`;
+};
+
+const resolveVitalTone = (metric, value) => {
+  if (!Number.isFinite(value)) return 'neutral';
+  if (metric === 'pas') {
+    if (value < 90 || value >= 140) return 'danger';
+    if (value >= 120) return 'warn';
+    return 'ok';
+  }
+  if (metric === 'pad') {
+    if (value < 60 || value >= 90) return 'danger';
+    if (value >= 80) return 'warn';
+    return 'ok';
+  }
+  if (metric === 'fc') {
+    if (value < 50 || value > 120) return 'danger';
+    if (value > 100) return 'warn';
+    return 'ok';
+  }
+  if (metric === 'temperatura') {
+    if (value < 35 || value >= 38) return 'danger';
+    if (value >= 37.5) return 'warn';
+    return 'ok';
+  }
+  return 'neutral';
+};
+
+const resolveRiskTone = (value, { inverted = false } = {}) => {
+  const numeric = toNumber(value);
+  if (Number.isFinite(numeric)) {
+    if (inverted) {
+      if (numeric <= 3) return 'danger';
+      if (numeric <= 6) return 'warn';
+      return 'ok';
+    }
+    if (numeric >= 7) return 'danger';
+    if (numeric >= 4) return 'warn';
+    return 'ok';
+  }
+
+  const token = toToken(value);
+  if (!token) return 'neutral';
+  if (inverted) {
+    if (token.includes('baixa') || token.includes('baixo')) return 'danger';
+    if (token.includes('moderada') || token.includes('media')) return 'warn';
+    if (token.includes('alta') || token.includes('alto')) return 'ok';
+    return 'neutral';
+  }
+
+  if (token.includes('alto') || token.includes('grave') || token.includes('critico')) return 'danger';
+  if (token.includes('moderado') || token.includes('medio') || token.includes('atencao')) return 'warn';
+  if (token.includes('baixo') || token.includes('leve') || token.includes('normal')) return 'ok';
+  return 'neutral';
+};
+
+const resolveLatestByType = (groupedByType, type) => {
+  const aliases = type === PRONTUARIO_SUMMARY_TYPES.PSICOLOGIA
+    ? [PRONTUARIO_SUMMARY_TYPES.PSICOLOGIA, 'avaliacao_psicologica']
+    : [type];
+  for (const alias of aliases) {
+    const row = groupedByType.get(alias)?.[0];
+    if (row) return row;
+  }
+  return null;
 };
 
 const getEvaluationSources = (evaluation) => ([
@@ -177,14 +316,30 @@ const computeDelta = (currentValue, previousValue, unit = '') => {
 const resolveCardStatus = (evaluation) => {
   if (!evaluation) return 'nao_realizada';
   const token = toToken(evaluation.status);
-  if (['finalizada', 'concluida', 'realizada', 'registrado'].includes(token)) return 'realizada';
+  if (['finalizada', 'concluida', 'realizada'].includes(token)) return 'realizada';
+  if (token === 'rascunho') return 'rascunho';
   return 'pendente';
 };
 
 const statusClassMap = {
-  realizada: 'pron-card-avaliacao--realizada',
-  pendente: 'pron-card-avaliacao--pendente',
-  nao_realizada: 'pron-card-avaliacao--nao-realizada'
+  realizada:    'pron-card-avaliacao--realizada',
+  rascunho:     'pron-card-avaliacao--rascunho',
+  pendente:     'pron-card-avaliacao--pendente',
+  nao_realizada:'pron-card-avaliacao--nao-realizada'
+};
+
+const STATUS_BADGE = {
+  realizada:    { cls: 'pron-badge-ok',   label: 'Finalizada' },
+  rascunho:     { cls: 'pron-badge-muted pron-badge--rascunho', label: 'Rascunho' },
+  pendente:     { cls: 'pron-badge-warn', label: 'Pendente' },
+  nao_realizada:{ cls: 'pron-badge-muted',label: 'Não iniciada' },
+};
+
+const STATUS_ACTION_LABEL = {
+  realizada:    'Ver detalhes',
+  rascunho:     'Continuar rascunho',
+  pendente:     'Iniciar avaliação',
+  nao_realizada:'Iniciar avaliação',
 };
 
 const buildSparklineData = (rows = [], metricKeys = []) => rows
@@ -225,15 +380,15 @@ const AvaliacaoCard = ({ card, formatDate, onOpenEvaluationType }) => {
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={`${card.label} — ${card.status === 'realizada' ? 'Ver detalhes' : card.status === 'pendente' ? 'Continuar avaliação' : 'Iniciar avaliação'}`}
+      aria-label={`${card.label} — ${STATUS_ACTION_LABEL[card.status] || 'Ver detalhes'}`}
     >
       <header className="pron-avaliacao-card__header">
         <div className="pron-title-inline">
           <Icon size={16} />
           <strong>{card.label}</strong>
         </div>
-        <span className={`pron-badge ${card.status === 'realizada' ? 'pron-badge-ok' : card.status === 'pendente' ? 'pron-badge-warn' : 'pron-badge-muted'}`}>
-          {card.status === 'realizada' ? 'Realizada' : card.status === 'pendente' ? 'Pendente' : 'Não iniciada'}
+        <span className={`pron-badge ${(STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).cls}`}>
+          {(STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).label}
         </span>
       </header>
 
@@ -262,9 +417,119 @@ const AvaliacaoCard = ({ card, formatDate, onOpenEvaluationType }) => {
 
       <div className="pron-avaliacao-card__actions">
         <span className="pron-link-btn">
-          {card.latest ? 'Ver detalhes' : 'Iniciar avaliação'}
+          {STATUS_ACTION_LABEL[card.status] || 'Ver detalhes'}
         </span>
       </div>
+    </article>
+  );
+};
+
+const SUMMARY_BADGE_CLASS = {
+  danger: 'pron-badge--danger',
+  warn: 'pron-badge--warn',
+  ok: 'pron-badge--ok',
+  info: 'pron-badge--info',
+  neutral: 'pron-badge--neutral'
+};
+
+const ProntuarioResumoCard = ({ card, formatDate, onOpenEvaluationType }) => {
+  const handleOpen = () => {
+    onOpenEvaluationType?.(card.openType || card.type);
+  };
+
+  return (
+    <article className={`pron-prontuario-resumo-card ${card.hasData ? '' : 'is-empty'}`}>
+      <header className="pron-prontuario-resumo-card__header">
+        <div>
+          <h3>{card.title}</h3>
+          <p>{card.subtitle}</p>
+        </div>
+        <span className={`pron-badge ${card.hasData ? 'pron-badge-ok' : 'pron-badge-muted'}`}>
+          {card.hasData ? 'Atualizado' : 'Sem dados'}
+        </span>
+      </header>
+
+      {card.kind === 'vitals' && (
+        <div className="pron-prontuario-vitals-grid">
+          {card.metrics.map((metric) => (
+            <div key={metric.key} className={`pron-prontuario-vital tone-${metric.tone}`}>
+              <span>{metric.label}</span>
+              <strong>{renderValue(metric.value, metric.unit)}</strong>
+              <i className={`pron-prontuario-vital-dot tone-${metric.tone}`} aria-hidden="true" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {card.kind === 'anamnese' && (
+        <div className="pron-prontuario-badge-grid">
+          {card.badges.map((badge) => (
+            <span key={badge.id} className={`pron-badge ${SUMMARY_BADGE_CLASS[badge.tone] || SUMMARY_BADGE_CLASS.neutral}`}>
+              {badge.label}: {badge.preview}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {card.kind === 'get' && (
+        <div className="pron-prontuario-get-widget">
+          <div className="pron-prontuario-get-kcal">
+            <span>GET estimado</span>
+            <strong>{renderValue(card.getKcal, 'kcal')}</strong>
+          </div>
+          <div className="pron-prontuario-macros-grid">
+            {card.macros.map((macro) => {
+              const numeric = toNumber(macro.value);
+              const width = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0;
+              return (
+                <div key={macro.key} className="pron-prontuario-macro-row">
+                  <div className="pron-prontuario-macro-head">
+                    <span>{macro.label}</span>
+                    <strong>{renderValue(macro.value, '%')}</strong>
+                  </div>
+                  <div className="pron-prontuario-macro-bar">
+                    <div style={{ width: `${width}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {card.kind === 'composicao' && (
+        <div className="pron-prontuario-composicao-grid">
+          <div className="pron-prontuario-composicao-metric">
+            <span>%GC atual</span>
+            <strong>{renderValue(card.percentualGordura, '%')}</strong>
+          </div>
+          <div className="pron-prontuario-composicao-metric">
+            <span>Massa magra</span>
+            <strong>{renderValue(card.massaMagra, 'kg')}</strong>
+          </div>
+          <div className="pron-prontuario-composicao-diagnostico">
+            <span>Diagnóstico nutricional</span>
+            <strong>{card.diagnostico || 'Sem classificação'}</strong>
+          </div>
+        </div>
+      )}
+
+      {card.kind === 'psicologia' && (
+        <div className="pron-prontuario-badge-grid">
+          {card.badges.map((badge) => (
+            <span key={badge.id} className={`pron-badge ${SUMMARY_BADGE_CLASS[badge.tone] || SUMMARY_BADGE_CLASS.neutral}`}>
+              {badge.label}: {badge.value}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <footer className="pron-prontuario-resumo-card__footer">
+        <span>Última avaliação: {card.latestDate ? formatDate(card.latestDate) : '--'}</span>
+        <button type="button" className="pron-link-btn" onClick={handleOpen}>
+          Ver módulo
+        </button>
+      </footer>
     </article>
   );
 };
@@ -401,6 +666,253 @@ const DashboardAvaliacoes = ({
   const latestFat = fatSparkline.length ? fatSparkline[fatSparkline.length - 1].y : null;
   const latestLean = leanSparkline.length ? leanSparkline[leanSparkline.length - 1].y : null;
 
+  const prontuarioSummaryCards = useMemo(() => {
+    const clinica = resolveLatestByType(byType, PRONTUARIO_SUMMARY_TYPES.CLINICA);
+    const clinicaMetrics = [
+      {
+        key: 'pas',
+        label: 'PA sistólica',
+        unit: 'mmHg',
+        value: toNumber(readResultValue(clinica, [
+          'pressaoSistolica',
+          'pressao_sistolica',
+          'sinaisVitais.pressaoSistolica',
+          'sinais_vitais.pressao_sistolica'
+        ]))
+      },
+      {
+        key: 'pad',
+        label: 'PA diastólica',
+        unit: 'mmHg',
+        value: toNumber(readResultValue(clinica, [
+          'pressaoDiastolica',
+          'pressao_diastolica',
+          'sinaisVitais.pressaoDiastolica',
+          'sinais_vitais.pressao_diastolica'
+        ]))
+      },
+      {
+        key: 'fc',
+        label: 'FC',
+        unit: 'bpm',
+        value: toNumber(readResultValue(clinica, [
+          'frequenciaCardiaca',
+          'frequencia_cardiaca',
+          'sinaisVitais.frequenciaCardiaca',
+          'sinais_vitais.frequencia_cardiaca'
+        ]))
+      },
+      {
+        key: 'temperatura',
+        label: 'Temperatura',
+        unit: '°C',
+        value: toNumber(readResultValue(clinica, [
+          'temperatura',
+          'temperaturaCelsius',
+          'temperatura_celsius',
+          'sinaisVitais.temperatura',
+          'sinais_vitais.temperatura'
+        ]))
+      }
+    ].map((metric) => ({
+      ...metric,
+      tone: resolveVitalTone(metric.key, metric.value)
+    }));
+
+    const anamnese = resolveLatestByType(byType, PRONTUARIO_SUMMARY_TYPES.ANAMNESE);
+    const alergias = toStringList(readResultValue(anamnese, [
+      'alergias',
+      'alergiasAlimentares',
+      'alergias_intolerancias',
+      'historicoAlergias'
+    ]));
+    const medicamentos = toStringList(readResultValue(anamnese, [
+      'medicamentos',
+      'medicamentosUso',
+      'medicamentos_uso',
+      'medicamentosEmUso',
+      'usoMedicamentos'
+    ]));
+    const restricoes = toStringList(readResultValue(anamnese, [
+      'restricoesDieteticas',
+      'restricoes_dieteticas',
+      'restricoesAlimentares',
+      'restricoes_alimentares'
+    ]));
+
+    const get = resolveLatestByType(byType, PRONTUARIO_SUMMARY_TYPES.GET);
+    const getKcal = toNumber(readResultValue(get, [
+      'getEstimadoKcal',
+      'get_estimado_kcal',
+      'getKcal',
+      'get_kcal'
+    ]));
+    const cho = toNumber(readResultValue(get, [
+      'distribuicaoMacros.choPercentual',
+      'distribuicao_macros.cho_percentual',
+      'choPercentual',
+      'cho_percentual'
+    ]));
+    const ptn = toNumber(readResultValue(get, [
+      'distribuicaoMacros.ptnPercentual',
+      'distribuicao_macros.ptn_percentual',
+      'ptnPercentual',
+      'ptn_percentual',
+      'proteinaPercentual'
+    ]));
+    const lip = toNumber(readResultValue(get, [
+      'distribuicaoMacros.lipPercentual',
+      'distribuicao_macros.lip_percentual',
+      'lipPercentual',
+      'lip_percentual',
+      'lipidioPercentual'
+    ]));
+
+    const composicao = resolveLatestByType(byType, PRONTUARIO_SUMMARY_TYPES.COMPOSICAO);
+    const percentualGordura = toNumber(readResultValue(composicao, [
+      'percentualGorduraOficial',
+      'percentual_gordura_oficial',
+      'percentualGordura',
+      'percentual_gordura'
+    ]));
+    const massaMagra = toNumber(readResultValue(composicao, [
+      'massaMagraOficialKg',
+      'massa_magra_oficial_kg',
+      'massaMagraKg',
+      'massa_magra_kg'
+    ]));
+    const diagnostico = readResultValue(composicao, [
+      'diagnosticoNutricional',
+      'diagnostico_nutricional',
+      'classificacaoComposicao',
+      'classificacao'
+    ]);
+
+    const psicologia = resolveLatestByType(byType, PRONTUARIO_SUMMARY_TYPES.PSICOLOGIA);
+    const compulsao = readResultValue(psicologia, [
+      'riscos.compulsao',
+      'riscoCompulsao',
+      'compulsaoAlimentar',
+      'compulsao_alimentar'
+    ]);
+    const transtorno = readResultValue(psicologia, [
+      'riscos.transtorno',
+      'riscoTranstorno',
+      'transtornoAlimentar',
+      'transtorno_alimentar'
+    ]);
+    const motivacao = readResultValue(psicologia, [
+      'riscos.motivacao',
+      'riscoMotivacao',
+      'motivacao',
+      'nivelMotivacao',
+      'motivacaoTratamento'
+    ]);
+
+    return [
+      {
+        id: PRONTUARIO_SUMMARY_TYPES.CLINICA,
+        type: PRONTUARIO_SUMMARY_TYPES.CLINICA,
+        openType: toToken(clinica?.tipo) || PRONTUARIO_SUMMARY_TYPES.CLINICA,
+        kind: 'vitals',
+        title: 'Avaliação clínica',
+        subtitle: 'Mini-dashboard de sinais vitais',
+        latestDate: toDate(clinica?.createdAt || clinica?.data || clinica?.updatedAt),
+        hasData: Boolean(clinica),
+        metrics: clinicaMetrics
+      },
+      {
+        id: PRONTUARIO_SUMMARY_TYPES.ANAMNESE,
+        type: PRONTUARIO_SUMMARY_TYPES.ANAMNESE,
+        openType: toToken(anamnese?.tipo) || PRONTUARIO_SUMMARY_TYPES.ANAMNESE,
+        kind: 'anamnese',
+        title: 'Anamnese inicial',
+        subtitle: 'Alergias, medicamentos e restrições',
+        latestDate: toDate(anamnese?.createdAt || anamnese?.data || anamnese?.updatedAt),
+        hasData: Boolean(anamnese),
+        badges: [
+          {
+            id: 'alergias',
+            label: 'Alergias',
+            tone: 'danger',
+            preview: formatListPreview(alergias)
+          },
+          {
+            id: 'medicamentos',
+            label: 'Medicamentos',
+            tone: 'warn',
+            preview: formatListPreview(medicamentos)
+          },
+          {
+            id: 'restricoes',
+            label: 'Restrições',
+            tone: 'info',
+            preview: formatListPreview(restricoes)
+          }
+        ]
+      },
+      {
+        id: PRONTUARIO_SUMMARY_TYPES.GET,
+        type: PRONTUARIO_SUMMARY_TYPES.GET,
+        openType: toToken(get?.tipo) || PRONTUARIO_SUMMARY_TYPES.GET,
+        kind: 'get',
+        title: 'Gasto energético total',
+        subtitle: 'GET e distribuição de macronutrientes',
+        latestDate: toDate(get?.createdAt || get?.data || get?.updatedAt),
+        hasData: Boolean(get),
+        getKcal,
+        macros: [
+          { key: 'cho', label: 'CHO', value: cho },
+          { key: 'ptn', label: 'PTN', value: ptn },
+          { key: 'lip', label: 'LIP', value: lip }
+        ]
+      },
+      {
+        id: PRONTUARIO_SUMMARY_TYPES.COMPOSICAO,
+        type: PRONTUARIO_SUMMARY_TYPES.COMPOSICAO,
+        openType: toToken(composicao?.tipo) || PRONTUARIO_SUMMARY_TYPES.COMPOSICAO,
+        kind: 'composicao',
+        title: 'Composição corporal integrada',
+        subtitle: 'Indicadores oficiais da sessão',
+        latestDate: toDate(composicao?.createdAt || composicao?.data || composicao?.updatedAt),
+        hasData: Boolean(composicao),
+        percentualGordura,
+        massaMagra,
+        diagnostico: diagnostico ? String(diagnostico) : ''
+      },
+      {
+        id: PRONTUARIO_SUMMARY_TYPES.PSICOLOGIA,
+        type: PRONTUARIO_SUMMARY_TYPES.PSICOLOGIA,
+        openType: toToken(psicologia?.tipo) || PRONTUARIO_SUMMARY_TYPES.PSICOLOGIA,
+        kind: 'psicologia',
+        title: 'Avaliação psicológica',
+        subtitle: 'Riscos comportamentais prioritários',
+        latestDate: toDate(psicologia?.createdAt || psicologia?.data || psicologia?.updatedAt),
+        hasData: Boolean(psicologia),
+        badges: [
+          {
+            id: 'compulsao',
+            label: 'Compulsão',
+            value: hasMetricValue(compulsao) ? String(compulsao) : 'Sem registro',
+            tone: resolveRiskTone(compulsao)
+          },
+          {
+            id: 'transtorno',
+            label: 'Transtorno',
+            value: hasMetricValue(transtorno) ? String(transtorno) : 'Sem registro',
+            tone: resolveRiskTone(transtorno)
+          },
+          {
+            id: 'motivacao',
+            label: 'Motivação',
+            value: hasMetricValue(motivacao) ? String(motivacao) : 'Sem registro',
+            tone: resolveRiskTone(motivacao, { inverted: true })
+          }
+        ]
+      }
+    ];
+  }, [byType]);
+
   const metricCards = [
     {
       id: 'consultas',
@@ -443,6 +955,25 @@ const DashboardAvaliacoes = ({
         ))}
       </article>
 
+      <article className="pron-card pron-panel pron-prontuario-resumo-panel">
+        <header className="pron-panel-header">
+          <div>
+            <h2>Resumo clínico do prontuário</h2>
+            <p>Dados da avaliação mais recente por módulo (origem: campo resultados).</p>
+          </div>
+        </header>
+        <div className="pron-prontuario-resumo-grid">
+          {prontuarioSummaryCards.map((card) => (
+            <ProntuarioResumoCard
+              key={card.id}
+              card={card}
+              formatDate={formatDate}
+              onOpenEvaluationType={onOpenEvaluationType}
+            />
+          ))}
+        </div>
+      </article>
+
       <article className="pron-card pron-panel pron-dashboard-panel">
         <header className="pron-panel-header">
           <div>
@@ -478,9 +1009,7 @@ const DashboardAvaliacoes = ({
             ))}
           </div>
         ) : (
-          <div className="pron-empty">
-            <span>Nenhuma avaliação registrada ainda. Inicie pelo botão abaixo.</span>
-          </div>
+          <FeedbackState empty size="sm" title="Nenhuma avaliação registrada ainda." description="Inicie pelo botão abaixo." />
         )}
 
         {cardsNaoIniciados.length > 0 && (
@@ -609,11 +1138,13 @@ const DashboardAvaliacoes = ({
       ) : null}
 
       {!sortedEvaluations.length ? (
-        <article className="pron-card pron-empty">
-          <p>Nenhuma avaliação registrada para este atleta.</p>
-          <button type="button" className="pron-btn pron-btn-primary" onClick={onCreateEvaluation}>
-            Iniciar primeira avaliação
-          </button>
+        <article className="pron-card">
+          <FeedbackState
+            empty
+            title="Nenhuma avaliação registrada para este atleta."
+            action="Iniciar primeira avaliação"
+            onAction={onCreateEvaluation}
+          />
         </article>
       ) : null}
     </section>

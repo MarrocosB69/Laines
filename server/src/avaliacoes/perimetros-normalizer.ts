@@ -142,6 +142,7 @@ export const normalizePerimetrosPayload = <T extends PayloadShape>(payload: T): 
   const areaSuperficieCorporal = toNumber(pick(valueSources, ['area_superficie_corporal', 'areaSuperficieCorporal']));
   const riscoCintura = toText(pick(valueSources, ['risco_cintura', 'riscoCintura', 'classificacaoCintura']));
   const tmbSelecionada = toNumber(pick(valueSources, ['tmbSelecionada', 'tmbSelecionadaKcal', 'tmb_kcal']));
+  const esportivo = asRecord(pick(valueSources, ['esportivo']));
 
   const formulaId = toText(payload.formulaId)
     || toText(pick([canonicalMetadadosFormula], ['formulaId', 'formula_id']));
@@ -155,7 +156,8 @@ export const normalizePerimetrosPayload = <T extends PayloadShape>(payload: T): 
     cinturaCm: cinturaCm,
     quadrilCm: quadrilCm,
     pescocoCm: pescocoCm,
-    focoCardiometabolico: focoCardiometabolico === null ? undefined : focoCardiometabolico
+    focoCardiometabolico: focoCardiometabolico === null ? undefined : focoCardiometabolico,
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined
   });
 
   const normalizedResultadosCalculados = compact({
@@ -210,6 +212,7 @@ export const normalizePerimetrosPayload = <T extends PayloadShape>(payload: T): 
     percentual_gordura_ymca: percentualGorduraYmca,
     area_superficie_corporal: areaSuperficieCorporal,
     risco_cintura: riscoCintura || undefined,
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined,
     dados_brutos: normalizedDadosBrutos,
     resultados_calculados: normalizedResultadosCalculados,
     classificacoes: normalizedClassificacoes,

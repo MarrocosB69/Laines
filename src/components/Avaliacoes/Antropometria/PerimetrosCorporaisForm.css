@@ -1,5 +1,5 @@
 .perimetros-form.perimetros-form--modern {
-  --domain-color: #0e7490;
+  --domain-color: var(--color-accent, #56ADDB);
   border-radius: var(--radius-xl);
   border: 1px solid color-mix(in srgb, var(--domain-color) 20%, transparent);
 }
@@ -143,7 +143,7 @@
 .perimetros-form .perimetros-toggle input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  accent-color: #0f766e;
+  accent-color: var(--color-navy-light, #2a4a6e);
 }
 
 .perimetros-form .perimetros-toggle span {
@@ -151,6 +151,52 @@
   color: #334155;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.perimetros-form .perimetros-bilateral-row {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.5rem;
+}
+
+.perimetros-form .perimetros-bilateral-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.perimetros-form .perimetros-bilateral-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.perimetros-form .perimetros-asymmetry-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.63rem;
+  font-weight: 800;
+  color: #0c4a6e;
+  background: rgba(14, 165, 233, 0.14);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+}
+
+.perimetros-form .perimetros-asymmetry-badge.is-alert {
+  color: #991b1b;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.32);
+}
+
+.perimetros-form .perimetros-alert-note {
+  margin-top: 0.55rem;
+  border-color: rgba(239, 68, 68, 0.26);
+  background: rgba(254, 226, 226, 0.76);
+  color: #991b1b;
 }
 
 .perimetros-form .perimetros-results-grid {
@@ -413,6 +459,46 @@
   font-weight: 800;
 }
 
+.perimetros-form .perimetros-meta-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  margin: 0 0 0.45rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 800;
+  user-select: none;
+}
+
+.perimetros-form .perimetros-meta-summary::-webkit-details-marker {
+  display: none;
+}
+
+.perimetros-form details.perimetros-meta-card .perimetros-meta-summary::before {
+  content: '▸';
+  font-size: 0.7rem;
+  color: #94a3b8;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.perimetros-form details.perimetros-meta-card[open] .perimetros-meta-summary::before {
+  transform: rotate(90deg);
+}
+
+.perimetros-form .perimetros-meta-hint {
+  font-size: 0.69rem;
+  font-weight: 400;
+  color: #94a3b8;
+  letter-spacing: 0;
+  text-transform: none;
+  margin-left: 0.2rem;
+}
+
 .perimetros-form .perimetros-meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -536,6 +622,10 @@
   }
 
   .perimetros-form .perimetros-results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .perimetros-form .perimetros-bilateral-grid {
     grid-template-columns: 1fr;
   }
 

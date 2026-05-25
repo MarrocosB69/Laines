@@ -26,12 +26,38 @@ const asRecord = (value: unknown): JsonRecord => {
   return value as JsonRecord;
 };
 
+const asArray = (value: unknown): unknown[] => {
+  return Array.isArray(value) ? value : [];
+};
+
 const compact = (record: JsonRecord): JsonRecord => {
   const output: JsonRecord = {};
   Object.entries(record).forEach(([key, value]) => {
     if (value !== undefined) output[key] = value;
   });
   return output;
+};
+
+const normalizeSessao = (value: unknown): JsonRecord | null => {
+  const record = asRecord(value);
+  const id = toText(record.id);
+  const data = toText(record.data);
+  if (!id || !data) return null;
+  return {
+    ...record,
+    id,
+    data
+  };
+};
+
+const normalizeObjetivo = (value: unknown): JsonRecord => {
+  const record = asRecord(value);
+  return {
+    ...record,
+    id: toText(record.id),
+    texto: toText(record.texto),
+    concluido: Boolean(record.concluido)
+  };
 };
 
 type PayloadShape = {
@@ -48,27 +74,30 @@ export const normalizeFisioterapiaPayload = <T extends PayloadShape>(payload: T)
 
   const dados = asRecord(payload.dados);
   const input = asRecord(dados.input);
-
-  const queixaPrincipal = toText(dados.queixaPrincipal || input.queixaPrincipal);
-  const dorLocal = toText(dados.dorLocal || input.dorLocal);
+  const queixaPrincipal = toText(dados.queixaPrincipal ?? input.queixaPrincipal);
   const intensidadeDor = toNumber(dados.intensidadeDor ?? input.intensidadeDor);
-  const mobilidade = toText(dados.mobilidade || input.mobilidade);
-  const observacoes = toText(dados.observacoes || input.observacoes);
+  const mobilidade = toText(dados.mobilidade ?? input.mobilidade);
 
   const normalizedDados = compact({
     ...dados,
     queixaPrincipal: queixaPrincipal || undefined,
-    dorLocal: dorLocal || undefined,
     intensidadeDor: intensidadeDor ?? undefined,
     mobilidade: mobilidade || undefined,
-    observacoes: observacoes || undefined,
+    diagnosticoClinico: toText(dados.diagnosticoClinico),
+    diagnosticoCineticofuncional: toText(dados.diagnosticoCineticofuncional),
+    examesComplementares: toText(dados.examesComplementares),
+    sessoes: asArray(dados.sessoes)
+      .map((item) => normalizeSessao(item))
+      .filter((item): item is JsonRecord => Boolean(item)),
+    objetivosCurtoPrazo: asArray(dados.objetivosCurtoPrazo).map((item) => normalizeObjetivo(item)),
+    objetivosMedioLongoPrazo: asArray(dados.objetivosMedioLongoPrazo).map((item) => normalizeObjetivo(item)),
+    condutasCurtoPrazo: toText(dados.condutasCurtoPrazo),
+    condutasMedioLongoPrazo: toText(dados.condutasMedioLongoPrazo),
     input: compact({
       ...input,
       queixaPrincipal: queixaPrincipal || undefined,
-      dorLocal: dorLocal || undefined,
       intensidadeDor: intensidadeDor ?? undefined,
-      mobilidade: mobilidade || undefined,
-      observacoes: observacoes || undefined
+      mobilidade: mobilidade || undefined
     })
   });
 
@@ -76,6 +105,6 @@ export const normalizeFisioterapiaPayload = <T extends PayloadShape>(payload: T)
     ...payload,
     dados: normalizedDados,
     formulaId: toText(payload.formulaId) || 'fisioterapia_funcional_basica',
-    formulaVersion: toText(payload.formulaVersion) || '1.0.0'
+    formulaVersion: toText(payload.formulaVersion) || '2.0.0'
   };
 };

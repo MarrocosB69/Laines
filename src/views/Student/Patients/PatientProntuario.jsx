@@ -30,18 +30,21 @@ import {
   getEvaluationTypeLabel
 } from '../../../components/shared/evaluationSummaryUtils';
 import { listEvaluationRegistryByContext } from '../../../constants/evaluationRegistry';
+import { ATHLETE_SELF_EVALUATION_CONFIGS } from '../../Athlete/athleteSelfEvaluations';
 import { buildEvaluationTimelineSummary } from '../../../components/shared/evaluationResultAdapter';
 import AppointmentModal from './AppointmentModal';
 import ProntuarioHeader from '../../../components/Prontuario/ProntuarioHeader';
 import ProntuarioTabs from '../../../components/Prontuario/ProntuarioTabs';
 import ResumoClinico from '../../../components/Prontuario/ResumoClinico';
 import DashboardAvaliacoes from '../../../components/Prontuario/DashboardAvaliacoes';
+import VisaoGeral from '../../../components/Prontuario/VisaoGeral';
 import TimelineConsultas from '../../../components/Prontuario/TimelineConsultas';
 import PainelSituacaoClinica from '../../../components/Prontuario/PainelSituacaoClinica';
 import PainelAnexos from '../../../components/Prontuario/PainelAnexos';
 import PainelMensagens from '../../../components/Prontuario/PainelMensagens';
 import ProximasConsultas from '../../../components/Prontuario/ProximasConsultas';
 import ProntuarioPendencias from '../../../components/Prontuario/ProntuarioPendencias';
+import PainelRevisaoAtleta from '../../../components/Prontuario/PainelRevisaoAtleta';
 
 const APPOINTMENT_STATUS_LABELS = {
   agendada: 'Agendada',
@@ -143,6 +146,8 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isReleasingEbia, setIsReleasingEbia] = useState(false);
+  const [togglingAthleteFormType, setTogglingAthleteFormType] = useState(null);
+  const [isMarkingReviewedId, setIsMarkingReviewedId] = useState(null);
   const [projectLink, setProjectLink] = useState({
     id: '',
     nome: ''
@@ -231,6 +236,10 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   const ebiaSelfFormConsumedAt = useMemo(
     () => convertFirebaseDate(ebiaSelfFormRelease?.consumedAt),
     [convertFirebaseDate, ebiaSelfFormRelease?.consumedAt]
+  );
+  const athleteFormReleases = useMemo(
+    () => athleteConfirmation?.formulariosLiberados || {},
+    [athleteConfirmation?.formulariosLiberados]
   );
   const dadosGeraisFields = useMemo(() => {
     const athleteInitialData = athleteConfirmation?.dados || {};
@@ -461,6 +470,18 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
       return bDate - aDate;
     });
   }, [avaliacoes, convertFirebaseDate]);
+
+  const pendingAthleteSubmissions = useMemo(() => (
+    avaliacoesOrdenadas
+      .filter((item) => (
+        Boolean(item?.meta?.aguardandoRevisao)
+        && (Boolean(item?.meta?.atletaSelfReport) || item?.meta?.origemPreenchimento === 'atleta')
+      ))
+      .map((item) => {
+        const date = convertFirebaseDate(item.updatedAt || item.createdAt || item.data);
+        return { ...item, _resolvedDate: date, _dateLabel: date ? formatDate(date) : null };
+      })
+  ), [avaliacoesOrdenadas, convertFirebaseDate, formatDate]);
 
   const nextAppointment = useMemo(() => {
     const now = new Date();
@@ -920,6 +941,36 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     user?.uid
   ]);
 
+  const handleToggleAthleteFormAccess = useCallback(async (type) => {
+    if (!patient?.id || !podeEditarAvaliacoes || !athleteHasLogin || togglingAthleteFormType) return;
+    const currentRelease = athleteFormReleases[type] || {};
+    const willEnable = !currentRelease.enabled;
+    setTogglingAthleteFormType(type);
+    try {
+      await updatePaciente(patient.id, {
+        confirmacaoAtleta: {
+          ...athleteConfirmation,
+          formulariosLiberados: {
+            ...athleteFormReleases,
+            [type]: {
+              ...currentRelease,
+              enabled: willEnable,
+              ...(willEnable
+                ? { releasedAt: new Date().toISOString(), releasedById: user?.uid || user?.id || '', releasedByName: user?.name || user?.email || '', disabledAt: null }
+                : { disabledAt: new Date().toISOString(), enabled: false })
+            }
+          }
+        }
+      });
+      notify({ type: 'success', title: willEnable ? 'Formulário liberado' : 'Acesso suspenso', message: willEnable ? 'O atleta pode preencher este formulário no portal.' : 'O formulário foi removido do portal do atleta.' });
+    } catch (error) {
+      notify({ type: 'error', title: 'Erro ao alterar acesso', message: getApiErrorMessage(error, 'Não foi possível atualizar o acesso ao formulário.') });
+    } finally {
+      setTogglingAthleteFormType(null);
+    }
+  }, [athleteConfirmation, athleteFormReleases, athleteHasLogin, notify, patient?.id, podeEditarAvaliacoes, togglingAthleteFormType, updatePaciente, user?.email, user?.id, user?.name, user?.uid]);
+
+
   const getTimelineStatusLabel = useCallback((event) => {
     if (event.type === 'consulta') {
       return APPOINTMENT_STATUS_LABELS[event.status] || event.status || 'Sem status';
@@ -935,6 +986,37 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     if (APPOINTMENT_STATUS_LABELS[status]) return APPOINTMENT_STATUS_LABELS[status];
     return getEvaluationStatusLabel(status || 'pendente');
   }, []);
+
+  const handleMarkAsReviewed = useCallback(async (avaliacaoId) => {
+    if (!avaliacaoId || isMarkingReviewedId || !podeEditarAvaliacoes) return;
+    setIsMarkingReviewedId(avaliacaoId);
+    try {
+      const avaliacao = avaliacoes.find((a) => a.id === avaliacaoId);
+      await api.patch(`/avaliacoes/${avaliacaoId}`, {
+        status: 'finalizada',
+        meta: {
+          ...(avaliacao?.meta || {}),
+          aguardandoRevisao: false,
+          revisadoEm: new Date().toISOString(),
+          revisadoPorId: user?.uid || user?.id || '',
+          revisadoPorNome: user?.name || user?.email || ''
+        }
+      });
+      notify({ type: 'success', title: 'Revisão registrada', message: 'O envio foi marcado como revisado.' });
+      setAvaliacoes((prev) => prev.map((a) =>
+        a.id === avaliacaoId
+          ? { ...a, status: 'finalizada', meta: { ...(a.meta || {}), aguardandoRevisao: false } }
+          : a
+      ));
+    } catch (error) {
+      notify({ type: 'error', title: 'Erro ao revisar', message: getApiErrorMessage(error, 'Não foi possível registrar a revisão.') });
+    } finally {
+      setIsMarkingReviewedId(null);
+    }
+  }, [
+    isMarkingReviewedId, podeEditarAvaliacoes, avaliacoes,
+    notify, user?.uid, user?.id, user?.name, user?.email
+  ]);
 
   const continuityItems = useMemo(() => {
     const items = [];
@@ -984,6 +1066,15 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
       });
     }
 
+    if (pendingAthleteSubmissions.length > 0) {
+      items.push({
+        id: 'revisoes-atleta',
+        level: 'medio',
+        title: `${pendingAthleteSubmissions.length} envio(s) do atleta aguardando revisão`,
+        description: 'Abra a aba Dados Clínicos para revisar os formulários enviados.'
+      });
+    }
+
     if ((consultationStatusSummary.falta || 0) > 0) {
       items.push({
         id: 'faltas',
@@ -1007,6 +1098,7 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     athleteHasLogin,
     consultationStatusSummary.falta,
     nextAppointment,
+    pendingAthleteSubmissions,
     pendingModules,
     projectLink?.id,
     summarySaved.observacoes
@@ -1018,7 +1110,7 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     { id: 'avaliacoes', label: 'Avaliações', enabled: true, count: avaliacoesOrdenadas.length },
     { id: 'consultas', label: 'Consultas', enabled: true, count: consultationHistory.length },
     { id: 'anexos', label: 'Anexos', enabled: true, count: attachments.length },
-    { id: 'pendencias', label: 'Pendências', enabled: true, count: pendingModules.length }
+    { id: 'pendencias', label: 'Pendências', enabled: true, count: pendingModules.length + pendingAthleteSubmissions.length }
   ]), [avaliacoesOrdenadas.length, attachments.length, consultationHistory.length, pendingModules.length]);
 
   const headerSubtitle = useMemo(() => {
@@ -1311,19 +1403,32 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
         <div className="pron-main-grid">
           <main className="pron-stack">
             {activeTab === 'visao-geral' && (
-              <DashboardAvaliacoes
+              <VisaoGeral
                 patient={patient}
                 avaliacoes={avaliacoesOrdenadas}
+                moduleConfig={moduleConfig}
+                pendingModules={pendingModules}
                 consultationStatusSummary={consultationStatusSummary}
                 nextAppointment={nextAppointment}
                 formatDate={formatDate}
+                podeEditarAvaliacoes={podeEditarAvaliacoes}
                 onOpenEvaluationType={handleOpenAvaliacaoTab}
                 onCreateEvaluation={handleNovaAvaliacao}
+                onCreateAppointment={() => setIsAppointmentOpen(true)}
               />
             )}
 
             {activeTab === 'dados-clinicos' && (
-              <ResumoClinico
+              <>
+                {podeEditarAvaliacoes && (
+                  <PainelRevisaoAtleta
+                    pendingSubmissions={pendingAthleteSubmissions}
+                    isMarkingReviewedId={isMarkingReviewedId}
+                    formatDate={formatDate}
+                    onMarkAsReviewed={handleMarkAsReviewed}
+                  />
+                )}
+                <ResumoClinico
                 dadosGeraisFields={dadosGeraisFields}
                 formatGeneralValue={formatGeneralValue}
                 formatGeneralDate={formatGeneralDate}
@@ -1335,6 +1440,10 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                 podeEditarAvaliacoes={podeEditarAvaliacoes}
                 handleReleaseEbiaToAthlete={handleReleaseEbiaToAthlete}
                 isReleasingEbia={isReleasingEbia}
+                athleteSelfEvaluationConfigs={ATHLETE_SELF_EVALUATION_CONFIGS}
+                athleteFormReleases={athleteFormReleases}
+                handleToggleAthleteFormAccess={handleToggleAthleteFormAccess}
+                togglingAthleteFormType={togglingAthleteFormType}
                 podeEditarResumo={podeEditarResumo}
                 isEditingSummary={isEditingSummary}
                 setIsEditingSummary={setIsEditingSummary}
@@ -1349,6 +1458,7 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                 handleToggleComorbidade={handleToggleComorbidade}
                 getComorbidadeLabel={getComorbidadeLabel}
               />
+              </>
             )}
 
             {activeTab === 'avaliacoes' && (

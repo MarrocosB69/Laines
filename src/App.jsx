@@ -27,6 +27,8 @@ const AvaliacaoCompleta = React.lazy(() => import('./views/AvaliacaoCompleta'));
 const ProfessorView = React.lazy(() => import('./views/professor/ProfessorView'));
 const TeamPortal = React.lazy(() => import('./views/Team/TeamPortal'));
 const AthleteView = React.lazy(() => import('./views/Athlete/AthleteView'));
+const PrescricaoPlanoAlimentar = React.lazy(() => import('./views/planos/PrescricaoPlanoAlimentar'));
+const RouteSidebarLayout = React.lazy(() => import('./views/shared/RouteSidebarLayout'));
 const NotFound = React.lazy(() => import('./views/NotFound'));
 
 function AppContent() {
@@ -96,8 +98,18 @@ function AppContent() {
             } />
 
             <Route path="/avaliacao/:id" element={
-              <PrivateRoute allowedRoles={['aluno', ...PROFESSOR_AREA_ROLES, ...ADMIN_ROLES]}>
-                <AvaliacaoCompleta />
+              <PrivateRoute allowedRoles={['aluno', ...PROFESSOR_AREA_ROLES, ...ADMIN_ROLES, 'coord_atendimento']}>
+                <RouteSidebarLayout>
+                  <AvaliacaoCompleta />
+                </RouteSidebarLayout>
+              </PrivateRoute>
+            } />
+
+            <Route path="/planos-alimentares/:pacienteId" element={
+              <PrivateRoute allowedRoles={['aluno', ...PROFESSOR_AREA_ROLES, ...ADMIN_ROLES, 'tecnico']}>
+                <RouteSidebarLayout>
+                  <PrescricaoPlanoAlimentar />
+                </RouteSidebarLayout>
               </PrivateRoute>
             } />
 

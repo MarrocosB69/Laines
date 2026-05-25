@@ -268,7 +268,6 @@ const PatientModal = ({ isOpen, onClose, onSave, initialData, onCreate }) => {
           } else {
             const { data: created } = await api.post('/users', {
               name: formData.nome,
-              email: athleteEmail,
               role: 'atleta',
               cpf: formData.cpf,
               dataNascimento: formData.dataNascimento,
@@ -327,7 +326,7 @@ const PatientModal = ({ isOpen, onClose, onSave, initialData, onCreate }) => {
         notify({
           type: 'success',
           title: 'Atleta criado',
-          message: `Acesso do atleta ${athleteEmail} criado. Consulte a senha provisória na lista de usuários.`
+          message: `Acesso do atleta ${athleteEmail} criado com credencial provisória ativa.`
         });
       }
     } catch (err) {
@@ -818,8 +817,6 @@ const PatientModal = ({ isOpen, onClose, onSave, initialData, onCreate }) => {
 };
 
 export default PatientModal;
-
-
 
 
 

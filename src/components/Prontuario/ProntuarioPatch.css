@@ -1,29 +1,7 @@
 /* ProntuarioPatch.css - v1.0.0 - 2026-03-31 */
 
 /* === TOKENS (ROOT) === */
-:root {
-  --pron-bg: #f8fafc;
-  --pron-card-bg: #ffffff;
-  --pron-border: rgba(0, 0, 0, 0.07);
-  --pron-border-hover: rgba(0, 0, 0, 0.15);
-  --pron-text-primary: #0f172a;
-  --pron-text-secondary: #64748b;
-  --pron-text-muted: #94a3b8;
-  --pron-accent: #1d9e75;
-  --pron-accent-light: rgba(29, 158, 117, 0.08);
-  --pron-radius-sm: 8px;
-  --pron-radius-md: 12px;
-  --pron-radius-lg: 16px;
-  --pron-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --pron-ok: #16a34a;
-  --pron-ok-bg: #f0fdf4;
-  --pron-warn: #d97706;
-  --pron-warn-bg: #fffbeb;
-  --pron-danger: #dc2626;
-  --pron-danger-bg: #fef2f2;
-  --pron-info: #2563eb;
-  --pron-info-bg: #eff6ff;
-}
+/* Tokens de cor agora herdados de theme.css — não redefinir aqui */
 
 /* === SECAO 1 - RESET E BASE DO PRONTUARIO === */
 .prontuario-root {
@@ -210,7 +188,7 @@
 
 .prontuario-root .pron-tab.active {
   color: var(--pron-accent);
-  background: rgba(29, 158, 117, 0.08);
+  background: var(--pron-accent-light);
 }
 
 .prontuario-root .pron-tab.active::after {
@@ -455,6 +433,218 @@
   gap: 10px;
 }
 
+.prontuario-root .pron-prontuario-resumo-panel {
+  padding: 16px 18px;
+}
+
+.prontuario-root .pron-prontuario-resumo-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.prontuario-root .pron-prontuario-resumo-card {
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-md);
+  background: var(--pron-card-bg);
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prontuario-root .pron-prontuario-resumo-card.is-empty {
+  opacity: 0.78;
+}
+
+.prontuario-root .pron-prontuario-resumo-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.prontuario-root .pron-prontuario-resumo-card__header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-prontuario-resumo-card__header p {
+  margin-top: 3px;
+  color: var(--pron-text-secondary);
+  font-size: 12px;
+}
+
+.prontuario-root .pron-prontuario-vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.prontuario-root .pron-prontuario-vital {
+  border: 0.5px solid var(--pron-border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+}
+
+.prontuario-root .pron-prontuario-vital span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pron-text-muted);
+}
+
+.prontuario-root .pron-prontuario-vital strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-prontuario-vital-dot {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.prontuario-root .pron-prontuario-vital-dot.tone-ok {
+  background: var(--pron-ok);
+}
+
+.prontuario-root .pron-prontuario-vital-dot.tone-warn {
+  background: var(--pron-warn);
+}
+
+.prontuario-root .pron-prontuario-vital-dot.tone-danger {
+  background: var(--pron-danger);
+}
+
+.prontuario-root .pron-prontuario-vital-dot.tone-neutral {
+  background: var(--pron-text-muted);
+}
+
+.prontuario-root .pron-prontuario-badge-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prontuario-root .pron-prontuario-get-widget {
+  display: grid;
+  gap: 8px;
+}
+
+.prontuario-root .pron-prontuario-get-kcal {
+  border: 0.5px solid var(--pron-border);
+  border-radius: 8px;
+  background: rgba(116, 168, 101, 0.06);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.prontuario-root .pron-prontuario-get-kcal span {
+  color: var(--pron-text-secondary);
+  font-size: 12px;
+}
+
+.prontuario-root .pron-prontuario-get-kcal strong {
+  font-size: 15px;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-prontuario-macros-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.prontuario-root .pron-prontuario-macro-row {
+  display: grid;
+  gap: 4px;
+}
+
+.prontuario-root .pron-prontuario-macro-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.prontuario-root .pron-prontuario-macro-head strong {
+  color: var(--pron-text-primary);
+  font-size: 12px;
+}
+
+.prontuario-root .pron-prontuario-macro-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.prontuario-root .pron-prontuario-macro-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--pron-info), var(--pron-accent));
+}
+
+.prontuario-root .pron-prontuario-composicao-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.prontuario-root .pron-prontuario-composicao-metric,
+.prontuario-root .pron-prontuario-composicao-diagnostico {
+  border: 0.5px solid var(--pron-border);
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+}
+
+.prontuario-root .pron-prontuario-composicao-metric span,
+.prontuario-root .pron-prontuario-composicao-diagnostico span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pron-text-muted);
+}
+
+.prontuario-root .pron-prontuario-composicao-metric strong,
+.prontuario-root .pron-prontuario-composicao-diagnostico strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pron-text-primary);
+}
+
+.prontuario-root .pron-prontuario-composicao-diagnostico {
+  grid-column: 1 / -1;
+}
+
+.prontuario-root .pron-prontuario-resumo-card__footer {
+  border-top: 0.5px solid var(--pron-border);
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--pron-text-secondary);
+}
+
 .prontuario-root .pron-spark-card {
   padding: 12px;
 }
@@ -577,7 +767,7 @@
 .prontuario-root .timeline .pron-badge.status-agendada {
   background: var(--pron-info-bg);
   color: var(--pron-info);
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: rgba(86, 173, 219, 0.28);
 }
 
 .prontuario-root .timeline .pron-badge.status-falta {
@@ -608,7 +798,7 @@
 .prontuario-root .timeline .pron-badge.status-em_analise {
   background: var(--pron-info-bg);
   color: var(--pron-info);
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: rgba(86, 173, 219, 0.28);
 }
 
 .prontuario-root .timeline .pron-badge.status-rascunho {
@@ -695,8 +885,8 @@
 
 .prontuario-root .pron-textarea:focus {
   outline: none;
-  border-color: rgba(29, 158, 117, 0.45);
-  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12);
+  border-color: rgba(116, 168, 101, 0.45);
+  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.12);
 }
 
 .prontuario-root .dados-grid + .pron-panel-footer .pron-btn-secondary {
@@ -785,7 +975,7 @@
 .prontuario-root .pron-badge--info {
   background: var(--pron-info-bg);
   color: var(--pron-info);
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: rgba(86, 173, 219, 0.28);
 }
 
 .prontuario-root .pron-badge--neutral {
@@ -903,6 +1093,11 @@
   .prontuario-root .pron-avaliacao-metrics {
     grid-template-columns: 1fr;
   }
+
+  .prontuario-root .pron-prontuario-vitals-grid,
+  .prontuario-root .pron-prontuario-composicao-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1009,12 +1204,58 @@
   gap: 8px;
 }
 
+.prontuario-root .pron-panel-header__title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.prontuario-root .pron-panel-header__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--pron-accent, #56ADDB);
+  opacity: 0.85;
+}
+
+.prontuario-root .pron-pending-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--pron-warn-bg, rgba(217,119,6,0.08));
+  border: 1px solid var(--pron-warn, #d97706);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.prontuario-root .pron-pending-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pron-warn, #d97706);
+  flex-shrink: 0;
+}
+
+.prontuario-root .pron-pending-badge__label {
+  color: var(--pron-warn, #d97706);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prontuario-root .pron-pending-badge__value {
+  color: var(--pron-text-secondary, #3d5a72);
+}
+
 /* === SECAO 14 - BADGE INFO (alias single-dash) === */
 .pron-badge-info,
 .prontuario-root .pron-badge-info {
   background: var(--pron-info-bg);
   color: var(--pron-info);
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: rgba(86, 173, 219, 0.28);
 }
 
 /* === SECAO 15 - GRUPOS DE DADOS CLINICOS === */
@@ -1101,7 +1342,7 @@
 }
 
 .prontuario-root .pron-tab.active .pron-tab-count {
-  background: rgba(29, 158, 117, 0.15);
+  background: rgba(116, 168, 101, 0.15);
   color: var(--pron-accent);
 }
 
@@ -1123,14 +1364,14 @@
 /* --- 19.1 Pagina — fundo com gradiente sutil de ambiencia --- */
 .prontuario-root .pron-page {
   background:
-    radial-gradient(ellipse at 0% 0%, rgba(29, 158, 117, 0.07) 0%, transparent 40%),
-    radial-gradient(ellipse at 100% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 36%),
+    radial-gradient(ellipse at 0% 0%, rgba(116, 168, 101, 0.07) 0%, transparent 40%),
+    radial-gradient(ellipse at 100% 0%, rgba(86, 173, 219, 0.05) 0%, transparent 36%),
     var(--pron-bg);
 }
 
 /* --- 19.2 Header do prontuário --- */
 .prontuario-root .pron-header {
-  background: linear-gradient(135deg, #ffffff 0%, rgba(29, 158, 117, 0.03) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, rgba(116, 168, 101, 0.03) 100%);
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.05),
     0 4px 16px rgba(15, 23, 42, 0.07);
@@ -1144,7 +1385,7 @@
   inset: 0 auto auto 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(29, 158, 117, 0.35) 60%, transparent 100%);
+  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(116, 168, 101, 0.35) 60%, transparent 100%);
   border-radius: var(--pron-radius-lg) var(--pron-radius-lg) 0 0;
 }
 
@@ -1155,21 +1396,21 @@
   top: -60px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(29, 158, 117, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(116, 168, 101, 0.06) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .prontuario-root .pron-avatar {
   box-shadow:
-    0 0 0 3px rgba(29, 158, 117, 0.18),
-    0 2px 6px rgba(29, 158, 117, 0.12);
+    0 0 0 3px rgba(116, 168, 101, 0.18),
+    0 2px 6px rgba(116, 168, 101, 0.12);
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .prontuario-root .pron-header-title h1 {
   letter-spacing: -0.025em;
-  background: linear-gradient(135deg, var(--pron-text-primary) 60%, rgba(29, 158, 117, 0.7) 100%);
+  background: linear-gradient(135deg, var(--pron-text-primary) 60%, rgba(116, 168, 101, 0.7) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1195,10 +1436,10 @@
 }
 
 .prontuario-root .metric-card:nth-child(1)::before {
-  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(29, 158, 117, 0.2) 100%);
+  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(116, 168, 101, 0.2) 100%);
 }
 .prontuario-root .metric-card:nth-child(2)::before {
-  background: linear-gradient(90deg, var(--pron-info) 0%, rgba(37, 99, 235, 0.2) 100%);
+  background: linear-gradient(90deg, var(--pron-info) 0%, rgba(86, 173, 219, 0.2) 100%);
 }
 .prontuario-root .metric-card:nth-child(3)::before {
   background: linear-gradient(90deg, #7c3aed 0%, rgba(124, 58, 237, 0.2) 100%);
@@ -1219,17 +1460,33 @@
 
 /* --- 19.4 Cards de avaliacao --- */
 .prontuario-root .pron-avaliacao-card.status-realizada {
-  background: linear-gradient(155deg, #ffffff 45%, rgba(29, 158, 117, 0.04) 100%);
+  background: linear-gradient(155deg, #ffffff 45%, rgba(116, 168, 101, 0.04) 100%);
 }
 
 .prontuario-root .pron-avaliacao-card.status-realizada:hover {
-  box-shadow: 0 6px 20px rgba(29, 158, 117, 0.12);
-  border-color: rgba(29, 158, 117, 0.3);
+  box-shadow: 0 6px 20px rgba(116, 168, 101, 0.12);
+  border-color: rgba(116, 168, 101, 0.3);
 }
 
 .prontuario-root .pron-avaliacao-card.status-pendente:hover {
   box-shadow: 0 6px 20px rgba(217, 119, 6, 0.1);
   border-color: rgba(217, 119, 6, 0.25);
+}
+
+.prontuario-root .pron-card-avaliacao--rascunho,
+.prontuario-root .pron-avaliacao-card.status-rascunho {
+  border-left: 3px dashed rgba(29, 51, 80, 0.28);
+}
+
+.prontuario-root .pron-avaliacao-card.status-rascunho:hover {
+  box-shadow: 0 6px 20px rgba(29, 51, 80, 0.07);
+  border-color: rgba(29, 51, 80, 0.18);
+}
+
+.prontuario-root .pron-avaliacao-card.status-rascunho .pron-badge {
+  background: rgba(29, 51, 80, 0.05);
+  color: var(--pron-text-muted);
+  border-color: rgba(29, 51, 80, 0.1);
 }
 
 .prontuario-root .pron-avaliacao-card__actions .pron-link-btn {
@@ -1273,15 +1530,15 @@
 }
 
 .prontuario-root .pron-tab.active {
-  background: rgba(29, 158, 117, 0.1);
+  background: rgba(116, 168, 101, 0.1);
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(29, 158, 117, 0.12) inset;
+  box-shadow: 0 1px 4px rgba(116, 168, 101, 0.12) inset;
 }
 
 .prontuario-root .pron-tab.active::after {
   height: 2.5px;
   background: var(--pron-accent);
-  box-shadow: 0 0 6px rgba(29, 158, 117, 0.4);
+  box-shadow: 0 0 6px rgba(116, 168, 101, 0.4);
 }
 
 /* --- 19.7 Sparkline cards — acento por metrica --- */
@@ -1337,7 +1594,7 @@
 
 /* --- 19.9 Composicao corporal — barras com gradiente --- */
 .prontuario-root .comp-bar-fill {
-  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(29, 158, 117, 0.65) 100%);
+  background: linear-gradient(90deg, var(--pron-accent) 0%, rgba(116, 168, 101, 0.65) 100%);
 }
 
 .prontuario-root .pron-comp-bar-warn {
@@ -1351,7 +1608,7 @@
 /* --- 19.10 Timeline — dot com preenchimento por status --- */
 .prontuario-root .timeline-item:first-child .timeline-dot {
   background: var(--pron-accent);
-  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
+  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.15);
 }
 
 /* --- 19.11 Pendencias — backgrounds semanticos suaves --- */
@@ -1364,7 +1621,7 @@
 }
 
 .prontuario-root .pron-pendencia-item.severity-baixa {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.025) 0%, transparent 40%);
+  background: linear-gradient(90deg, rgba(86, 173, 219, 0.025) 0%, transparent 40%);
 }
 
 /* --- 19.12 Panel headers — ancora tipografica --- */

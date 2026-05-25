@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Heart } from 'lucide-react';
 import { Button } from '../../ui';
 import MiniSparkline from '../../shared/MiniSparkline';
@@ -7,6 +7,7 @@ import {
   buildComparativeDeltas,
   calculateClinicalEvaluation
 } from '../../../services/calculationEngine';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
 import './AvaliacaoClinicaForm.css';
 
@@ -84,19 +85,35 @@ const createInitialData = () => ({
   edemaLocation: '',
   edemaGrade: '0',
   clinicalSigns: [],
+  esportivo: createClinicalEsportivoData(),
   observacoes: ''
 });
+
+function createClinicalEsportivoData() {
+  return {
+    vo2maxEstimado: '',
+    taxaSudorese: '',
+    forcaPreensaoPalmar: {
+      direita: '',
+      esquerda: ''
+    }
+  };
+}
 
 const AvaliacaoClinicaForm = ({
   pacienteId,
   onSalvar,
   onAutoSave,
   readOnly = false,
+  patient,
+  onboardingContext,
   moduleSnapshot,
   moduleHistory = [],
   currentSessionId
 }) => {
   const [dados, setDados] = useState(createInitialData);
+  const { confirm } = useUiFeedback();
+
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -127,6 +144,14 @@ const AvaliacaoClinicaForm = ({
 
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
+    const esportivoRaw = asRecord(firstDefined(
+      dadosBrutos?.esportivo,
+      source?.esportivo
+    ));
+    const forcaPreensaoRaw = asRecord(firstDefined(
+      esportivoRaw?.forcaPreensaoPalmar,
+      esportivoRaw?.forca_preensao_palmar
+    ));
 
     setDados((prev) => ({
       ...prev,
@@ -201,6 +226,30 @@ const AvaliacaoClinicaForm = ({
         source?.sinaisCarenciais,
         source?.sinais_carenciais
       )),
+      esportivo: {
+        vo2maxEstimado: toInputValue(firstDefined(
+          esportivoRaw?.vo2maxEstimado,
+          esportivoRaw?.vo2max_estimado,
+          prev?.esportivo?.vo2maxEstimado
+        ), 1),
+        taxaSudorese: toInputValue(firstDefined(
+          esportivoRaw?.taxaSudorese,
+          esportivoRaw?.taxa_sudorese,
+          prev?.esportivo?.taxaSudorese
+        ), 0),
+        forcaPreensaoPalmar: {
+          direita: toInputValue(firstDefined(
+            forcaPreensaoRaw?.direita,
+            forcaPreensaoRaw?.right,
+            prev?.esportivo?.forcaPreensaoPalmar?.direita
+          ), 1),
+          esquerda: toInputValue(firstDefined(
+            forcaPreensaoRaw?.esquerda,
+            forcaPreensaoRaw?.left,
+            prev?.esportivo?.forcaPreensaoPalmar?.esquerda
+          ), 1)
+        }
+      },
       observacoes: toTextInput(firstDefined(
         dadosBrutos?.observacoes,
         source?.observacoes
@@ -232,56 +281,82 @@ const AvaliacaoClinicaForm = ({
     dados.temperatureC
   ]);
 
-  const fieldValidation = useMemo(() => ({
-    systolic: validateNumericField({
-      value: dados.systolic,
-      label: 'PA sistolica',
-      required: true,
-      min: 70,
-      max: 260
-    }),
-    diastolic: validateNumericField({
-      value: dados.diastolic,
-      label: 'PA diastolica',
-      required: true,
-      min: 40,
-      max: 160
-    }),
-    heartRate: validateNumericField({
+  const heartRateValue = useMemo(
+    () => parseNumeric(dados.heartRate),
+    [dados.heartRate]
+  );
+  const isAthletePatient = useMemo(
+    () => resolveAthletePatient(patient, onboardingContext),
+    [onboardingContext, patient]
+  );
+  const hasExpectedAthleteBradycardia = isAthletePatient
+    && Number.isFinite(heartRateValue)
+    && heartRateValue < 50;
+
+  const onboardingInsights = useMemo(
+    () => buildClinicalOnboardingInsights(onboardingContext),
+    [onboardingContext]
+  );
+
+  const fieldValidation = useMemo(() => {
+    const heartRateValidation = validateNumericField({
       value: dados.heartRate,
       label: 'Frequencia cardiaca',
       required: true,
       min: 20,
       max: 220
-    }),
-    temperatureC: validateNumericField({
-      value: dados.temperatureC,
-      label: 'Temperatura',
-      required: false,
-      min: 32,
-      max: 43
-    }),
-    glucoseMgDl: validateNumericField({
-      value: dados.glucoseMgDl,
-      label: 'Glicemia capilar',
-      required: false,
-      min: 20,
-      max: 700
-    }),
-    edemaGrade: validateNumericField({
-      value: dados.edemaGrade,
-      label: 'Grau de edema',
-      required: false,
-      min: 0,
-      max: 4
-    })
-  }), [
+    });
+
+    const resolvedHeartRateValidation = hasExpectedAthleteBradycardia
+      ? { status: 'ok', message: '' }
+      : heartRateValidation;
+
+    return {
+      systolic: validateNumericField({
+        value: dados.systolic,
+        label: 'PA sistolica',
+        required: true,
+        min: 70,
+        max: 260
+      }),
+      diastolic: validateNumericField({
+        value: dados.diastolic,
+        label: 'PA diastolica',
+        required: true,
+        min: 40,
+        max: 160
+      }),
+      heartRate: resolvedHeartRateValidation,
+      temperatureC: validateNumericField({
+        value: dados.temperatureC,
+        label: 'Temperatura',
+        required: false,
+        min: 32,
+        max: 43
+      }),
+      glucoseMgDl: validateNumericField({
+        value: dados.glucoseMgDl,
+        label: 'Glicemia capilar',
+        required: false,
+        min: 20,
+        max: 700
+      }),
+      edemaGrade: validateNumericField({
+        value: dados.edemaGrade,
+        label: 'Grau de edema',
+        required: false,
+        min: 0,
+        max: 4
+      })
+    };
+  }, [
     dados.diastolic,
     dados.edemaGrade,
     dados.glucoseMgDl,
     dados.heartRate,
     dados.systolic,
-    dados.temperatureC
+    dados.temperatureC,
+    hasExpectedAthleteBradycardia
   ]);
 
   const hasRequiredMissing = useMemo(() => (
@@ -306,6 +381,21 @@ const AvaliacaoClinicaForm = ({
     });
     return Array.from(list);
   }, [evaluation, fieldValidation]);
+
+  const redFlags = useMemo(() => {
+    const flags = Array.isArray(evaluation?.redFlags) ? evaluation.redFlags : [];
+    if (!hasExpectedAthleteBradycardia) return flags;
+    return flags.filter((item) => String(item?.id || '').trim() !== 'fc_critica');
+  }, [evaluation, hasExpectedAthleteBradycardia]);
+
+  const heartRateClassification = useMemo(() => {
+    if (!hasExpectedAthleteBradycardia) return evaluation?.classifications?.heartRate;
+    return {
+      label: 'Bradicardia fisiologica esperada em atletas',
+      tone: 'info',
+      source: 'Triagem esportiva'
+    };
+  }, [evaluation?.classifications?.heartRate, hasExpectedAthleteBradycardia]);
 
   const history = useMemo(
     () => normalizeClinicalHistory(moduleHistory),
@@ -414,6 +504,7 @@ const AvaliacaoClinicaForm = ({
       current: evaluation?.inputNormalized?.glucoseMgDl,
       reference: previous?.metrics?.glucose
     });
+    const esportivoPayload = buildClinicalEsportivoPayload(dados.esportivo);
 
     return {
       dataAvaliacao: normalizeDateValue(dados.dataAvaliacao),
@@ -421,6 +512,7 @@ const AvaliacaoClinicaForm = ({
       pressaoDiastolica: numberOrNull(evaluation?.inputNormalized?.diastolic, 0),
       frequenciaCardiaca: numberOrNull(evaluation?.inputNormalized?.heartRate, 0),
       prioridadeCuidado: evaluation?.summary?.carePriority?.level || null,
+      esportivo: esportivoPayload,
       dados_brutos: {
         systolic: numberOrNull(evaluation?.inputNormalized?.systolic, 0),
         diastolic: numberOrNull(evaluation?.inputNormalized?.diastolic, 0),
@@ -433,6 +525,7 @@ const AvaliacaoClinicaForm = ({
         clinicalSigns: Array.isArray(evaluation?.inputNormalized?.clinicalSigns)
           ? evaluation.inputNormalized.clinicalSigns
           : [],
+        esportivo: esportivoPayload,
         observacoes: toTextInput(dados.observacoes) || null
       },
       resultados_calculados: {
@@ -444,17 +537,18 @@ const AvaliacaoClinicaForm = ({
         pressaoPulso: numberOrNull(evaluation?.derived?.pulsePressure, 1),
         classificacaoPressaoArterial: evaluation?.classifications?.bloodPressure?.label || null,
         estagioPressaoArterial: evaluation?.classifications?.bloodPressure?.stage || null,
-        classificacaoFrequenciaCardiaca: evaluation?.classifications?.heartRate?.label || null,
+        classificacaoFrequenciaCardiaca: heartRateClassification?.label || null,
+        bradicardiaFisiologica: hasExpectedAthleteBradycardia || null,
         classificacaoGlicemia: evaluation?.classifications?.glucose?.label || null,
         classificacaoEdema: evaluation?.classifications?.edema?.label || null,
-        redFlags: (evaluation?.redFlags || []).map((flag) => ({
+        redFlags: redFlags.map((flag) => ({
           id: flag.id,
           label: flag.label,
           severity: flag.severity,
           source: flag.source,
           detail: flag.detail || null
         })),
-        redFlagsCount: evaluation?.summary?.redFlagsCount || 0,
+        redFlagsCount: redFlags.length,
         sinaisCarenciaisCount: Array.isArray(evaluation?.inputNormalized?.clinicalSigns)
           ? evaluation.inputNormalized.clinicalSigns.length
           : 0,
@@ -463,7 +557,7 @@ const AvaliacaoClinicaForm = ({
       },
       classificacoes: {
         pressao_arterial: evaluation?.classifications?.bloodPressure?.label || null,
-        frequencia_cardiaca: evaluation?.classifications?.heartRate?.label || null,
+        frequencia_cardiaca: heartRateClassification?.label || null,
         glicemia: evaluation?.classifications?.glucose?.label || null,
         edema: evaluation?.classifications?.edema?.label || null,
         prioridade_cuidado: evaluation?.summary?.carePriority?.level || null,
@@ -492,7 +586,16 @@ const AvaliacaoClinicaForm = ({
       },
       observacoes: toTextInput(dados.observacoes) || null
     };
-  }, [dados.dataAvaliacao, dados.observacoes, evaluation, previous]);
+  }, [
+    dados.dataAvaliacao,
+    dados.esportivo,
+    dados.observacoes,
+    evaluation,
+    hasExpectedAthleteBradycardia,
+    heartRateClassification,
+    previous,
+    redFlags
+  ]);
 
   const payloadResults = useMemo(() => ({
     pressao_sistolica: payloadData?.pressaoSistolica ?? null,
@@ -514,12 +617,14 @@ const AvaliacaoClinicaForm = ({
     || toTextInput(dados.temperatureC) !== ''
     || toTextInput(dados.glucoseMgDl) !== ''
     || toTextInput(dados.edemaLocation) !== ''
+    || hasClinicalEsportivoValues(dados.esportivo)
     || toTextInput(dados.observacoes) !== ''
     || (Array.isArray(dados.clinicalSigns) && dados.clinicalSigns.length > 0)
   ), [
     dados.clinicalSigns,
     dados.diastolic,
     dados.edemaLocation,
+    dados.esportivo,
     dados.glucoseMgDl,
     dados.heartRate,
     dados.observacoes,
@@ -562,7 +667,7 @@ const AvaliacaoClinicaForm = ({
       await dispatchSave(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
         setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
@@ -591,18 +696,18 @@ const AvaliacaoClinicaForm = ({
     }
 
     if (warnings.length > 0) {
-      const confirmMessage = [
-        'Foram detectados alertas nesta avaliacao:',
-        ...warnings.map((item) => `- ${item}`),
-        '',
-        'Deseja salvar mesmo assim?'
-      ].join('\n');
-
-      if (!window.confirm(confirmMessage)) return;
+      const proceed = await confirm({
+        title: 'Valores fora da faixa fisiológica',
+        details: warnings,
+        confirmLabel: 'Salvar mesmo assim',
+        cancelLabel: 'Corrigir',
+        variant: 'warning'
+      });
+      if (!proceed) return;
     }
 
     await executeSave(false);
-  }, [executeSave, hasFieldErrors, hasRequiredMissing, hasValues, onSalvar, warnings]);
+  }, [confirm, executeSave, hasFieldErrors, hasRequiredMissing, hasValues, onSalvar, warnings]);
 
   useEffect(() => {
     if (readOnly || !onAutoSave || !hasUserInput) return undefined;
@@ -611,7 +716,7 @@ const AvaliacaoClinicaForm = ({
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       executeSave(true);
-    }, 900);
+    }, 3500);
 
     return () => clearTimeout(autoSaveRef.current);
   }, [
@@ -624,7 +729,7 @@ const AvaliacaoClinicaForm = ({
     readOnly
   ]);
 
-  const redFlagTone = evaluation?.redFlags?.some((item) => item.severity === 'danger') ? 'danger' : 'warning';
+  const redFlagTone = redFlags.some((item) => item.severity === 'danger') ? 'danger' : 'warning';
 
   return (
     <div className={`eval-card clinica-form clinica-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -640,8 +745,14 @@ const AvaliacaoClinicaForm = ({
         </div>
       </div>
 
+      {onboardingInsights.length ? (
+        <div className="eval-note">
+          <strong>Contexto do onboarding:</strong> {onboardingInsights.join(' - ')}
+        </div>
+      ) : null}
+
       <div className="eval-section">
-        <h4 className="eval-section-title">Dados obrigatorios</h4>
+        <h4 className="eval-section-title">Sinais vitais</h4>
         <div className="clinica-grid">
           <div className="eval-field">
             <label className="eval-label">Data da avaliacao</label>
@@ -709,110 +820,174 @@ const AvaliacaoClinicaForm = ({
             onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'heartRate', value)}
             onBlur={() => markTouched(setTouchedFields, 'heartRate')}
           />
+
+          {hasExpectedAthleteBradycardia && (
+            <div className="eval-field eval-field-full">
+              <span className="clinica-athlete-badge">Bradicardia fisiologica esperada em atletas</span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="eval-section">
         <h4 className="eval-section-title">Dados opcionais</h4>
-        <div className="clinica-grid">
-          <NumericField
-            label="Temperatura"
-            unit="degC"
-            optional
-            value={dados.temperatureC}
-            placeholder="Ex.: 36.4"
-            disabled={readOnly}
-            isInvalid={shouldShowMessage(submitAttempted, touchedFields.temperatureC) && fieldValidation.temperatureC.status === 'error'}
-            isWarning={shouldShowMessage(submitAttempted, touchedFields.temperatureC) && fieldValidation.temperatureC.status === 'warning'}
-            message={shouldShowMessage(submitAttempted, touchedFields.temperatureC) ? fieldValidation.temperatureC.message : ''}
-            tooltipLines={['Temperatura corporal periferica.']}
-            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'temperatureC', value)}
-            onBlur={() => markTouched(setTouchedFields, 'temperatureC')}
-          />
 
-          <NumericField
-            label="Glicemia capilar"
-            unit="mg/dL"
-            optional
-            value={dados.glucoseMgDl}
-            placeholder="Ex.: 92"
-            disabled={readOnly}
-            isInvalid={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) && fieldValidation.glucoseMgDl.status === 'error'}
-            isWarning={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) && fieldValidation.glucoseMgDl.status === 'warning'}
-            message={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) ? fieldValidation.glucoseMgDl.message : ''}
-            tooltipLines={[
-              'Informe em mg/dL.',
-              'Se em jejum e > 200 mg/dL, gera alerta critico.'
-            ]}
-            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseMgDl', value)}
-            onBlur={() => markTouched(setTouchedFields, 'glucoseMgDl')}
-          />
-
-          <SelectField
-            label="Contexto da glicemia"
-            optional
-            value={dados.glucoseContext}
-            options={GLUCOSE_CONTEXT_OPTIONS}
-            disabled={readOnly}
-            tooltipLines={['Utilizado para classificar o resultado glicemico automaticamente.']}
-            onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseContext', value)}
-          />
-
-          <div className="eval-field">
-            <label className="eval-label">
-              Local do edema
-              <span className="clinica-optional-badge">Opcional</span>
-              <InlineHelp lines={['Registre local predominante do edema (MMII, sacral, etc.).']} />
-            </label>
-            <input
-              type="text"
-              className="eval-input"
-              value={dados.edemaLocation}
-              onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'edemaLocation', event.target.value)}
+        <div className="eval-field-group">
+          <span className="eval-field-group__label">Glicemia capilar</span>
+          <div className="eval-field-group__grid">
+            <NumericField
+              label="Glicemia capilar"
+              unit="mg/dL"
+              optional
+              value={dados.glucoseMgDl}
+              placeholder="Ex.: 92"
               disabled={readOnly}
-              placeholder="Ex.: Membros inferiores"
+              isInvalid={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) && fieldValidation.glucoseMgDl.status === 'error'}
+              isWarning={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) && fieldValidation.glucoseMgDl.status === 'warning'}
+              message={shouldShowMessage(submitAttempted, touchedFields.glucoseMgDl) ? fieldValidation.glucoseMgDl.message : ''}
+              tooltipLines={[
+                'Informe em mg/dL.',
+                'Se em jejum e > 200 mg/dL, gera alerta critico.'
+              ]}
+              onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseMgDl', value)}
+              onBlur={() => markTouched(setTouchedFields, 'glucoseMgDl')}
+            />
+
+            <SelectField
+              label="Contexto da glicemia"
+              optional
+              value={dados.glucoseContext}
+              options={GLUCOSE_CONTEXT_OPTIONS}
+              disabled={readOnly}
+              tooltipLines={['Utilizado para classificar o resultado glicemico automaticamente.']}
+              onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseContext', value)}
             />
           </div>
+        </div>
 
-          <SelectField
-            label="Grau de edema"
-            optional
-            value={dados.edemaGrade}
-            options={EDEMA_GRADE_OPTIONS}
-            disabled={readOnly}
-            tooltipLines={[
-              'Escala semiologica de edema.',
-              'Red flag amarelo para grau 3+ ou maior.'
-            ]}
-            isInvalid={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) && fieldValidation.edemaGrade.status === 'error'}
-            isWarning={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) && fieldValidation.edemaGrade.status === 'warning'}
-            message={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) ? fieldValidation.edemaGrade.message : ''}
-            onChange={(value) => {
-              handleFieldValueChange(setDados, setHasUserInput, 'edemaGrade', value);
-              markTouched(setTouchedFields, 'edemaGrade');
-            }}
-          />
+        <div className="eval-field-group">
+          <span className="eval-field-group__label">Exame físico</span>
+          <div className="eval-field-group__grid">
+            <NumericField
+              label="Temperatura"
+              unit="degC"
+              optional
+              value={dados.temperatureC}
+              placeholder="Ex.: 36.4"
+              disabled={readOnly}
+              isInvalid={shouldShowMessage(submitAttempted, touchedFields.temperatureC) && fieldValidation.temperatureC.status === 'error'}
+              isWarning={shouldShowMessage(submitAttempted, touchedFields.temperatureC) && fieldValidation.temperatureC.status === 'warning'}
+              message={shouldShowMessage(submitAttempted, touchedFields.temperatureC) ? fieldValidation.temperatureC.message : ''}
+              tooltipLines={['Temperatura corporal periferica.']}
+              onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'temperatureC', value)}
+              onBlur={() => markTouched(setTouchedFields, 'temperatureC')}
+            />
 
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">
-              Sinais de carencias nutricionais
-              <span className="clinica-optional-badge">Opcional</span>
-              <InlineHelp lines={['Checklist semiologico para rastreio clinico-nutricional.']} />
-            </label>
-            <div className="clinica-sign-grid">
-              {CLINICAL_SIGN_OPTIONS.map((item) => (
-                <label key={item.value} className="clinica-sign-item">
-                  <input
-                    type="checkbox"
-                    checked={dados.clinicalSigns.includes(item.value)}
-                    onChange={() => toggleStringArray(setDados, setHasUserInput, 'clinicalSigns', item.value)}
-                    disabled={readOnly}
-                  />
-                  <span>{item.label}</span>
-                </label>
-              ))}
+            <div className="eval-field">
+              <label className="eval-label">
+                Local do edema
+                <span className="clinica-optional-badge">Opcional</span>
+                <InlineHelp lines={['Registre local predominante do edema (MMII, sacral, etc.).']} />
+              </label>
+              <input
+                type="text"
+                className="eval-input"
+                value={dados.edemaLocation}
+                onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'edemaLocation', event.target.value)}
+                disabled={readOnly}
+                placeholder="Ex.: Membros inferiores"
+              />
+            </div>
+
+            <SelectField
+              label="Grau de edema"
+              optional
+              value={dados.edemaGrade}
+              options={EDEMA_GRADE_OPTIONS}
+              disabled={readOnly}
+              tooltipLines={[
+                'Escala semiologica de edema.',
+                'Red flag amarelo para grau 3+ ou maior.'
+              ]}
+              isInvalid={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) && fieldValidation.edemaGrade.status === 'error'}
+              isWarning={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) && fieldValidation.edemaGrade.status === 'warning'}
+              message={shouldShowMessage(submitAttempted, touchedFields.edemaGrade) ? fieldValidation.edemaGrade.message : ''}
+              onChange={(value) => {
+                handleFieldValueChange(setDados, setHasUserInput, 'edemaGrade', value);
+                markTouched(setTouchedFields, 'edemaGrade');
+              }}
+            />
+
+            <div className="eval-field eval-field-full">
+              <label className="eval-label">
+                Sinais de carencias nutricionais
+                <span className="clinica-optional-badge">Opcional</span>
+                <InlineHelp lines={['Checklist semiologico para rastreio clinico-nutricional.']} />
+              </label>
+              <div className="clinica-sign-grid">
+                {CLINICAL_SIGN_OPTIONS.map((item) => (
+                  <label key={item.value} className="clinica-sign-item">
+                    <input
+                      type="checkbox"
+                      checked={dados.clinicalSigns.includes(item.value)}
+                      onChange={() => toggleStringArray(setDados, setHasUserInput, 'clinicalSigns', item.value)}
+                      disabled={readOnly}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="eval-section">
+        <h4 className="eval-section-title">Contexto esportivo</h4>
+        <div className="clinica-grid">
+          <NumericField
+            label="VO2max estimado"
+            unit="mL/kg/min"
+            optional
+            value={dados.esportivo.vo2maxEstimado}
+            placeholder="Ex.: 48.5"
+            disabled={readOnly}
+            tooltipLines={['Parametro opcional para triagem esportiva.']}
+            onChange={(value) => updateEsportivoField(setDados, setHasUserInput, 'vo2maxEstimado', value)}
+          />
+
+          <NumericField
+            label="Taxa de sudorese"
+            unit="mL/h"
+            optional
+            value={dados.esportivo.taxaSudorese}
+            placeholder="Ex.: 850"
+            disabled={readOnly}
+            tooltipLines={['Taxa media estimada de perda hidrica em treino.']}
+            onChange={(value) => updateEsportivoField(setDados, setHasUserInput, 'taxaSudorese', value)}
+          />
+
+          <NumericField
+            label="Preensao palmar direita"
+            unit="kgf"
+            optional
+            value={dados.esportivo.forcaPreensaoPalmar.direita}
+            placeholder="Ex.: 42.0"
+            disabled={readOnly}
+            tooltipLines={['Dinamometria palmar - lado direito.']}
+            onChange={(value) => updateEsportivoGrip(setDados, setHasUserInput, 'direita', value)}
+          />
+
+          <NumericField
+            label="Preensao palmar esquerda"
+            unit="kgf"
+            optional
+            value={dados.esportivo.forcaPreensaoPalmar.esquerda}
+            placeholder="Ex.: 39.8"
+            disabled={readOnly}
+            tooltipLines={['Dinamometria palmar - lado esquerdo.']}
+            onChange={(value) => updateEsportivoGrip(setDados, setHasUserInput, 'esquerda', value)}
+          />
         </div>
       </div>
 
@@ -845,7 +1020,7 @@ const AvaliacaoClinicaForm = ({
           <ResultCard
             title="Frequencia cardiaca"
             valueDisplay={formatMetricValue(evaluation?.inputNormalized?.heartRate, 'bpm', 0)}
-            classification={evaluation?.classifications?.heartRate}
+            classification={heartRateClassification}
             delta={comparisonByKey?.heartRate?.delta}
             tooltipInfo={INDICATOR_INFO.heartRate}
           />
@@ -858,21 +1033,21 @@ const AvaliacaoClinicaForm = ({
           />
           <ResultCard
             title="Red flags"
-            valueDisplay={formatMetricValue(evaluation?.summary?.redFlagsCount, 'alertas', 0)}
+            valueDisplay={formatMetricValue(redFlags.length, 'alertas', 0)}
             classification={{
-              label: (evaluation?.summary?.redFlagsCount || 0) > 0
-                ? `${evaluation?.summary?.redFlagsCount || 0} alerta(s)`
+              label: redFlags.length > 0
+                ? `${redFlags.length} alerta(s)`
                 : 'Sem alertas',
-              tone: (evaluation?.summary?.redFlagsCount || 0) > 0 ? redFlagTone : 'success',
+              tone: redFlags.length > 0 ? redFlagTone : 'success',
               source: 'Regras de triagem'
             }}
             tooltipInfo={INDICATOR_INFO.redFlags}
           />
         </div>
 
-        {evaluation?.redFlags?.length ? (
+        {redFlags.length ? (
           <div className="clinica-flag-list">
-            {evaluation.redFlags.map((flag) => (
+            {redFlags.map((flag) => (
               <div key={flag.id} className={`clinica-flag-item severity-${flag.severity}`}>
                 <div className="clinica-flag-title">
                   <AlertTriangle size={14} />
@@ -1085,6 +1260,31 @@ function handleFieldValueChange(setDados, setHasUserInput, key, value) {
   setDados((prev) => ({ ...prev, [key]: value }));
 }
 
+function updateEsportivoField(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createClinicalEsportivoData()),
+      [key]: value
+    }
+  }));
+}
+
+function updateEsportivoGrip(setDados, setHasUserInput, lado, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createClinicalEsportivoData()),
+      forcaPreensaoPalmar: {
+        ...(prev?.esportivo?.forcaPreensaoPalmar || {}),
+        [lado]: value
+      }
+    }
+  }));
+}
+
 function markTouched(setTouchedFields, field) {
   setTouchedFields((prev) => ({ ...prev, [field]: true }));
 }
@@ -1120,6 +1320,65 @@ function toInputValue(value, digits = null) {
 function toTextInput(value) {
   if (value === null || value === undefined) return '';
   return String(value).trim();
+}
+
+function asRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
+}
+
+function buildClinicalEsportivoPayload(esportivo) {
+  const source = asRecord(esportivo);
+  const grip = asRecord(source.forcaPreensaoPalmar);
+
+  return {
+    vo2maxEstimado: numberOrNull(parseNumeric(source.vo2maxEstimado), 1),
+    taxaSudorese: numberOrNull(parseNumeric(source.taxaSudorese), 0),
+    forcaPreensaoPalmar: {
+      direita: numberOrNull(parseNumeric(grip.direita), 1),
+      esquerda: numberOrNull(parseNumeric(grip.esquerda), 1)
+    }
+  };
+}
+
+function hasClinicalEsportivoValues(esportivo) {
+  const payload = buildClinicalEsportivoPayload(esportivo);
+  if (Number.isFinite(payload.vo2maxEstimado)) return true;
+  if (Number.isFinite(payload.taxaSudorese)) return true;
+  return Object.values(payload.forcaPreensaoPalmar || {}).some((value) => Number.isFinite(value));
+}
+
+function buildClinicalOnboardingInsights(onboardingContext) {
+  if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+  const insights = [];
+  const modalidade = toTextInput(onboardingContext?.modalidadePrincipal);
+  const frequencia = parseNumeric(onboardingContext?.frequenciaSemanal);
+  const duracao = parseNumeric(onboardingContext?.duracaoSessao);
+  const status = toTextInput(onboardingContext?.status);
+
+  if (modalidade) insights.push(`Modalidade: ${modalidade}`);
+  if (Number.isFinite(frequencia)) insights.push(`Frequencia: ${frequencia}x/sem`);
+  if (Number.isFinite(duracao)) insights.push(`Duracao media: ${duracao} min`);
+  if (status) insights.push(`Status: ${status}`);
+
+  return insights.slice(0, 4);
+}
+
+function resolveAthletePatient(patient, onboardingContext) {
+  if (patient && typeof patient === 'object') {
+    const roleToken = String(patient?.role || patient?.perfil || '').trim().toLowerCase();
+    if (roleToken === 'atleta' || roleToken === 'athlete') return true;
+    if (patient?.atletaUserId || patient?.athleteUserId) return true;
+  }
+  const modality = String(
+    patient?.modalidade
+    || patient?.modalidadePrincipal
+    || onboardingContext?.modalidadePrincipal
+    || onboardingContext?.raw?.atividadeFisica
+    || ''
+  ).trim();
+  if (modality) return true;
+  return false;
 }
 
 function firstDefined(...values) {
@@ -1373,3 +1632,4 @@ function resolveClinicalMetrics(record) {
     glucose: Number.isFinite(glucose) ? glucose : null
   };
 }
+

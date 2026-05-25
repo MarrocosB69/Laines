@@ -13,7 +13,10 @@ import { useEffect, useRef } from 'react';
 export function useModuleSnapshot(moduleSnapshot, onLoad) {
   const loadedIdRef = useRef('');
   const onLoadRef = useRef(onLoad);
-  onLoadRef.current = onLoad;
+
+  useEffect(() => {
+    onLoadRef.current = onLoad;
+  }, [onLoad]);
 
   useEffect(() => {
     const snapshotId = moduleSnapshot?.id || '';

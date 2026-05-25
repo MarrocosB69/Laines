@@ -131,18 +131,51 @@ const readPayloadMessage = (payload) => {
   return '';
 };
 
+// Status codes with a definitive friendly message. Omit 400/401/422 — those
+// fall through to the backend message or the caller's fallback instead.
+const HTTP_STATUS_MESSAGES = {
+  403: 'Você não tem permissão para realizar esta ação.',
+  404: 'Registro não encontrado.',
+  408: 'Tempo limite excedido. Tente novamente.',
+  409: 'Este registro já existe ou conflita com dados existentes.',
+  413: 'O arquivo enviado excede o tamanho permitido.',
+  429: 'Muitas tentativas. Aguarde alguns instantes antes de tentar novamente.',
+  500: 'Ocorreu um erro interno. Tente novamente em instantes.',
+  502: 'Serviço temporariamente indisponível.',
+  503: 'Serviço em manutenção. Tente novamente em breve.',
+  504: 'O servidor demorou para responder. Tente novamente.',
+};
+
+// NestJS/HTTP default strings that should never reach the user
+const TECHNICAL_MESSAGE_RE = /^(internal server error|unauthorized|forbidden(?: resource)?|not found|cannot (?:get|post|put|patch|delete) .+|bad request|unprocessable entity|conflict|too many requests|bad gateway|service unavailable|gateway timeout)$/i;
+
+const sanitizeBackendMessage = (raw) => {
+  if (!raw) return null;
+  const text = String(raw).trim();
+  if (!text || text.length > 280) return null; // empty or suspiciously long
+  if (TECHNICAL_MESSAGE_RE.test(text)) return null;
+  return text;
+};
+
 export const getApiErrorMessage = (error, fallback = 'Não foi possível concluir a operação.') => {
   const response = error?.response;
   if (!response) {
-    if (error?.code === 'ECONNABORTED') {
-      return 'Tempo limite excedido. Tente novamente.';
-    }
+    if (error?.code === 'ECONNABORTED') return 'Tempo limite excedido. Tente novamente.';
     return 'Não foi possível conectar ao servidor.';
   }
 
-  const message = readPayloadMessage(response.data);
-  if (message) return message;
-  if (typeof error?.message === 'string' && error.message.trim()) return error.message;
+  const status = Number(response.status || 0);
+
+  // Definitive friendly message for this status — always wins
+  if (HTTP_STATUS_MESSAGES[status]) return HTTP_STATUS_MESSAGES[status];
+
+  // For 400/422/401 and unmapped codes: try the backend message if it's user-readable
+  const clean = sanitizeBackendMessage(readPayloadMessage(response.data));
+  if (clean) return clean;
+
+  // Catch-all for unmapped 5xx
+  if (status >= 500) return 'Ocorreu um erro interno. Tente novamente em instantes.';
+
   return fallback;
 };
 

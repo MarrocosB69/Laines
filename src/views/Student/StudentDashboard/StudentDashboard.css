@@ -203,15 +203,14 @@
 
 .student-dashboard .patient-card {
   background: var(--bg-white);
-  padding: 1.5rem;
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  text-align: left;
   width: 100%;
   box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
-  cursor: pointer;
+  display: flex;
+  flex-direction: column;
   transition: all 0.2s ease;
 }
 
@@ -219,6 +218,27 @@
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
   border-color: rgba(29, 51, 80, 0.2);
+}
+
+.student-dashboard .patient-card__body {
+  flex: 1;
+  padding: 1.5rem;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  display: block;
+}
+
+.student-dashboard .patient-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-slate-light);
 }
 
 .student-dashboard .card-decoration {
@@ -260,7 +280,7 @@
   transition: all 0.2s ease;
 }
 
-.student-dashboard .patient-card:hover .patient-avatar {
+.student-dashboard .patient-card__body:hover .patient-avatar {
   background: rgba(29, 51, 80, 0.12);
   color: var(--primary-blue);
 }
@@ -270,9 +290,6 @@
   color: var(--primary-navy);
   font-size: var(--font-size-xl);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .student-dashboard .last-visit {
@@ -305,14 +322,13 @@
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: var(--space-4) var(--space-5);
+  gap: 0.75rem;
+  padding-right: 0.75rem;
   background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: 1rem;
   box-shadow: var(--shadow-sm);
-  cursor: pointer;
+  overflow: hidden;
   transition: all 0.2s ease;
 }
 
@@ -320,6 +336,26 @@
   border-color: rgba(29, 51, 80, 0.2);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.student-dashboard .patient-list-item__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: var(--space-4) 0.5rem var(--space-4) var(--space-5);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.student-dashboard .patient-list-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .student-dashboard .patient-list-main {
@@ -331,6 +367,37 @@
 .student-dashboard .patient-list-info {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.student-dashboard .pat-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--bg-slate-light);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  font-size: var(--font-size-xxs);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.student-dashboard .pat-action-btn:hover {
+  background: var(--primary-navy);
+  border-color: var(--primary-navy);
+  color: #fff;
+}
+
+.student-dashboard .pat-action-btn--labeled {
+  width: auto;
+  padding: 0 0.65rem;
+  font-size: 0.7rem;
 }
 
 .student-dashboard .loading-state,

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAINES — Fluxogramas do Sistema de Avaliação</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --brand:    #2c7a4e;
+      --brand-lt: #e8f5ee;
+      --text-1:   #1a1f2e;
+      --text-2:   #4b5563;
+      --surface:  #f9fafb;
+      --border:   #e5e7eb;
+      --white:    #ffffff;
+      --radius:   12px;
+
+      /* estágios */
+      --c-triagem:      #0ea5e9;
+      --c-corpo:        #8b5cf6;
+      --c-demanda:      #f59e0b;
+      --c-alimentar:    #10b981;
+      --c-multi:        #ec4899;
+      --c-conduta:      #ef4444;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--surface);
+      color: var(--text-1);
+      line-height: 1.6;
+    }
+
+    /* ── CAPA ── */
+    .capa {
+      background: linear-gradient(135deg, #1a3a2a 0%, #2c7a4e 60%, #3da668 100%);
+      color: #fff;
+      padding: 56px 40px 48px;
+      text-align: center;
+    }
+    .capa h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .capa p {
+      margin-top: 10px;
+      font-size: 1rem;
+      opacity: 0.85;
+      max-width: 620px;
+      margin-inline: auto;
+    }
+    .badge-liga {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 5px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.15);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* ── ÍNDICE ── */
+    .indice {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 40px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .indice a {
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--brand);
+      padding: 6px 14px;
+      border: 1.5px solid var(--brand);
+      border-radius: 999px;
+      transition: all .15s;
+    }
+    .indice a:hover {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 980px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    /* ── SEÇÃO ── */
+    .section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 40px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 22px 28px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      display: inline-block;
+      background: var(--brand);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .section-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-1);
+    }
+    .section-header p {
+      font-size: 0.88rem;
+      color: var(--text-2);
+      margin-top: 4px;
+    }
+    .section-body { padding: 28px; }
+
+    /* ── DIAGRAMA ── */
+    .diagram-wrap {
+      background: #fafafa;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 16px;
+      overflow-x: auto;
+      text-align: center;
+    }
+    .diagram-wrap .mermaid { display: inline-block; }
+
+    /* ── LEGENDA ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.79rem;
+      color: var(--text-2);
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── CALLOUT ── */
+    .callout {
+      margin-top: 20px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-size: 0.83rem;
+      line-height: 1.5;
+    }
+    .callout-info   { background: #eff6ff; border-left: 3px solid #3b82f6; color: #1e3a5f; }
+    .callout-warn   { background: #fffbeb; border-left: 3px solid #f59e0b; color: #78350f; }
+    .callout-danger { background: #fef2f2; border-left: 3px solid #ef4444; color: #7f1d1d; }
+    .callout strong { display: block; margin-bottom: 3px; font-size: 0.85rem; }
+
+    /* ── TABELA DE MÓDULOS ── */
+    .module-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 20px; }
+    .module-table th {
+      background: var(--brand-lt);
+      color: var(--brand);
+      font-weight: 700;
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 2px solid var(--brand);
+    }
+    .module-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .module-table tr:last-child td { border-bottom: none; }
+    .module-table tr:hover td { background: var(--surface); }
+    .etapa-badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .self-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: #fdf4ff;
+      color: #9333ea;
+      border: 1px solid #d8b4fe;
+    }
+
+    /* ── RESPONSIVO ── */
+    @media (max-width: 600px) {
+      .capa { padding: 36px 20px 32px; }
+      .indice { padding: 14px 16px; }
+      .section-body { padding: 18px; }
+      .diagram-wrap { padding: 12px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- CAPA -->
+<div class="capa">
+  <h1>Sistema de Avaliação LAINES</h1>
+  <p>Fluxogramas do processo clínico interprofissional — da triagem à conduta final</p>
+  <span class="badge-liga">Liga Acadêmica Interprofissional de Nutrição Esportiva · UFRN</span>
+</div>
+
+<!-- ÍNDICE -->
+<nav class="indice">
+  <a href="#fluxo-macroetapas">1. Fluxo das macroetapas</a>
+  <a href="#dependencias-reds">2. Dependências RED-S</a>
+  <a href="#participacao-perfis">3. Participação por perfil</a>
+  <a href="#modulos-detalhados">4. Módulos detalhados</a>
+</nav>
+
+<div class="container">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       DIAGRAMA 1 — FLUXO DAS MACROETAPAS
+  ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="fluxo-macroetapas">
+    <div class="section-header">
+      <span class="section-num">Fluxograma 1</span>
+      <h2>Fluxo das Macroetapas de Avaliação</h2>
+      <p>As seis etapas clínicas percorridas em cada sessão de avaliação, com os módulos que compõem cada uma.</p>
+    </div>
+    <div class="section-body">
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart TD
+    START(["🏁 Início da sessão\nde avaliação"])
+
+    subgraph E1["① TRIAGEM"]
+        T1["Anamnese inicial\nContexto clínico e objetivos"]
+        T2["Avaliação clínica\nSinais vitais e red flags"]
+        T3["Socioeconômica · EBIA\nSegurança alimentar"]
+    end
+
+    subgraph E2["② COMPOSIÇÃO CORPORAL"]
+        C1["Perímetros\nCircunferências e proporções"]
+        C2["Dobras cutâneas\nProtocolos de estimativa"]
+        C3["Bioimpedância\nComposição por BIA"]
+    end
+
+    subgraph E3["③ DEMANDA E PERFORMANCE"]
+        D1["Gasto energético total\nGET e faixas calóricas"]
+        D2["Carga de treino\nACWR, monotonia e strain"]
+    end
+
+    subgraph E4["④ ROTINA ALIMENTAR"]
+        A1["Avaliação alimentar\nDistribuição NOVA"]
+        A2["Hidratação\nBalanço hídrico"]
+    end
+
+    subgraph E5["⑤ MULTIPROFISSIONAL"]
+        M1["Psicologia\nEstado emocional e comportamento"]
+        M2["Fisioterapia\nAvaliação clínico-funcional"]
+    end
+
+    subgraph E6["⑥ CONDUTA"]
+        R1["Triagem RED-S\nDisponibilidade energética"]
+        R2["Exames laboratoriais\nAnalitos com referência"]
+        R3["Evolução / Retorno\nAdesão e conduta definida"]
+    end
+
+    END(["✅ Prontuário\natualizado"])
+
+    START --> E1
+    E1    --> E2
+    E2    --> E3
+    E3    --> E4
+    E4    --> E5
+    E5    --> E6
+    E6    --> END
+
+    style E1 fill:#e0f2fe,stroke:#0ea5e9,color:#0c4a6e
+    style E2 fill:#ede9fe,stroke:#8b5cf6,color:#3b0764
+    style E3 fill:#fef9c3,stroke:#f59e0b,color:#713f12
+    style E4 fill:#d1fae5,stroke:#10b981,color:#064e3b
+    style E5 fill:#fce7f3,stroke:#ec4899,color:#831843
+    style E6 fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style START fill:#1a3a2a,stroke:#1a3a2a,color:#fff
+    style END fill:#2c7a4e,stroke:#2c7a4e,color:#fff
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#0ea5e9"></span>① Triagem</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span>② Composição corporal</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>③ Demanda e performance</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span>④ Rotina alimentar</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ec4899"></span>⑤ Multiprofissional</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>⑥ Conduta</span>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Como ler este fluxo</strong>
+        A sequência não é rígida — qualquer módulo pode ser preenchido fora de ordem —, mas o sistema orienta a equipe a seguir este caminho porque cada etapa fornece insumos para a próxima. O prontuário do atleta é atualizado ao final de cada sessão.
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       DIAGRAMA 2 — DEPENDÊNCIAS DO RED-S
+  ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="dependencias-reds">
+    <div class="section-header">
+      <span class="section-num">Fluxograma 2</span>
+      <h2>Dependências da Triagem RED-S</h2>
+      <p>O cálculo de Disponibilidade Energética (DE) e o rastreio RED-S dependem de dados coletados em três etapas anteriores.</p>
+    </div>
+    <div class="section-body">
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart LR
+    subgraph COMP["② Composição corporal"]
+        CI["Bioimpedância ou Dobras Cutâneas\nMassa Magra calculada (kg) — mais recente"]
+    end
+
+    subgraph ALIM["④ Rotina alimentar"]
+        AV["Avaliação alimentar\nIngestão calórica (kcal/dia)"]
+    end
+
+    subgraph DEM["③ Demanda e performance"]
+        CT["Carga de treino\nGasto calórico exercício (kcal)"]
+    end
+
+    subgraph REDS["⑥ Conduta"]
+        DE["Cálculo de DE\nDE = (Ingestão − Gasto exerc.) ÷ Massa Magra"]
+        REDS_OUT["Triagem RED-S\nClassificação de risco"]
+        DE --> REDS_OUT
+    end
+
+    CI  -->|"massa magra (kg) — auto-derivada"| DE
+    AV  -->|"ingestão (kcal)"| DE
+    CT  -->|"gasto exercício (kcal)"| DE
+
+    REDS_OUT -->|"resultado clínico"| PRO["Prontuário\nAlerta automático se DE &lt; 30 kcal/kg MLG"]
+
+    style COMP   fill:#ede9fe,stroke:#8b5cf6,color:#3b0764
+    style ALIM   fill:#d1fae5,stroke:#10b981,color:#064e3b
+    style DEM    fill:#fef9c3,stroke:#f59e0b,color:#713f12
+    style REDS   fill:#fee2e2,stroke:#ef4444,color:#7f1d1d
+    style PRO    fill:#1a3a2a,stroke:#1a3a2a,color:#fff
+        </div>
+      </div>
+
+      <div class="callout callout-warn">
+        <strong>Por que a ordem importa aqui</strong>
+        A Disponibilidade Energética (DE) é a variável central do RED-S. Seu cálculo exige a massa magra (extraída automaticamente de Bioimpedância ou Dobras Cutâneas — a mais recente disponível), a ingestão calórica (Avaliação Alimentar) e o gasto calórico do exercício (Carga de Treino). O sistema avisa quando a triagem RED-S é aberta sem esses dados preenchidos.
+      </div>
+
+      <div class="callout callout-danger">
+        <strong>Limiar crítico</strong>
+        O sistema emite alerta automático no prontuário quando DE &lt; 30 kcal/kg de massa magra, valor que a literatura científica associa a risco iminente de Deficiência Energética Relativa no Esporte (RED-S).
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       DIAGRAMA 3 — PARTICIPAÇÃO POR PERFIL
+  ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="participacao-perfis">
+    <div class="section-header">
+      <span class="section-num">Fluxograma 3</span>
+      <h2>Participação por Perfil de Usuário</h2>
+      <p>Quem preenche cada módulo — a equipe clínica, o próprio atleta, ou ambos com revisão obrigatória.</p>
+    </div>
+    <div class="section-body">
+
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart TD
+    ATL(["🏃 Atleta\nAcesso próprio"])
+    EQP(["👩‍⚕️ Equipe clínica\nNutricionista · Fisioterapeuta\nPsicólogo · Estudante"])
+
+    subgraph AUTO["Preenchimento pelo Atleta (autoavaliação)"]
+        SA1["Avaliação alimentar\n(registro de consumo)"]
+        SA2["Hidratação\n(registro pré/pós treino)"]
+        SA3["Carga de treino\n(percepção de esforço)"]
+        SA4["Fisioterapia\n(dor e funcionalidade)"]
+    end
+
+    subgraph FILA["Fila de revisão"]
+        FILA1["Aguarda validação\nda equipe clínica"]
+    end
+
+    subgraph EQUIPE["Preenchimento pela Equipe (sessão presencial)"]
+        E1["Anamnese inicial"]
+        E2["Avaliação clínica"]
+        E3["Socioeconômica · EBIA"]
+        E4["Perímetros"]
+        E5["Dobras cutâneas"]
+        E6["Bioimpedância"]
+        E7["Composição integrada"]
+        E8["Gasto energético total"]
+        E9["Psicologia"]
+        E10["Triagem RED-S"]
+        E11["Exames laboratoriais"]
+        E12["Evolução / Retorno"]
+    end
+
+    PRONTUARIO(["📋 Prontuário\ndo Atleta"])
+
+    ATL  --> AUTO
+    AUTO --> FILA
+    FILA -->|"após revisão"| PRONTUARIO
+
+    EQP  --> EQUIPE
+    EQUIPE --> PRONTUARIO
+
+    style AUTO    fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style FILA    fill:#fffbeb,stroke:#f59e0b,color:#78350f
+    style EQUIPE  fill:#e0f2fe,stroke:#0ea5e9,color:#0c4a6e
+    style PRONTUARIO fill:#1a3a2a,stroke:#1a3a2a,color:#fff
+    style ATL  fill:#fdf4ff,stroke:#a855f7,color:#581c87
+    style EQP  fill:#e0f2fe,stroke:#0ea5e9,color:#0c4a6e
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#a855f7"></span>Preenchido pelo atleta</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Aguarda revisão clínica</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#0ea5e9"></span>Preenchido pela equipe</span>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Mecanismo de autoavaliação</strong>
+        O atleta pode registrar dados de consumo alimentar, hidratação, carga de treino e sintomas físicos diretamente pelo sistema, sem depender de uma consulta presencial. Esses registros entram em uma fila de revisão e só são incorporados ao prontuário oficial após validação da equipe clínica — garantindo a integridade dos dados clínicos.
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       TABELA 4 — MÓDULOS DETALHADOS
+  ══════════════════════════════════════════════════════════════ -->
+  <section class="section" id="modulos-detalhados">
+    <div class="section-header">
+      <span class="section-num">Tabela de referência</span>
+      <h2>Todos os Módulos de Avaliação</h2>
+      <p>Visão consolidada das 16 avaliações, com etapa, descrição e responsável pelo preenchimento.</p>
+    </div>
+    <div class="section-body">
+      <table class="module-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Módulo</th>
+            <th>Etapa</th>
+            <th>O que coleta / calcula</th>
+            <th>Quem preenche</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Anamnese inicial</strong></td>
+            <td><span class="etapa-badge" style="background:#0ea5e9">Triagem</span></td>
+            <td>Histórico, objetivos, score de risco clínico e prioridade de atendimento</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Avaliação clínica</strong></td>
+            <td><span class="etapa-badge" style="background:#0ea5e9">Triagem</span></td>
+            <td>Pressão arterial, FC, red flags cardiovasculares, classificação HAS 2016</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Socioeconômica · EBIA</strong></td>
+            <td><span class="etapa-badge" style="background:#0ea5e9">Triagem</span></td>
+            <td>14 perguntas EBIA, pontuação de insegurança alimentar por faixa</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Perímetros</strong></td>
+            <td><span class="etapa-badge" style="background:#8b5cf6">Composição</span></td>
+            <td>Peso, estatura, IMC, circunferências abdominais, RCQ e RCE</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Dobras cutâneas</strong></td>
+            <td><span class="etapa-badge" style="background:#8b5cf6">Composição</span></td>
+            <td>Somatório de dobras, % gordura por protocolo (Siri / Brözek), densidade corporal</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Bioimpedância</strong></td>
+            <td><span class="etapa-badge" style="background:#8b5cf6">Composição</span></td>
+            <td>% gordura, massa magra, água total, FFMI via BIA</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Gasto energético total</strong></td>
+            <td><span class="etapa-badge" style="background:#f59e0b">Demanda</span></td>
+            <td>GET via Mifflin-St Jeor, fator de atividade, faixas calóricas por objetivo</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Carga de treino</strong></td>
+            <td><span class="etapa-badge" style="background:#f59e0b">Demanda</span></td>
+            <td>ACWR, monotonia, strain, fase de periodização, gasto calórico semanal</td>
+            <td>Equipe / <span class="self-badge">Atleta ✦</span></td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>Avaliação alimentar</strong></td>
+            <td><span class="etapa-badge" style="background:#10b981">Alimentar</span></td>
+            <td>Distribuição calórica por grupos NOVA (in natura, processado, ultraprocessado)</td>
+            <td>Equipe / <span class="self-badge">Atleta ✦</span></td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td><strong>Hidratação</strong></td>
+            <td><span class="etapa-badge" style="background:#10b981">Alimentar</span></td>
+            <td>Peso pré/pós exercício, perda hídrica percentual, estratégia de reposição</td>
+            <td>Equipe / <span class="self-badge">Atleta ✦</span></td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td><strong>Psicologia</strong></td>
+            <td><span class="etapa-badge" style="background:#ec4899">Multiprofissional</span></td>
+            <td>Estado emocional, nível de estresse, comportamento alimentar</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td><strong>Fisioterapia</strong></td>
+            <td><span class="etapa-badge" style="background:#ec4899">Multiprofissional</span></td>
+            <td>Avaliação clínico-funcional, dor, amplitude de movimento, funcionalidade</td>
+            <td>Equipe / <span class="self-badge">Atleta ✦</span></td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td><strong>Triagem RED-S</strong></td>
+            <td><span class="etapa-badge" style="background:#ef4444">Conduta</span></td>
+            <td>Disponibilidade energética (DE), score LEAFq, classificação de risco RED-S</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>14</td>
+            <td><strong>Exames laboratoriais</strong></td>
+            <td><span class="etapa-badge" style="background:#ef4444">Conduta</span></td>
+            <td>Painel de analitos com classificação por faixa de referência (normal/limítrofe/alterado)</td>
+            <td>Equipe</td>
+          </tr>
+          <tr>
+            <td>15</td>
+            <td><strong>Evolução / Retorno</strong></td>
+            <td><span class="etapa-badge" style="background:#ef4444">Conduta</span></td>
+            <td>Score de adesão ao plano alimentar e à atividade física, conduta e data de retorno</td>
+            <td>Equipe</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top: 12px; font-size: 0.79rem; color: var(--text-2);">
+        <span class="self-badge">Atleta ✦</span> — módulos que o atleta pode preencher via autoavaliação, sujeitos a revisão obrigatória pela equipe clínica antes de integrarem o prontuário.
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- /container -->
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
+      fontSize: '13px',
+      primaryColor: '#e0f2fe',
+      primaryTextColor: '#0c4a6e',
+      primaryBorderColor: '#0ea5e9',
+      lineColor: '#94a3b8',
+      secondaryColor: '#f8fafc',
+      tertiaryColor: '#f1f5f9'
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+      useMaxWidth: true
+    }
+  });
+</script>
+</body>
+</html>

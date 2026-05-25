@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   Optional,
   UnauthorizedException
 } from '@nestjs/common';
@@ -15,10 +16,12 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RecoverPasswordDto } from './dto/recover-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { LoginAttemptsService } from './login-attempts.service';
 import { ObservabilityService } from '../observability/observability.service';
 import { RefreshTokensService } from './refresh-tokens.service';
+import { SettingsService } from '../settings/settings.service';
 
 type AuthenticatedIdentity = {
   id: string;
@@ -54,6 +57,8 @@ type AuthResult = {
   refreshToken?: string;
   refreshTokenExpiresAt?: string;
 };
+
+const AUTH_FLOW_V1_REMOVAL_DATE = '2026-08-31';
 
 class AsyncConcurrencyLimiter {
   private active = 0;
@@ -91,6 +96,7 @@ class AsyncConcurrencyLimiter {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly compareLimiter: AsyncConcurrencyLimiter;
   private readonly newAuthFlowEnabled: boolean;
   private readonly accessTokenExpiresIn: string;
@@ -98,6 +104,8 @@ export class AuthService {
   private readonly jwtAudience: string;
   private readonly passwordCompareSuccessCacheMs: number;
   private readonly passwordCompareMaxCacheEntries: number;
+  // AVISO: este estado é in-process. PM2 cluster mode desabilitado é obrigatório
+  // enquanto esta implementação estiver ativa. Ver docs/deploy.md.
   private readonly passwordCompareSuccessCache = new Map<string, { expiresAt: number }>();
   private readonly passwordCompareInFlight = new Map<string, Promise<boolean>>();
   private readonly loginResponseInFlight = new Map<string, Promise<AuthResult>>();
@@ -108,6 +116,7 @@ export class AuthService {
     private readonly loginAttempts: LoginAttemptsService,
     private readonly config: ConfigService,
     private readonly refreshTokens: RefreshTokensService,
+    @Optional() private readonly settingsService?: SettingsService,
     @Optional() private readonly observability?: ObservabilityService
   ) {
     const configuredConcurrency = Number(this.config.get('auth.passwordCompareConcurrency') || 2);
@@ -244,6 +253,76 @@ export class AuthService {
     return normalized === 'v2' ? 'v2' : 'v1';
   }
 
+  private warnDeprecatedAuthFlowV1(email: string) {
+    this.logger.warn(
+      `authFlow v1 está depreciado. Usuário ${email} ainda usa v1. Remoção planejada: ${AUTH_FLOW_V1_REMOVAL_DATE}. Ativar AUTH_NEW_FLOW_ENABLED=true.`
+    );
+  }
+
+  private async resolveAccessTokenExpiresIn(authFlow: AuthFlowVersion) {
+    if (authFlow !== 'v2' || !this.settingsService) {
+      return this.accessTokenExpiresIn;
+    }
+
+    try {
+      const sessionTimeoutMinutes = await this.settingsService.getSessionTimeoutMinutes();
+      if (Number.isFinite(Number(sessionTimeoutMinutes))) {
+        const bounded = Math.min(Math.max(Math.trunc(Number(sessionTimeoutMinutes)), 5), 120);
+        return `${bounded}m`;
+      }
+    } catch {
+      // Mantem fallback para configuracao estatica se leitura de settings falhar.
+    }
+
+    return this.accessTokenExpiresIn;
+  }
+
+  private normalizeCpf(cpf?: string) {
+    const digits = String(cpf || '').replace(/\D/g, '');
+    return digits.length === 11 ? digits : '';
+  }
+
+  private normalizeBirthDate(value?: string | Date | null) {
+    if (!value) return '';
+    const normalized = String(value).trim();
+    if (!normalized) return '';
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+  }
+
+  private normalizeRecoveryIdentifier(identifier?: string) {
+    const normalized = String(identifier || '').trim().toLowerCase();
+    if (!normalized) return { raw: '', email: '', cpf: '' };
+
+    if (normalized.includes('@')) {
+      return { raw: normalized, email: normalized, cpf: '' };
+    }
+
+    const cpf = this.normalizeCpf(normalized);
+    return {
+      raw: normalized,
+      email: cpf ? `${cpf}@laines.ufrn.br` : '',
+      cpf
+    };
+  }
+
+  private async resolveRecoveryIdentityUser(identifier: string) {
+    const parsed = this.normalizeRecoveryIdentifier(identifier);
+    if (!parsed.raw) return null;
+
+    if (parsed.cpf) {
+      const byCpf = await this.users.findByCpf(parsed.cpf);
+      if (byCpf) return byCpf;
+    }
+
+    if (parsed.email) {
+      return this.users.findByEmail(parsed.email);
+    }
+
+    return null;
+  }
+
   private ensureActiveUserOrThrow(user: AuthenticatedIdentity | null | undefined, contextMessage = 'Sessao invalida.') {
     if (!user || !user.id) {
       throw new UnauthorizedException(contextMessage);
@@ -262,9 +341,10 @@ export class AuthService {
       sv: Number(user.sessionVersion || 1),
       typ: 'access'
     };
+    const expiresIn = await this.resolveAccessTokenExpiresIn(authFlow);
     const tokenStartedAt = Date.now();
     const signOptions: JwtSignOptions = {
-      expiresIn: this.accessTokenExpiresIn as JwtSignOptions['expiresIn'],
+      expiresIn: expiresIn as JwtSignOptions['expiresIn'],
       issuer: this.jwtIssuer,
       audience: this.jwtAudience
     };
@@ -277,6 +357,9 @@ export class AuthService {
 
   private async buildAuthResponse(user: AuthenticatedIdentity, input: BuildAuthResponseInput): Promise<AuthResult> {
     const authFlow = this.normalizeAuthFlow(input.authFlow);
+    if (authFlow === 'v1') {
+      this.warnDeprecatedAuthFlowV1(user.email);
+    }
     const accessToken = await this.signAccessToken(user, authFlow);
     const result: AuthResult = {
       accessToken,
@@ -332,13 +415,13 @@ export class AuthService {
   async login(dto: LoginDto, clientIp?: string, userAgent?: string, authFlow: AuthFlowVersion = 'v1') {
     const loginStartedAt = Date.now();
     const loginEmail = dto.email.toLowerCase().trim();
-    this.loginAttempts.assertNotBlocked(loginEmail, clientIp);
+    await this.loginAttempts.assertNotBlocked(loginEmail, clientIp);
 
     const lookupStartedAt = Date.now();
     const user = await this.users.findAuthByEmail(loginEmail);
     this.recordOp('auth.login.user_lookup', Date.now() - lookupStartedAt, 'POST /auth/login');
     if (!user) {
-      this.loginAttempts.registerFailure(loginEmail, clientIp);
+      await this.loginAttempts.registerFailure(loginEmail, clientIp);
       this.recordOp('auth.login.total', Date.now() - loginStartedAt, 'POST /auth/login', true);
       throw new UnauthorizedException('Credenciais invalidas.');
     }
@@ -350,7 +433,7 @@ export class AuthService {
       user.passwordHash
     );
     if (!valid) {
-      this.loginAttempts.registerFailure(loginEmail, clientIp);
+      await this.loginAttempts.registerFailure(loginEmail, clientIp);
       this.recordOp('auth.login.total', Date.now() - loginStartedAt, 'POST /auth/login', true);
       throw new UnauthorizedException('Credenciais invalidas.');
     }
@@ -359,7 +442,7 @@ export class AuthService {
       throw new ForbiddenException('Conta inativa. Procure a administracao.');
     }
 
-    this.loginAttempts.clear(loginEmail, clientIp);
+    await this.loginAttempts.clear(loginEmail, clientIp);
 
     const normalizedAuthFlow = this.normalizeAuthFlow(authFlow);
     const responseIssueKey = this.buildLoginIssueKey(
@@ -480,6 +563,68 @@ export class AuthService {
       passwordUpdatedAt: new Date()
     });
     await this.refreshTokens.revokeAllForUser(userId);
+
+    return { success: true };
+  }
+
+  async recoverPassword(dto: RecoverPasswordDto) {
+    const normalizedIdentifier = this.normalizeRecoveryIdentifier(dto.identifier);
+    if (!normalizedIdentifier.raw) {
+      throw new BadRequestException('Identificador invalido.');
+    }
+
+    const attemptKey = `recover:${normalizedIdentifier.raw}`;
+    await this.loginAttempts.assertNotBlocked(attemptKey);
+
+    const user = await this.resolveRecoveryIdentityUser(normalizedIdentifier.raw);
+    if (!user) {
+      await this.loginAttempts.registerFailure(attemptKey);
+      throw new UnauthorizedException('Nao foi possivel validar os dados informados.');
+    }
+
+    if (String(user.status || '').toLowerCase() !== 'ativo') {
+      await this.loginAttempts.registerFailure(attemptKey);
+      throw new ForbiddenException('Conta inativa. Procure a administracao.');
+    }
+
+    const storedCpf = this.normalizeCpf(user.cpf);
+    const providedCpf = this.normalizeCpf(dto.cpf);
+    const storedBirthDate = this.normalizeBirthDate(user.dataNascimento);
+    const providedBirthDate = this.normalizeBirthDate(dto.dataNascimento);
+
+    if (!storedCpf || !storedBirthDate) {
+      throw new BadRequestException('Recuperacao indisponivel para esta conta. Procure a administracao.');
+    }
+
+    if (
+      !providedCpf
+      || !providedBirthDate
+      || storedCpf !== providedCpf
+      || storedBirthDate !== providedBirthDate
+    ) {
+      await this.loginAttempts.registerFailure(attemptKey);
+      throw new UnauthorizedException('Nao foi possivel validar os dados informados.');
+    }
+
+    const emailLocalPart = String(user.email || '').split('@')[0].toLowerCase();
+    if (emailLocalPart.length >= 4 && dto.newPassword.toLowerCase().includes(emailLocalPart)) {
+      throw new BadRequestException('A nova senha nao deve conter seu identificador de login.');
+    }
+
+    const currentMatches = await bcrypt.compare(dto.newPassword, user.passwordHash);
+    if (currentMatches) {
+      throw new BadRequestException('A nova senha deve ser diferente da senha atual.');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.users.updatePasswordAndRevokeSessions(user.id, {
+      passwordHash,
+      mustChangePassword: false,
+      tempPassword: null,
+      passwordUpdatedAt: new Date()
+    });
+    await this.refreshTokens.revokeAllForUser(user.id);
+    await this.loginAttempts.clear(attemptKey);
 
     return { success: true };
   }

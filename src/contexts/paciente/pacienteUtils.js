@@ -1,5 +1,6 @@
 import { toDate, formatDate as formatDateUtil } from '../../utils/dateUtils';
 import { getSkinfoldProtocolRequiredFields } from '../../services/calculationEngine';
+import { EVALUATION_REGISTRY_BY_TYPE } from '../../constants/evaluationRegistry';
 
 
 export const convertFirebaseDate = (dateValue) => toDate(dateValue);
@@ -139,43 +140,6 @@ const resolveDobrasFieldValue = (avaliacao, field) => {
 export const buildAvaliacaoMeta = (avaliacao) => {
   const tipo = String(avaliacao?.tipo || '').trim().toLowerCase();
 
-  const requiredByTipo = {
-    bioimpedancia: ['percentualGordura', 'massaMagra', 'aguaTotal'],
-    dobras_cutaneas: [],
-    perimetros: ['peso', 'estatura'],
-    composicao_corporal_integrada: [
-      'fonte_oficial',
-      'percentualGorduraOficial',
-      'massaMagraOficialKg',
-      'tmbSelecionadaKcal'
-    ],
-    gasto_energetico_total: [
-      'tmbBaseKcal',
-      'fatorAtividade',
-      'getEstimadoKcal'
-    ],
-    anamnese_inicial: [
-      'nomePaciente',
-      'sexoBiologico',
-      'objetivos',
-      'scoreRisco',
-      'prioridade'
-    ],
-    avaliacao_clinica: [
-      'pressaoSistolica',
-      'pressaoDiastolica',
-      'frequenciaCardiaca',
-      'prioridadeCuidado'
-    ],
-    alimentar: ['categorias'],
-    hidratacao: ['pesoAntesExercicio', 'pesoAposExercicio', 'duracaoExercicioMin', 'perdaPesoPercentual'],
-    avaliacao_socioeconomica: ['temMenores', 'pontuacaoEBIA', 'classificacaoLabel'],
-    fisioterapia: ['queixaPrincipal', 'intensidadeDor'],
-    psicologia: ['objetivo', 'estresse'],
-    exames_laboratoriais: ['painel', 'analitos'],
-    evolucao_retorno: ['adesaoPlanoAlimentar', 'adesaoAtividadeFisica', 'scoreAdesaoGeral']
-  };
-
   const labels = {
     percentualGordura: 'Percentual de gordura',
     massaMagra: 'Massa magra',
@@ -230,10 +194,15 @@ export const buildAvaliacaoMeta = (avaliacao) => {
     analitos: 'Analitos',
     adesaoPlanoAlimentar: 'Adesao ao plano alimentar',
     adesaoAtividadeFisica: 'Adesao a atividade fisica',
-    scoreAdesaoGeral: 'Score de adesao geral'
+    scoreAdesaoGeral: 'Score de adesao geral',
+    disponibilidadeEnergetica: 'Disponibilidade energetica',
+    scoreLeafQ: 'Score de rastreio RED-S',
+    faseAtual: 'Fase atual',
+    sessoesSemana: 'Sessoes da semana',
+    cargaSemanaAtual: 'Carga semanal atual'
   };
 
-  let requiredFields = requiredByTipo[tipo] || [];
+  let requiredFields = EVALUATION_REGISTRY_BY_TYPE[tipo]?.requiredFields || [];
   let dobrasMeta = null;
 
   if (tipo === 'dobras_cutaneas') {

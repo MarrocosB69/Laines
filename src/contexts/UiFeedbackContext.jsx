@@ -118,7 +118,14 @@ export const UiFeedbackProvider = ({ children }) => {
               </button>
             </div>
             <div className="ui-confirm-body app-modal-body">
-              <p>{confirmation.message}</p>
+              {confirmation.message && <p>{confirmation.message}</p>}
+              {Array.isArray(confirmation.details) && confirmation.details.length > 0 && (
+                <ul className="ui-confirm-details">
+                  {confirmation.details.map((item, i) => (
+                    <li key={`${String(item)}-${i}`}>{item}</li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="ui-confirm-actions app-modal-footer">
               <div className="app-modal-actions">

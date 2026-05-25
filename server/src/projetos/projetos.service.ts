@@ -12,6 +12,7 @@ import { AtualizarProjetoDto } from './dto/atualizar-projeto.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { Paciente } from '../pacientes/paciente.entity';
 import { User } from '../users/user.entity';
+import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 import {
   AuthenticatedUser,
   hasGlobalAccess,
@@ -26,8 +27,39 @@ export class ProjetosService {
     @InjectRepository(Projeto) private repo: Repository<Projeto>,
     @InjectRepository(Paciente) private pacientesRepo: Repository<Paciente>,
     @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(Avaliacao) private avaliacoesRepo: Repository<Avaliacao>,
     private realtime: RealtimeGateway
   ) {}
+
+  private async syncProjectNameDenormalizations(projectId: string, projectName?: string | null) {
+    const normalizedProjectId = String(projectId || '').trim();
+    if (!normalizedProjectId) return;
+    const normalizedProjectName = String(projectName || '').trim() || undefined;
+
+    await Promise.all([
+      this.usersRepo.createQueryBuilder()
+        .update(User)
+        .set({
+          projetoNome: normalizedProjectName
+        })
+        .where('projeto_id = :projectId', { projectId: normalizedProjectId })
+        .execute(),
+      this.pacientesRepo.createQueryBuilder()
+        .update(Paciente)
+        .set({
+          projetoNome: normalizedProjectName
+        })
+        .where('projeto_id = :projectId', { projectId: normalizedProjectId })
+        .execute(),
+      this.avaliacoesRepo.createQueryBuilder()
+        .update(Avaliacao)
+        .set({
+          projetoNome: normalizedProjectName
+        })
+        .where('projeto_id = :projectId', { projectId: normalizedProjectId })
+        .execute()
+    ]);
+  }
 
   private async validarLimiteAlunos(alunosIds: string[] | undefined, projetoId?: string) {
     const ids = Array.from(new Set((alunosIds || []).filter(Boolean)));
@@ -206,6 +238,9 @@ export class ProjetosService {
     await this.repo.update(id, payload);
     const updated = await this.findByIdRaw(id);
     if (updated) {
+      if (Object.prototype.hasOwnProperty.call(dto, 'nome')) {
+        await this.syncProjectNameDenormalizations(updated.id, updated.nome);
+      }
       this.realtime.emit('projetos.updated', updated);
     }
     return updated;

@@ -1,36 +1,27 @@
 :root {
-  --pron-bg: #f8fafc;
-  --pron-card-bg: #ffffff;
-  --pron-surface-soft: #f1f5f9;
-  --pron-border: rgba(0, 0, 0, 0.07);
-  --pron-border-hover: rgba(0, 0, 0, 0.15);
-  --pron-border-strong: rgba(15, 23, 42, 0.2);
-  --pron-text-primary: #0f172a;
-  --pron-text-secondary: #64748b;
-  --pron-text-muted: #94a3b8;
-  --pron-accent: #1d9e75;
-  --pron-accent-light: rgba(29, 158, 117, 0.08);
+  /* ── Vars não cobertas pelo theme.css bridge ─────────────────── */
+  /* Cores semânticas de status são herdadas de theme.css          */
+  --pron-surface-soft:   var(--color-surface-soft);
+  --pron-border-strong:  var(--color-border-strong);
+  --pron-text-secondary: var(--color-text-secondary);
+  --pron-text-muted:     var(--color-text-muted);
+
+  /* ── Escala de border-radius ─────────────────────────────────── */
   --pron-radius-sm: 8px;
   --pron-radius-md: 12px;
   --pron-radius-lg: 16px;
   --pron-radius-xl: 20px;
-  --pron-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --pron-shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.06);
-  --pron-shadow-hover: 0 12px 30px rgba(15, 23, 42, 0.1);
-  --pron-ok: #16a34a;
-  --pron-ok-bg: #f0fdf4;
-  --pron-warn: #d97706;
-  --pron-warn-bg: #fffbeb;
-  --pron-danger: #dc2626;
-  --pron-danger-bg: #fef2f2;
-  --pron-info: #2563eb;
-  --pron-info-bg: #eff6ff;
+
+  /* ── Sombras — usando paleta navy ────────────────────────────── */
+  --pron-shadow:       0 1px 3px rgba(29, 51, 80, 0.07), 0 1px 2px rgba(29, 51, 80, 0.04);
+  --pron-shadow-soft:  0 8px 24px rgba(29, 51, 80, 0.06);
+  --pron-shadow-hover: 0 12px 30px rgba(29, 51, 80, 0.10);
 }
 
 .pron-page {
   background:
-    radial-gradient(circle at 0% 0%, rgba(29, 158, 117, 0.08), transparent 34%),
-    radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.06), transparent 28%),
+    radial-gradient(circle at 0% 0%, rgba(116, 168, 101, 0.08), transparent 34%),
+    radial-gradient(circle at 100% 0%, rgba(86, 173, 219, 0.06), transparent 28%),
     var(--pron-bg);
   min-height: 100vh;
   padding: 22px;
@@ -54,7 +45,7 @@
 }
 
 .pron-card:hover {
-  border-color: rgba(29, 158, 117, 0.22);
+  border-color: rgba(116, 168, 101, 0.28);
   box-shadow: var(--pron-shadow-hover);
 }
 
@@ -105,7 +96,7 @@
   inset: 0 auto auto 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, var(--pron-accent), rgba(29, 158, 117, 0.2));
+  background: linear-gradient(90deg, var(--pron-accent), rgba(116, 168, 101, 0.2));
 }
 
 .pron-header-left {
@@ -170,13 +161,13 @@
 .pron-badge-accent {
   background: var(--pron-accent-light);
   color: var(--pron-accent);
-  border-color: rgba(29, 158, 117, 0.25);
+  border-color: rgba(116, 168, 101, 0.3);
 }
 
 .pron-badge-ok {
   background: var(--pron-ok-bg);
   color: var(--pron-ok);
-  border-color: rgba(22, 163, 74, 0.25);
+  border-color: rgba(116, 168, 101, 0.3);
 }
 
 .pron-badge-warn {
@@ -283,9 +274,9 @@
 }
 
 .pron-tab.active {
-  color: #0b7a5a;
-  background: rgba(29, 158, 117, 0.1);
-  border-color: rgba(29, 158, 117, 0.22);
+  color: var(--color-green-dark);
+  background: var(--pron-accent-light);
+  border-color: rgba(116, 168, 101, 0.28);
   font-weight: 500;
 }
 
@@ -299,7 +290,7 @@
 .pron-link-btn:focus-visible,
 .pron-icon-btn:focus-visible,
 .pron-upload:focus-within {
-  outline: 2px solid rgba(29, 158, 117, 0.45);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -340,6 +331,84 @@
   font-size: 12px;
 }
 
+.athlete-form-release-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-md);
+  background: var(--pron-surface-soft);
+}
+
+.athlete-form-release-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.athlete-form-release-head h3 {
+  margin: 0;
+  color: var(--pron-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.athlete-form-release-head p {
+  margin: 4px 0 0;
+  color: var(--pron-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.athlete-form-release-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.athlete-form-release-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-sm);
+  background: var(--pron-card-bg);
+}
+
+.athlete-form-release-item-enabled {
+  border-color: rgba(116, 168, 101, 0.36);
+  background: var(--pron-ok-bg);
+}
+
+.athlete-form-release-item strong,
+.athlete-form-release-item span,
+.athlete-form-release-item small {
+  display: block;
+}
+
+.athlete-form-release-item strong {
+  color: var(--pron-text-primary);
+  font-size: 13px;
+}
+
+.athlete-form-release-item span {
+  margin-top: 3px;
+  color: var(--pron-text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.athlete-form-release-item small {
+  margin-top: 5px;
+  color: var(--pron-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .pron-divider {
   border-top: 0.5px solid var(--pron-border);
   margin: 14px 0;
@@ -377,7 +446,7 @@
   top: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, rgba(29, 158, 117, 0.85), rgba(29, 158, 117, 0.15));
+  background: linear-gradient(90deg, var(--pron-accent), rgba(116, 168, 101, 0.15));
 }
 
 .metric-label {
@@ -432,6 +501,10 @@
 
 .pron-avaliacao-card.status-pendente {
   border-left: 3px solid var(--pron-warn);
+}
+
+.pron-avaliacao-card.status-rascunho {
+  border-left: 3px dashed rgba(29, 51, 80, 0.28);
 }
 
 .pron-avaliacao-card.status-nao_realizada {
@@ -704,8 +777,8 @@
 .pron-filters-grid select:focus,
 .pron-filters-grid input:focus {
   outline: none;
-  border-color: rgba(29, 158, 117, 0.45);
-  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.12);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-light);
 }
 
 .status-realizada {
@@ -810,8 +883,8 @@
 }
 
 .pron-attachment-open:hover:not(:disabled) {
-  border-color: rgba(29, 158, 117, 0.34);
-  background: rgba(29, 158, 117, 0.04);
+  border-color: rgba(116, 168, 101, 0.35);
+  background: rgba(116, 168, 101, 0.04);
 }
 
 .pron-attachment-open strong {
@@ -941,6 +1014,44 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ─── Revisão de envios do atleta ──────────────────────── */
+.pron-btn-sm { padding: 5px 9px; font-size: 12px; border-radius: 6px; }
+
+.pron-revisao-atleta { border-left: 3px solid var(--pron-warn); }
+
+.pron-revisao-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pron-revisao-item {
+  border: 0.5px solid var(--pron-border);
+  border-radius: var(--pron-radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--pron-card-bg);
+}
+
+.pron-revisao-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pron-revisao-item__info strong { font-size: 13px; color: var(--pron-text); }
+.pron-revisao-item__info span { font-size: 12px; }
+.pron-revisao-item__snippet {
+  font-size: 11.5px;
+  color: var(--pron-text-secondary);
+  font-style: italic;
 }
 
 .pron-error,

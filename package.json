@@ -22,6 +22,7 @@
     "assess:perf": "node scripts/perf-load-assessment.mjs",
     "assess:browser": "node scripts/browser-assessment.mjs",
     "test:e2e:env": "node scripts/verify-e2e-env.mjs",
+    "seed": "npm --prefix server run seed",
     "seed:e2e": "npm --prefix server run seed:e2e",
     "seed:loadtest": "node server/scripts/seed-load-usage.js",
     "seed:ci:users": "node -r ./server/node_modules/dotenv/config server/scripts/seed-ci-users.js dotenv_config_path=server/.env",
@@ -36,17 +37,19 @@
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@tailwindcss/vite": "^4.1.18",
-    "axios": "^1.13.2",
+    "axios": "^1.16.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.25.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.11.0",
-    "recharts": "^3.6.0"
+    "recharts": "^3.6.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.59.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
@@ -56,11 +59,11 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "playwright": "^1.58.2",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.14",
     "stylelint": "^17.6.0",
     "stylelint-config-standard": "^40.0.0",
     "tailwindcss": "^4.1.18",
-    "vite": "^7.2.4"
+    "vite": "^7.3.3"
   },
   "overrides": {
     "picomatch": "^4.0.4"

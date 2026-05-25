@@ -1,11 +1,17 @@
 const fs = require('fs');
 const path = require('path');
-const { Client } = require('pg');
-const bcrypt = require('bcryptjs');
 
 require('dotenv').config({
   path: process.env.DOTENV_CONFIG_PATH || path.resolve(__dirname, '..', '.env')
 });
+
+if (process.env.NODE_ENV === 'production') {
+  console.error('BLOQUEADO: seed-ci-users não pode rodar em produção.');
+  process.exit(1);
+}
+
+const { Client } = require('pg');
+const bcrypt = require('bcryptjs');
 
 const buildDbConfig = () => ({
   host: process.env.DB_HOST || '127.0.0.1',

@@ -37,12 +37,14 @@ const hasMaintenanceBypass = (req: Request, maintenanceToken: string) => {
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
   const config = app.get(ConfigService);
   const observability = app.get(ObservabilityService);
   const nodeEnv = String(config.get('nodeEnv') || 'development');
   const isProduction = nodeEnv === 'production';
+  const rawCorsOrigin = String(process.env.CORS_ORIGIN || '').trim();
   const allowedOrigins = String(config.get('corsOrigin') || '')
     .split(',')
     .map((origin) => origin.trim())
@@ -56,8 +58,8 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   const trustProxy = parseTrustProxy(String(config.get('security.trustProxy') || 'false'));
 
-  if (isProduction && allowAllOrigins) {
-    logger.warn('CORS_ORIGIN=* em producao aumenta superficie de risco.');
+  if (isProduction && (!rawCorsOrigin || allowAllOrigins)) {
+    throw new Error('BLOQUEADO: CORS_ORIGIN deve ser explicito em producao e nao pode ser "*". Ex.: CORS_ORIGIN=https://laines.app,https://www.laines.app');
   }
   if (Boolean(config.get('db.sync')) && nodeEnv !== 'development') {
     throw new Error('DB_SYNC=true so e permitido em desenvolvimento. Use migrations.');
@@ -88,6 +90,7 @@ async function bootstrap() {
         callback(null, true);
         return;
       }
+      logger.warn(`Origem CORS rejeitada: ${origin}`);
       // Nega CORS sem gerar erro interno 500.
       callback(null, false);
     },
@@ -207,12 +210,14 @@ async function bootstrap() {
     });
   });
 
-  await app.listen(port, '0.0.0.0');
+  const host = String(process.env.HOST || process.env.BIND_HOST || '0.0.0.0').trim() || '0.0.0.0';
+  await app.listen(port, host);
   const httpServer = app.getHttpServer() as { maxConnections?: number; keepAliveTimeout?: number; headersTimeout?: number };
   if (httpServer && Number.isFinite(backlog)) {
     httpServer.maxConnections = backlog;
   }
-  logger.log(`API running on http://localhost:${port}`);
+  const displayHost = host === '0.0.0.0' ? 'localhost' : host;
+  logger.log(`API running on http://${displayHost}:${port}`);
 }
 
 bootstrap();

@@ -18,8 +18,9 @@ const emptyToUndefined = ({ value }: { value: unknown }) => {
 };
 
 export class CreateUserDto {
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @IsString()
   @MinLength(2)

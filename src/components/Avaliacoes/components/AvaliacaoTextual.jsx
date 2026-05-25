@@ -99,7 +99,7 @@ const AvaliacaoTextual = ({
     config,
     currentSessionId,
     formData,
-    moduleSnapshot?.sessaoId,
+    moduleSnapshot,
     onAutoSave,
     onSalvar,
     pacienteId,
@@ -120,7 +120,7 @@ const AvaliacaoTextual = ({
   useEffect(() => {
     if (readOnly || !onAutoSave || !hasValues) return undefined;
     clearTimeout(autoSaveRef.current);
-    autoSaveRef.current = setTimeout(() => dispatchSalvar(true), 900);
+    autoSaveRef.current = setTimeout(() => dispatchSalvar(true), 3500);
     return () => clearTimeout(autoSaveRef.current);
   }, [dispatchSalvar, hasValues, onAutoSave, readOnly]);
 

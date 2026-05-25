@@ -10,11 +10,13 @@ import { Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
 import { User } from './user.entity';
 import { Projeto } from '../projetos/projeto.entity';
+import { Paciente } from '../pacientes/paciente.entity';
+import { Agendamento } from '../agendamentos/agendamento.entity';
 import { ObservabilityService } from '../observability/observability.service';
 import * as bcrypt from 'bcryptjs';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { USER_ROLES, USER_STATUS, isStudentMemberRole } from '../common/domain/access.constants';
+import { ADMIN_ROLES, USER_ROLES, USER_STATUS, isStudentMemberRole } from '../common/domain/access.constants';
 import type { UpdateProfileDto } from '../auth/dto/update-profile.dto';
 
 const CACHE_MISS = Symbol('CACHE_MISS');
@@ -34,6 +36,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User) private repo: Repository<User>,
     @InjectRepository(Projeto) private projetosRepo: Repository<Projeto>,
+    @InjectRepository(Paciente) private pacientesRepo: Repository<Paciente>,
+    @InjectRepository(Agendamento) private agendamentosRepo: Repository<Agendamento>,
     @Optional() private readonly observability?: ObservabilityService
   ) {}
 
@@ -64,6 +68,43 @@ export class UsersService {
     this.userByIdCache.clear();
   }
 
+  private async syncUserNameDenormalizations(userId: string, userName?: string | null) {
+    const normalizedUserId = this.sanitizeString(userId);
+    if (!normalizedUserId) return;
+    const normalizedName = this.sanitizeString(userName);
+
+    await Promise.all([
+      this.repo.createQueryBuilder()
+        .update(User)
+        .set({
+          supervisorNome: normalizedName
+        })
+        .where('supervisor_id = :userId', { userId: normalizedUserId })
+        .execute(),
+      this.pacientesRepo.createQueryBuilder()
+        .update(Paciente)
+        .set({
+          alunoResponsavelNome: normalizedName
+        })
+        .where('aluno_responsavel_id = :userId', { userId: normalizedUserId })
+        .execute(),
+      this.pacientesRepo.createQueryBuilder()
+        .update(Paciente)
+        .set({
+          professorSupervisorNome: normalizedName
+        })
+        .where('professor_supervisor_id = :userId', { userId: normalizedUserId })
+        .execute(),
+      this.agendamentosRepo.createQueryBuilder()
+        .update(Agendamento)
+        .set({
+          alunoNome: normalizedName
+        })
+        .where('aluno_id = :userId', { userId: normalizedUserId })
+        .execute()
+    ]);
+  }
+
   private normalizeCpf(cpf?: string) {
     const digits = String(cpf || '').replace(/\D/g, '');
     return digits || undefined;
@@ -74,7 +115,7 @@ export class UsersService {
     return digits || undefined;
   }
 
-  private sanitizeString(value?: string) {
+  private sanitizeString(value?: string | null) {
     const normalized = String(value || '').trim();
     return normalized || undefined;
   }
@@ -144,6 +185,11 @@ export class UsersService {
     return normalized;
   }
 
+  private isAdminRole(role?: string) {
+    const normalized = this.sanitizeString(role)?.toLowerCase() || '';
+    return (ADMIN_ROLES as readonly string[]).includes(normalized);
+  }
+
   private async resolveAlunoVinculosOrThrow(input: {
     role: string;
     supervisorId?: string;
@@ -201,7 +247,6 @@ export class UsersService {
     }
     return {
       ...rest,
-      temporaryPassword: rest.mustChangePassword ? (tempPassword || null) : null,
       hasTemporaryPassword: !!(rest.mustChangePassword && tempPassword),
       passwordChanged: !rest.mustChangePassword
     };
@@ -240,6 +285,12 @@ export class UsersService {
     return this.repo.findOne({ where: { email: String(email || '').trim().toLowerCase() } });
   }
 
+  findByCpf(cpf: string) {
+    const normalizedCpf = this.normalizeCpf(cpf);
+    if (!normalizedCpf) return Promise.resolve(null);
+    return this.repo.findOne({ where: { cpf: normalizedCpf } });
+  }
+
   async findAuthByEmail(email: string): Promise<AuthLookupUser | null> {
     const normalizedEmail = String(email || '').trim().toLowerCase();
     if (!normalizedEmail) {
@@ -269,6 +320,7 @@ export class UsersService {
         session_version as "sessionVersion"
       from users
       where email = $1
+        and deleted_at is null
       limit 1`,
       [normalizedEmail]
     ).then((rows: Array<Record<string, unknown>>) => {
@@ -413,6 +465,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
+    const previousName = this.sanitizeString(user.name) || '';
     const payload: Partial<User> = {
       ...dto
     };
@@ -480,6 +533,11 @@ export class UsersService {
     if (!updated) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
+    const updatedName = this.sanitizeString(updated.name) || '';
+    if (updatedName !== previousName) {
+      await this.syncUserNameDenormalizations(updated.id, updated.name);
+      this.clearReadCaches();
+    }
     return this.toPublic(updated, true);
   }
 
@@ -488,6 +546,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
+    const previousName = this.sanitizeString(user.name) || '';
 
     const role = this.normalizeRole(user.role);
     const payload: Partial<User> = {};
@@ -548,17 +607,47 @@ export class UsersService {
     if (!updated) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
+    const nextName = this.sanitizeString(updated.name) || '';
+    if (nextName !== previousName) {
+      await this.syncUserNameDenormalizations(updated.id, updated.name);
+      this.clearReadCaches();
+    }
     return this.toPublic(updated, false);
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorId?: string) {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
-    await this.repo.delete(id);
+    if (actorId && user.id === actorId) {
+      throw new BadRequestException('Nao e permitido inativar o proprio usuario.');
+    }
+
+    if (this.isAdminRole(user.role) && String(user.status || '').toLowerCase() === 'ativo') {
+      const activeAdminCount = await this.repo.createQueryBuilder('user')
+        .where('LOWER(user.role) IN (:...roles)', { roles: [...ADMIN_ROLES] })
+        .andWhere('LOWER(user.status) = :status', { status: 'ativo' })
+        .getCount();
+      if (activeAdminCount <= 1) {
+        throw new BadRequestException('Nao e permitido inativar o ultimo usuario administrador ativo.');
+      }
+    }
+
+    await this.repo.createQueryBuilder()
+      .update(User)
+      .set({
+        status: 'inativo',
+        mustChangePassword: true,
+        tempPassword: null,
+        sessionVersion: () => '"session_version" + 1'
+      } as unknown as Partial<User>)
+      .where('id = :id', { id })
+      .execute();
+
+    await this.repo.softDelete(id);
     this.clearReadCaches();
-    return { success: true };
+    return { success: true, softDeleted: true };
   }
 
   async resetTemporaryPassword(id: string) {

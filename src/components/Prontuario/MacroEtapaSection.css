@@ -1,0 +1,80 @@
+.macro-etapa-section {
+  display: grid;
+  gap: 0.75rem;
+  color: var(--pn-text-1);
+}
+
+.macro-etapa-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.macro-etapa-section-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  color: var(--pn-text-3);
+}
+
+.macro-etapa-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pn-text-3);
+}
+
+.macro-etapa-section-icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.macro-etapa-section-label {
+  overflow: hidden;
+  color: var(--pn-text-3);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.macro-etapa-section-count {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pn-border-mid);
+  border-radius: 999px;
+  color: var(--pn-text-2);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.macro-etapa-section-line {
+  flex: 1;
+  min-width: 2rem;
+  border-top: 1px solid var(--pn-border-mid);
+}
+
+.macro-etapa-section-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (width <= 560px) {
+  .macro-etapa-section-divider {
+    gap: 0.55rem;
+  }
+
+  .macro-etapa-section-content {
+    grid-template-columns: 1fr;
+  }
+}

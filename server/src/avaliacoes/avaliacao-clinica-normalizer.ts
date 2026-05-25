@@ -7,11 +7,6 @@ const toNumber = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const toText = (value: unknown): string => {
-  if (value === null || value === undefined) return '';
-  return String(value).trim();
-};
-
 const normalizeType = (value: unknown): string => (
   String(value || '')
     .trim()
@@ -25,6 +20,10 @@ const asRecord = (value: unknown): JsonRecord => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return value as JsonRecord;
 };
+
+const mergeRecords = (...records: JsonRecord[]): JsonRecord => (
+  records.reduce<JsonRecord>((acc, record) => ({ ...acc, ...record }), {})
+);
 
 const pick = (sources: JsonRecord[], aliases: string[]): unknown => {
   for (const source of sources) {
@@ -46,6 +45,29 @@ const compact = (record: JsonRecord): JsonRecord => {
   return output;
 };
 
+// Classificacao de PA conforme SBC 2020.
+const computeClassificacaoPA = (sistolica: number | null, diastolica: number | null): string => {
+  if (!Number.isFinite(sistolica) || !Number.isFinite(diastolica)) {
+    return 'Nao classificado';
+  }
+  const s = sistolica as number;
+  const d = diastolica as number;
+
+  if (s >= 180 || d >= 110) return 'HAS Estagio 3';
+  if (s >= 160 || d >= 100) return 'HAS Estagio 2';
+  if (s >= 140 || d >= 90) return 'HAS Estagio 1';
+  if ((s >= 130 && s <= 139) || (d >= 85 && d <= 89)) return 'Pre-HAS';
+  if ((s >= 120 && s <= 129) || (d >= 80 && d <= 84)) return 'Normal-alta';
+  return 'Normal';
+};
+
+const resolvePrioridadeCuidado = (classificacaoPA: string): string => {
+  if (classificacaoPA === 'HAS Estagio 3') return 'urgente';
+  if (classificacaoPA === 'HAS Estagio 2') return 'alta';
+  if (classificacaoPA === 'HAS Estagio 1' || classificacaoPA === 'Pre-HAS') return 'media';
+  return 'baixa';
+};
+
 type PayloadShape = {
   tipo?: string;
   dados?: JsonRecord;
@@ -58,22 +80,26 @@ export const normalizeAvaliacaoClinicaPayload = <T extends PayloadShape>(payload
 
   const dados = asRecord(payload.dados);
   const resultados = asRecord(payload.resultados);
+  const payloadRecord = asRecord(payload as unknown);
+
+  const canonicalDadosBrutos = mergeRecords(
+    asRecord(dados.dados_brutos),
+    asRecord(dados.input),
+    asRecord(payloadRecord.dados_brutos),
+    asRecord(payloadRecord.input)
+  );
 
   const canonicalResultadosCalculados = {
     ...asRecord(dados.resultados_calculados),
     ...asRecord(resultados.calculated)
   };
-  const canonicalClassificacoes = {
-    ...asRecord(dados.classificacoes),
-    ...asRecord(resultados.output)
-  };
 
   const valueSources = [
     canonicalResultadosCalculados,
-    canonicalClassificacoes,
     dados,
+    canonicalDadosBrutos,
     resultados,
-    asRecord(payload as unknown)
+    payloadRecord
   ];
 
   const pressaoSistolica = toNumber(pick(valueSources, [
@@ -85,28 +111,29 @@ export const normalizeAvaliacaoClinicaPayload = <T extends PayloadShape>(payload
   const frequenciaCardiaca = toNumber(pick(valueSources, [
     'frequenciaCardiaca', 'frequencia_cardiaca', 'heartRate', 'fc'
   ]));
-  const prioridadeCuidado = toText(pick(valueSources, [
-    'prioridadeCuidado', 'prioridade_cuidado', 'prioridade', 'priority'
-  ]));
-  const classificacaoPressaoArterial = toText(pick(valueSources, [
-    'classificacaoPressaoArterial', 'classificacao_pa', 'bpClassification'
-  ]));
   const redFlagsCount = toNumber(pick(valueSources, [
     'redFlagsCount', 'red_flags_count', 'flagsCount'
   ]));
+  const esportivo = asRecord(pick(valueSources, ['esportivo']));
+
+  // Sempre recalcula classificacao no backend e ignora qualquer valor enviado pelo frontend.
+  const classificacaoPA = computeClassificacaoPA(pressaoSistolica, pressaoDiastolica);
+  const prioridadeCuidado = resolvePrioridadeCuidado(classificacaoPA);
 
   const normalizedResultadosCalculados = compact({
     ...canonicalResultadosCalculados,
     pressaoSistolica: pressaoSistolica ?? undefined,
     pressaoDiastolica: pressaoDiastolica ?? undefined,
     frequenciaCardiaca: frequenciaCardiaca ?? undefined,
+    classificacaoPA: classificacaoPA || undefined,
     prioridadeCuidado: prioridadeCuidado || undefined,
     redFlagsCount: redFlagsCount ?? undefined
   });
 
   const normalizedClassificacoes = compact({
-    ...canonicalClassificacoes,
-    classificacaoPressaoArterial: classificacaoPressaoArterial || undefined,
+    classificacaoPA: classificacaoPA || undefined,
+    classificacaoPressaoArterial: classificacaoPA || undefined,
+    prioridadeCuidado: prioridadeCuidado || undefined,
     prioridade_cuidado: prioridadeCuidado || undefined
   });
 
@@ -115,7 +142,11 @@ export const normalizeAvaliacaoClinicaPayload = <T extends PayloadShape>(payload
     pressaoSistolica: pressaoSistolica ?? undefined,
     pressaoDiastolica: pressaoDiastolica ?? undefined,
     frequenciaCardiaca: frequenciaCardiaca ?? undefined,
-    dados_brutos: asRecord(dados.dados_brutos),
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined,
+    dados_brutos: compact({
+      ...canonicalDadosBrutos,
+      esportivo: Object.keys(esportivo).length ? esportivo : undefined
+    }),
     resultados_calculados: normalizedResultadosCalculados,
     classificacoes: normalizedClassificacoes
   });
@@ -125,6 +156,8 @@ export const normalizeAvaliacaoClinicaPayload = <T extends PayloadShape>(payload
     pressao_sistolica: pressaoSistolica ?? undefined,
     pressao_diastolica: pressaoDiastolica ?? undefined,
     frequencia_cardiaca: frequenciaCardiaca ?? undefined,
+    classificacaoPA: classificacaoPA || undefined,
+    classificacao_pressao_arterial: classificacaoPA || undefined,
     prioridade_cuidado: prioridadeCuidado || undefined,
     calculated: normalizedResultadosCalculados,
     output: normalizedClassificacoes

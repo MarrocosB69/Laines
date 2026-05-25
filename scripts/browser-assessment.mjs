@@ -60,8 +60,44 @@ const runCase = async (page, name, callback) => {
   }
 };
 
+const isMissingBrowserInstall = (error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Executable doesn't exist|Please run.*playwright install|browser executable.*doesn't exist/i.test(message);
+};
+
+const createLaunchResult = (project, error) => {
+  const message = error instanceof Error ? error.message : String(error);
+  const missingInstall = isMissingBrowserInstall(error);
+  const status = missingInstall ? 'skipped' : 'failed';
+  const reportMessage = missingInstall
+    ? 'Browser do Playwright nao instalado. Execute "npx playwright install" para habilitar este projeto.'
+    : message;
+
+  return {
+    project: project.name,
+    status,
+    passed: 0,
+    failed: missingInstall ? 0 : 1,
+    skipped: missingInstall ? 1 : 0,
+    checks: [
+      {
+        name: 'browser_launch',
+        status,
+        durationMs: 0,
+        message: reportMessage
+      }
+    ]
+  };
+};
+
 const runProject = async (project) => {
-  const browser = await project.browserType.launch({ headless: true });
+  let browser;
+  try {
+    browser = await project.browserType.launch({ headless: true });
+  } catch (error) {
+    return createLaunchResult(project, error);
+  }
+
   const context = await browser.newContext(project.contextOptions);
   const page = await context.newPage();
   const checks = [];
@@ -122,13 +158,22 @@ const runProject = async (project) => {
         await modalLogoutButton.waitFor({ state: 'visible', timeout: 20_000 });
         await clickWithFallback(modalLogoutButton);
       } else {
-        const logoutButton = page.locator('button.laines-sidebar__logout').first();
+        const menuToggle = page.locator('button.laines-sidebar__toggle, button[aria-label="Abrir menu"]').first();
+        const logoutButton = page
+          .locator('button.laines-sidebar__logout, button.sb-footer__logout, button[aria-label*="Encerrar"], button[title*="Encerrar"]')
+          .first();
+
+        if (!(await logoutButton.isVisible().catch(() => false)) && await menuToggle.isVisible().catch(() => false)) {
+          await clickWithFallback(menuToggle);
+        }
+
         await logoutButton.waitFor({ state: 'visible', timeout: 20_000 });
         await logoutButton.scrollIntoViewIfNeeded();
         await clickWithFallback(logoutButton);
       }
 
-      await page.waitForURL(/\/login$/, { timeout: 45_000 });
+      await page.waitForURL((url) => url.pathname === '/' || url.pathname === '/login', { timeout: 45_000 });
+      await page.waitForSelector('text=Entrar na plataforma', { timeout: 20_000 });
     }));
   } finally {
     const failedChecks = checks.filter((item) => item.status === 'failed');
@@ -142,8 +187,10 @@ const runProject = async (project) => {
 
   return {
     project: project.name,
+    status: checks.some((item) => item.status === 'failed') ? 'failed' : 'passed',
     passed: checks.filter((item) => item.status === 'passed').length,
     failed: checks.filter((item) => item.status === 'failed').length,
+    skipped: checks.filter((item) => item.status === 'skipped').length,
     checks
   };
 };
@@ -158,14 +205,15 @@ const run = async () => {
   for (const project of projects) {
     const result = await runProject(project);
     report.projects.push(result);
-    console.log(`[browser] ${project.name}: passed=${result.passed} failed=${result.failed}`);
+    console.log(`[browser] ${project.name}: status=${result.status} passed=${result.passed} failed=${result.failed} skipped=${result.skipped}`);
   }
 
   report.summary = {
     totalProjects: report.projects.length,
     totalChecks: report.projects.reduce((acc, item) => acc + item.checks.length, 0),
     passed: report.projects.reduce((acc, item) => acc + item.passed, 0),
-    failed: report.projects.reduce((acc, item) => acc + item.failed, 0)
+    failed: report.projects.reduce((acc, item) => acc + item.failed, 0),
+    skipped: report.projects.reduce((acc, item) => acc + item.skipped, 0)
   };
 
   const absolutePath = path.resolve(outputPath);

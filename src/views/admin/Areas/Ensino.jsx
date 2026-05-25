@@ -30,7 +30,6 @@ const Ensino = () => {
       setReunioes(reunioesRes.data || []);
       setMateriais(materiaisRes.data || []);
     } catch (error) {
-      console.warn('Ensino: falha ao carregar conteúdos', error);
       notify({
         type: 'error',
         title: 'Erro ao carregar conteúdos',
@@ -58,7 +57,6 @@ const Ensino = () => {
       setReuniaoForm({ titulo: '', data: '', link: '', descricao: '' });
       await loadData();
     } catch (error) {
-      console.warn('Ensino: falha ao criar reunião', error);
       notify({
         type: 'error',
         title: 'Erro ao criar reunião',
@@ -78,7 +76,6 @@ const Ensino = () => {
       setMaterialForm({ titulo: '', tipo: 'artigo', link: '', descricao: '' });
       await loadData();
     } catch (error) {
-      console.warn('Ensino: falha ao criar material', error);
       notify({
         type: 'error',
         title: 'Erro ao criar material',
@@ -106,7 +103,6 @@ const Ensino = () => {
         message: 'O item foi removido com sucesso.'
       });
     } catch (error) {
-      console.warn('Ensino: falha ao remover item', error);
       notify({
         type: 'error',
         title: 'Erro ao remover conteúdo',

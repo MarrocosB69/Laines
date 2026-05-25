@@ -52,6 +52,12 @@ export class TarefasController {
     return this.tarefasService.create(dto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/resolver')
+  resolve(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.tarefasService.resolve(id, req.user);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...ROLES_EDICAO)
   @Patch(':id')

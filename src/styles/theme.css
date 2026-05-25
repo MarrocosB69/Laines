@@ -1,49 +1,151 @@
+/* ════════════════════════════════════════════════════════════
+   LAINES — Design Tokens
+   Liga Acadêmica Interprofissional de Nutrição Esportiva
+
+   Paleta oficial:
+     Navy  #1D3350  — primário · estrutura · ações principais
+     Blue  #56ADDB  — acento · interativo · foco · links
+     Green #74A865  — sucesso · saúde · valores positivos
+     Gray  #677487  — neutro · texto secundário · bordas
+════════════════════════════════════════════════════════════ */
+
 :root {
-  --color-navy: #103355;
-  --color-navy-dark: #0a2240;
-  --color-navy-light: #1a4a73;
-  --color-green: #74a865;
-  --color-green-dark: #5a8a4e;
-  --color-green-light: #e8f5e3;
+  /* ── Cores da marca ──────────────────────────────────────── */
+  --color-navy:         #1D3350;
+  --color-navy-dark:    #162840;
+  --color-navy-light:   #2a4a6e;
+
+  --color-blue:         #56ADDB;
+  --color-blue-dark:    #3d9ccf;
+  --color-blue-light:   rgba(86, 173, 219, 0.12);
+
+  --color-green:        #74A865;
+  --color-green-dark:   #5a8a4e;
+  --color-green-light:  rgba(116, 168, 101, 0.12);
   --color-green-xlight: #f2faf0;
-  --color-surface: #f8fafc;
-  --color-border: #e2e8f0;
-  --color-text-primary: #1a2332;
-  --color-text-muted: #64748b;
-  --color-white: #ffffff;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-sm: 0 1px 3px rgba(16, 51, 85, 0.08), 0 1px 2px rgba(16, 51, 85, 0.04);
-  --shadow-md: 0 4px 12px rgba(16, 51, 85, 0.1), 0 2px 4px rgba(16, 51, 85, 0.06);
-  --shadow-lg: 0 10px 30px rgba(16, 51, 85, 0.12);
-  --transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Backward-compatible aliases used by existing screens */
-  --color-primary: var(--color-green);
-  --color-primary-dark: var(--color-green-dark);
-  --color-dark-blue: var(--color-navy);
+  --color-gray:         #677487;
+  --color-gray-light:   rgba(103, 116, 135, 0.12);
+
+  /* ── Semântica — primário (navy) ─────────────────────────── */
+  --color-primary:       var(--color-navy);
+  --color-primary-dark:  var(--color-navy-dark);
+  --color-primary-light: rgba(29, 51, 80, 0.08);
+  --color-primary-border:rgba(29, 51, 80, 0.2);
+
+  /* ── Semântica — acento (sky blue) ──────────────────────── */
+  --color-accent:        var(--color-blue);
+  --color-accent-dark:   var(--color-blue-dark);
+  --color-accent-light:  var(--color-blue-light);
+  --color-accent-border: rgba(86, 173, 219, 0.3);
+
+  /* ── Semântica — sucesso (green) ─────────────────────────── */
+  --color-success:       var(--color-green);
+  --color-success-dark:  var(--color-green-dark);
+  --color-success-light: var(--color-green-light);
+
+  /* ── Estados clínicos ────────────────────────────────────── */
+  --color-warn:          #d97706;
+  --color-warn-light:    #fffbeb;
+  --color-warn-border:   rgba(217, 119, 6, 0.28);
+
+  --color-danger:        #dc2626;
+  --color-danger-light:  #fef2f2;
+  --color-danger-border: rgba(220, 38, 38, 0.28);
+
+  --color-info:          var(--color-blue);
+  --color-info-light:    var(--color-blue-light);
+
+  /* ── Superfícies ─────────────────────────────────────────── */
+  --color-white:         #ffffff;
+  --color-surface:       #ffffff;
+  --color-surface-alt:   #f7f9fc;
+  --color-surface-soft:  #f0f4f8;
+  --color-background:    #edf1f7;
+
+  /* ── Bordas ──────────────────────────────────────────────── */
+  --color-border:        rgba(29, 51, 80, 0.11);
+  --color-border-hover:  rgba(29, 51, 80, 0.2);
+  --color-border-strong: rgba(29, 51, 80, 0.3);
+
+  /* ── Texto ───────────────────────────────────────────────── */
+  --color-text-primary:   var(--color-navy);
+  --color-text-secondary: var(--color-gray);
+  --color-text-muted:     #8fa0b3;
+  --color-text-inverse:   #ffffff;
+
+  /* ── Escala de border-radius ─────────────────────────────── */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;
+  --radius-xl:   18px;
+  --radius-2xl:  22px;
+  --radius-full: 9999px;
+
+  /* ── Escala de sombra ────────────────────────────────────── */
+  --shadow-xs:    0 1px 2px rgba(29, 51, 80, 0.05);
+  --shadow-sm:    0 1px 3px rgba(29, 51, 80, 0.07), 0 1px 2px rgba(29, 51, 80, 0.04);
+  --shadow-md:    0 4px 12px rgba(29, 51, 80, 0.09), 0 2px 4px rgba(29, 51, 80, 0.05);
+  --shadow-lg:    0 8px 24px rgba(29, 51, 80, 0.10);
+  --shadow-xl:    0 16px 32px rgba(29, 51, 80, 0.10);
+  --shadow-hover: 0 12px 32px rgba(29, 51, 80, 0.13);
+
+  /* ── Transições ──────────────────────────────────────────── */
+  --transition:      all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s ease;
+  --transition-norm: 0.2s ease;
+
+  /* ── Aliases retrocompatíveis ────────────────────────────── */
+  /* Mantidos para não quebrar componentes legados             */
+  --color-dark-blue:       var(--color-navy);
   --color-dark-blue-light: var(--color-navy-light);
-  --color-light-blue: #56addb;
-  --color-background: var(--color-surface);
-  --color-text-secondary: var(--color-text-muted);
+  --color-light-blue:      var(--color-blue);
+
+  /* ── Bridge vars: sistema de avaliações ─────────────────── */
+  /* Consumidos por avaliacoes.css como var(--eval-*, fallback) */
+  --eval-accent:        var(--color-blue);
+  --eval-accent-strong: var(--color-navy);
+  --eval-surface:       var(--color-white);
+  --eval-surface-alt:   var(--color-surface-alt);
+  --eval-border:        rgba(29, 51, 80, 0.13);
+  --eval-title:         var(--color-navy);
+  --eval-muted:         var(--color-gray);
+
+  /* ── Bridge vars: sistema do prontuário ─────────────────── */
+  /* Consumidos por ProntuarioTheme.css                        */
+  --pron-accent:       var(--color-green);
+  --pron-accent-light: var(--color-green-light);
+  --pron-text-primary: var(--color-navy);
+  --pron-bg:           var(--color-background);
+  --pron-card-bg:      var(--color-white);
+  --pron-border:       rgba(29, 51, 80, 0.09);
+  --pron-border-hover: rgba(29, 51, 80, 0.18);
+  --pron-ok:           var(--color-green);
+  --pron-ok-bg:        var(--color-green-light);
+  --pron-warn:         var(--color-warn);
+  --pron-warn-bg:      var(--color-warn-light);
+  --pron-danger:       var(--color-danger);
+  --pron-danger-bg:    var(--color-danger-light);
+  --pron-info:         var(--color-blue);
+  --pron-info-bg:      var(--color-blue-light);
 }
 
-html {
-  scroll-behavior: smooth;
-}
+/* ── Reset base ──────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   color: var(--color-text-primary);
-  font-family: "Inter", sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 *:focus-visible {
-  outline: 2px solid var(--color-green);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
+/* ── Botões globais ──────────────────────────────────────── */
 button,
 .app-modal-btn,
 .admin-btn,
@@ -62,7 +164,7 @@ button,
 .admin-btn--success,
 .tab-btn--primary,
 .eval-btn-primary {
-  background: var(--color-green);
+  background: var(--color-primary);
   color: #fff;
   border: none;
   padding: 9px 20px;
@@ -77,7 +179,7 @@ button,
 .admin-btn--success:hover,
 .tab-btn--primary:hover,
 .eval-btn-primary:hover {
-  background: var(--color-green-dark);
+  background: var(--color-navy-dark);
   box-shadow: var(--shadow-sm);
 }
 
@@ -87,8 +189,8 @@ button,
 .tab-btn--secondary,
 .eval-btn-secondary {
   background: transparent;
-  color: var(--color-navy);
-  border: 1.5px solid var(--color-navy);
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary-border);
   padding: 9px 20px;
   border-radius: var(--radius-md);
   font-size: 13px;
@@ -100,13 +202,13 @@ button,
 .admin-btn--ghost:hover,
 .tab-btn--secondary:hover,
 .eval-btn-secondary:hover {
-  background: rgba(16, 51, 85, 0.05);
+  background: var(--color-primary-light);
 }
 
 .admin-btn--danger,
 .danger-btn,
 .tab-btn--danger {
-  background: #fee2e2;
+  background: var(--color-danger-light);
   color: #991b1b;
   border: none;
 }
@@ -117,6 +219,7 @@ button,
   background: #fecaca;
 }
 
+/* ── Inputs globais ──────────────────────────────────────── */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea,
@@ -145,8 +248,8 @@ textarea:focus,
 .agenda-search-input:focus,
 .eval-input:focus {
   outline: none;
-  border-color: var(--color-green);
-  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.15);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-light);
 }
 
 label,
@@ -155,14 +258,12 @@ label,
 .setting-item label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   margin-bottom: 6px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+/* ── Tabelas ─────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; }
 
 .admin-management-table-wrap,
 .research-table,
@@ -176,6 +277,28 @@ table {
   box-shadow: var(--shadow-sm);
 }
 
+thead th {
+  background: var(--color-surface-alt);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+tbody td {
+  padding: 13px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-surface-alt);
+  color: var(--color-text-primary);
+}
+
+tbody tr:hover { background: var(--color-surface-alt); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ── Cards genéricos ─────────────────────────────────────── */
 .stat-card,
 .admin-stat-card,
 .team-card,
@@ -213,32 +336,7 @@ table {
   transform: translateY(-1px);
 }
 
-thead th {
-  background: #f1f5f9;
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-tbody td {
-  padding: 13px 16px;
-  font-size: 13px;
-  border-bottom: 1px solid #f1f5f9;
-  color: var(--color-text-primary);
-}
-
-tbody tr:hover {
-  background: #f8fafc;
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
+/* ── Badges de status ────────────────────────────────────── */
 .status-badge,
 .badge,
 .student-badge,
@@ -258,48 +356,49 @@ tbody tr:last-child td {
 .badge.approved,
 .badge.ativo,
 .badge.concluido {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
 }
 
 .status-badge.badge-attention,
 .badge.pendente,
 .badge.aguardando {
-  background: #fef9c3;
+  background: var(--color-warn-light);
   color: #854d0e;
 }
 
 .badge.recusado,
 .badge.inativo {
-  background: #fee2e2;
+  background: var(--color-danger-light);
   color: #991b1b;
 }
 
 .badge.agendado,
 .badge.em-andamento {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-info-light);
+  color: var(--color-navy);
 }
 
 .badge.admin {
-  background: rgba(16, 51, 85, 0.1);
-  color: #103355;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .badge.aluno,
 .badge.atleta,
 .badge.professor {
-  background: rgba(116, 168, 101, 0.15);
-  color: #3a6b2d;
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
 }
 
+/* ── Títulos de página ───────────────────────────────────── */
 .laines-page-title,
 .page-title,
 .admin-page-title,
 .section-title {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-navy);
+  color: var(--color-primary);
   margin-bottom: 4px;
 }
 
@@ -308,7 +407,7 @@ tbody tr:last-child td {
 .admin-page-subtitle,
 .section-subtitle {
   font-size: 13px;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .title-block,
@@ -317,6 +416,7 @@ tbody tr:last-child td {
   margin-bottom: 24px;
 }
 
+/* ── Empty states ────────────────────────────────────────── */
 .laines-feedback-state,
 .empty-state,
 .admin-empty-state,
@@ -336,7 +436,7 @@ tbody tr:last-child td {
 .reports-empty-state svg {
   width: 48px;
   height: 48px;
-  color: rgba(16, 51, 85, 0.15);
+  color: var(--color-primary-border);
 }
 
 .laines-feedback-state strong,
@@ -345,7 +445,7 @@ tbody tr:last-child td {
 .reports-empty-state h3 {
   font-size: 16px;
   font-weight: 600;
-  color: var(--color-navy);
+  color: var(--color-primary);
   margin: 16px 0 8px;
 }
 
@@ -354,31 +454,23 @@ tbody tr:last-child td {
 .admin-empty-text,
 .reports-empty-state p {
   font-size: 13px;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   max-width: 320px;
   text-align: center;
 }
 
+/* ── Skeleton ────────────────────────────────────────────── */
 .skeleton {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-border) 50%, var(--color-surface-alt) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: var(--radius-md);
 }
 
-.skeleton-line {
-  height: 16px;
-}
-
-.skeleton-card {
-  height: 80px;
-}
+.skeleton-line  { height: 16px; }
+.skeleton-card  { height: 80px; }
 
 @keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+  0%   { background-position:  200% 0; }
+  100% { background-position: -200% 0; }
 }

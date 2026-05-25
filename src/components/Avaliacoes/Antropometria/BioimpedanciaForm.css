@@ -1,5 +1,5 @@
 .bioimpedancia-form.bioimpedancia-form--modern {
-  --domain-color: #0e7490;
+  --domain-color: var(--color-accent, #56ADDB);
   border-radius: var(--radius-xl);
   border: 1px solid color-mix(in srgb, var(--domain-color) 20%, transparent);
 }
@@ -48,6 +48,29 @@
   margin-top: 0.5rem;
   display: flex;
   justify-content: flex-start;
+}
+
+.bioimpedancia-form .bia-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.bioimpedancia-form .bia-check-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.32rem 0.5rem;
+}
+
+.bioimpedancia-form .bia-check-item span {
+  font-size: 0.72rem;
+  color: #334155;
+  font-weight: 700;
 }
 
 .bioimpedancia-form .bia-precheck-alert {
@@ -250,7 +273,8 @@
 
 @media (max-width: 768px) {
   .bioimpedancia-form .bia-grid,
-  .bioimpedancia-form .bia-results-grid {
+  .bioimpedancia-form .bia-results-grid,
+  .bioimpedancia-form .bia-checklist-grid {
     grid-template-columns: 1fr;
   }
 }

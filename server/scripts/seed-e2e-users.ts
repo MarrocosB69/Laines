@@ -2,8 +2,13 @@ import 'dotenv/config';
 import * as bcrypt from 'bcryptjs';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import dataSource from '../src/database/typeorm.config';
-import { User } from '../src/users/user.entity';
+
+if (process.env.NODE_ENV === 'production') {
+  console.error('BLOQUEADO: seed-e2e-users não pode rodar em produção.');
+  process.exit(1);
+}
+
+let activeDataSource: import('typeorm').DataSource | null = null;
 
 type DatasetSeedUser = {
   key: string;
@@ -25,7 +30,7 @@ const loadDataset = (): DatasetSeedUser[] => {
 };
 
 const resolveLocalSeedUsers = () => {
-  const allowedKeys = new Set(['admin', 'professor', 'aluno']);
+  const allowedKeys = new Set(['admin', 'professor', 'aluno', 'tecnico', 'atleta']);
   return loadDataset()
     .filter((item) => allowedKeys.has(String(item.key || '').trim().toLowerCase()))
     .map((item) => ({
@@ -37,6 +42,10 @@ const resolveLocalSeedUsers = () => {
 };
 
 async function main() {
+  const { default: dataSource } = await import('../src/database/typeorm.config');
+  const { User } = await import('../src/users/user.entity');
+  activeDataSource = dataSource;
+
   if (!dataSource.isInitialized) {
     await dataSource.initialize();
   }
@@ -76,7 +85,7 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    if (dataSource.isInitialized) {
-      await dataSource.destroy();
+    if (activeDataSource?.isInitialized) {
+      await activeDataSource.destroy();
     }
   });

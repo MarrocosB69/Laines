@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarClock, Circle } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CheckCircle2, Circle } from 'lucide-react';
+import { FeedbackState } from '../ui';
 import { EVALUATION_REGISTRY_BY_TYPE } from '../../constants/evaluationRegistry';
 import api from '../../services/api';
 
@@ -129,7 +130,7 @@ const ProntuarioPendencias = ({
       </header>
 
       {pendencias.length === 0 ? (
-        <div className="pron-empty">Sem pendências críticas no prontuário.</div>
+        <FeedbackState empty icon={CheckCircle2} size="sm" title="Sem pendências críticas no prontuário." />
       ) : (
         <div className="pron-pendencias-list">
           {pendencias.map((item) => (

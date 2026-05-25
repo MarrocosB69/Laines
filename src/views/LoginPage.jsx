@@ -6,20 +6,13 @@ import {
   AlertCircle,
   ArrowRight,
   ArrowUp,
-  BarChart3,
-  BookOpenCheck,
-  CalendarDays,
-  ClipboardList,
   Eye,
   EyeOff,
-  HeartPulse,
   Loader2,
+  KeyRound,
   Lock,
   Mail,
   ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  Users,
   X
 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../services/api';
@@ -49,88 +42,15 @@ const initialRequestForm = {
   justificativa: ''
 };
 
-const accessGuides = [
-  {
-    id: 'acesso-existente',
-    title: 'Já tenho acesso',
-    description: 'Utilize seu e-mail e senha para entrar.',
-    icon: ShieldCheck
-  },
-  {
-    id: 'acesso-institucional',
-    title: 'Sou aluno / professor',
-    description: 'Solicite acesso institucional.',
-    icon: BookOpenCheck
-  },
-  {
-    id: 'acesso-atleta',
-    title: 'Sou atleta',
-    description: 'Acesse com os dados fornecidos pela equipe.',
-    icon: HeartPulse
-  }
-];
+const initialRecoveryForm = {
+  identifier: '',
+  cpf: '',
+  dataNascimento: '',
+  newPassword: '',
+  confirmPassword: ''
+};
 
-const usageCards = [
-  {
-    id: 'uso-professor',
-    title: 'Professor',
-    icon: Users,
-    points: ['Supervisiona atendimentos', 'Acompanha alunos']
-  },
-  {
-    id: 'uso-aluno',
-    title: 'Aluno',
-    icon: BookOpenCheck,
-    points: ['Registra avaliações', 'Realiza atendimentos']
-  },
-  {
-    id: 'uso-atleta',
-    title: 'Atleta',
-    icon: HeartPulse,
-    points: ['Acompanha evolução', 'Acessa histórico']
-  }
-];
-
-const systemCapabilities = [
-  { icon: ClipboardList, text: 'Registrar avaliações clínicas' },
-  { icon: TrendingUp, text: 'Acompanhar evolução dos atletas' },
-  { icon: CalendarDays, text: 'Gerenciar agenda e atendimentos' },
-  { icon: BarChart3, text: 'Gerar relatórios' }
-];
-
-const heroTags = ['Nutrição esportiva', 'Multiprofissional', 'Prontuário digital', 'Web e mobile'];
-
-const heroMetrics = [
-  { value: '14+', label: 'Módulos de avaliação' },
-  { value: '6', label: 'Perfis de acesso' },
-  { value: '100%', label: 'Web e mobile' }
-];
-
-const landingNavLinks = [
-  { id: 'acesso', label: 'Acesso' },
-  { id: 'como-acessar', label: 'Como acessar' },
-  { id: 'como-funciona', label: 'Como funciona' },
-  { id: 'recursos', label: 'Recursos' },
-  { id: 'faq', label: 'FAQ' }
-];
-
-const landingFaq = [
-  {
-    id: 'faq-acesso',
-    question: 'Quem deve solicitar acesso institucional?',
-    answer: 'Alunos e professores que ainda não possuem credenciais ativas no sistema.'
-  },
-  {
-    id: 'faq-atleta',
-    question: 'Atletas precisam solicitar acesso?',
-    answer: 'Não. O acesso do atleta é disponibilizado pela equipe responsável pelo acompanhamento.'
-  },
-  {
-    id: 'faq-perfil',
-    question: 'O que acontece após entrar?',
-    answer: 'Cada utilizador é direcionado automaticamente para a área do seu perfil.'
-  }
-];
+const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -148,6 +68,14 @@ const LoginPage = () => {
   const [requestError, setRequestError] = useState('');
   const [requestSuccess, setRequestSuccess] = useState('');
   const accessRequestModalRef = useRef(null);
+  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [recoverForm, setRecoverForm] = useState(initialRecoveryForm);
+  const [recoverLoading, setRecoverLoading] = useState(false);
+  const [recoverError, setRecoverError] = useState('');
+  const [recoverSuccess, setRecoverSuccess] = useState('');
+  const [recoverShowPassword, setRecoverShowPassword] = useState(false);
+  const [recoverShowConfirmPassword, setRecoverShowConfirmPassword] = useState(false);
+  const recoveryModalRef = useRef(null);
   const hasLoadedProjectsRef = useRef(false);
   const loadingProjectsRef = useRef(false);
 
@@ -178,8 +106,9 @@ const LoginPage = () => {
     }
   }, []);
 
-  useModalBodyLock(requestOpen);
+  useModalBodyLock(requestOpen || recoverOpen);
   useModalFocusTrap(requestOpen, accessRequestModalRef);
+  useModalFocusTrap(recoverOpen, recoveryModalRef);
 
   useEffect(() => {
     document.body.classList.add('landing-page');
@@ -249,6 +178,7 @@ const LoginPage = () => {
     if (!hasLoadedProjectsRef.current && !loadingProjectsRef.current) {
       loadPublicProjects();
     }
+    setRecoverOpen(false);
     setRequestOpen(true);
     setRequestError('');
     setRequestSuccess('');
@@ -261,17 +191,43 @@ const LoginPage = () => {
     setRequestSuccess('');
   };
 
+  const handleOpenRecovery = () => {
+    setRequestOpen(false);
+    setRecoverOpen(true);
+    setRecoverError('');
+    setRecoverSuccess('');
+    setRecoverShowPassword(false);
+    setRecoverShowConfirmPassword(false);
+    setRecoverForm((prev) => ({
+      ...initialRecoveryForm,
+      identifier: email.trim() || prev.identifier
+    }));
+  };
+
+  const handleCloseRecovery = () => {
+    setRecoverOpen(false);
+    setRecoverForm(initialRecoveryForm);
+    setRecoverError('');
+    setRecoverSuccess('');
+    setRecoverShowPassword(false);
+    setRecoverShowConfirmPassword(false);
+  };
+
   useEffect(() => {
-    if (!requestOpen) return;
+    if (!requestOpen && !recoverOpen) return;
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
+        if (recoverOpen) {
+          handleCloseRecovery();
+          return;
+        }
         handleCloseRequest();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [requestOpen]);
+  }, [recoverOpen, requestOpen]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -363,6 +319,74 @@ const LoginPage = () => {
     }
   };
 
+  const handleRecoveryChange = (field) => (event) => {
+    setRecoverForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleRecoveryCpfChange = (event) => {
+    const formatted = formatCpf(event.target.value);
+    setRecoverForm((prev) => ({ ...prev, cpf: formatted }));
+  };
+
+  const handleRecoverySubmit = async (event) => {
+    event.preventDefault();
+    setRecoverError('');
+    setRecoverSuccess('');
+
+    const identifier = recoverForm.identifier.trim();
+    const cpfDigits = normalizeCpf(recoverForm.cpf);
+
+    if (!identifier || !recoverForm.cpf.trim() || !recoverForm.dataNascimento) {
+      setRecoverError('Informe identificador, CPF e data de nascimento.');
+      return;
+    }
+    if (identifier.includes('@') && !isValidEmail(identifier)) {
+      setRecoverError('Identificador de login invalido.');
+      return;
+    }
+    if (!identifier.includes('@') && normalizeCpf(identifier).length !== 11) {
+      setRecoverError('Use e-mail ou CPF (11 digitos) no identificador.');
+      return;
+    }
+    if (!isValidCpf(cpfDigits)) {
+      setRecoverError('CPF invalido.');
+      return;
+    }
+    if (!isPastDate(recoverForm.dataNascimento)) {
+      setRecoverError('Data de nascimento invalida.');
+      return;
+    }
+    if (!recoverForm.newPassword || recoverForm.newPassword.length < 8) {
+      setRecoverError('A nova senha deve ter ao menos 8 caracteres.');
+      return;
+    }
+    if (!PASSWORD_COMPLEXITY_REGEX.test(recoverForm.newPassword)) {
+      setRecoverError('A senha deve conter letra maiuscula, minuscula e numero.');
+      return;
+    }
+    if (recoverForm.newPassword !== recoverForm.confirmPassword) {
+      setRecoverError('A confirmacao da senha nao confere.');
+      return;
+    }
+
+    setRecoverLoading(true);
+    try {
+      await api.post('/auth/recover-password', {
+        identifier,
+        cpf: recoverForm.cpf.trim(),
+        dataNascimento: recoverForm.dataNascimento,
+        newPassword: recoverForm.newPassword
+      });
+      setRecoverSuccess('Senha redefinida com sucesso. Voce ja pode entrar no sistema.');
+      setRecoverForm(initialRecoveryForm);
+    } catch (err) {
+      console.error('Erro ao recuperar senha:', err);
+      setRecoverError(getApiErrorMessage(err, 'Nao foi possivel recuperar a senha.'));
+    } finally {
+      setRecoverLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="landing-v2">
@@ -384,14 +408,6 @@ const LoginPage = () => {
                 <span>Plataforma clínico-educacional</span>
               </div>
             </a>
-
-            <nav className="landing-topbar__nav" aria-label="Navegação principal da landing">
-              {landingNavLinks.map((item) => (
-                <a key={item.id} href={`#${item.id}`}>
-                  {item.label}
-                </a>
-              ))}
-            </nav>
           </div>
         </motion.header>
 
@@ -404,35 +420,10 @@ const LoginPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7 }}
               >
-                <div className="hero-kicker">
-                  <Sparkles size={13} />
-                  Liga Acadêmica Interprofissional de Nutrição Esportiva
-                </div>
-
-                <h1>Bem-vindo ao sistema LAINES</h1>
+                <h1>Sistema LAINES para acompanhamento clínico-esportivo</h1>
                 <p>
-                  Gerencie atendimentos, acompanhe atletas e registre avaliações em um
-                  ambiente clínico-educacional integrado.
+                  Liga acadêmica interprofissional de nutrição esportiva - UFRN.
                 </p>
-
-                <div className="hero-tag-list">
-                  {heroTags.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-
-                <div className="hero-helper-text">
-                  <span>Acesse com seu perfil para visualizar agenda, prontuário e avaliações.</span>
-                </div>
-
-                <div className="hero-metrics">
-                  {heroMetrics.map((m) => (
-                    <article key={m.label}>
-                      <strong>{m.value}</strong>
-                      <span>{m.label}</span>
-                    </article>
-                  ))}
-                </div>
               </motion.div>
 
               <motion.aside
@@ -517,6 +508,13 @@ const LoginPage = () => {
                     )}
                   </AnimatePresence>
 
+                  <div className="landing-login-recovery">
+                    <button type="button" onClick={handleOpenRecovery}>
+                      <KeyRound size={15} />
+                      Esqueci minha senha
+                    </button>
+                  </div>
+
                   <div className="landing-login-panel__foot">
                     <p>Não possui acesso?</p>
                     <button type="button" onClick={handleOpenRequest}>
@@ -526,105 +524,6 @@ const LoginPage = () => {
                   </div>
                 </form>
               </motion.aside>
-            </div>
-          </section>
-
-          <section id="como-acessar" className="landing-section landing-section--soft">
-            <div className="landing-container">
-              <header className="section-heading section-heading--left-md">
-                <h2>Como acessar o sistema</h2>
-              </header>
-              <div className="entry-grid">
-                {accessGuides.map((guide, index) => (
-                  <motion.article
-                    key={guide.id}
-                    className="entry-card"
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.5, delay: index * 0.08 }}
-                  >
-                    <div className="entry-card__icon">
-                      <guide.icon size={18} />
-                    </div>
-                    <h3>{guide.title}</h3>
-                    <p>{guide.description}</p>
-                  </motion.article>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section id="como-funciona" className="landing-section">
-            <div className="landing-container">
-              <header className="section-heading section-heading--left-md">
-                <h2>Como o sistema é utilizado</h2>
-              </header>
-              <div className="workflow-grid">
-                {usageCards.map((card, index) => (
-                  <motion.article
-                    key={card.id}
-                    className="workflow-card"
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.5, delay: index * 0.08 }}
-                  >
-                    <div className="workflow-card__header">
-                      <div className="workflow-card__icon">
-                        <card.icon size={18} />
-                      </div>
-                      <h3>{card.title}</h3>
-                    </div>
-                    <ul className="workflow-list">
-                      {card.points.map((point) => (
-                        <li key={`${card.id}-${point}`}>{point}</li>
-                      ))}
-                    </ul>
-                  </motion.article>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section id="recursos" className="landing-section landing-section--soft">
-            <div className="landing-container">
-              <header className="section-heading section-heading--left-md">
-                <h2>O que você pode fazer no sistema</h2>
-              </header>
-              <div className="feature-grid">
-                {systemCapabilities.map((item, index) => (
-                  <motion.div
-                    key={item.text}
-                    className="feature-card"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.3 }}
-                    transition={{ duration: 0.45, delay: index * 0.07 }}
-                  >
-                    <div className="feature-card__icon">
-                      <item.icon size={18} />
-                    </div>
-                    <p>{item.text}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section id="faq" className="landing-section">
-            <div className="landing-container">
-              <header className="section-heading section-heading--left-md">
-                <h2>Perguntas frequentes</h2>
-              </header>
-              <div className="faq-grid">
-                {landingFaq.map((item) => (
-                  <article key={item.id} className="faq-card">
-                    <h3>{item.question}</h3>
-                    <p>{item.answer}</p>
-                  </article>
-                ))}
-              </div>
             </div>
           </section>
         </main>
@@ -877,10 +776,148 @@ const LoginPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {recoverOpen && (
+          <motion.div
+            className="request-modal-overlay app-modal-overlay"
+            role="presentation"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) handleCloseRecovery();
+            }}
+          >
+            <motion.div
+              className="request-modal recovery-modal app-modal-shell"
+              ref={recoveryModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="recovery-modal-title"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            >
+              <div className="request-modal-header app-modal-header">
+                <div className="app-modal-heading">
+                  <h3 id="recovery-modal-title" className="app-modal-title">Recuperar senha</h3>
+                  <p className="app-modal-subtitle">Informe seus dados para redefinir a senha de acesso.</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={handleCloseRecovery} aria-label="Fechar">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleRecoverySubmit} className="request-form app-modal-body">
+                <div className="request-grid recovery-grid">
+                  <label className="request-field full">
+                    <span>CPF ou e-mail cadastrado</span>
+                    <input
+                      type="text"
+                      value={recoverForm.identifier}
+                      onChange={handleRecoveryChange('identifier')}
+                      placeholder="usuario@laines.ufrn.br ou 00000000000"
+                      autoComplete="username"
+                      required
+                    />
+                  </label>
+
+                  <label className="request-field">
+                    <span>CPF</span>
+                    <input
+                      type="text"
+                      value={recoverForm.cpf}
+                      onChange={handleRecoveryCpfChange}
+                      placeholder="000.000.000-00"
+                      maxLength="14"
+                      required
+                    />
+                  </label>
+
+                  <label className="request-field">
+                    <span>Data de nascimento</span>
+                    <input
+                      type="date"
+                      value={recoverForm.dataNascimento}
+                      onChange={handleRecoveryChange('dataNascimento')}
+                      required
+                    />
+                  </label>
+
+                  <label className="request-field">
+                    <span>Nova senha</span>
+                    <div className="field-shell">
+                      <Lock size={17} />
+                      <input
+                        type={recoverShowPassword ? 'text' : 'password'}
+                        value={recoverForm.newPassword}
+                        onChange={handleRecoveryChange('newPassword')}
+                        placeholder="Nova senha"
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="password-visibility"
+                        onClick={() => setRecoverShowPassword((prev) => !prev)}
+                        aria-label={recoverShowPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      >
+                        {recoverShowPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    </div>
+                  </label>
+
+                  <label className="request-field">
+                    <span>Confirmar nova senha</span>
+                    <div className="field-shell">
+                      <Lock size={17} />
+                      <input
+                        type={recoverShowConfirmPassword ? 'text' : 'password'}
+                        value={recoverForm.confirmPassword}
+                        onChange={handleRecoveryChange('confirmPassword')}
+                        placeholder="Repita a nova senha"
+                        autoComplete="new-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="password-visibility"
+                        onClick={() => setRecoverShowConfirmPassword((prev) => !prev)}
+                        aria-label={recoverShowConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                      >
+                        {recoverShowConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    </div>
+                  </label>
+                </div>
+
+                {recoverError && <div className="request-message error">{recoverError}</div>}
+                {recoverSuccess && <div className="request-message success">{recoverSuccess}</div>}
+
+                <div className="request-actions app-modal-footer">
+                  <button
+                    type="button"
+                    className="request-secondary app-modal-btn app-modal-btn--secondary"
+                    onClick={handleCloseRecovery}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="request-primary app-modal-btn app-modal-btn--primary"
+                    disabled={recoverLoading}
+                  >
+                    {recoverLoading ? 'Redefinindo...' : 'Redefinir senha'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
 
 export default LoginPage;
-
-

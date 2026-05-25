@@ -130,7 +130,7 @@ const AccessRequests = () => {
         title: 'Acesso criado',
         message: data?.user?.existed
           ? 'Solicitação aprovada. Usuário existente vinculado pelo e-mail.'
-          : 'Solicitação aprovada. Consulte login e senha provisória na lista de usuários.'
+          : 'Solicitação aprovada. Novo usuário criado com credencial provisória ativa.'
       });
     } catch (error) {
       console.error('Erro ao aprovar solicitação:', error);

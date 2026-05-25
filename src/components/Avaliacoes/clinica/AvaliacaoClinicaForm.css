@@ -1,12 +1,6 @@
 .clinica-form.clinica-form--modern {
   border-radius: 20px;
-  border: 1px solid rgba(14, 116, 144, 0.2);
-}
-
-.clinica-form .eval-icon {
-  background: rgba(225, 29, 72, 0.10);
-  color: #be123c;
-  box-shadow: 0 8px 20px rgba(225, 29, 72, 0.12);
+  border: 1px solid rgba(86, 173, 219, 0.2);
 }
 
 .clinica-form .clinica-grid {
@@ -49,7 +43,7 @@
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid rgba(14, 116, 144, 0.3);
+  border: 1px solid rgba(86, 173, 219, 0.3);
   background: #ffffff;
   color: #0f5a73;
   font-size: 0.66rem;
@@ -60,7 +54,7 @@
 
 .clinica-form .clinica-help:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.2);
+  box-shadow: 0 0 0 3px rgba(86, 173, 219, 0.2);
 }
 
 .clinica-form .clinica-help-tooltip {
@@ -124,6 +118,19 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
+}
+
+.clinica-form .clinica-athlete-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #0c4a6e;
+  background: rgba(14, 165, 233, 0.14);
+  border: 1px solid rgba(14, 165, 233, 0.32);
 }
 
 .clinica-form .clinica-sign-item {

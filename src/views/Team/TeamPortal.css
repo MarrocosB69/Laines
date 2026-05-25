@@ -187,7 +187,7 @@
 .team-status {
   padding: 0.34rem 0.74rem;
   border-radius: 999px;
-  border: 1px solid rgba(37, 99, 235, 0.22);
+  border: 1px solid rgba(86, 173, 219, 0.22);
   background: rgba(219, 234, 254, 0.72);
   font-size: 0.72rem;
   font-weight: 800;
@@ -354,6 +354,237 @@
   .team-list {
     padding: 0.86rem;
   }
+}
+
+/* Team list header with search */
+.team-list-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgba(20, 53, 84, 0.09);
+}
+
+.team-list-title {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #5c728a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.team-list-count {
+  margin-left: auto;
+  background: rgba(29, 51, 80, 0.09);
+  color: #1d3350;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.46rem;
+  border-radius: 999px;
+}
+
+.team-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.48rem;
+  padding: 0.44rem 0.64rem;
+  background: #f1f5f9;
+  border-radius: 0.7rem;
+  border: 1px solid #e2e8f0;
+}
+
+.team-search-box svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+}
+
+.team-search-box input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 0.82rem;
+  color: #1e293b;
+  outline: none;
+}
+
+.team-search-box input::placeholder {
+  color: #94a3b8;
+}
+
+/* Updated list item layout */
+.team-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-direction: row !important;
+}
+
+.team-list-item-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #1D3350, #2f6fa6);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.team-list-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-list-item-info strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.team-status-dot.ok {
+  background: #22c55e;
+}
+
+.team-status-dot.neutral {
+  background: #94a3b8;
+}
+
+/* Updated detail header */
+.team-detail-header {
+  align-items: center;
+}
+
+.team-detail-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #1D3350, #2f6fa6);
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.team-detail-identity {
+  flex: 1;
+}
+
+.team-project-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.14rem 0.52rem;
+  background: rgba(86, 173, 219, 0.12);
+  color: #1e3a8a;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.team-status-chip {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.team-status-chip.ok {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.team-status-chip.neutral {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Metric ok state */
+.team-metric-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #16a34a;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Eval item updated */
+.team-eval-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.team-eval-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.team-eval-dot.ok {
+  background: #22c55e;
+}
+
+.team-eval-dot.pending {
+  background: #f59e0b;
+}
+
+.team-eval-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.team-eval-count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* Empty panel (no patient selected) */
+.team-empty-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: #94a3b8;
+  min-height: 320px;
+}
+
+.team-empty-panel svg {
+  opacity: 0.4;
+}
+
+.team-empty-panel p {
+  font-size: 0.9rem;
+}
+
+/* Remove pseudo emoji from team-empty inside portal */
+.team-body .team-empty::before {
+  display: none;
 }
 
 /* Parte 3 — harmonização visual (Equipe) */

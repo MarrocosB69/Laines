@@ -57,4 +57,37 @@ test.describe('Readiness UI', () => {
     const passwordInputFocused = await page.locator('input[autocomplete="current-password"]').evaluate((element) => element === document.activeElement);
     expect(passwordInputFocused).toBeTruthy();
   });
+
+  test('avaliacao completa carrega shell operacional e mantem responsividade', async ({ page }) => {
+    await page.goto('/login');
+    await expect(page.getByText('Entrar na plataforma')).toBeVisible();
+
+    await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(adminEmail);
+    await page.locator('input[autocomplete="current-password"]').fill(adminPassword);
+    await page.getByRole('button', { name: /entrar agora|entrando/i }).click();
+
+    await page.waitForURL('**/admin', { timeout: 30_000 });
+    await page.goto('/avaliacao/paciente-etapa8-smoke', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByRole('heading', { name: /Avaliação completa/i })).toBeVisible();
+    await expect(page.getByText('Progresso clínico')).toBeVisible();
+    await expect(page.getByText('Próximos passos')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Plano alimentar/i }).first()).toBeVisible();
+
+    const stageTabCount = await page.locator('.avaliacao-stage-tab').count();
+    expect(stageTabCount).toBeGreaterThan(1);
+
+    const noOverflowDesktop = await page.evaluate(() => (
+      document.documentElement.scrollWidth <= (window.innerWidth + 1)
+    ));
+    expect(noOverflowDesktop).toBeTruthy();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(150);
+
+    const noOverflowMobile = await page.evaluate(() => (
+      document.documentElement.scrollWidth <= (window.innerWidth + 1)
+    ));
+    expect(noOverflowMobile).toBeTruthy();
+  });
 });

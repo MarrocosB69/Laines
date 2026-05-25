@@ -5,6 +5,11 @@ require('dotenv').config({
   path: process.env.DOTENV_CONFIG_PATH || path.resolve(__dirname, '..', '.env')
 });
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('BLOQUEADO: seed-ci-analytics não pode rodar em produção.');
+  process.exit(1);
+}
+
 const ANALYTICS_PROJECT_ID = '11111111-1111-4111-8111-111111111111';
 const PATIENT_IDS = {
   linked: '21111111-1111-4111-8111-111111111111',

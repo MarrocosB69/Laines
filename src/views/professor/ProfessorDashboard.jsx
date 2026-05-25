@@ -82,7 +82,7 @@ const getPatientStatusLabel = (value) => {
   return option?.label || 'Ativo';
 };
 
-const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboard' }) => {
+const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
   const { user } = useAuth();
   const { formatDate, addPaciente } = usePacientes();
   const [students, setStudents] = useState([]);
@@ -519,6 +519,13 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
     return summary;
   }, [alunoSelecionado]);
 
+  const supervisionCoverage = useMemo(() => {
+    if (!alunos.length) return null;
+    const withPatients = alunos.filter((a) => a.pacientes.length > 0).length;
+    const pct = Math.round((withPatients / alunos.length) * 100);
+    return { pct, withPatients, total: alunos.length };
+  }, [alunos]);
+
   const syncLabel = useMemo(() => {
     if (!lastSyncedAt) return 'Sincronização pendente';
     return `Atualizado às ${lastSyncedAt.toLocaleTimeString('pt-BR', {
@@ -580,7 +587,16 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
             </div>
             <div>
               <p className="status-label">Status da turma</p>
-              <strong className="status-value">100% supervisionada</strong>
+              {supervisionCoverage ? (
+                <strong className="status-value">
+                  {supervisionCoverage.pct}% com pacientes
+                  <span className="professor-status-detail">
+                    {supervisionCoverage.withPatients}/{supervisionCoverage.total} alunos
+                  </span>
+                </strong>
+              ) : (
+                <strong className="status-value">Sem alunos vinculados</strong>
+              )}
             </div>
           </div>
           <div className="professor-refresh-card">
@@ -599,7 +615,9 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
         </div>
       </header>
 
-      <section className="professor-stats">
+      {activeTab === 'dashboard' && (
+        <>
+        <section className="professor-stats">
         <button
           type="button"
           className={`stat-card-action ${activeMetric === 'patients' ? 'active' : ''}`}
@@ -696,7 +714,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
           {activeMetric === 'patients' && (
             <div className="metric-list">
               {supervisedPatientsList.length === 0 ? (
-                <div className="metric-empty laines-feedback-state">Nenhum paciente supervisionado.</div>
+                <div className="metric-empty laines-feedback-state">Nenhum atleta supervisionado.</div>
               ) : (
                 supervisedPatientsList.map((patient) => (
                   <button
@@ -793,8 +811,10 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
           )}
         </section>
       )}
+        </>
+      )}
 
-      <section className="professor-grid">
+      {activeTab === 'patients' && <section className="professor-grid">
         <div className="professor-students">
           <div className="section-header">
             <h2>Turma</h2>
@@ -829,7 +849,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
                   </div>
                   <div>
                     <h3>{aluno.nome}</h3>
-                    <p>{aluno.pacientes.length} pacientes</p>
+                    <p>{aluno.pacientes.length} atletas</p>
                   </div>
                 </button>
               ))
@@ -842,7 +862,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
             <>
               <div className="section-header">
                 <div>
-                  <h2>Pacientes de {alunoSelecionado.nome}</h2>
+                  <h2>Atletas de {alunoSelecionado.nome}</h2>
                   <p className="muted">
                     {alunoSelecionado.email || 'Email não informado'}
                   </p>
@@ -854,7 +874,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
                   onClick={() => setPatientModalOpen(true)}
                 >
                   <Plus size={18} />
-                  Novo paciente
+                  Novo atleta
                 </Button>
               </div>
 
@@ -916,7 +936,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
 
               <div className="patient-grid">
                 {pacientesFiltrados.length === 0 ? (
-                  <div className="empty-state laines-feedback-state">Nenhum paciente encontrado.</div>
+                  <div className="empty-state laines-feedback-state">Nenhum atleta encontrado.</div>
                 ) : (
                   pacientesFiltrados.map((paciente) => (
                     <button
@@ -958,7 +978,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab: _activeTab = 'dashboar
             </div>
           )}
         </div>
-      </section>
+      </section>}
 
       <PatientModal
         isOpen={isPatientModalOpen}

@@ -7,9 +7,10 @@ import { RolesGuard } from '../auth/roles.guard';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { Paciente } from '../pacientes/paciente.entity';
 import { User } from '../users/user.entity';
+import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Projeto, Paciente, User]), RealtimeModule],
+  imports: [TypeOrmModule.forFeature([Projeto, Paciente, User, Avaliacao]), RealtimeModule],
   providers: [ProjetosService, RolesGuard],
   controllers: [ProjetosController],
   exports: [ProjetosService]

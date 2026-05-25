@@ -1,45 +1,270 @@
+/* stylelint-disable selector-class-pattern, no-descending-specificity */
+
 .avaliacao-fisioterapia {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 1rem;
 }
 
-.avaliacao-fisioterapia .eval-header {
-  margin-bottom: 1.2rem;
+.avaliacao-fisioterapia .eval-section {
+  display: grid;
+  gap: 0.85rem;
 }
 
-.avaliacao-fisioterapia .eval-actions {
-  margin-top: 1.2rem;
+.fisio-session-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.2rem 0 0.35rem;
+  scrollbar-width: thin;
 }
 
-.avaliacao-fisioterapia .eval-btn-primary {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+.fisio-session-tab,
+.fisio-session-add,
+.fisio-row-add,
+.fisio-icon-btn {
+  border: 1px solid var(--eval-border);
+  background: var(--eval-surface);
+  color: var(--eval-title);
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
-/* ── Domain color: multiprofissional ── */
-.avaliacao-fisioterapia .eval-icon {
-  background: rgba(124, 58, 237, 0.10);
-  color: #6d28d9;
-  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.12);
+.fisio-session-tab,
+.fisio-session-add {
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 0.48rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-size: 0.74rem;
 }
 
-@media (max-width: 768px) {
+.fisio-session-tab--active {
+  background: var(--eval-accent-soft, var(--eval-surface-alt));
+  border-color: var(--eval-accent);
+  color: var(--eval-accent-strong);
+  box-shadow: 0 0 0 3px var(--eval-accent-soft, var(--eval-surface-alt));
+}
+
+.fisio-session-add,
+.fisio-row-add {
+  color: var(--eval-accent-strong);
+}
+
+.fisio-session-tab:hover:not(:disabled),
+.fisio-session-add:hover:not(:disabled),
+.fisio-row-add:hover:not(:disabled),
+.fisio-icon-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--eval-accent);
+  box-shadow: var(--eval-shadow-soft);
+}
+
+.fisio-session-tab:disabled,
+.fisio-session-add:disabled,
+.fisio-row-add:disabled,
+.fisio-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+  box-shadow: none;
+}
+
+.fisio-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.fisio-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--eval-border);
+  border-radius: 13px;
+  overflow: hidden;
+  background: var(--eval-surface);
+}
+
+.fisio-table th,
+.fisio-table td {
+  border-bottom: 1px solid var(--eval-border);
+  border-right: 1px solid var(--eval-border);
+  padding: 0.55rem;
+  vertical-align: middle;
+  color: var(--eval-title);
+  font-size: 0.78rem;
+}
+
+.fisio-table th {
+  background: var(--eval-surface-alt);
+  font-weight: 800;
+  text-align: left;
+}
+
+.fisio-table tr:last-child th,
+.fisio-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.fisio-table th:last-child,
+.fisio-table td:last-child {
+  border-right: 0;
+}
+
+.fisio-table td .eval-input {
+  min-width: 110px;
+}
+
+.fisio-table__computed {
+  background: var(--eval-surface-alt);
+  font-weight: 800;
+  color: var(--eval-muted);
+  text-align: center;
+}
+
+.fisio-table__empty {
+  text-align: center;
+  color: var(--eval-muted);
+  font-weight: 700;
+  background: var(--eval-surface-alt);
+}
+
+.fisio-row-add {
+  justify-self: flex-start;
+  min-height: 36px;
+  border-radius: 11px;
+  padding: 0.52rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.73rem;
+}
+
+.fisio-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fisio-subsection {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.25rem;
+}
+
+.fisio-subsection + .fisio-subsection {
+  border-top: 1px solid var(--eval-border);
+  padding-top: 0.9rem;
+}
+
+.fisio-subtitle {
+  margin: 0;
+  color: var(--eval-title);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fisio-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.fisio-checklist-block {
+  min-width: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.fisio-checklist {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 440px;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.fisio-checklist__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--eval-border);
+  border-radius: 12px;
+  background: var(--eval-surface);
+  padding: 0.45rem;
+}
+
+.fisio-checklist__item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--eval-accent);
+}
+
+.fisio-checklist__item--done .eval-input {
+  text-decoration: line-through;
+  color: var(--eval-muted);
+  background: var(--eval-surface-alt);
+}
+
+.fisio-empty {
+  margin: 0;
+  padding: 0.72rem;
+  border: 1px dashed var(--eval-border);
+  border-radius: 12px;
+  color: var(--eval-muted);
+  background: var(--eval-surface-alt);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.fisio-condutas {
+  margin-top: 0.85rem;
+}
+
+@media (width <= 900px) {
+  .fisio-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 768px) {
   .avaliacao-fisioterapia .eval-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
-  .avaliacao-fisioterapia .eval-actions {
-    gap: 0.45rem;
+  .fisio-session-nav {
+    align-items: stretch;
+  }
+
+  .fisio-table {
+    min-width: 560px;
   }
 }
 
-@media (max-width: 480px) {
+@media (width <= 480px) {
   .avaliacao-fisioterapia {
-    padding: 0.75rem 0.5rem !important;
+    padding: 0.75rem 0.5rem;
   }
 
-  .avaliacao-fisioterapia .eval-card,
   .avaliacao-fisioterapia .eval-section {
-    padding: 0.75rem !important;
+    padding: 0.75rem;
+  }
+
+  .fisio-session-tab,
+  .fisio-session-add,
+  .fisio-row-add {
+    font-size: 0.68rem;
   }
 }

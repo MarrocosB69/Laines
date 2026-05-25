@@ -12,24 +12,221 @@
   margin-top: 1.2rem;
 }
 
-.avaliacao-psicologia .eval-btn-primary {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+/* ── Questionnaire section ── */
+.psico-section {
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--surface-secondary, #f8fafc);
 }
 
-/* ── Domain color: multiprofissional ── */
-.avaliacao-psicologia .eval-icon {
-  background: rgba(124, 58, 237, 0.10);
-  color: #6d28d9;
-  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.12);
+.psico-section-header {
+  margin-bottom: 1rem;
 }
 
-@media (max-width: 768px) {
-  .avaliacao-psicologia .eval-grid {
-    grid-template-columns: 1fr !important;
+.psico-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a202c);
+  margin: 0 0 0.25rem;
+}
+
+.psico-section-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  margin: 0 0 0.2rem;
+}
+
+.psico-section-citation {
+  font-size: 0.73rem;
+  color: var(--text-tertiary, #94a3b8);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Column labels row ── */
+.psico-likert-header {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, 7rem);
+  gap: 0.25rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  margin-bottom: 0.25rem;
+}
+
+.psico-likert-col-label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ── Question row ── */
+.psico-question {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, 7rem);
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-light, #f1f5f9);
+}
+
+.psico-question:last-of-type {
+  border-bottom: none;
+}
+
+.psico-q-text {
+  font-size: 0.82rem;
+  color: var(--text-primary, #1a202c);
+  line-height: 1.4;
+  padding-right: 0.5rem;
+}
+
+.psico-q-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary, #94a3b8);
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+
+/* ── Likert radio ── */
+.psico-likert {
+  display: contents;
+}
+
+.psico-likert-option {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+}
+
+.psico-likert-option input[type='radio'] {
+  display: none;
+}
+
+.psico-radio-circle {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  border: 2px solid var(--border-color, #cbd5e1);
+  background: var(--surface-primary, #fff);
+  transition: border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.psico-likert-option--selected .psico-radio-circle {
+  border-color: var(--color-primary, #6366f1);
+  background: var(--color-primary, #6366f1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #6366f1) 20%, transparent);
+}
+
+.psico-likert-option:not(.psico-likert-option--readonly):hover .psico-radio-circle {
+  border-color: var(--color-primary, #6366f1);
+}
+
+.psico-likert-option--readonly {
+  cursor: default;
+}
+
+/* ── Score badge ── */
+.psico-score-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.psico-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  background: var(--surface-primary, #fff);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  width: fit-content;
+}
+
+.psico-score-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary, #1a202c);
+}
+
+.psico-score-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.psico-severity--green  { border-color: #22c55e; background: #f0fdf4; }
+.psico-severity--green  .psico-score-value { color: #16a34a; }
+.psico-severity--yellow { border-color: #eab308; background: #fefce8; }
+.psico-severity--yellow .psico-score-value { color: #ca8a04; }
+.psico-severity--orange { border-color: #f97316; background: #fff7ed; }
+.psico-severity--orange .psico-score-value { color: #ea580c; }
+.psico-severity--red    { border-color: #ef4444; background: #fef2f2; }
+.psico-severity--red    .psico-score-value { color: #dc2626; }
+
+.psico-cutoff-alert {
+  font-size: 0.78rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .psico-likert-header,
+  .psico-question {
+    grid-template-columns: 1fr repeat(4, 5rem);
+  }
+}
+
+@media (max-width: 700px) {
+  .psico-likert-header {
+    display: none;
   }
 
-  .avaliacao-psicologia .eval-actions {
-    gap: 0.45rem;
+  .psico-question {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    padding: 0.75rem 0;
+  }
+
+  .psico-likert {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .psico-likert-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary, #64748b);
+    text-align: center;
+    width: 4.5rem;
+  }
+
+  .psico-likert-option::after {
+    content: attr(data-label);
   }
 }
 
@@ -38,8 +235,7 @@
     padding: 0.75rem 0.5rem !important;
   }
 
-  .avaliacao-psicologia .eval-card,
-  .avaliacao-psicologia .eval-section {
-    padding: 0.75rem !important;
+  .psico-section {
+    padding: 0.75rem;
   }
 }

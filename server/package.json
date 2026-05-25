@@ -8,7 +8,11 @@
     "start:dev": "nest start --watch",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && nest build",
     "lint": "tsc --noEmit --project tsconfig.json",
+    "seed": "npm run seed:mets && npm run seed:taco",
+    "seed:mets": "ts-node -r tsconfig-paths/register -r dotenv/config src/database/seeds/mets.seed.ts dotenv_config_path=.env",
+    "seed:taco": "ts-node -r tsconfig-paths/register -r dotenv/config src/database/seeds/taco.seed.ts dotenv_config_path=.env",
     "seed:e2e": "ts-node -r tsconfig-paths/register -r dotenv/config scripts/seed-e2e-users.ts dotenv_config_path=.env",
+    "bootstrap:admin": "ts-node -r tsconfig-paths/register -r dotenv/config scripts/bootstrap-admin.ts dotenv_config_path=.env",
     "start:prod": "npm run migration:run:prod && node dist/main.js",
     "migration:generate": "typeorm-ts-node-commonjs -d src/database/typeorm.config.ts migration:generate ./src/database/migrations/Init",
     "migration:run": "typeorm-ts-node-commonjs -d src/database/typeorm.config.ts migration:run",
@@ -16,8 +20,8 @@
   },
   "dependencies": {
     "@nestjs/common": "^11.1.17",
-    "@nestjs/config": "^4.0.3",
-    "@nestjs/core": "^11.1.17",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.19",
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.17",
@@ -30,10 +34,11 @@
     "jsonwebtoken": "^9.0.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pdfkit": "^0.18.0",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.22"
+    "typeorm": "^0.3.28"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",

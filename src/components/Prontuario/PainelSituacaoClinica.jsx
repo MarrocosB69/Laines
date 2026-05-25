@@ -1,5 +1,5 @@
 import React from 'react';
-import { History, PlusCircle } from 'lucide-react';
+import { Activity, History, PlusCircle } from 'lucide-react';
 
 const PainelSituacaoClinica = ({
   prontuarioSignals = [],
@@ -10,9 +10,14 @@ const PainelSituacaoClinica = ({
 }) => (
   <section className="pron-card pron-panel">
     <header className="pron-panel-header">
-      <div>
-        <h2>Situação Clínica</h2>
-        <p>Indicadores rápidos de acompanhamento.</p>
+      <div className="pron-panel-header__title-row">
+        <span className="pron-panel-header__icon" aria-hidden="true">
+          <Activity size={15} strokeWidth={1.8} />
+        </span>
+        <div>
+          <h2>Situação Clínica</h2>
+          <p>Indicadores rápidos de acompanhamento.</p>
+        </div>
       </div>
     </header>
 
@@ -25,18 +30,21 @@ const PainelSituacaoClinica = ({
       ))}
     </div>
 
-    <div className="pron-inline-status">
-      <span className="campo-label">Pendências de avaliação</span>
-      <span className="campo-valor">{pendingModulesSummary}</span>
-    </div>
+    {pendingModulesSummary && (
+      <div className="pron-pending-badge">
+        <span className="pron-pending-badge__dot" aria-hidden="true" />
+        <span className="pron-pending-badge__label">Pendências:</span>
+        <span className="pron-pending-badge__value">{pendingModulesSummary}</span>
+      </div>
+    )}
 
     <div className="pron-inline-actions">
-      {canCreateEvaluation ? (
+      {canCreateEvaluation && (
         <button type="button" className="pron-btn pron-btn-secondary" onClick={onCreateEvaluation}>
           <PlusCircle size={14} />
           Abrir avaliações
         </button>
-      ) : null}
+      )}
       <button type="button" className="pron-btn pron-btn-secondary" onClick={onOpenHistory}>
         <History size={14} />
         Histórico
@@ -46,4 +54,3 @@ const PainelSituacaoClinica = ({
 );
 
 export default PainelSituacaoClinica;
-

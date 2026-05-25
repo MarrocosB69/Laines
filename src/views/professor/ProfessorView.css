@@ -209,6 +209,15 @@
   font-size: var(--font-size-lg);
   color: var(--prof-primary);
   font-weight: var(--font-weight-extrabold);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.professor-view .professor-status-detail {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #64748b;
 }
 
 .professor-view .professor-stats {

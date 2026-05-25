@@ -1,17 +1,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import {
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
-  Shield,
-  Users
-} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUiFeedback } from '../../contexts/UiFeedbackContext';
 import { getApiErrorMessage } from '../../services/api';
 import '../SidebarShell.css';
+import '../shared/sidebar-tokens.css';
+import SidebarHeader from '../shared/SidebarHeader';
+import SidebarFooter from '../shared/SidebarFooter';
+
+import {
+  Users,
+  Shield,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+
+const navIcon = (Icon) => <Icon size={18} strokeWidth={1.8} />;
+
+const MENU_ITEMS = [
+  { id: 'atletas', label: 'Atletas', icon: navIcon(Users) }
+];
 
 const TeamSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
   const navigate = useNavigate();
@@ -26,12 +35,8 @@ const TeamSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
     return `${first}${last}`.toUpperCase();
   };
 
-  const displayName = user?.name || user?.nome || '';
+  const displayName  = user?.name || user?.nome || '';
   const userInitials = getInitials(displayName);
-
-  const menuItems = [
-    { id: 'atletas', label: 'Atletas', icon: <Users size={20} /> }
-  ];
 
   const handleLogout = async () => {
     try {
@@ -41,9 +46,14 @@ const TeamSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
       notify({
         type: 'error',
         title: 'Falha ao sair',
-        message: getApiErrorMessage(error, 'Não foi possível encerrar a sessão.')
+        message: getApiErrorMessage(error, 'Não foi possível sair do sistema.')
       });
     }
+  };
+
+  const handleSelectTab = (id) => {
+    setActiveTab(id);
+    if (window.innerWidth <= 768 && isOpen) onToggle();
   };
 
   return (
@@ -56,69 +66,74 @@ const TeamSidebar = ({ activeTab, setActiveTab, isOpen, onToggle }) => {
       >
         <div className="laines-sidebar__header">
           <div className="laines-sidebar__brand">
-            <span className="laines-sidebar__logo-chip" aria-hidden="true">L</span>
-            <div>
-              <h1 className="laines-sidebar__title">LAINES</h1>
-              <p className="laines-sidebar__subtitle">Liga acadêmica interprofissional</p>
-            </div>
+            <SidebarHeader roleLabel="Equipe Técnica" />
           </div>
-          <button onClick={onToggle} className="laines-sidebar__collapse md:hidden" aria-label="Fechar menu">
-            <ChevronLeft size={20} />
+          <button
+            type="button"
+            onClick={onToggle}
+            className="laines-sidebar__collapse"
+            aria-label="Fechar menu"
+          >
+            <ChevronLeft size={18} strokeWidth={1.8} />
           </button>
         </div>
 
-        <div className="laines-sidebar__role-card">
-          <div className="laines-sidebar__role-icon">
-            <Shield size={20} />
+        <div className="sb-identity">
+          <div className="sb-identity__icon-box" aria-hidden="true">
+            <Shield size={16} strokeWidth={1.8} color="#a78bfa" />
           </div>
           <div>
-            <h4 className="laines-sidebar__role-title">Equipe técnica</h4>
-            <p className="laines-sidebar__role-subtitle">Acompanhamento esportivo</p>
+            <p className="sb-identity__role">Equipe Técnica</p>
+            <p className="sb-identity__profile-name">Acompanhamento esportivo</p>
           </div>
         </div>
 
-        <nav className="laines-sidebar__nav custom-scrollbar">
-          <div>
+        <nav className="laines-sidebar__nav custom-scrollbar" aria-label="Navegação principal">
+          <section className="laines-sidebar__section" aria-label="Portal">
             <h3 className="laines-sidebar__section-title">Portal</h3>
-            <div className="space-y-0.5">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (window.innerWidth <= 768 && isOpen) onToggle();
-                  }}
-                  className={`laines-sidebar__item ${activeTab === item.id ? 'laines-sidebar__item--active' : ''}`}
-                >
-                  <div className="laines-sidebar__item-icon">{item.icon}</div>
-                  <span>{item.label}</span>
-                  {activeTab === item.id && <div className="laines-sidebar__item-indicator" />}
-                </button>
-              ))}
+            <div className="laines-sidebar__section-items">
+              {MENU_ITEMS.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleSelectTab(item.id)}
+                    className={`laines-sidebar__item ${isActive ? 'laines-sidebar__item--active' : ''}`}
+                    aria-label={item.label}
+                    title={item.label}
+                  >
+                    <div className="laines-sidebar__item-icon" aria-hidden="true">
+                      {item.icon}
+                    </div>
+                    <span className="laines-sidebar__item-label">{item.label}</span>
+                    {isActive && (
+                      <div className="laines-sidebar__item-indicator" aria-hidden="true" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </section>
         </nav>
 
-        <div className="laines-sidebar__footer">
-          <div className="laines-sidebar__user-card">
-            <div className="laines-sidebar__user-info">
-              <div className="laines-sidebar__avatar">{userInitials}</div>
-              <div>
-                <p className="laines-sidebar__user-name">{displayName || 'Equipe'}</p>
-                <p className="laines-sidebar__user-status">Sessão ativa</p>
-              </div>
-            </div>
-            <button onClick={handleLogout} className="laines-sidebar__logout" title="Sair" aria-label="Sair">
-              <LogOut size={18} />
-            </button>
-          </div>
-          <p className="laines-sidebar__footer-note">LAINES • Área da equipe</p>
-        </div>
+        <SidebarFooter
+          displayName={displayName || 'Equipe'}
+          userInitials={userInitials}
+          onLogout={handleLogout}
+        />
+
+        <p className="sb-bottom-tag">LAINES · Área da equipe</p>
       </motion.aside>
 
       {!isOpen && (
-        <button onClick={onToggle} className="laines-sidebar__toggle" aria-label="Abrir menu">
-          <ChevronRight size={20} />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="laines-sidebar__toggle"
+          aria-label="Abrir menu"
+        >
+          <ChevronRight size={20} strokeWidth={1.8} />
         </button>
       )}
     </>

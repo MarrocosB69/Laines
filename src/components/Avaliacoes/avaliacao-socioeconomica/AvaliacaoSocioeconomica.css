@@ -1,15 +1,3 @@
-.avaliacao-socioeconomica .eval-card {
-  border-radius: 22px;
-  border: 1px solid rgba(14, 165, 233, 0.18);
-  background: #ffffff;
-}
-
-.avaliacao-socioeconomica .eval-icon {
-  background: rgba(217, 119, 6, 0.12);
-  color: #b45309;
-  box-shadow: 0 8px 20px rgba(217, 119, 6, 0.13);
-}
-
 .avaliacao-socioeconomica .card-header {
   background: #f8fafc;
   font-weight: 700;

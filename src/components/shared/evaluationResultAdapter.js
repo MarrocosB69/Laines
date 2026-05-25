@@ -116,6 +116,7 @@ const classifyToneByText = (rawValue, fallback = 'neutral') => {
     token.includes('normal')
     || token.includes('adequad')
     || token.includes('seguranca')
+    || token.includes('segura')
     || token.includes('saudavel')
     || token.includes('fitness')
     || token.includes('atleta')
@@ -497,6 +498,32 @@ const resolveByType = (evaluation) => {
       interpretation: 'Resumo de risco hidrico durante atividade/treino.',
       supportLabel: 'Taxa de sudorese',
       supportValue: taxaSudorese !== null ? `${taxaSudorese.toFixed(2)} L/h` : 'Nao informada'
+    };
+  }
+
+  if (type === 'carga_treino') {
+    const cargaSemanaAtual = toNumber(pickFirst(evaluation, [
+      'resultados.calculated.cargaSemanaAtual',
+      'resultados.cargaSemanaAtual'
+    ]));
+    const acwr = toNumber(pickFirst(evaluation, [
+      'resultados.calculated.acwr',
+      'resultados.acwr'
+    ]));
+    const classification = pickFirst(evaluation, [
+      'resultados.output.classificacaoAcwr',
+      'resultados.classificacaoAcwr',
+      'classificacao'
+    ]) || 'Sem classificação';
+    return {
+      title: 'Carga semanal',
+      value: cargaSemanaAtual,
+      unit: 'UA',
+      classification: String(classification).replace(/_/g, ' '),
+      tone: classifyToneByText(classification, cargaSemanaAtual !== null ? 'info' : 'neutral'),
+      interpretation: 'Resumo de carga interna semanal informada pelo atleta/equipe.',
+      supportLabel: 'ACWR',
+      supportValue: acwr !== null ? acwr.toFixed(2) : 'Não calculado'
     };
   }
 
@@ -1016,8 +1043,5 @@ export const buildEvaluationTimelineSummary = (evaluation) => {
 
   return '';
 };
-
-
-
 
 

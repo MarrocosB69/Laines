@@ -1,0 +1,51 @@
+.athlete-self-eval-modal {
+  --app-modal-width: 1040px;
+}
+
+.athlete-self-eval-header {
+  gap: 0.9rem;
+}
+
+.athlete-self-eval-header-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(16, 51, 85, 0.2);
+  background: rgba(16, 51, 85, 0.1);
+  color: var(--color-navy);
+  display: grid;
+  place-items: center;
+}
+
+.athlete-self-eval-body {
+  border-top: 1px solid #edf2f7;
+  padding-top: 0.95rem;
+  overflow-y: auto;
+}
+
+.athlete-self-eval-body .eval-card,
+.athlete-self-eval-body .avaliacao-alimentar-r24h,
+.athlete-self-eval-body .carga-treino {
+  margin: 0;
+}
+
+.athlete-calc-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: 8px;
+  background: #f0f9ff;
+  border: 1px solid rgba(2, 132, 199, 0.20);
+  font-size: 0.8rem;
+  color: #0369a1;
+}
+
+.athlete-calc-result strong {
+  font-weight: 700;
+}
+
+.athlete-calc-result__note {
+  color: #64748b;
+  font-size: 0.73rem;
+}

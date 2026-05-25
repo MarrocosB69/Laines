@@ -1,5 +1,14 @@
 import React from 'react';
-import { ArrowLeft, Clock, FolderKanban, History, PlusCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  CalendarPlus,
+  FolderKanban,
+  History,
+  PlusCircle,
+  Mail,
+  AlertTriangle,
+} from 'lucide-react';
+import './ProntuarioHeader.css';
 
 const ProntuarioHeader = ({
   onBack,
@@ -17,58 +26,128 @@ const ProntuarioHeader = ({
   onCreateEvaluation,
   onCreateAppointment,
   onOpenProject,
-  onOpenHistory
-}) => (
-  <header className="pron-header pron-card">
-    <div className="pron-header-left">
-      <button type="button" className="pron-icon-btn" onClick={onBack} aria-label="Voltar para lista de atletas">
-        <ArrowLeft size={16} />
-      </button>
-      <div className="pron-avatar" aria-hidden="true">{patientInitials}</div>
-      <div className="pron-header-title">
-        <h1>{patientName || 'Atleta'}</h1>
-        <div className="pron-header-badges">
-          <span className="pron-badge pron-badge-accent">
-            PRT-{prontuarioNumber || 'PENDENTE'}
-          </span>
-          <span className={`pron-badge ${isActive ? 'pron-badge-ok' : 'pron-badge-muted'}`}>
-            {isActive ? 'Ativo' : 'Inativo'}
-          </span>
-          <span className={`pron-badge ${athleteLoginEmail ? 'pron-badge-info' : 'pron-badge-warn'}`}>
-            Login atleta: {athleteLoginEmail || 'nao vinculado'}
-          </span>
-          {projectName ? <span className="pron-badge pron-badge-muted">{projectName}</span> : null}
-          {profileIncomplete ? <span className="pron-badge pron-badge-warn">Perfil incompleto</span> : null}
-        </div>
-        {subtitle ? <p className="pron-header-subtitle">{subtitle}</p> : null}
-      </div>
-    </div>
+  onOpenHistory,
+}) => {
+  const nameParts   = (patientName || '').trim().split(/\s+/);
+  const firstName   = nameParts[0] || 'Atleta';
+  const restOfName  = nameParts.slice(1).join(' ');
 
-    <div className="pron-header-actions">
-      {canCreateEvaluation ? (
-        <button type="button" className="pron-btn pron-btn-primary" onClick={onCreateEvaluation}>
-          <PlusCircle size={16} />
-          <span>Nova Avaliacao</span>
+  return (
+    <header className="ph-root pron-card">
+      {/* accent bar */}
+      <div className="ph-accent-bar" aria-hidden="true" />
+
+      {/* ── left: back + identity ── */}
+      <div className="ph-left">
+        <button
+          type="button"
+          className="ph-back-btn"
+          onClick={onBack}
+          aria-label="Voltar para lista de atletas"
+        >
+          <ArrowLeft size={15} />
         </button>
-      ) : null}
-      {canCreateAppointment ? (
-        <button type="button" className="pron-btn pron-btn-secondary" onClick={onCreateAppointment}>
-          <Clock size={16} />
-          <span>Nova Consulta</span>
-        </button>
-      ) : null}
-      {canLinkProject ? (
-        <button type="button" className="pron-btn pron-btn-secondary" onClick={onOpenProject}>
-          <FolderKanban size={16} />
-          <span>Projeto</span>
-        </button>
-      ) : null}
-      <button type="button" className="pron-btn pron-btn-secondary" onClick={onOpenHistory}>
-        <History size={16} />
-        <span>Historico</span>
-      </button>
-    </div>
-  </header>
-);
+
+        <div className="ph-avatar" aria-hidden="true">
+          {patientInitials || '??'}
+          {isActive && <span className="ph-avatar__dot" title="Atleta ativo" />}
+        </div>
+
+        <div className="ph-identity">
+          <h1 className="ph-name">
+            <span className="ph-name__first">{firstName}</span>
+            {restOfName && <span className="ph-name__rest"> {restOfName}</span>}
+          </h1>
+
+          <div className="ph-meta">
+            {subtitle && <span className="ph-meta__item">{subtitle}</span>}
+            {prontuarioNumber && (
+              <span className="ph-meta__item ph-meta__item--code">
+                {prontuarioNumber}
+              </span>
+            )}
+            {projectName && (
+              <span className="ph-meta__item ph-meta__item--project">
+                <FolderKanban size={11} />
+                {projectName}
+              </span>
+            )}
+          </div>
+
+          <div className="ph-tags">
+            <span className={`ph-tag ${isActive ? 'ph-tag--ok' : 'ph-tag--muted'}`}>
+              {isActive ? 'Ativo' : 'Inativo'}
+            </span>
+            {athleteLoginEmail ? (
+              <span className="ph-tag ph-tag--info" title={athleteLoginEmail}>
+                <Mail size={10} />
+                {athleteLoginEmail}
+              </span>
+            ) : (
+              <span className="ph-tag ph-tag--warn">
+                <AlertTriangle size={10} />
+                Sem login do atleta
+              </span>
+            )}
+            {profileIncomplete && (
+              <span className="ph-tag ph-tag--warn">
+                <AlertTriangle size={10} />
+                Perfil incompleto
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── right: actions ── */}
+      <div className="ph-actions">
+        {canCreateEvaluation && (
+          <button
+            type="button"
+            className="ph-btn ph-btn--primary"
+            onClick={onCreateEvaluation}
+          >
+            <PlusCircle size={15} />
+            Nova Avaliação
+          </button>
+        )}
+
+        <div className="ph-actions__group">
+          {canCreateAppointment && (
+            <button
+              type="button"
+              className="ph-btn ph-btn--ghost"
+              onClick={onCreateAppointment}
+              title="Agendar consulta"
+            >
+              <CalendarPlus size={15} />
+              <span>Agendar</span>
+            </button>
+          )}
+          {canLinkProject && (
+            <button
+              type="button"
+              className="ph-btn ph-btn--ghost"
+              onClick={onOpenProject}
+              title="Vincular projeto"
+            >
+              <FolderKanban size={15} />
+              <span>Projeto</span>
+            </button>
+          )}
+          <button
+            type="button"
+            className="ph-btn ph-btn--ghost"
+            onClick={onOpenHistory}
+            title="Ver histórico de consultas"
+          >
+            <History size={15} />
+            <span>Histórico</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+};
 
 export default ProntuarioHeader;

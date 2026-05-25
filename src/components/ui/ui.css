@@ -258,6 +258,128 @@
   font-size: 13px;
 }
 
+.ui-confirm-details {
+  margin: 8px 0 0;
+  padding: 0 0 0 18px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.ui-confirm-details li + li {
+  margin-top: 3px;
+}
+
 .ui-confirm-actions {
   padding-top: 0;
+}
+
+/* ── Skeleton ──────────────────────────────────────────────── */
+
+@keyframes ui-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.ui-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(29, 51, 80, 0.06) 25%,
+    rgba(29, 51, 80, 0.13) 50%,
+    rgba(29, 51, 80, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.ui-skeleton-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ui-skeleton-line {
+  height: 14px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.ui-skeleton-group .ui-skeleton-line:last-child {
+  width: 55%;
+}
+
+.ui-skeleton-block {
+  height: 80px;
+  border-radius: var(--radius-md, 10px);
+}
+
+.ui-skeleton-card {
+  height: 120px;
+  border-radius: var(--radius-lg, 14px);
+}
+
+.ui-skeleton-circle {
+  border-radius: 50%;
+}
+
+/* ── FeedbackState ─────────────────────────────────────────── */
+
+.ui-feedback-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.ui-feedback-state--sm {
+  padding: 14px 12px;
+  gap: 4px;
+}
+
+.ui-feedback-state--lg {
+  padding: 56px 32px;
+  gap: 10px;
+}
+
+.ui-feedback-state--loading {
+  align-items: stretch;
+  padding: 12px 0;
+}
+
+.ui-feedback-state__icon {
+  color: rgba(29, 51, 80, 0.28);
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.ui-feedback-state--error .ui-feedback-state__icon {
+  color: var(--color-error, #ef4444);
+  opacity: 0.7;
+}
+
+.ui-feedback-state__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.ui-feedback-state--sm .ui-feedback-state__title {
+  font-size: 13px;
+}
+
+.ui-feedback-state__description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 300px;
+}
+
+.ui-feedback-state__action {
+  margin-top: 8px;
 }

@@ -25,11 +25,16 @@ export class NotificacoesController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Req() req: { user: AuthenticatedUser }, @Query('userId') userId?: string) {
+  findAll(
+    @Req() req: { user: AuthenticatedUser },
+    @Query('userId') userId?: string,
+    @Query('includeResolved') includeResolved?: string
+  ) {
     return this.notificacoesService.findAll({
       requesterId: req.user.id,
       requesterRole: req.user.role,
-      userId
+      userId,
+      includeResolved: includeResolved === 'true'
     });
   }
 
@@ -37,6 +42,12 @@ export class NotificacoesController {
   @Post()
   create(@Req() req: { user: AuthenticatedUser }, @Body() dto: CriarNotificacaoDto) {
     return this.notificacoesService.create(dto, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/resolver')
+  resolve(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string) {
+    return this.notificacoesService.resolve(id, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

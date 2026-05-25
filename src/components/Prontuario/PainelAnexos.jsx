@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2, Paperclip, Trash2, UploadCloud } from 'lucide-react';
+import { FeedbackState } from '../ui';
 
 const PainelAnexos = ({
   attachments = [],
@@ -36,7 +37,7 @@ const PainelAnexos = ({
     {attachmentError ? <div className="pron-error">{attachmentError}</div> : null}
 
     {attachments.length === 0 ? (
-      <div className="pron-empty">Nenhum anexo enviado.</div>
+      <FeedbackState empty icon={Paperclip} title="Nenhum anexo enviado." size="sm" />
     ) : (
       <div className="pron-attachments-list">
         {attachments.slice(0, visibleAttachments).map((item) => {

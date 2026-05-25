@@ -139,6 +139,19 @@ export const normalizeGastoEnergeticoTotalPayload = <T extends PayloadShape>(pay
   const tmbManualKcal = toNumber(pick(valueSources, ['tmb_manual_kcal', 'manualTmbKcal']));
   const alertaIngestaoIntensa = toBoolean(pick(valueSources, ['alertaIngestaoIntensa', 'alerta_ingestao_intensa']));
   const referenciaSeguranca = toText(pick(valueSources, ['referenciaSeguranca', 'referencia_seguranca']));
+  const esportivo = asRecord(pick(valueSources, ['esportivo']));
+  const esportivoRegistro = Array.isArray(esportivo.registroAtividadesSemana)
+    ? esportivo.registroAtividadesSemana
+    : (Array.isArray((esportivo as JsonRecord).registro_atividades_semana)
+      ? (esportivo as JsonRecord).registro_atividades_semana
+      : []);
+  const esportivoPayload = compact({
+    palSubjetivoLegado: toNumber(pick([esportivo], ['palSubjetivoLegado', 'pal_subjetivo_legado'])),
+    nivelCompetitivo: toText(pick([esportivo], ['nivelCompetitivo', 'nivel_competitivo'])) || undefined,
+    registroAtividadesSemana: Array.isArray(esportivoRegistro) ? esportivoRegistro : undefined,
+    totalGastoSemanalKcal: toNumber(pick([esportivo], ['totalGastoSemanalKcal', 'total_gasto_semanal_kcal'])),
+    palRealCalculado: toNumber(pick([esportivo], ['palRealCalculado', 'pal_real_calculado']))
+  });
 
   const formulaId = toText(payload.formulaId)
     || toText(pick([canonicalMetadadosFormula], ['formulaId', 'formula_id']))
@@ -152,7 +165,8 @@ export const normalizeGastoEnergeticoTotalPayload = <T extends PayloadShape>(pay
     activityLevel: nivelAtividade || undefined,
     customActivityFactor: fatorAtividadePersonalizado,
     manualTmbKcal: tmbManualKcal,
-    sexo: sexo || undefined
+    sexo: sexo || undefined,
+    esportivo: Object.keys(esportivoPayload).length ? esportivoPayload : undefined
   });
 
   const normalizedResultadosCalculados = compact({
@@ -195,6 +209,7 @@ export const normalizeGastoEnergeticoTotalPayload = <T extends PayloadShape>(pay
     nivel_atividade: nivelAtividade || undefined,
     fator_atividade_personalizado: fatorAtividadePersonalizado,
     tmb_manual_kcal: tmbManualKcal,
+    esportivo: Object.keys(esportivoPayload).length ? esportivoPayload : undefined,
     dados_brutos: normalizedDadosBrutos,
     resultados_calculados: normalizedResultadosCalculados,
     classificacoes: normalizedClassificacoes,

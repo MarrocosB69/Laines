@@ -11,7 +11,7 @@
 }
 
 /* ── Domain accent border-top ── */
-.clinical-result-card[data-domain="antropometria"]     { border-top: 3px solid #0e7490; }
+.clinical-result-card[data-domain="antropometria"]     { border-top: 3px solid var(--color-accent, #56ADDB); }
 .clinical-result-card[data-domain="nutricao"]          { border-top: 3px solid #16a34a; }
 .clinical-result-card[data-domain="clinica"]           { border-top: 3px solid #e11d48; }
 .clinical-result-card[data-domain="multiprofissional"] { border-top: 3px solid #7c3aed; }

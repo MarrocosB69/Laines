@@ -1,13 +1,13 @@
-﻿import React, { useMemo } from 'react';
-import { Bell, Sun, Moon } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useUiFeedback } from '../../contexts/UiFeedbackContext';
+import NotificationTaskCenter from '../../components/shared/NotificationTaskCenter';
 
 import '../admin/AdminView/AdminHeader.css';
 
 const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   const { user } = useAuth();
-  const { notify } = useUiFeedback();
+
   const initials = useMemo(() => {
     const rawName = user?.name || user?.nome || user?.displayName || '';
     const rawEmail = user?.email || '';
@@ -19,10 +19,10 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
   }, [user]);
 
   const labels = {
-    dashboard: 'Visão geral',
+    dashboard: 'Visao geral',
     patients: 'Alunos e atletas',
     agenda: 'Agenda',
-    research: 'Pesquisas'
+    research: 'Projetos vinculados'
   };
   const currentLabel = labels[activeTab] || activeTab;
 
@@ -33,7 +33,7 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
           {activeIcon && <span className="icon-wrapper">{activeIcon}</span>}
           <h1 className="header-page-title">{currentLabel}</h1>
         </div>
-        <p className="header-page-subtitle">Área do professor</p>
+        <p className="header-page-subtitle">Area do professor</p>
       </div>
 
       <div className="header-controls">
@@ -44,20 +44,8 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
         >
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
-        <button
-          type="button"
-          className="header-btn notifications-btn"
-          aria-label="Notificações"
-          onClick={() => {
-            notify({
-              type: 'info',
-              title: 'Notificações do professor',
-              message: 'Central de notificações dedicada em ativação. Por enquanto, acompanhe agenda e prontuários para atualizações.'
-            });
-          }}
-        >
-          <Bell size={18} />
-        </button>
+
+        <NotificationTaskCenter />
 
         <div className="user-profile-mini">
           <div className="avatar">{initials}</div>
@@ -68,4 +56,3 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
 };
 
 export default ProfessorHeader;
-

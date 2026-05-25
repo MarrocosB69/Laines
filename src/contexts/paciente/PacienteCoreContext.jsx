@@ -249,9 +249,9 @@ export const PacienteCoreProvider = ({ children }) => {
     try {
       if (options.requireConfirm !== false) {
         const accepted = await confirm({
-          title: 'Remover paciente',
-          message: 'Tem certeza que deseja remover este paciente?',
-          confirmLabel: 'Remover',
+          title: 'Inativar paciente',
+          message: 'O paciente sairá das listagens ativas, mas o histórico clínico será preservado. Deseja continuar?',
+          confirmLabel: 'Inativar',
           cancelLabel: 'Cancelar',
           variant: 'danger'
         });
@@ -268,11 +268,11 @@ export const PacienteCoreProvider = ({ children }) => {
       await fetchPacientes();
       return true;
     } catch (err) {
-      console.error('Erro ao deletar paciente:', err);
+      console.error('Erro ao inativar paciente:', err);
       notify({
         type: 'error',
-        title: 'Erro ao remover paciente',
-        message: getApiErrorMessage(err, 'Não foi possível remover o paciente.')
+        title: 'Erro ao inativar paciente',
+        message: getApiErrorMessage(err, 'Não foi possível inativar o paciente.')
       });
       throw err;
     }

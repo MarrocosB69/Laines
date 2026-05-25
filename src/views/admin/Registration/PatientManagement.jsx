@@ -28,6 +28,8 @@ import { logAudit } from '../../../services/audit';
 import { useModalBodyLock } from '../../../hooks/useModalBodyLock';
 import PatientModal from './PatientModal';
 import LinkPatientModal from '../Patients/LinkPatientModal';
+import AthleteOnboardingWizard from '../../../components/Atleta/AthleteOnboardingWizard';
+import { generateInstitutionalEmail } from '../../../utils/institutionalEmail';
 import { downloadCsv } from './exportUtils';
 import './ManagementPages.css';
 
@@ -61,6 +63,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
@@ -294,6 +297,57 @@ const PatientManagement = ({ onOpenPatient = null }) => {
     fetchPatients({ preserveCurrent: true });
   }, [fetchPatients]);
 
+  const handleWizardComplete = useCallback(async (dados) => {
+    try {
+      const nome = dados.nomeCompleto.trim();
+      const generatedEmail = generateInstitutionalEmail(nome);
+      let atletaUserId = null;
+
+      try {
+        const { data: created } = await api.post('/users', {
+          name: nome,
+          role: 'atleta',
+          cpf: dados.cpf || undefined,
+          dataNascimento: dados.dataNascimento || undefined,
+          telefone: dados.telefone || undefined,
+          status: 'ativo'
+        });
+        atletaUserId = created?.user?.id || null;
+        if (created?.tempPassword) {
+          notify({ type: 'info', title: 'Senha temporária gerada', message: `Login: ${generatedEmail} — Senha: ${created.tempPassword}`, duration: 12000 });
+        }
+      } catch (userErr) {
+        if (![403, 409].includes(Number(userErr?.response?.status))) throw userErr;
+      }
+
+      const observacoesParts = [
+        dados.alergiasIntolerancias && `Alergias/intolerâncias: ${dados.alergiasIntolerancias}`,
+        dados.medicamentosUso && `Medicamentos em uso: ${dados.medicamentosUso}`,
+        dados.observacoesGerais
+      ].filter(Boolean);
+
+      await api.post('/pacientes', {
+        nome,
+        cpf: dados.cpf || '',
+        dataNascimento: dados.dataNascimento || '',
+        genero: dados.sexoBiologico || 'nao_informado',
+        telefone: dados.telefone || '',
+        email: generatedEmail || dados.email || '',
+        modalidadePrincipal: dados.modalidadePrincipal || '',
+        tempoPratica: dados.anosPratica ? String(dados.anosPratica) : '',
+        observacoes: observacoesParts.join('\n'),
+        atletaUserId,
+        status: 'Ativo'
+      });
+
+      notify({ type: 'success', title: 'Atleta cadastrado', message: `${nome} foi adicionado com sucesso.` });
+      setIsWizardOpen(false);
+      fetchPatients({ preserveCurrent: true });
+    } catch (err) {
+      notify({ type: 'error', title: 'Erro ao cadastrar atleta', message: getApiErrorMessage(err, 'Não foi possível cadastrar o atleta.') });
+    }
+  }, [notify, fetchPatients]);
+
   const handleClearFilters = useCallback(() => {
     setStatusFilter('all');
     setProjectFilter('all');
@@ -403,9 +457,9 @@ const PatientManagement = ({ onOpenPatient = null }) => {
 
   const handleDelete = async (id) => {
     const accepted = await confirm({
-      title: 'Remover atleta',
-      message: 'Tem certeza que deseja remover este atleta?',
-      confirmLabel: 'Remover',
+      title: 'Inativar atleta',
+      message: 'Este atleta sairá das listagens ativas, mas prontuário, avaliações e anexos serão preservados. Deseja continuar?',
+      confirmLabel: 'Inativar',
       cancelLabel: 'Cancelar',
       variant: 'danger'
     });
@@ -418,15 +472,15 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       setSelectedPatients((prev) => prev.filter((item) => item !== id));
       notify({
         type: 'success',
-        title: 'Atleta removido',
-        message: 'Registro removido com sucesso.'
+        title: 'Atleta inativado',
+        message: 'Prontuário preservado e ocultado das listagens ativas.'
       });
     } catch (error) {
-      console.error('Erro ao excluir atleta:', error);
+      console.error('Erro ao inativar atleta:', error);
       notify({
         type: 'error',
-        title: 'Erro ao excluir atleta',
-        message: getApiErrorMessage(error, 'Não foi possível excluir o atleta.')
+        title: 'Erro ao inativar atleta',
+        message: getApiErrorMessage(error, 'Não foi possível inativar o atleta.')
       });
     } finally {
       setDeletingPatientId('');
@@ -469,10 +523,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setSelectedPatient(null);
-                setIsModalOpen(true);
-              }}
+              onClick={() => setIsWizardOpen(true)}
               className="admin-btn admin-btn--success"
             >
               <UserPlus size={18} />
@@ -641,10 +692,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                 <button
                   type="button"
                   className="admin-btn admin-btn--success"
-                  onClick={() => {
-                    setSelectedPatient(null);
-                    setIsModalOpen(true);
-                  }}
+                  onClick={() => setIsWizardOpen(true)}
                 >
                   <UserPlus size={16} />
                   <span>Cadastrar atleta</span>
@@ -753,7 +801,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                             type="button"
                             onClick={() => handleDelete(patient.id)}
                             className="admin-action-btn admin-action-btn--delete"
-                            title="Excluir"
+                            title="Inativar"
                             disabled={isRowBusy}
                           >
                             {deletingPatientId === patient.id ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
@@ -811,6 +859,13 @@ const PatientManagement = ({ onOpenPatient = null }) => {
         }}
         initialData={selectedPatient}
       />
+
+      {isWizardOpen && (
+        <AthleteOnboardingWizard
+          onComplete={handleWizardComplete}
+          onClose={() => setIsWizardOpen(false)}
+        />
+      )}
 
       <LinkPatientModal
         isOpen={isLinkModalOpen}
@@ -907,6 +962,4 @@ const PatientManagement = ({ onOpenPatient = null }) => {
 };
 
 export default PatientManagement;
-
-
 

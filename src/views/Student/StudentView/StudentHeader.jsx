@@ -3,6 +3,7 @@ import { Sun, Moon } from 'lucide-react';
 
 import '../../admin/AdminView/AdminHeader.css';
 import { useAuth } from '../../../contexts/AuthContext';
+import NotificationTaskCenter from '../../../components/shared/NotificationTaskCenter';
 
 const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   const { user } = useAuth();
@@ -41,6 +42,8 @@ const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
         >
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
+
+        <NotificationTaskCenter />
 
         <div className="user-profile-mini">
           <div className="avatar">{initials}</div>

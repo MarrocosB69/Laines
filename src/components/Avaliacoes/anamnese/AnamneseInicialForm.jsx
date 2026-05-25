@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ClipboardList, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
@@ -9,32 +9,81 @@ import './AnamneseInicialForm.css';
 const GOAL_OPTIONS = [
   { value: 'emagrecimento', label: 'Emagrecimento' },
   { value: 'hipertrofia', label: 'Hipertrofia' },
-  { value: 'saude_geral', label: 'Saude geral' },
+  { value: 'saude_geral', label: 'Saúde geral' },
   { value: 'performance', label: 'Performance' },
-  { value: 'reabilitacao', label: 'Reabilitacao' },
-  { value: 'gestacao', label: 'Gestacao' },
+  { value: 'reabilitacao', label: 'Reabilitação' },
+  { value: 'gestacao', label: 'Gestação' },
   { value: 'outros', label: 'Outros' }
 ];
 
 const PATHOLOGY_OPTIONS = [
   'Diabetes',
-  'Hipertensao',
+  'Hipertensão',
   'Dislipidemia',
-  'Doenca renal',
-  'Doenca hepatica',
+  'Doença renal',
+  'Doença hepática',
   'Hipotireoidismo',
   'Hipertireoidismo',
-  'Sindrome dos ovarios policisticos',
-  'Doenca cardiovascular',
+  'Síndrome dos ovários policísticos',
+  'Doença cardiovascular',
   'Transtorno alimentar'
 ];
 
-const TAB_ITEMS = [
-  { id: 'identificacao', label: 'Identificacao e objetivo' },
-  { id: 'historico', label: 'Historico clinico' },
-  { id: 'estilo', label: 'Estilo de vida' },
-  { id: 'familiar', label: 'Historico familiar' }
+const SPORT_MODALITY_OPTIONS = [
+  { value: '', label: 'Selecione' },
+  { value: 'futebol', label: 'Futebol' },
+  { value: 'futsal', label: 'Futsal' },
+  { value: 'natacao', label: 'Natação' },
+  { value: 'musculacao', label: 'Musculação' },
+  { value: 'corrida', label: 'Corrida' },
+  { value: 'ciclismo', label: 'Ciclismo' },
+  { value: 'volei', label: 'Vôlei' },
+  { value: 'basquete', label: 'Basquete' },
+  { value: 'handebol', label: 'Handebol' },
+  { value: 'tenis', label: 'Tênis' },
+  { value: 'luta', label: 'Luta/Combate' },
+  { value: 'atletismo', label: 'Atletismo' },
+  { value: 'remo', label: 'Remo' },
+  { value: 'triatlo', label: 'Triatlo' },
+  { value: 'outro', label: 'Outro' }
 ];
+
+const TAB_ITEMS = [
+  { id: 'identificacao', label: 'Identificação e objetivo' },
+  { id: 'historico', label: 'Histórico clínico' },
+  { id: 'estilo', label: 'Estilo de vida' },
+  { id: 'familiar', label: 'Histórico familiar' }
+];
+
+const createLesaoItem = () => ({
+  id: createId(),
+  local: '',
+  tempoAfastado: ''
+});
+
+const createCompeticaoItem = () => ({
+  id: createId(),
+  nome: '',
+  data: ''
+});
+
+const createEsportivoData = () => ({
+  modalidade: '',
+  posicao: '',
+  provas: '',
+  nivel: '',
+  clube: '',
+  cargaSemanal: {
+    tecnico: '',
+    tatico: '',
+    fisico: '',
+    preventivo: ''
+  },
+  fasePeriodizacao: '',
+  historicoLesoes: [createLesaoItem()],
+  proximasCompeticoes: [createCompeticaoItem()],
+  historicaREDS: false
+});
 
 const createInitialData = () => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
@@ -48,6 +97,7 @@ const createInitialData = () => ({
   patologias: [],
   patologiasOutras: '',
   medicamentos: [{ id: createId(), nome: '', dose: '', frequencia: '' }],
+  suplementos: [{ id: createId(), nome: '', dose: '', frequencia: '' }],
   alergias: '',
   cirurgias: '',
   atividadeTipo: '',
@@ -64,6 +114,7 @@ const createInitialData = () => ({
   familyDiabetes: false,
   familyCancer: false,
   familyObesity: false,
+  esportivo: createEsportivoData(),
   observacoes: ''
 });
 
@@ -73,6 +124,7 @@ const AnamneseInicialForm = ({
   onAutoSave,
   readOnly = false,
   patient,
+  onboardingContext,
   moduleSnapshot,
   currentSessionId
 }) => {
@@ -83,6 +135,7 @@ const AnamneseInicialForm = ({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [hasUserInput, setHasUserInput] = useState(false);
   const loadedSnapshotIdRef = useRef(null);
+  const loadedOnboardingPrefillRef = useRef(null);
   const autoSaveRef = useRef(null);
   const saveStatusResetRef = useRef(null);
 
@@ -103,6 +156,17 @@ const AnamneseInicialForm = ({
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
     const meds = Array.isArray(dadosBrutos?.medicamentos) ? dadosBrutos.medicamentos : [];
+    const sups = Array.isArray(dadosBrutos?.suplementos) ? dadosBrutos.suplementos : [];
+    const esportivoRaw = asRecord(firstDefined(dadosBrutos?.esportivo, source?.esportivo));
+    const cargaRaw = asRecord(firstDefined(esportivoRaw?.cargaSemanal, esportivoRaw?.carga_semanal));
+    const historicoLesoesRaw = normalizeObjectArray(firstDefined(
+      esportivoRaw?.historicoLesoes,
+      esportivoRaw?.historico_lesoes
+    ));
+    const proximasCompeticoesRaw = normalizeObjectArray(firstDefined(
+      esportivoRaw?.proximasCompeticoes,
+      esportivoRaw?.proximas_competicoes
+    ));
 
     setDados((prev) => ({
       ...prev,
@@ -118,6 +182,14 @@ const AnamneseInicialForm = ({
       patologiasOutras: toText(firstDefined(dadosBrutos?.patologiasOutras, source?.patologiasOutras)),
       medicamentos: meds.length
         ? meds.map((item) => ({
+          id: createId(),
+          nome: toText(item?.nome || item?.name),
+          dose: toText(item?.dose),
+          frequencia: toText(item?.frequencia || item?.frequency)
+        }))
+        : [{ id: createId(), nome: '', dose: '', frequencia: '' }],
+      suplementos: sups.length
+        ? sups.map((item) => ({
           id: createId(),
           nome: toText(item?.nome || item?.name),
           dose: toText(item?.dose),
@@ -140,11 +212,72 @@ const AnamneseInicialForm = ({
       familyDiabetes: normalizeBoolean(firstDefined(dadosBrutos?.familyDiabetes, source?.familyDiabetes)),
       familyCancer: normalizeBoolean(firstDefined(dadosBrutos?.familyCancer, source?.familyCancer)),
       familyObesity: normalizeBoolean(firstDefined(dadosBrutos?.familyObesity, source?.familyObesity)),
+      esportivo: {
+        modalidade: toText(firstDefined(esportivoRaw?.modalidade, prev?.esportivo?.modalidade)),
+        posicao: toText(firstDefined(esportivoRaw?.posicao, prev?.esportivo?.posicao)),
+        provas: toText(firstDefined(
+          Array.isArray(esportivoRaw?.provas) ? esportivoRaw.provas.join(', ') : esportivoRaw?.provas,
+          prev?.esportivo?.provas
+        )),
+        nivel: toText(firstDefined(esportivoRaw?.nivel, prev?.esportivo?.nivel)),
+        clube: toText(firstDefined(esportivoRaw?.clube, prev?.esportivo?.clube)),
+        cargaSemanal: {
+          tecnico: toInput(firstDefined(cargaRaw?.tecnico, prev?.esportivo?.cargaSemanal?.tecnico), 1),
+          tatico: toInput(firstDefined(cargaRaw?.tatico, prev?.esportivo?.cargaSemanal?.tatico), 1),
+          fisico: toInput(firstDefined(cargaRaw?.fisico, prev?.esportivo?.cargaSemanal?.fisico), 1),
+          preventivo: toInput(firstDefined(cargaRaw?.preventivo, prev?.esportivo?.cargaSemanal?.preventivo), 1)
+        },
+        fasePeriodizacao: toText(firstDefined(esportivoRaw?.fasePeriodizacao, esportivoRaw?.fase_periodizacao, prev?.esportivo?.fasePeriodizacao)),
+        historicoLesoes: historicoLesoesRaw.length
+          ? historicoLesoesRaw.map((item) => ({
+            id: createId(),
+            local: toText(firstDefined(item?.local, item?.regiao)),
+            tempoAfastado: toText(firstDefined(item?.tempoAfastado, item?.tempo_afastado))
+          }))
+          : [createLesaoItem()],
+        proximasCompeticoes: proximasCompeticoesRaw.length
+          ? proximasCompeticoesRaw.map((item) => ({
+            id: createId(),
+            nome: toText(firstDefined(item?.nome, item?.competicao)),
+            data: normalizeDateOptional(firstDefined(item?.data, item?.date))
+          }))
+          : [createCompeticaoItem()],
+        historicaREDS: normalizeBoolean(firstDefined(esportivoRaw?.historicaREDS, esportivoRaw?.historica_reds))
+      },
       observacoes: toText(firstDefined(dadosBrutos?.observacoes, source?.observacoes))
     }));
 
     loadedSnapshotIdRef.current = snapshotId;
   }, [moduleSnapshot, patient?.dataNascimento, patient?.nome, patient?.sexo]);
+
+  useEffect(() => {
+    if (hasUserInput) return;
+    if (moduleSnapshot?.id) return;
+
+    const contextKey = JSON.stringify({
+      pacienteId,
+      modalidade: onboardingContext?.modalidadePrincipal || '',
+      frequencia: onboardingContext?.frequenciaSemanal || '',
+      duracao: onboardingContext?.duracaoSessao || '',
+      genero: onboardingContext?.genero || '',
+      status: onboardingContext?.status || '',
+      observacoesIniciais: onboardingContext?.observacoesIniciais || '',
+      historicoSaude: onboardingContext?.historicoSaude || '',
+      rawNivel: onboardingContext?.raw?.nivelCompetitivo || '',
+      rawMotivo: onboardingContext?.raw?.motivoAtendimento || ''
+    });
+
+    if (loadedOnboardingPrefillRef.current === contextKey) return;
+
+    const prefill = buildOnboardingPrefill(onboardingContext, patient);
+    if (!prefill) {
+      loadedOnboardingPrefillRef.current = contextKey;
+      return;
+    }
+
+    setDados((prev) => applyOnboardingPrefill(prev, prefill));
+    loadedOnboardingPrefillRef.current = contextKey;
+  }, [hasUserInput, moduleSnapshot?.id, onboardingContext, pacienteId, patient]);
 
   const evaluation = useMemo(() => calculateAnamneseInitialEvaluation({
     goals: [...dados.objetivos, ...(dados.objetivoOutros ? [dados.objetivoOutros] : [])],
@@ -174,51 +307,68 @@ const AnamneseInicialForm = ({
     return false;
   }, [dados.nomePaciente, dados.objetivos, dados.sexoBiologico]);
 
-  const payloadData = useMemo(() => ({
-    dataAvaliacao: normalizeDate(dados.dataAvaliacao),
-    nomePaciente: toText(dados.nomePaciente),
-    sexoBiologico: toText(dados.sexoBiologico),
-    objetivos: dados.objetivos,
-    scoreRisco: evaluation?.score ?? null,
-    prioridade: evaluation?.priority?.level || null,
-    dados_brutos: {
-      ...dados,
-      medicamentos: dados.medicamentos
-        .filter((item) => toText(item.nome))
-        .map((item) => ({
-          nome: toText(item.nome),
-          dose: toText(item.dose) || null,
-          frequencia: toText(item.frequencia) || null
-        }))
-    },
-    resultados_calculados: {
+  const onboardingSummary = useMemo(
+    () => buildOnboardingSummary(onboardingContext),
+    [onboardingContext]
+  );
+
+  const payloadData = useMemo(() => {
+    const esportivoPayload = buildEsportivoPayload(dados.esportivo);
+    return {
+      dataAvaliacao: normalizeDate(dados.dataAvaliacao),
+      nomePaciente: toText(dados.nomePaciente),
+      sexoBiologico: toText(dados.sexoBiologico),
+      objetivos: dados.objetivos,
       scoreRisco: evaluation?.score ?? null,
       prioridade: evaluation?.priority?.level || null,
-      justificativaPrioridade: evaluation?.priority?.reason || null,
-      flags: (evaluation?.flags || []).map((flag) => ({
-        id: flag.id,
-        label: flag.label,
-        severity: flag.severity,
-        source: flag.source,
-        detail: flag.detail || null
-      })),
-      encaminhamentos: evaluation?.recommendations || []
-    },
-    classificacoes: {
-      prioridadeCuidado: evaluation?.priority?.level || null,
-      referencia: 'anamnese_initial_rules_v1'
-    },
-    metadados_formula: {
-      formulaId: 'anamnese_risk_rules_v1',
-      formulaVersion: '1.0.0',
-      formulaLabel: 'Score de risco de anamnese inicial',
-      equacao: evaluation?.formulas?.riskScoring || null
-    },
-    source: {
-      mode: 'manual',
-      system: 'anamnese_inicial'
-    }
-  }), [dados, evaluation]);
+      esportivo: esportivoPayload,
+      dados_brutos: {
+        ...dados,
+        esportivo: esportivoPayload,
+        medicamentos: dados.medicamentos
+          .filter((item) => toText(item.nome))
+          .map((item) => ({
+            nome: toText(item.nome),
+            dose: toText(item.dose) || null,
+            frequencia: toText(item.frequencia) || null
+          })),
+        suplementos: dados.suplementos
+          .filter((item) => toText(item.nome))
+          .map((item) => ({
+            nome: toText(item.nome),
+            dose: toText(item.dose) || null,
+            frequencia: toText(item.frequencia) || null
+          }))
+      },
+      resultados_calculados: {
+        scoreRisco: evaluation?.score ?? null,
+        prioridade: evaluation?.priority?.level || null,
+        justificativaPrioridade: evaluation?.priority?.reason || null,
+        flags: (evaluation?.flags || []).map((flag) => ({
+          id: flag.id,
+          label: flag.label,
+          severity: flag.severity,
+          source: flag.source,
+          detail: flag.detail || null
+        })),
+        encaminhamentos: evaluation?.recommendations || []
+      },
+      classificacoes: {
+        prioridadeCuidado: evaluation?.priority?.level || null,
+        referencia: 'anamnese_initial_rules_v1'
+      },
+      metadados_formula: {
+        formulaId: 'anamnese_risk_rules_v1',
+        formulaVersion: '1.0.0',
+        formulaLabel: 'Score de risco de anamnese inicial',
+        equacao: evaluation?.formulas?.riskScoring || null
+      },
+      source: {
+        mode: 'manual',
+        system: 'anamnese_inicial'
+      }
+    };
+  }, [dados, evaluation]);
 
   const payloadResults = useMemo(() => ({
     prioridade_cuidado: payloadData?.resultados_calculados?.prioridade ?? null,
@@ -229,8 +379,9 @@ const AnamneseInicialForm = ({
   const hasValues = useMemo(() => {
     if (dados.objetivos.length > 0) return true;
     const fields = [dados.nomePaciente, dados.queixaPrincipal, dados.alergias, dados.observacoes];
-    return fields.some((value) => toText(value) !== '');
-  }, [dados.alergias, dados.nomePaciente, dados.objetivos, dados.observacoes, dados.queixaPrincipal]);
+    if (fields.some((value) => toText(value) !== '')) return true;
+    return hasEsportivoValues(dados.esportivo);
+  }, [dados.alergias, dados.esportivo, dados.nomePaciente, dados.objetivos, dados.observacoes, dados.queixaPrincipal]);
 
   const dispatchSave = useCallback(async (auto = false) => {
     const dispatch = auto ? onAutoSave : onSalvar;
@@ -266,10 +417,10 @@ const AnamneseInicialForm = ({
       await dispatchSave(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
-        setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
+        setError('Não foi possível salvar a avaliação. Tente novamente.');
       }
     }
   }, [dispatchSave]);
@@ -283,7 +434,7 @@ const AnamneseInicialForm = ({
       return;
     }
     if (hasRequiredMissing) {
-      setError('Nome, sexo biologico e ao menos um objetivo principal sao obrigatorios.');
+      setError('Nome, sexo biológico e ao menos um objetivo principal são obrigatórios.');
       return;
     }
     await executeSave(false);
@@ -293,7 +444,7 @@ const AnamneseInicialForm = ({
     if (readOnly || !onAutoSave || !hasUserInput) return undefined;
     if (!hasValues || hasRequiredMissing) return undefined;
     clearTimeout(autoSaveRef.current);
-    autoSaveRef.current = setTimeout(() => executeSave(true), 900);
+    autoSaveRef.current = setTimeout(() => executeSave(true), 3500);
     return () => clearTimeout(autoSaveRef.current);
   }, [executeSave, hasRequiredMissing, hasUserInput, hasValues, onAutoSave, readOnly]);
 
@@ -305,35 +456,74 @@ const AnamneseInicialForm = ({
         <div className="eval-icon"><ClipboardList size={20} /></div>
         <div>
           <h3 className="eval-title">Anamnese inicial</h3>
-          <p className="eval-subtitle">Coleta inicial de contexto clinico e risco para a conduta nutricional.</p>
+          <p className="eval-subtitle">Coleta inicial de contexto clínico e risco para a conduta nutricional.</p>
         </div>
       </div>
 
-      <div className="anamnese-tabs" role="tablist" aria-label="Abas da anamnese">
-        {TAB_ITEMS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`anamnese-tab ${activeTab === tab.id ? 'is-active' : ''}`}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {onboardingSummary.length > 0 ? (
+        <div className="eval-note">
+          <strong>Pré-preenchimento do onboarding:</strong> {onboardingSummary.join(' - ')}
+        </div>
+      ) : null}
+
+      {(() => {
+        const activeIndex = TAB_ITEMS.findIndex((t) => t.id === activeTab);
+        const progress = Math.round(((activeIndex + 1) / TAB_ITEMS.length) * 100);
+        return (
+          <>
+            <div className="anamnese-progress">
+              <div className="anamnese-progress__header">
+                <span className="anamnese-progress__label">
+                  Passo {activeIndex + 1} de {TAB_ITEMS.length}
+                </span>
+                <span className="anamnese-progress__tab-name">
+                  {TAB_ITEMS[activeIndex]?.label}
+                </span>
+              </div>
+              <div
+                className="anamnese-progress__bar"
+                role="progressbar"
+                aria-valuenow={activeIndex + 1}
+                aria-valuemin={1}
+                aria-valuemax={TAB_ITEMS.length}
+                aria-label={`Passo ${activeIndex + 1} de ${TAB_ITEMS.length}`}
+              >
+                <div className="anamnese-progress__fill" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+
+            <div className="anamnese-tabs" role="tablist" aria-label="Abas da anamnese">
+              {TAB_ITEMS.map((tab, index) => {
+                const isDone = index < activeIndex;
+                const isActive = tab.id === activeTab;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`anamnese-tab ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''}`}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {isDone && <span className="anamnese-tab__check" aria-hidden="true">✓</span>}
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        );
+      })()}
 
       {activeTab === 'identificacao' && (
         <div className="eval-section">
-          <h4 className="eval-section-title">Identificacao e objetivo</h4>
+          <h4 className="eval-section-title">Identificação e objetivo</h4>
           <div className="anamnese-grid">
             <InputField label="Data avaliacao" type="date" value={dados.dataAvaliacao} onChange={(v) => updateField(setDados, setHasUserInput, 'dataAvaliacao', v)} disabled={readOnly} />
             <InputField label="Nome" value={dados.nomePaciente} required onChange={(v) => updateField(setDados, setHasUserInput, 'nomePaciente', v)} disabled={readOnly} />
             <InputField label="Data nascimento" type="date" value={dados.dataNascimento} onChange={(v) => updateField(setDados, setHasUserInput, 'dataNascimento', v)} disabled={readOnly} />
             <SelectField label="Sexo biologico" value={dados.sexoBiologico} required options={[{ value: '', label: 'Selecione' }, { value: 'masculino', label: 'Masculino' }, { value: 'feminino', label: 'Feminino' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'sexoBiologico', v)} disabled={readOnly} />
-            <InputField label="Identidade de genero" value={dados.identidadeGenero} onChange={(v) => updateField(setDados, setHasUserInput, 'identidadeGenero', v)} disabled={readOnly} />
-            <InputField label="Outros objetivos" value={dados.objetivoOutros} onChange={(v) => updateField(setDados, setHasUserInput, 'objetivoOutros', v)} disabled={readOnly} />
+            <InputField label="Identidade de gênero" value={dados.identidadeGenero} onChange={(v) => updateField(setDados, setHasUserInput, 'identidadeGenero', v)} disabled={readOnly} />
             <div className="eval-field eval-field-full">
               <label className="eval-label">Objetivos principais <span className="anamnese-required">*</span></label>
               <div className="anamnese-checkbox-grid">
@@ -350,6 +540,7 @@ const AnamneseInicialForm = ({
                 ))}
               </div>
             </div>
+            <InputField label="Outros objetivos" value={dados.objetivoOutros} onChange={(v) => updateField(setDados, setHasUserInput, 'objetivoOutros', v)} disabled={readOnly} />
             <AreaField label="Queixa principal" value={dados.queixaPrincipal} onChange={(v) => updateField(setDados, setHasUserInput, 'queixaPrincipal', v)} disabled={readOnly} />
           </div>
         </div>
@@ -357,7 +548,7 @@ const AnamneseInicialForm = ({
 
       {activeTab === 'historico' && (
         <div className="eval-section">
-          <h4 className="eval-section-title">Historico clinico</h4>
+          <h4 className="eval-section-title">Histórico clínico</h4>
           <div className="anamnese-grid">
             <div className="eval-field eval-field-full">
               <label className="eval-label">Patologias</label>
@@ -383,7 +574,7 @@ const AnamneseInicialForm = ({
                   <div className="anamnese-med-row" key={med.id}>
                     <input className="eval-input" type="text" value={med.nome} placeholder="Nome" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'nome', e.target.value)} disabled={readOnly} />
                     <input className="eval-input" type="text" value={med.dose} placeholder="Dose" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'dose', e.target.value)} disabled={readOnly} />
-                    <input className="eval-input" type="text" value={med.frequencia} placeholder="Frequencia" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'frequencia', e.target.value)} disabled={readOnly} />
+                    <input className="eval-input" type="text" value={med.frequencia} placeholder="Frequência" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'frequencia', e.target.value)} disabled={readOnly} />
                     <button type="button" className="anamnese-icon-btn" disabled={readOnly || dados.medicamentos.length <= 1} onClick={() => removeMedication(setDados, setHasUserInput, med.id)}>
                       <Trash2 size={14} />
                     </button>
@@ -394,7 +585,25 @@ const AnamneseInicialForm = ({
                 <Plus size={14} /> Adicionar medicamento
               </Button>
             </div>
-            <AreaField label="Alergias/intolerancias" value={dados.alergias} onChange={(v) => updateField(setDados, setHasUserInput, 'alergias', v)} disabled={readOnly} />
+            <div className="eval-field eval-field-full">
+              <label className="eval-label">Suplementos em uso</label>
+              <div className="anamnese-med-list">
+                {dados.suplementos.map((sup) => (
+                  <div className="anamnese-med-row" key={sup.id}>
+                    <input className="eval-input" type="text" value={sup.nome} placeholder="Nome" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'nome', e.target.value)} disabled={readOnly} />
+                    <input className="eval-input" type="text" value={sup.dose} placeholder="Dose" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'dose', e.target.value)} disabled={readOnly} />
+                    <input className="eval-input" type="text" value={sup.frequencia} placeholder="Frequência" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'frequencia', e.target.value)} disabled={readOnly} />
+                    <button type="button" className="anamnese-icon-btn" disabled={readOnly || dados.suplementos.length <= 1} onClick={() => removeSuplemento(setDados, setHasUserInput, sup.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addSuplemento(setDados, setHasUserInput)}>
+                <Plus size={14} /> Adicionar suplemento
+              </Button>
+            </div>
+            <AreaField label="Alergias/intolerâncias" value={dados.alergias} onChange={(v) => updateField(setDados, setHasUserInput, 'alergias', v)} disabled={readOnly} />
             <AreaField label="Cirurgias relevantes" value={dados.cirurgias} onChange={(v) => updateField(setDados, setHasUserInput, 'cirurgias', v)} disabled={readOnly} />
           </div>
         </div>
@@ -405,27 +614,194 @@ const AnamneseInicialForm = ({
           <h4 className="eval-section-title">Estilo de vida</h4>
           <div className="anamnese-grid">
             <InputField label="Atividade tipo" value={dados.atividadeTipo} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeTipo', v)} disabled={readOnly} />
-            <InputField label="Frequencia semanal" value={dados.atividadeFrequencia} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeFrequencia', v)} disabled={readOnly} />
-            <InputField label="Duracao media (min)" value={dados.atividadeDuracao} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeDuracao', v)} disabled={readOnly} />
+            <InputField label="Frequência semanal" value={dados.atividadeFrequencia} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeFrequencia', v)} disabled={readOnly} />
+            <InputField label="Duração média (min)" value={dados.atividadeDuracao} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeDuracao', v)} disabled={readOnly} />
             <InputField label="Sono horas/noite" value={dados.sonoHoras} onChange={(v) => updateField(setDados, setHasUserInput, 'sonoHoras', v)} disabled={readOnly} />
             <SelectField label="Qualidade sono (1-5)" value={dados.sonoQualidade} options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => updateField(setDados, setHasUserInput, 'sonoQualidade', v)} disabled={readOnly} />
             <SelectField label="Estresse (1-10)" value={dados.estresseNivel} options={Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))} onChange={(v) => updateField(setDados, setHasUserInput, 'estresseNivel', v)} disabled={readOnly} />
-            <SelectField label="Alcool" value={dados.alcoolUso} options={[{ value: 'nao_informado', label: 'Nao informado' }, { value: 'nao', label: 'Nao' }, { value: 'eventual', label: 'Eventual' }, { value: 'frequente', label: 'Frequente' }, { value: 'alto', label: 'Alto/diario' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'alcoolUso', v)} disabled={readOnly} />
-            <SelectField label="Tabaco" value={dados.tabacoUso} options={[{ value: 'nao_informado', label: 'Nao informado' }, { value: 'nao', label: 'Nao' }, { value: 'eventual', label: 'Eventual' }, { value: 'sim', label: 'Sim' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'tabacoUso', v)} disabled={readOnly} />
-            <SelectField label="Ciclo menstrual" value={dados.cicloMenstrualRegularidade} options={[{ value: 'nao_informado', label: 'Nao informado' }, { value: 'regular', label: 'Regular' }, { value: 'irregular', label: 'Irregular' }, { value: 'nao_aplicavel', label: 'Nao aplicavel' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'cicloMenstrualRegularidade', v)} disabled={readOnly} />
-            <SelectField label="Contraceptivo" value={dados.cicloMenstrualContraceptivo} options={[{ value: 'nao_informado', label: 'Nao informado' }, { value: 'nao', label: 'Nao' }, { value: 'sim', label: 'Sim' }, { value: 'nao_aplicavel', label: 'Nao aplicavel' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'cicloMenstrualContraceptivo', v)} disabled={readOnly} />
+            <SelectField label="Álcool" value={dados.alcoolUso} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'nao', label: 'Não' }, { value: 'eventual', label: 'Eventual' }, { value: 'frequente', label: 'Frequente' }, { value: 'alto', label: 'Alto/diário' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'alcoolUso', v)} disabled={readOnly} />
+            <SelectField label="Tabaco" value={dados.tabacoUso} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'nao', label: 'Não' }, { value: 'eventual', label: 'Eventual' }, { value: 'sim', label: 'Sim' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'tabacoUso', v)} disabled={readOnly} />
+            <SelectField label="Ciclo menstrual" value={dados.cicloMenstrualRegularidade} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'regular', label: 'Regular' }, { value: 'irregular', label: 'Irregular' }, { value: 'nao_aplicavel', label: 'Não aplicável' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'cicloMenstrualRegularidade', v)} disabled={readOnly} />
+            <SelectField label="Contraceptivo" value={dados.cicloMenstrualContraceptivo} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'nao', label: 'Não' }, { value: 'sim', label: 'Sim' }, { value: 'nao_aplicavel', label: 'Não aplicável' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'cicloMenstrualContraceptivo', v)} disabled={readOnly} />
+          </div>
+
+          <h4 className="eval-section-title">Contexto esportivo</h4>
+          <div className="anamnese-grid">
+            <SelectField
+              label="Modalidade"
+              value={dados.esportivo.modalidade}
+              options={SPORT_MODALITY_OPTIONS}
+              onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'modalidade', v)}
+              disabled={readOnly}
+            />
+            <InputField
+              label="Posição / função"
+              value={dados.esportivo.posicao}
+              onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'posicao', v)}
+              disabled={readOnly}
+            />
+            <InputField
+              label="Provas / especialidade"
+              value={dados.esportivo.provas}
+              onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'provas', v)}
+              disabled={readOnly}
+            />
+            <SelectField
+              label="Nível competitivo"
+              value={dados.esportivo.nivel}
+              options={[
+                { value: '', label: 'Selecione' },
+                { value: 'amador', label: 'Amador' },
+                { value: 'semi-pro', label: 'Semi-pro' },
+                { value: 'elite', label: 'Elite' },
+                { value: 'federado', label: 'Federado' }
+              ]}
+              onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'nivel', v)}
+              disabled={readOnly}
+            />
+            <InputField
+              label="Clube"
+              value={dados.esportivo.clube}
+              onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'clube', v)}
+              disabled={readOnly}
+            />
+
+            <InputField
+              label="Carga técnica (h/sem)"
+              value={dados.esportivo.cargaSemanal.tecnico}
+              onChange={(v) => updateEsportivoCarga(setDados, setHasUserInput, 'tecnico', v)}
+              disabled={readOnly}
+            />
+            <InputField
+              label="Carga tática (h/sem)"
+              value={dados.esportivo.cargaSemanal.tatico}
+              onChange={(v) => updateEsportivoCarga(setDados, setHasUserInput, 'tatico', v)}
+              disabled={readOnly}
+            />
+            <InputField
+              label="Carga física (h/sem)"
+              value={dados.esportivo.cargaSemanal.fisico}
+              onChange={(v) => updateEsportivoCarga(setDados, setHasUserInput, 'fisico', v)}
+              disabled={readOnly}
+            />
+            <InputField
+              label="Carga preventiva (h/sem)"
+              value={dados.esportivo.cargaSemanal.preventivo}
+              onChange={(v) => updateEsportivoCarga(setDados, setHasUserInput, 'preventivo', v)}
+              disabled={readOnly}
+            />
+
+            <SelectField
+              label="Fase de periodização"
+              value={dados.esportivo.fasePeriodizacao}
+              options={[
+                { value: '', label: 'Selecione' },
+                { value: 'pre-temporada', label: 'Pré-temporada' },
+                { value: 'temporada', label: 'Temporada' },
+                { value: 'off-season', label: 'Off-season' }
+              ]}
+              onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'fasePeriodizacao', v)}
+              disabled={readOnly}
+            />
+
+            <div className="eval-field eval-field-full">
+              <label className="eval-label">Histórico de lesões</label>
+              <div className="anamnese-med-list">
+                {dados.esportivo.historicoLesoes.map((item) => (
+                  <div className="anamnese-med-row" key={item.id}>
+                    <input
+                      className="eval-input"
+                      type="text"
+                      placeholder="Local da lesão"
+                      value={item.local}
+                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, 'local', e.target.value)}
+                      disabled={readOnly}
+                    />
+                    <input
+                      className="eval-input"
+                      type="text"
+                      placeholder="Tempo afastado"
+                      value={item.tempoAfastado}
+                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, 'tempoAfastado', e.target.value)}
+                      disabled={readOnly}
+                    />
+                    <button
+                      type="button"
+                      className="anamnese-icon-btn"
+                      disabled={readOnly || dados.esportivo.historicoLesoes.length <= 1}
+                      onClick={() => removeEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, createLesaoItem)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', createLesaoItem)}>
+                <Plus size={14} /> Adicionar lesão
+              </Button>
+            </div>
+
+            <div className="eval-field eval-field-full">
+              <label className="eval-label">Próximas competições</label>
+              <div className="anamnese-med-list">
+                {dados.esportivo.proximasCompeticoes.map((item) => (
+                  <div className="anamnese-med-row" key={item.id}>
+                    <input
+                      className="eval-input"
+                      type="text"
+                      placeholder="Nome da competição"
+                      value={item.nome}
+                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, 'nome', e.target.value)}
+                      disabled={readOnly}
+                    />
+                    <input
+                      className="eval-input"
+                      type="date"
+                      value={item.data}
+                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, 'data', e.target.value)}
+                      disabled={readOnly}
+                    />
+                    <button
+                      type="button"
+                      className="anamnese-icon-btn"
+                      disabled={readOnly || dados.esportivo.proximasCompeticoes.length <= 1}
+                      onClick={() => removeEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, createCompeticaoItem)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', createCompeticaoItem)}>
+                <Plus size={14} /> Adicionar competição
+              </Button>
+            </div>
+
+            {toText(dados.sexoBiologico).toLowerCase().includes('femin') && (
+              <div className="eval-field eval-field-full">
+                <label className="anamnese-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(dados.esportivo.historicaREDS)}
+                    onChange={(e) => updateEsportivoField(setDados, setHasUserInput, 'historicaREDS', e.target.checked)}
+                    disabled={readOnly}
+                  />
+                  <span>Histórico pregresso sugestivo de RED-S</span>
+                </label>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {activeTab === 'familiar' && (
         <div className="eval-section">
-          <h4 className="eval-section-title">Historico familiar</h4>
+          <h4 className="eval-section-title">Histórico familiar</h4>
           <div className="anamnese-checkbox-grid">
             {[
-              { key: 'familyCardiovascular', label: 'Doenca cardiovascular' },
+              { key: 'familyCardiovascular', label: 'Doença cardiovascular' },
               { key: 'familyDiabetes', label: 'Diabetes' },
-              { key: 'familyCancer', label: 'Cancer' },
+              { key: 'familyCancer', label: 'Câncer' },
               { key: 'familyObesity', label: 'Obesidade' }
             ].map((item) => (
               <label key={item.key} className="anamnese-checkbox">
@@ -434,7 +810,7 @@ const AnamneseInicialForm = ({
               </label>
             ))}
           </div>
-          <AreaField label="Observacoes" value={dados.observacoes} onChange={(v) => updateField(setDados, setHasUserInput, 'observacoes', v)} disabled={readOnly} />
+          <AreaField label="Observações" value={dados.observacoes} onChange={(v) => updateField(setDados, setHasUserInput, 'observacoes', v)} disabled={readOnly} />
         </div>
       )}
 
@@ -457,23 +833,25 @@ const AnamneseInicialForm = ({
               </div>
             ))}
           </div>
-        ) : <div className="eval-note">Sem flags automaticas de risco.</div>}
+        ) : <div className="eval-note">Sem flags automáticas de risco.</div>}
       </div>
 
       <div className="eval-actions">
         {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
-        <Button type="button" variant="secondary" disabled={readOnly} onClick={() => {
-          const index = TAB_ITEMS.findIndex((tab) => tab.id === activeTab);
-          if (index >= 0 && index < TAB_ITEMS.length - 1) setActiveTab(TAB_ITEMS[index + 1].id);
-        }}>
-          Proxima aba
-        </Button>
+        {TAB_ITEMS.findIndex((tab) => tab.id === activeTab) < TAB_ITEMS.length - 1 && (
+          <Button type="button" variant="secondary" disabled={readOnly} onClick={() => {
+            const index = TAB_ITEMS.findIndex((tab) => tab.id === activeTab);
+            setActiveTab(TAB_ITEMS[index + 1].id);
+          }}>
+            Próxima aba
+          </Button>
+        )}
         <Button type="button" variant="primary" disabled={readOnly} onClick={handleSubmit} loading={saveStatus === 'saving'}>
           Salvar anamnese
         </Button>
       </div>
 
-      {submitAttempted && hasRequiredMissing ? <div className="eval-note anamnese-error-note">Nome, sexo biologico e objetivo principal sao obrigatorios.</div> : null}
+      {submitAttempted && hasRequiredMissing ? <div className="eval-note anamnese-error-note">Nome, sexo biológico e objetivo principal são obrigatórios.</div> : null}
       {error ? <div className="eval-note anamnese-error-note">{error}</div> : null}
     </div>
   );
@@ -557,6 +935,312 @@ function updateMedication(setDados, setHasUserInput, id, key, value) {
   }));
 }
 
+function addSuplemento(setDados, setHasUserInput) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    suplementos: [...(Array.isArray(prev.suplementos) ? prev.suplementos : []), { id: createId(), nome: '', dose: '', frequencia: '' }]
+  }));
+}
+
+function removeSuplemento(setDados, setHasUserInput, id) {
+  setHasUserInput(true);
+  setDados((prev) => {
+    const list = (Array.isArray(prev.suplementos) ? prev.suplementos : []).filter((item) => item.id !== id);
+    return { ...prev, suplementos: list.length ? list : [{ id: createId(), nome: '', dose: '', frequencia: '' }] };
+  });
+}
+
+function updateSuplemento(setDados, setHasUserInput, id, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    suplementos: (Array.isArray(prev.suplementos) ? prev.suplementos : []).map((item) => (
+      item.id === id ? { ...item, [key]: value } : item
+    ))
+  }));
+}
+
+function updateEsportivoField(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createEsportivoData()),
+      [key]: value
+    }
+  }));
+}
+
+function updateEsportivoCarga(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createEsportivoData()),
+      cargaSemanal: {
+        ...(prev?.esportivo?.cargaSemanal || {}),
+        [key]: value
+      }
+    }
+  }));
+}
+
+function updateEsportivoArrayItem(setDados, setHasUserInput, listKey, id, field, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createEsportivoData()),
+      [listKey]: normalizeObjectArray(prev?.esportivo?.[listKey]).map((item) => (
+        String(item?.id) === String(id) ? { ...item, [field]: value } : item
+      ))
+    }
+  }));
+}
+
+function addEsportivoArrayItem(setDados, setHasUserInput, listKey, createItem) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createEsportivoData()),
+      [listKey]: [
+        ...normalizeObjectArray(prev?.esportivo?.[listKey]),
+        createItem()
+      ]
+    }
+  }));
+}
+
+function removeEsportivoArrayItem(setDados, setHasUserInput, listKey, id, createItem) {
+  setHasUserInput(true);
+  setDados((prev) => {
+    const filtered = normalizeObjectArray(prev?.esportivo?.[listKey]).filter(
+      (item) => String(item?.id) !== String(id)
+    );
+    return {
+      ...prev,
+      esportivo: {
+        ...(prev?.esportivo || createEsportivoData()),
+        [listKey]: filtered.length ? filtered : [createItem()]
+      }
+    };
+  });
+}
+
+function normalizeObjectArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === 'object');
+}
+
+function asRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
+}
+
+function normalizeDateOptional(value) {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return value.trim();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return toLocalDateInputValue(date);
+}
+
+function buildEsportivoPayload(esportivo) {
+  const source = asRecord(esportivo);
+  const carga = asRecord(source.cargaSemanal);
+  return {
+    modalidade: toText(source.modalidade) || null,
+    posicao: toText(source.posicao) || null,
+    provas: (() => {
+      const raw = source.provas;
+      const text = Array.isArray(raw) ? raw.join(', ') : toText(raw);
+      if (!text) return null;
+      const arr = text.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+      return arr.length ? arr : null;
+    })(),
+    nivel: toText(source.nivel) || null,
+    clube: toText(source.clube) || null,
+    cargaSemanal: {
+      tecnico: toNumber(carga.tecnico),
+      tatico: toNumber(carga.tatico),
+      fisico: toNumber(carga.fisico),
+      preventivo: toNumber(carga.preventivo)
+    },
+    fasePeriodizacao: toText(source.fasePeriodizacao) || null,
+    historicoLesoes: normalizeObjectArray(source.historicoLesoes)
+      .map((item) => ({
+        local: toText(item.local) || null,
+        tempoAfastado: toText(item.tempoAfastado) || null
+      }))
+      .filter((item) => item.local || item.tempoAfastado),
+    proximasCompeticoes: normalizeObjectArray(source.proximasCompeticoes)
+      .map((item) => ({
+        nome: toText(item.nome) || null,
+        data: normalizeDateOptional(item.data) || null
+      }))
+      .filter((item) => item.nome || item.data),
+    historicaREDS: normalizeBoolean(source.historicaREDS)
+  };
+}
+
+function hasEsportivoValues(esportivo) {
+  const payload = buildEsportivoPayload(esportivo);
+  if (payload.modalidade || payload.posicao || payload.nivel || payload.clube || payload.fasePeriodizacao) return true;
+  if (payload.provas && payload.provas.length > 0) return true;
+  if (payload.historicaREDS) return true;
+  if (payload.historicoLesoes.length > 0) return true;
+  if (payload.proximasCompeticoes.length > 0) return true;
+  return Object.values(payload.cargaSemanal || {}).some((value) => Number.isFinite(value));
+}
+
+function buildOnboardingPrefill(onboardingContext, patient) {
+  if (!onboardingContext || typeof onboardingContext !== 'object') return null;
+
+  const modalidadeTexto = toText(
+    onboardingContext?.modalidadePrincipal
+    || onboardingContext?.raw?.atividadeFisica
+    || patient?.modalidadePrincipal
+    || patient?.modalidade
+  );
+
+  const frequencia = toNumber(
+    onboardingContext?.frequenciaSemanal ?? onboardingContext?.raw?.frequenciaSemanal
+  );
+  const duracao = toNumber(
+    onboardingContext?.duracaoSessao ?? onboardingContext?.raw?.duracaoSessao
+  );
+  const sexo = normalizeBiologicalSex(
+    onboardingContext?.genero || patient?.genero || patient?.sexo || onboardingContext?.raw?.sexoBiologico
+  );
+  const nivelCompetitivo = normalizeCompetitiveLevel(onboardingContext?.raw?.nivelCompetitivo);
+  const motivoAtendimento = toText(onboardingContext?.raw?.motivoAtendimento);
+
+  const observacoes = buildOnboardingObservations(onboardingContext);
+  const modalidade = mapSportModalityToken(modalidadeTexto);
+
+  if (!modalidadeTexto && !Number.isFinite(frequencia) && !Number.isFinite(duracao) && !sexo && !motivoAtendimento && !observacoes) {
+    return null;
+  }
+
+  return {
+    sexoBiologico: sexo,
+    atividadeTipo: modalidadeTexto,
+    atividadeFrequencia: Number.isFinite(frequencia) ? String(frequencia) : '',
+    atividadeDuracao: Number.isFinite(duracao) ? String(duracao) : '',
+    queixaPrincipal: motivoAtendimento,
+    observacoes,
+    esportivo: {
+      modalidade,
+      nivel: nivelCompetitivo,
+      cargaSemanal: {
+        fisico: Number.isFinite(frequencia) && Number.isFinite(duracao)
+          ? String(Math.max((frequencia * duracao) / 60, 0).toFixed(1))
+          : ''
+      }
+    }
+  };
+}
+
+function applyOnboardingPrefill(currentData, prefill) {
+  const current = currentData || createInitialData();
+  const next = { ...current };
+
+  next.sexoBiologico = fillIfEmpty(current.sexoBiologico, prefill.sexoBiologico);
+  next.atividadeTipo = fillIfEmpty(current.atividadeTipo, prefill.atividadeTipo);
+  next.atividadeFrequencia = fillIfEmpty(current.atividadeFrequencia, prefill.atividadeFrequencia);
+  next.atividadeDuracao = fillIfEmpty(current.atividadeDuracao, prefill.atividadeDuracao);
+  next.queixaPrincipal = fillIfEmpty(current.queixaPrincipal, prefill.queixaPrincipal);
+  next.observacoes = fillIfEmpty(current.observacoes, prefill.observacoes);
+
+  const esporteAtual = asRecord(current.esportivo);
+  const esportePrefill = asRecord(prefill.esportivo);
+  const cargaAtual = asRecord(esporteAtual.cargaSemanal);
+  const cargaPrefill = asRecord(esportePrefill.cargaSemanal);
+
+  next.esportivo = {
+    ...(esporteAtual || createEsportivoData()),
+    modalidade: fillIfEmpty(esporteAtual.modalidade, esportePrefill.modalidade),
+    nivel: fillIfEmpty(esporteAtual.nivel, esportePrefill.nivel),
+    cargaSemanal: {
+      ...(esporteAtual.cargaSemanal || {}),
+      fisico: fillIfEmpty(cargaAtual.fisico, cargaPrefill.fisico)
+    }
+  };
+
+  return next;
+}
+
+function fillIfEmpty(currentValue, nextValue) {
+  if (toText(currentValue)) return currentValue;
+  return nextValue ?? currentValue;
+}
+
+function normalizeBiologicalSex(value) {
+  const token = toText(value).toLowerCase();
+  if (!token) return '';
+  if (token.includes('fem')) return 'feminino';
+  if (token.includes('masc')) return 'masculino';
+  return '';
+}
+
+function normalizeCompetitiveLevel(value) {
+  const token = toText(value).toLowerCase();
+  if (!token) return '';
+  if (token.includes('semi')) return 'semi-pro';
+  if (token.includes('elit')) return 'elite';
+  if (token.includes('feder')) return 'federado';
+  if (token.includes('amador')) return 'amador';
+  return '';
+}
+
+function mapSportModalityToken(value) {
+  const token = toText(value).toLowerCase();
+  if (!token) return '';
+  if (token.includes('futsal')) return 'futsal';
+  if (token.includes('futebol')) return 'futebol';
+  if (token.includes('nata')) return 'natacao';
+  if (token.includes('muscula')) return 'musculacao';
+  if (token.includes('corr')) return 'corrida';
+  if (token.includes('cicl')) return 'ciclismo';
+  if (token.includes('volei')) return 'volei';
+  if (token.includes('basquet')) return 'basquete';
+  if (token.includes('hand')) return 'handebol';
+  if (token.includes('tenis')) return 'tenis';
+  if (token.includes('luta') || token.includes('mma') || token.includes('combate')) return 'luta';
+  if (token.includes('atlet')) return 'atletismo';
+  if (token.includes('remo')) return 'remo';
+  if (token.includes('triat')) return 'triatlo';
+  return 'outro';
+}
+
+function buildOnboardingObservations(onboardingContext) {
+  const chunks = [
+    toText(onboardingContext?.observacoesIniciais),
+    toText(onboardingContext?.historicoSaude)
+  ].filter(Boolean);
+  if (!chunks.length) return '';
+  return chunks.join(' | ');
+}
+
+function buildOnboardingSummary(onboardingContext) {
+  if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+  const summary = [];
+  const modalidade = toText(onboardingContext?.modalidadePrincipal);
+  const frequencia = toNumber(onboardingContext?.frequenciaSemanal);
+  const duracao = toNumber(onboardingContext?.duracaoSessao);
+  const genero = toText(onboardingContext?.genero);
+  const status = toText(onboardingContext?.status);
+
+  if (modalidade) summary.push(`Modalidade: ${modalidade}`);
+  if (Number.isFinite(frequencia)) summary.push(`Frequência: ${frequencia}x/sem`);
+  if (Number.isFinite(duracao)) summary.push(`Duração: ${duracao} min`);
+  if (genero) summary.push(`Gênero: ${genero}`);
+  if (status) summary.push(`Status: ${status}`);
+  return summary.slice(0, 5);
+}
+
 function toNumber(value) {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -616,5 +1300,6 @@ function formatPriority(level) {
   if (level === 'alta') return 'Alta';
   if (level === 'moderada') return 'Moderada';
   if (level === 'baixa') return 'Baixa';
-  return 'Nao definida';
+  return 'Não definida';
 }
+

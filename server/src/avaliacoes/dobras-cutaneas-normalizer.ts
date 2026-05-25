@@ -127,6 +127,7 @@ export const normalizeDobrasCutaneasPayload = <T extends PayloadShape>(payload: 
   const protocolo = toText(pick(valueSources, ['protocolo', 'protocoloDobras']));
   const sexo = toText(pick(valueSources, ['sexo', 'sex']));
   const conversionMethod = toText(pick(valueSources, ['conversionMethod', 'equacao_percentual'])) || 'siri';
+  const esportivo = asRecord(pick(valueSources, ['esportivo']));
 
   const somaDobras = toNumber(pick(valueSources, ['soma_dobras', 'somaDobras', 'somaSeteDobras']));
   const somaDobrasTotal = toNumber(pick(valueSources, ['soma_dobras_total', 'somaDobrasTotal']));
@@ -155,7 +156,8 @@ export const normalizeDobrasCutaneasPayload = <T extends PayloadShape>(payload: 
     ...canonicalDadosBrutos,
     protocolo: protocolo || undefined,
     sexo: sexo || undefined,
-    dobras: normalizedDobras
+    dobras: normalizedDobras,
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined
   });
 
   const normalizedResultadosCalculados = compact({
@@ -196,6 +198,7 @@ export const normalizeDobrasCutaneasPayload = <T extends PayloadShape>(payload: 
     protocolo: protocolo || undefined,
     sexo: sexo || undefined,
     dobras: normalizedDobras,
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined,
     soma_dobras: somaDobras,
     soma_dobras_total: somaDobrasTotal,
     densidade_corporal: densidadeCorporal,

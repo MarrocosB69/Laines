@@ -545,7 +545,7 @@
 .reports-container .gradient-amber { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); }
 .reports-container .gradient-green { background: linear-gradient(135deg, #4d9c6c 0%, #2f855a 100%); }
 .reports-container .gradient-rose { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); }
-.reports-container .gradient-cyan { background: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%); }
+.reports-container .gradient-cyan { background: linear-gradient(135deg, #06b6d4 0%, var(--color-accent, #56ADDB) 100%); }
 
 .reports-container .stat-card-content {
   position: relative;
@@ -787,7 +787,7 @@
 .reports-container .progress-gradient-blue { background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%); }
 .reports-container .progress-gradient-purple { background: linear-gradient(90deg, #a855f7 0%, #7e22ce 100%); }
 .reports-container .progress-gradient-amber { background: linear-gradient(90deg, #f59e0b 0%, #b45309 100%); }
-.reports-container .progress-gradient-cyan { background: linear-gradient(90deg, #06b6d4 0%, #0e7490 100%); }
+.reports-container .progress-gradient-cyan { background: linear-gradient(90deg, #06b6d4 0%, var(--color-accent, #56ADDB) 100%); }
 .reports-container .progress-gradient-rose { background: linear-gradient(90deg, #f43f5e 0%, #be123c 100%); }
 .reports-container .progress-gradient-indigo { background: linear-gradient(90deg, #6366f1 0%, #3730a3 100%); }
 

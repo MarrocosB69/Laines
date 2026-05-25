@@ -66,6 +66,13 @@ export class SolicitacaoAcesso {
   @Column({ length: 30, default: 'landing' })
   origem!: string;
 
+  @Index()
+  @Column({ name: 'approved_user_id', type: 'uuid', nullable: true })
+  approvedUserId?: string | null;
+
+  @Column({ name: 'approved_at', type: 'timestamp', nullable: true })
+  approvedAt?: Date | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

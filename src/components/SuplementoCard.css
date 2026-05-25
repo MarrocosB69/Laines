@@ -1,0 +1,181 @@
+.suplemento-item {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 130px 130px 110px auto;
+  grid-template-areas:
+    "nome dose horario status remover"
+    "marca lote badge badge badge"
+    "aviso aviso aviso aviso aviso";
+  gap: 8px 10px;
+  align-items: end;
+  padding: 12px 14px;
+  border: 1px solid rgba(29, 51, 80, 0.10);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(29, 51, 80, 0.06);
+  transition: box-shadow 0.2s, border-color 0.18s;
+}
+
+.suplemento-item[data-wada="aprovado"] { border-top: 3px solid #16a34a; }
+.suplemento-item[data-wada="risco"]    { border-top: 3px solid #d97706; }
+.suplemento-item[data-wada="proibido"] { border-top: 3px solid #dc2626; }
+
+.suplemento-item:hover {
+  box-shadow: 0 3px 12px rgba(29, 51, 80, 0.10), 0 1px 4px rgba(29, 51, 80, 0.06);
+  border-color: rgba(29, 51, 80, 0.16);
+}
+
+.suplemento-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.suplemento-card__field label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+}
+
+.suplemento-card__field input,
+.suplemento-card__field select {
+  height: 33px;
+  padding: 0 9px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 7px;
+  font-size: 0.78rem;
+  background: #f3f8fb;
+  color: #1e293b;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.suplemento-card__field input:focus,
+.suplemento-card__field select:focus {
+  outline: none;
+  border-color: #56ADDB;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+.suplemento-card__field--nome    { grid-area: nome; }
+.suplemento-card__field--dose    { grid-area: dose; }
+.suplemento-card__field--horario { grid-area: horario; }
+.suplemento-card__field--status  { grid-area: status; }
+.suplemento-card__field--marca   { grid-area: marca; }
+.suplemento-card__field--lote    { grid-area: lote; }
+
+/* ─── WADA badge ─────────────────────────────────────────── */
+.wada-badge {
+  grid-area: badge;
+  justify-self: start;
+  align-self: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.27rem 0.65rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.wada-ok {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: rgba(22, 163, 74, 0.22);
+}
+
+.wada-verificar {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.22);
+}
+
+.wada-proibido {
+  background: #fff1f2;
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.20);
+}
+
+/* ─── Botão remover ──────────────────────────────────────── */
+.btn-remover-suplemento {
+  grid-area: remover;
+  justify-self: end;
+  align-self: end;
+  width: 33px;
+  height: 33px;
+  padding: 0;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 7px;
+  background: #ffffff;
+  color: #94a3b8;
+  font-size: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-remover-suplemento:hover {
+  background: #fff1f2;
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.28);
+}
+
+/* ─── Aviso WADA ─────────────────────────────────────────── */
+.wada-aviso {
+  grid-area: aviso;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 11px;
+  background: #f3f8fb;
+  border: 1px solid rgba(29, 51, 80, 0.08);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.wada-aviso svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #56ADDB;
+}
+
+/* ─── Responsivo ─────────────────────────────────────────── */
+@media (max-width: 980px) {
+  .suplemento-item {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "nome dose"
+      "horario status"
+      "marca lote"
+      "badge remover"
+      "aviso aviso";
+  }
+
+  .btn-remover-suplemento {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 700px) {
+  .suplemento-item {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "nome"
+      "dose"
+      "horario"
+      "status"
+      "marca"
+      "lote"
+      "badge"
+      "remover"
+      "aviso";
+  }
+}

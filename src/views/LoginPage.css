@@ -447,6 +447,30 @@ body.landing-page #root {
   padding: 0.62rem 0.72rem;
 }
 
+.landing-login-recovery {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.landing-login-recovery button {
+  border: none;
+  background: transparent;
+  color: #1b4b75;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.1rem 0;
+  cursor: pointer;
+}
+
+.landing-login-recovery button:hover {
+  color: #0f3558;
+}
+
 .landing-login-panel__foot {
   margin-top: 0.3rem;
   padding-top: 0.9rem;
@@ -716,6 +740,7 @@ body.landing-page #root {
 
 .landing-submit:focus-visible,
 .landing-login-panel__foot button:focus-visible,
+.landing-login-recovery button:focus-visible,
 .scroll-top-floating:focus-visible,
 .landing-topbar__nav a:focus-visible,
 .field-shell input:focus-visible,
@@ -734,6 +759,16 @@ body.landing-page #root {
   max-width: calc(100vw - 1rem);
   overflow-y: auto;
   padding: 0;
+}
+
+.recovery-modal {
+  --app-modal-width: 620px;
+  width: min(620px, calc(100vw - 1rem));
+  max-width: calc(100vw - 1rem);
+}
+
+.recovery-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .request-modal-header {
@@ -910,7 +945,8 @@ body.landing-page #root {
   .entry-grid,
   .workflow-grid,
   .faq-grid,
-  .request-grid {
+  .request-grid,
+  .recovery-grid {
     grid-template-columns: 1fr;
   }
 

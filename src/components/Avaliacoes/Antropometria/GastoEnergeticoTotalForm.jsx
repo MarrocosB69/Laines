@@ -1,28 +1,78 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Flame } from 'lucide-react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Flame, RefreshCw } from 'lucide-react';
 import MiniSparkline from '../../shared/MiniSparkline';
 import { Button } from '../../ui';
+import api from '../../../services/api';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
   buildComparativeDeltas,
   calculateGetEvaluation
 } from '../../../services/calculationEngine';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
 import './GastoEnergeticoTotalForm.css';
 
 const ACTIVITY_OPTIONS = [
-  { value: 'sedentario', label: 'Sedentario (1.2)' },
+  { value: 'sedentario', label: 'Sedentário (1.2)' },
   { value: 'levemente_ativo', label: 'Levemente ativo (1.375)' },
   { value: 'moderadamente_ativo', label: 'Moderadamente ativo (1.55)' },
   { value: 'muito_ativo', label: 'Muito ativo (1.725)' },
   { value: 'extremamente_ativo', label: 'Extremamente ativo (1.9)' }
 ];
 
-const createInitialData = () => ({
+const NIVEL_COMPETITIVO_OPTIONS = [
+  { value: 'amador', label: 'Amador' },
+  { value: 'semi-pro', label: 'Semi-pro' },
+  { value: 'elite', label: 'Elite' },
+  { value: 'federado', label: 'Federado' }
+];
+
+const DIAS_SEMANA = [
+  { key: 'segunda', label: 'Segunda' },
+  { key: 'terca', label: 'Terça' },
+  { key: 'quarta', label: 'Quarta' },
+  { key: 'quinta', label: 'Quinta' },
+  { key: 'sexta', label: 'Sexta' },
+  { key: 'sabado', label: 'Sábado' },
+  { key: 'domingo', label: 'Domingo' }
+];
+
+const CHO_PERIODIZADO_BY_FASE = Object.freeze({
+  preparacao_geral: { label: 'Preparação geral', choRange: '5-7 g/kg/dia' },
+  preparacao_especifica: { label: 'Preparação específica', choRange: '6-8 g/kg/dia' },
+  pre_competicao: { label: 'Pré-competição', choRange: '7-10 g/kg/dia' },
+  competicao: { label: 'Competição', choRange: '8-12 g/kg/dia' },
+  transicao: { label: 'Transição', choRange: '3-5 g/kg/dia' },
+  taper: { label: 'Taper', choRange: '5-7 g/kg/dia' }
+});
+
+const createSemanaRow = (dia) => ({
+  dia,
+  metId: '',
+  atividade: '',
+  categoria: '',
+  intensidade: '',
+  metValue: '',
+  duracaoHoras: '',
+  gastoKcal: null,
+  erroCalculo: '',
+  loadingCalculo: false
+});
+
+const buildSemanaPadrao = () => DIAS_SEMANA.map((item) => createSemanaRow(item.key));
+
+const createEsportivoData = (nivelCompetitivo = 'amador') => ({
+  palSubjetivoLegado: '',
+  nivelCompetitivo,
+  registroAtividadesSemana: buildSemanaPadrao(),
+  cargaTreinoIntegracao: null
+});
+
+const createInitialData = (nivelCompetitivo = 'amador') => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
   activityLevel: 'sedentario',
-  customActivityFactor: '',
   manualTmbKcal: '',
+  esportivo: createEsportivoData(nivelCompetitivo),
   observacoes: ''
 });
 
@@ -31,20 +81,46 @@ const GastoEnergeticoTotalForm = ({
   onSalvar,
   onAutoSave,
   readOnly = false,
+  onboardingContext,
   baselineAnthropometry,
   moduleSnapshot,
   moduleHistory = [],
   allEvaluationHistory = [],
   currentSessionId
 }) => {
-  const [dados, setDados] = useState(createInitialData);
+  const defaultNivelCompetitivo = useMemo(
+    () => resolveNivelCompetitivoPadrao(allEvaluationHistory),
+    [allEvaluationHistory]
+  );
+  const onboardingEsportivo = useMemo(() => ({
+    modalidadePrincipal: toTextInput(onboardingContext?.modalidadePrincipal),
+    frequenciaSemanal: parseNumeric(onboardingContext?.frequenciaSemanal),
+    duracaoSessao: parseNumeric(onboardingContext?.duracaoSessao),
+    genero: toTextInput(onboardingContext?.genero),
+    status: toTextInput(onboardingContext?.status)
+  }), [
+    onboardingContext?.duracaoSessao,
+    onboardingContext?.frequenciaSemanal,
+    onboardingContext?.genero,
+    onboardingContext?.modalidadePrincipal,
+    onboardingContext?.status
+  ]);
+
+  const { confirm } = useUiFeedback();
+
+  const [dados, setDados] = useState(() => createInitialData(defaultNivelCompetitivo));
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [hasUserInput, setHasUserInput] = useState(false);
+  const [metOptions, setMetOptions] = useState([]);
+  const [metLoading, setMetLoading] = useState(false);
+  const [metError, setMetError] = useState('');
+  const [cargaTreinoHint, setCargaTreinoHint] = useState(null);
   const loadedSnapshotIdRef = useRef(null);
   const autoSaveRef = useRef(null);
   const saveStatusResetRef = useRef(null);
+  const calcRunRef = useRef(0);
 
   useEffect(() => () => {
     clearTimeout(autoSaveRef.current);
@@ -52,11 +128,54 @@ const GastoEnergeticoTotalForm = ({
   }, []);
 
   useEffect(() => {
+    let mounted = true;
+    const fetchMets = async () => {
+      setMetLoading(true);
+      setMetError('');
+      try {
+        const { data } = await api.get('/mets');
+        if (!mounted) return;
+        setMetOptions(normalizeMetCatalog(data));
+      } catch {
+        if (!mounted) return;
+        setMetError('Não foi possível carregar o catálogo de METs.');
+      } finally {
+        if (mounted) setMetLoading(false);
+      }
+    };
+
+    fetchMets();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    setDados((prev) => {
+      const currentNivel = toTextInput(prev?.esportivo?.nivelCompetitivo);
+      if (currentNivel) return prev;
+      return {
+        ...prev,
+        esportivo: {
+          ...(prev?.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+          nivelCompetitivo: defaultNivelCompetitivo
+        }
+      };
+    });
+  }, [defaultNivelCompetitivo]);
+
+  useEffect(() => {
     const snapshotId = moduleSnapshot?.id || '__empty__';
     if (loadedSnapshotIdRef.current === snapshotId) return;
 
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
+    const esportivoRaw = asRecord(firstDefined(
+      dadosBrutos?.esportivo,
+      source?.esportivo
+    ));
+    const registroRaw = normalizeObjectArray(firstDefined(
+      esportivoRaw?.registroAtividadesSemana,
+      esportivoRaw?.registro_atividades_semana
+    ));
 
     setDados((prev) => ({
       ...prev,
@@ -72,48 +191,177 @@ const GastoEnergeticoTotalForm = ({
         source?.nivel_atividade,
         'sedentario'
       )) || 'sedentario',
-      customActivityFactor: toInputValue(firstDefined(
-        dadosBrutos?.customActivityFactor,
-        dadosBrutos?.fator_atividade_personalizado,
-        source?.fator_atividade_personalizado
-      ), 3),
       manualTmbKcal: toInputValue(firstDefined(
         dadosBrutos?.manualTmbKcal,
         dadosBrutos?.tmb_manual_kcal,
         source?.tmb_manual_kcal
       ), 0),
+      esportivo: {
+        palSubjetivoLegado: toInputValue(firstDefined(
+          esportivoRaw?.palSubjetivoLegado,
+          esportivoRaw?.pal_subjetivo_legado,
+          dadosBrutos?.customActivityFactor,
+          dadosBrutos?.fator_atividade_personalizado,
+          source?.fator_atividade_personalizado
+        ), 3),
+        nivelCompetitivo: toTextInput(firstDefined(
+          esportivoRaw?.nivelCompetitivo,
+          esportivoRaw?.nivel_competitivo,
+          defaultNivelCompetitivo
+        )) || defaultNivelCompetitivo,
+        registroAtividadesSemana: mergeSemanaRows(buildSemanaPadrao(), registroRaw),
+        cargaTreinoIntegracao: asRecord(firstDefined(
+          esportivoRaw?.cargaTreinoIntegracao,
+          esportivoRaw?.carga_treino_integracao,
+          source?.cargaTreinoIntegracao,
+          source?.carga_treino_integracao
+        ))
+      },
       observacoes: toTextInput(firstDefined(
         dadosBrutos?.observacoes,
         source?.observacoes
       ))
     }));
 
+    const cargaTreinoSnapshotHint = resolveCargaTreinoHintFromPayload(firstDefined(
+      esportivoRaw?.cargaTreinoIntegracao,
+      esportivoRaw?.carga_treino_integracao,
+      source?.cargaTreinoIntegracao,
+      source?.carga_treino_integracao
+    ));
+    if (cargaTreinoSnapshotHint) {
+      setCargaTreinoHint(cargaTreinoSnapshotHint);
+    }
+
     loadedSnapshotIdRef.current = snapshotId;
-  }, [moduleSnapshot]);
+  }, [defaultNivelCompetitivo, moduleSnapshot]);
+
+  const latestCargaTreinoContext = useMemo(
+    () => resolveLatestCargaTreinoContext({ allEvaluationHistory, currentSessionId }),
+    [allEvaluationHistory, currentSessionId]
+  );
+
+  useEffect(() => {
+    if (!latestCargaTreinoContext) return;
+    const suggestion = buildChoPeriodizedSuggestion(latestCargaTreinoContext);
+    if (!suggestion) return;
+    setCargaTreinoHint(suggestion);
+    setDados((prev) => ({
+      ...prev,
+      esportivo: {
+        ...(prev?.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+        cargaTreinoIntegracao: {
+          faseAtual: suggestion.faseAtual,
+          acwr: suggestion.acwr,
+          estrategiaTreinamento: suggestion.estrategiaTreinamento,
+          choRange: suggestion.choRange,
+          source: 'carga_treino',
+          updatedAt: new Date().toISOString()
+        }
+      }
+    }));
+  }, [defaultNivelCompetitivo, latestCargaTreinoContext]);
+
+  useEffect(() => {
+    const handleCargaTreinoUpdated = (event) => {
+      const suggestion = buildChoPeriodizedSuggestion(event?.detail);
+      if (!suggestion) return;
+      setCargaTreinoHint(suggestion);
+      setDados((prev) => ({
+        ...prev,
+        esportivo: {
+          ...(prev?.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+          cargaTreinoIntegracao: {
+            faseAtual: suggestion.faseAtual,
+            acwr: suggestion.acwr,
+            estrategiaTreinamento: suggestion.estrategiaTreinamento,
+            choRange: suggestion.choRange,
+            source: 'carga_treino',
+            updatedAt: new Date().toISOString()
+          }
+        }
+      }));
+    };
+
+    window.addEventListener('cargaTreinoAtualizada', handleCargaTreinoUpdated);
+    return () => window.removeEventListener('cargaTreinoAtualizada', handleCargaTreinoUpdated);
+  }, [defaultNivelCompetitivo]);
 
   const sex = useMemo(
     () => normalizeSexToken(baselineAnthropometry?.sexo),
     [baselineAnthropometry?.sexo]
   );
 
-  const numericFields = useMemo(() => ({
-    customActivityFactor: parseNumeric(dados.customActivityFactor),
-    manualTmbKcal: parseNumeric(dados.manualTmbKcal)
-  }), [dados.customActivityFactor, dados.manualTmbKcal]);
+  const metById = useMemo(() => {
+    const map = new Map();
+    metOptions.forEach((item) => map.set(String(item.id), item));
+    return map;
+  }, [metOptions]);
+
+  const pesoReferenciaKg = useMemo(
+    () => resolvePesoReferenciaKg({ baselineAnthropometry, allEvaluationHistory }),
+    [allEvaluationHistory, baselineAnthropometry]
+  );
+
+  const manualTmbKcal = useMemo(
+    () => parseNumeric(dados.manualTmbKcal),
+    [dados.manualTmbKcal]
+  );
+
+  const baseEvaluation = useMemo(() => calculateGetEvaluation({
+    allHistory: allEvaluationHistory,
+    currentSessionId,
+    sex,
+    activityLevel: dados.activityLevel,
+    customActivityFactor: null,
+    manualTmbKcal
+  }), [
+    allEvaluationHistory,
+    currentSessionId,
+    dados.activityLevel,
+    manualTmbKcal,
+    sex
+  ]);
+
+  const totalGastoSemanalKcal = useMemo(
+    () => sumGastoSemanal(dados?.esportivo?.registroAtividadesSemana),
+    [dados?.esportivo?.registroAtividadesSemana]
+  );
+
+  const palRealCalculado = useMemo(() => {
+    const tmbBase = toNumber(baseEvaluation?.base?.tmbUsedKcal);
+    if (!Number.isFinite(tmbBase) || (tmbBase) <= 0) return null;
+    if (!Number.isFinite(totalGastoSemanalKcal)) return null;
+    const pal = 1 + ((totalGastoSemanalKcal) / ((tmbBase) * 7));
+    return Number.isFinite(pal) ? Number(pal.toFixed(3)) : null;
+  }, [baseEvaluation?.base?.tmbUsedKcal, totalGastoSemanalKcal]);
+
+  const palSubjetivoLegado = useMemo(
+    () => parseNumeric(dados?.esportivo?.palSubjetivoLegado),
+    [dados?.esportivo?.palSubjetivoLegado]
+  );
+
+  const fatorAtividadeFinal = useMemo(() => {
+    if (Number.isFinite(palRealCalculado)) return palRealCalculado;
+    if (Number.isFinite(palSubjetivoLegado) && (palSubjetivoLegado) >= 0.8 && (palSubjetivoLegado) <= 2.5) {
+      return palSubjetivoLegado;
+    }
+    return null;
+  }, [palRealCalculado, palSubjetivoLegado]);
 
   const getEvaluation = useMemo(() => calculateGetEvaluation({
     allHistory: allEvaluationHistory,
     currentSessionId,
     sex,
     activityLevel: dados.activityLevel,
-    customActivityFactor: numericFields.customActivityFactor,
-    manualTmbKcal: numericFields.manualTmbKcal
+    customActivityFactor: fatorAtividadeFinal,
+    manualTmbKcal
   }), [
     allEvaluationHistory,
     currentSessionId,
     dados.activityLevel,
-    numericFields.customActivityFactor,
-    numericFields.manualTmbKcal,
+    fatorAtividadeFinal,
+    manualTmbKcal,
     sex
   ]);
 
@@ -172,15 +420,15 @@ const GastoEnergeticoTotalForm = ({
     return values.slice(-6);
   }, [getEvaluation, normalizedHistory]);
 
-  const customFactorValidation = useMemo(() => {
-    if (dados.customActivityFactor === '') return { status: 'empty', message: '' };
-    const numeric = parseNumeric(dados.customActivityFactor);
+  const palLegadoValidation = useMemo(() => {
+    if (toTextInput(dados?.esportivo?.palSubjetivoLegado) === '') return { status: 'empty', message: '' };
+    const numeric = parseNumeric(dados?.esportivo?.palSubjetivoLegado);
     if (!Number.isFinite(numeric)) return { status: 'error', message: 'Informe um numero valido.' };
     if (numeric < 0.8 || numeric > 2.5) {
-      return { status: 'warning', message: 'Fator personalizado deve estar entre 0.8 e 2.5.' };
+      return { status: 'warning', message: 'PAL legado deve estar entre 0.8 e 2.5.' };
     }
     return { status: 'ok', message: '' };
-  }, [dados.customActivityFactor]);
+  }, [dados?.esportivo?.palSubjetivoLegado]);
 
   const manualTmbValidation = useMemo(() => {
     if (dados.manualTmbKcal === '') return { status: 'empty', message: '' };
@@ -193,16 +441,42 @@ const GastoEnergeticoTotalForm = ({
   }, [dados.manualTmbKcal]);
 
   const hasFieldErrors = useMemo(
-    () => [customFactorValidation, manualTmbValidation].some((item) => item.status === 'error'),
-    [customFactorValidation, manualTmbValidation]
+    () => [palLegadoValidation, manualTmbValidation].some((item) => item.status === 'error'),
+    [manualTmbValidation, palLegadoValidation]
+  );
+
+  const weeklyCalculationErrors = useMemo(
+    () => normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana)
+      .map((row) => toTextInput(row?.erroCalculo))
+      .filter(Boolean),
+    [dados?.esportivo?.registroAtividadesSemana]
+  );
+
+  const weeklyPendingRows = useMemo(
+    () => normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana)
+      .filter((row) => {
+        const hasDraft = toTextInput(row?.metId) !== '' || toTextInput(row?.duracaoHoras) !== '';
+        return hasDraft && !Number.isFinite(toNumber(row?.gastoKcal));
+      })
+      .length,
+    [dados?.esportivo?.registroAtividadesSemana]
   );
 
   const warnings = useMemo(() => {
     const items = [...(Array.isArray(getEvaluation?.warnings) ? getEvaluation.warnings : [])];
-    if (customFactorValidation.status === 'warning') items.push(customFactorValidation.message);
+    if (palLegadoValidation.status === 'warning') items.push(palLegadoValidation.message);
     if (manualTmbValidation.status === 'warning') items.push(manualTmbValidation.message);
+    if (!Number.isFinite(pesoReferenciaKg)) {
+      items.push('Peso de referencia indisponivel para calculo por sessao com MET.');
+    }
+    if (weeklyCalculationErrors.length > 0) {
+      items.push('Existem linhas sem calculo valido na tabela semanal.');
+    }
+    if (weeklyPendingRows > 0) {
+      items.push('Existem atividades preenchidas sem gasto calculado. Use "Recalcular semana".');
+    }
     return Array.from(new Set(items.filter(Boolean)));
-  }, [customFactorValidation, getEvaluation, manualTmbValidation]);
+  }, [getEvaluation, manualTmbValidation, palLegadoValidation, pesoReferenciaKg, weeklyCalculationErrors.length, weeklyPendingRows]);
 
   const hasRequiredMissing = useMemo(
     () => !Number.isFinite(getEvaluation?.base?.tmbUsedKcal),
@@ -214,25 +488,33 @@ const GastoEnergeticoTotalForm = ({
       current: getEvaluation?.results?.getKcal,
       reference: previous?.metrics?.get
     });
+    const esportivoPayload = buildGetEsportivoPayload({
+      esportivo: dados.esportivo,
+      totalGastoSemanalKcal,
+      palRealCalculado,
+      cargaTreinoHint
+    });
 
     return {
       dataAvaliacao: normalizeDateValue(dados.dataAvaliacao),
       sexo: sex,
       nivel_atividade: dados.activityLevel || 'sedentario',
-      fator_atividade_personalizado: Number.isFinite(numericFields.customActivityFactor)
-        ? numericFields.customActivityFactor
+      fator_atividade_personalizado: Number.isFinite(fatorAtividadeFinal)
+        ? Number((fatorAtividadeFinal).toFixed(3))
         : null,
-      tmb_manual_kcal: Number.isFinite(numericFields.manualTmbKcal)
-        ? Math.round(numericFields.manualTmbKcal)
+      tmb_manual_kcal: Number.isFinite(manualTmbKcal)
+        ? Math.round(manualTmbKcal)
         : null,
+      esportivo: esportivoPayload,
       dados_brutos: {
         activityLevel: dados.activityLevel || 'sedentario',
-        customActivityFactor: Number.isFinite(numericFields.customActivityFactor)
-          ? numericFields.customActivityFactor
+        customActivityFactor: Number.isFinite(fatorAtividadeFinal)
+          ? Number((fatorAtividadeFinal).toFixed(3))
           : null,
-        manualTmbKcal: Number.isFinite(numericFields.manualTmbKcal)
-          ? Math.round(numericFields.manualTmbKcal)
+        manualTmbKcal: Number.isFinite(manualTmbKcal)
+          ? Math.round(manualTmbKcal)
           : null,
+        esportivo: esportivoPayload,
         observacoes: toTextInput(dados.observacoes) || null
       },
       resultados_calculados: {
@@ -262,6 +544,12 @@ const GastoEnergeticoTotalForm = ({
           : null,
         hipertrofiaMaxKcal: Number.isFinite(getEvaluation?.results?.hypertrophyMaxKcal)
           ? Math.round(getEvaluation.results.hypertrophyMaxKcal)
+          : null,
+        totalGastoSemanalKcal: Number.isFinite(totalGastoSemanalKcal)
+          ? Number((totalGastoSemanalKcal).toFixed(2))
+          : null,
+        palRealCalculado: Number.isFinite(palRealCalculado)
+          ? Number((palRealCalculado).toFixed(3))
           : null
       },
       classificacoes: {
@@ -291,12 +579,16 @@ const GastoEnergeticoTotalForm = ({
   }, [
     dados.activityLevel,
     dados.dataAvaliacao,
+    dados.esportivo,
     dados.observacoes,
+    fatorAtividadeFinal,
     getEvaluation,
-    numericFields.customActivityFactor,
-    numericFields.manualTmbKcal,
+    manualTmbKcal,
+    palRealCalculado,
     previous,
-    sex
+    totalGastoSemanalKcal,
+    sex,
+    cargaTreinoHint
   ]);
 
   const payloadResults = useMemo(() => ({
@@ -315,16 +607,155 @@ const GastoEnergeticoTotalForm = ({
   }), [payloadData]);
 
   const hasValues = useMemo(() => (
-    toTextInput(dados.customActivityFactor) !== ''
+    toTextInput(dados?.esportivo?.palSubjetivoLegado) !== ''
     || toTextInput(dados.manualTmbKcal) !== ''
     || toTextInput(dados.observacoes) !== ''
+    || Number.isFinite(totalGastoSemanalKcal)
+    || normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana).some((row) => (
+      toTextInput(row?.metId) !== '' || toTextInput(row?.duracaoHoras) !== ''
+    ))
     || Number.isFinite(getEvaluation?.results?.getKcal)
   ), [
-    dados.customActivityFactor,
+    dados?.esportivo?.palSubjetivoLegado,
+    dados?.esportivo?.registroAtividadesSemana,
     dados.manualTmbKcal,
     dados.observacoes,
-    getEvaluation?.results?.getKcal
+    getEvaluation?.results?.getKcal,
+    totalGastoSemanalKcal
   ]);
+
+  const recalculateSemana = useCallback(async (rows, nivelCompetitivo) => {
+    const runId = ++calcRunRef.current;
+    const peso = toNumber(pesoReferenciaKg);
+    const nivel = normalizeNivelCompetitivoApi(nivelCompetitivo);
+
+    const nextRows = normalizeObjectArray(rows).map((row) => {
+      const metValue = parseNumeric(row?.metValue);
+      const duracaoHoras = parseNumeric(row?.duracaoHoras);
+      const shouldCalculate = Number.isFinite(metValue)
+        && Number.isFinite(duracaoHoras)
+        && (metValue) > 0
+        && (duracaoHoras) > 0;
+      return {
+        ...row,
+        loadingCalculo: shouldCalculate,
+        erroCalculo: ''
+      };
+    });
+
+    setDados((prev) => ({
+      ...prev,
+      esportivo: {
+        ...(prev.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+        registroAtividadesSemana: nextRows
+      }
+    }));
+
+    const calculatedRows = await Promise.all(nextRows.map(async (row) => {
+      const metValue = parseNumeric(row?.metValue);
+      const duracaoHoras = parseNumeric(row?.duracaoHoras);
+      const shouldCalculate = Number.isFinite(metValue)
+        && Number.isFinite(duracaoHoras)
+        && (metValue) > 0
+        && (duracaoHoras) > 0;
+
+      if (!shouldCalculate) {
+        return { ...row, gastoKcal: null, erroCalculo: '', loadingCalculo: false };
+      }
+
+      if (!Number.isFinite(peso) || (peso) <= 0) {
+        return { ...row, gastoKcal: null, erroCalculo: 'Peso indisponivel para calculo.', loadingCalculo: false };
+      }
+
+      try {
+        const { data } = await api.post('/mets/calcular', {
+          metValue,
+          pesoKg: Number(peso),
+          duracaoHoras,
+          nivelCompetitivo: nivel
+        });
+        const gastoKcal = toNumber(data?.gastoKcal);
+        return {
+          ...row,
+          gastoKcal: Number.isFinite(gastoKcal) ? Number((gastoKcal).toFixed(2)) : null,
+          erroCalculo: '',
+          loadingCalculo: false
+        };
+      } catch {
+        return { ...row, gastoKcal: null, erroCalculo: 'Falha ao calcular gasto.', loadingCalculo: false };
+      }
+    }));
+
+    if (runId !== calcRunRef.current) return;
+    setDados((prev) => ({
+      ...prev,
+      esportivo: {
+        ...(prev.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+        registroAtividadesSemana: calculatedRows
+      }
+    }));
+  }, [defaultNivelCompetitivo, pesoReferenciaKg]);
+
+  const handleSemanaActivityChange = useCallback(async (dia, metId) => {
+    setHasUserInput(true);
+    const option = metById.get(String(metId));
+    const rows = normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana).map((row) => (
+      String(row?.dia) === String(dia)
+        ? {
+          ...row,
+          metId: String(metId || ''),
+          atividade: option?.modalidade || '',
+          categoria: option?.categoria || '',
+          intensidade: option?.intensidade || '',
+          metValue: option ? String(option.metValue) : '',
+          gastoKcal: null,
+          erroCalculo: '',
+          loadingCalculo: false
+        }
+        : row
+    ));
+    setDados((prev) => ({
+      ...prev,
+      esportivo: {
+        ...(prev.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+        registroAtividadesSemana: rows
+      }
+    }));
+    await recalculateSemana(rows, dados?.esportivo?.nivelCompetitivo || defaultNivelCompetitivo);
+  }, [dados?.esportivo?.nivelCompetitivo, dados?.esportivo?.registroAtividadesSemana, defaultNivelCompetitivo, metById, recalculateSemana]);
+
+  const handleSemanaDurationChange = useCallback((dia, value) => {
+    setHasUserInput(true);
+    setDados((prev) => ({
+      ...prev,
+      esportivo: {
+        ...(prev.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+        registroAtividadesSemana: normalizeObjectArray(prev?.esportivo?.registroAtividadesSemana).map((row) => (
+          String(row?.dia) === String(dia)
+            ? { ...row, duracaoHoras: value, gastoKcal: null, erroCalculo: '' }
+            : row
+        ))
+      }
+    }));
+  }, [defaultNivelCompetitivo]);
+
+  const recalculateCurrentSemana = useCallback(async () => {
+    const rows = normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana);
+    await recalculateSemana(rows, dados?.esportivo?.nivelCompetitivo || defaultNivelCompetitivo);
+  }, [dados?.esportivo?.nivelCompetitivo, dados?.esportivo?.registroAtividadesSemana, defaultNivelCompetitivo, recalculateSemana]);
+
+  const handleNivelCompetitivoChange = useCallback(async (value) => {
+    setHasUserInput(true);
+    setDados((prev) => ({
+      ...prev,
+      esportivo: {
+        ...(prev.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+        nivelCompetitivo: value
+      }
+    }));
+    const rows = normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana);
+    await recalculateSemana(rows, value);
+  }, [dados?.esportivo?.registroAtividadesSemana, defaultNivelCompetitivo, recalculateSemana]);
 
   const dispatchSave = useCallback(async (auto = false) => {
     const dispatch = auto ? onAutoSave : onSalvar;
@@ -361,10 +792,10 @@ const GastoEnergeticoTotalForm = ({
       await dispatchSave(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
-        setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
+        setError('Não foi possível salvar a avaliação. Tente novamente.');
       }
     }
   }, [dispatchSave]);
@@ -375,7 +806,7 @@ const GastoEnergeticoTotalForm = ({
     setError('');
 
     if (!hasValues) {
-      setError('Preencha ao menos o nivel de atividade para calcular o GET.');
+      setError('Preencha ao menos o nível de atividade para calcular o GET.');
       return;
     }
 
@@ -390,30 +821,75 @@ const GastoEnergeticoTotalForm = ({
     }
 
     if (warnings.length > 0) {
-      const confirmMessage = [
-        'Foram detectados alertas nesta avaliacao:',
-        ...warnings.map((item) => `- ${item}`),
-        '',
-        'Deseja salvar mesmo assim?'
-      ].join('\n');
-
-      if (!window.confirm(confirmMessage)) return;
+      const proceed = await confirm({
+        title: 'Alertas nesta avaliação',
+        details: warnings,
+        confirmLabel: 'Salvar mesmo assim',
+        cancelLabel: 'Corrigir',
+        variant: 'warning'
+      });
+      if (!proceed) return;
     }
 
     await executeSave(false);
-  }, [executeSave, hasFieldErrors, hasRequiredMissing, hasValues, onSalvar, warnings]);
+  }, [confirm, executeSave, hasFieldErrors, hasRequiredMissing, hasValues, onSalvar, warnings]);
+
+  const semanaRows = normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana);
+  const atividadeSemanaCoverage = useMemo(() => {
+    const filledRows = semanaRows.filter((row) => (
+      toTextInput(row?.metId)
+      && Number.isFinite(parseNumeric(row?.duracaoHoras))
+      && Number.isFinite(toNumber(row?.gastoKcal))
+    )).length;
+    if (filledRows >= 5) return { tone: 'ok', label: 'Cobertura robusta', count: filledRows };
+    if (filledRows >= 3) return { tone: 'warn', label: 'Cobertura parcial', count: filledRows };
+    return { tone: 'risk', label: 'Cobertura insuficiente', count: filledRows };
+  }, [semanaRows]);
+
+  const palCoherence = useMemo(() => {
+    if (!Number.isFinite(palRealCalculado)) return { tone: 'risk', message: 'PAL real ainda indisponivel.' };
+    if (!Number.isFinite(palSubjetivoLegado)) return { tone: 'warn', message: 'PAL subjetivo legado não informado para comparar.' };
+    const delta = Math.abs((palRealCalculado) - (palSubjetivoLegado));
+    if (delta <= 0.15) return { tone: 'ok', message: `PAL convergente (delta ${formatNumber(delta, 3)}).` };
+    if (delta <= 0.3) return { tone: 'warn', message: `PAL com divergencia moderada (delta ${formatNumber(delta, 3)}).` };
+    return { tone: 'risk', message: `PAL com divergencia alta (delta ${formatNumber(delta, 3)}).` };
+  }, [palRealCalculado, palSubjetivoLegado]);
+
+  const demandaStatus = useMemo(() => {
+    if (atividadeSemanaCoverage.tone === 'risk' || palCoherence.tone === 'risk') {
+      return {
+        tone: 'risk',
+        title: 'Confiabilidade baixa da estimativa de demanda',
+        message: 'Revise preenchimento semanal e coerencia do PAL antes de usar o GET para conduta.'
+      };
+    }
+    if (atividadeSemanaCoverage.tone === 'warn' || palCoherence.tone === 'warn') {
+      return {
+        tone: 'warn',
+        title: 'Confiabilidade intermediária da estimativa de demanda',
+        message: 'Ajuste os pontos de atenção para melhorar a qualidade do GET.'
+      };
+    }
+    return {
+      tone: 'ok',
+      title: 'Confiabilidade adequada da estimativa de demanda',
+      message: 'GET pronto para apoiar decisao nutricional e periodizacao energetica.'
+    };
+  }, [atividadeSemanaCoverage.tone, palCoherence.tone]);
+
+  const isAnyRowLoading = semanaRows.some((row) => Boolean(row?.loadingCalculo));
 
   useEffect(() => {
     if (readOnly || !onAutoSave || !hasUserInput) return undefined;
-    if (!hasValues || hasFieldErrors || hasRequiredMissing) return undefined;
+    if (!hasValues || hasFieldErrors || hasRequiredMissing || isAnyRowLoading) return undefined;
 
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       executeSave(true);
-    }, 900);
+    }, 3500);
 
     return () => clearTimeout(autoSaveRef.current);
-  }, [executeSave, hasFieldErrors, hasRequiredMissing, hasUserInput, hasValues, onAutoSave, readOnly]);
+  }, [executeSave, hasFieldErrors, hasRequiredMissing, hasUserInput, hasValues, isAnyRowLoading, onAutoSave, readOnly]);
 
   return (
     <div className={`eval-card get-form get-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -422,18 +898,40 @@ const GastoEnergeticoTotalForm = ({
           <Flame size={20} />
         </div>
         <div>
-          <h3 className="eval-title">Gasto energetico total (GET)</h3>
+          <h3 className="eval-title">Gasto energético total (GET)</h3>
           <p className="eval-subtitle">
-            TMB integrada da sessao + fator de atividade para estimar manutencao, emagrecimento e hipertrofia.
+            TMB integrada da sessão + registro semanal com MET para estimar manutenção, emagrecimento e hipertrofia.
           </p>
         </div>
       </div>
 
+      <div className="eval-note get-context-note">
+        <strong>Contexto esportivo de referencia:</strong>
+        {' '}
+        {onboardingEsportivo.modalidadePrincipal || 'modalidade não informada'}
+        {' | '}
+        Frequência: {Number.isFinite(onboardingEsportivo.frequenciaSemanal) ? `${onboardingEsportivo.frequenciaSemanal}x/sem` : 'não informada'}
+        {' | '}
+        Duração: {Number.isFinite(onboardingEsportivo.duracaoSessao) ? `${onboardingEsportivo.duracaoSessao} min` : 'não informada'}
+        {onboardingEsportivo.genero ? ` | Gênero: ${onboardingEsportivo.genero}` : ''}
+      </div>
+
+      <div className={`get-demand-status get-demand-status--${demandaStatus.tone}`}>
+        <strong>{demandaStatus.title}</strong>
+        <p>{demandaStatus.message}</p>
+        <small>
+          Registro semanal: {atividadeSemanaCoverage.label} ({atividadeSemanaCoverage.count}/7 dias)
+          {' | '}
+          {palCoherence.message}
+          {cargaTreinoHint ? ` | Carga integrada: fase ${cargaTreinoHint.faseLabel}` : ' | Carga integrada: pendente'}
+        </small>
+      </div>
+
       <div className="eval-section">
-        <h4 className="eval-section-title">Dados obrigatorios</h4>
+        <h4 className="eval-section-title">Base energética</h4>
         <div className="get-grid">
           <div className="eval-field">
-            <label className="eval-label">Data da avaliacao</label>
+            <label className="eval-label">Data da avaliação</label>
             <input
               type="date"
               className="eval-input"
@@ -443,7 +941,7 @@ const GastoEnergeticoTotalForm = ({
             />
           </div>
           <div className="eval-field">
-            <label className="eval-label">Nivel de atividade</label>
+            <label className="eval-label">Nível de atividade</label>
             <select
               className="eval-select"
               value={dados.activityLevel}
@@ -456,48 +954,7 @@ const GastoEnergeticoTotalForm = ({
             </select>
           </div>
           <div className="eval-field">
-            <label className="eval-label">TMB da composicao (auto)</label>
-            <div className="get-readonly">
-              {formatMetric(getEvaluation?.base?.tmbFromIntegratedKcal, 'kcal', 'kcal')}
-            </div>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Fator aplicado</label>
-            <div className="get-readonly">
-              {formatMetric(getEvaluation?.activity?.factorApplied, '', 'factor')}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="eval-section">
-        <h4 className="eval-section-title">Dados opcionais</h4>
-        <div className="get-grid">
-          <div className="eval-field">
-            <label className="eval-label">
-              Fator de atividade personalizado
-              <span className="get-optional">Opcional</span>
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              className={`eval-input ${submitAttempted && customFactorValidation.status === 'error' ? 'get-input-invalid' : ''} ${submitAttempted && customFactorValidation.status === 'warning' ? 'get-input-warning' : ''}`}
-              value={dados.customActivityFactor}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'customActivityFactor', event.target.value)}
-              disabled={readOnly}
-              placeholder="0.8 a 2.5"
-            />
-            {submitAttempted && customFactorValidation.message ? (
-              <small className={`get-field-message ${customFactorValidation.status === 'error' ? 'is-error' : 'is-warning'}`}>
-                {customFactorValidation.message}
-              </small>
-            ) : null}
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">
-              TMB manual (override)
-              <span className="get-optional">Opcional</span>
-            </label>
+            <label className="eval-label">TMB manual (override) <span className="get-optional">Opcional</span></label>
             <input
               type="text"
               inputMode="decimal"
@@ -513,6 +970,133 @@ const GastoEnergeticoTotalForm = ({
               </small>
             ) : null}
           </div>
+          <div className="eval-field">
+            <label className="eval-label">TMB da composicao (auto)</label>
+            <div className="get-readonly">
+              {formatMetric(getEvaluation?.base?.tmbFromIntegratedKcal, 'kcal', 'kcal')}
+            </div>
+          </div>
+          <div className="eval-field">
+            <label className="eval-label">Peso referencia para MET</label>
+            <div className="get-readonly">
+              {formatMetric(pesoReferenciaKg, 'kg', 'peso')}
+            </div>
+          </div>
+          <div className="eval-field">
+            <label className="eval-label">
+              PAL subjetivo (legado)
+              <span className="get-optional">Opcional</span>
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              className={`eval-input ${submitAttempted && palLegadoValidation.status === 'error' ? 'get-input-invalid' : ''} ${submitAttempted && palLegadoValidation.status === 'warning' ? 'get-input-warning' : ''}`}
+              value={dados?.esportivo?.palSubjetivoLegado || ''}
+              onChange={(event) => updateEsportivoField(setDados, setHasUserInput, 'palSubjetivoLegado', event.target.value, defaultNivelCompetitivo)}
+              disabled={readOnly}
+              placeholder="Opcional (legado)"
+            />
+            {submitAttempted && palLegadoValidation.message ? (
+              <small className={`get-field-message ${palLegadoValidation.status === 'error' ? 'is-error' : 'is-warning'}`}>
+                {palLegadoValidation.message}
+              </small>
+            ) : null}
+          </div>
+          <div className="eval-field">
+            <label className="eval-label">Fator aplicado</label>
+            <div className="get-readonly">{formatMetric(getEvaluation?.activity?.factorApplied, '', 'factor')}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="eval-section">
+        <h4 className="eval-section-title">Registro de atividades da semana</h4>
+        <div className="get-grid get-week-controls">
+          <div className="eval-field">
+            <label className="eval-label">Nível competitivo</label>
+            <select
+              className="eval-select"
+              value={dados?.esportivo?.nivelCompetitivo || defaultNivelCompetitivo}
+              onChange={(event) => handleNivelCompetitivoChange(event.target.value)}
+              disabled={readOnly}
+            >
+              {NIVEL_COMPETITIVO_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="eval-field">
+            <label className="eval-label">Catálogo MET</label>
+            <div className="get-readonly">
+              {metLoading ? 'Carregando...' : `${metOptions.length} atividades`}
+            </div>
+          </div>
+          <div className="eval-field get-week-action-cell">
+            <Button type="button" variant="secondary" disabled={readOnly || isAnyRowLoading} onClick={recalculateCurrentSemana}>
+              <RefreshCw size={14} /> Recalcular semana
+            </Button>
+          </div>
+        </div>
+
+        {metError ? <div className="eval-note get-error-note">{metError}</div> : null}
+
+        <div className="get-table-wrap get-week-table-wrap">
+          <table className="get-table get-week-table">
+            <thead>
+              <tr>
+                <th>Dia</th>
+                <th>Atividade</th>
+                <th>MET</th>
+                <th>Duração (h)</th>
+                <th>Gasto sessao (kcal)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {DIAS_SEMANA.map((dia) => {
+                const row = semanaRows.find((item) => String(item?.dia) === dia.key) || createSemanaRow(dia.key);
+                return (
+                  <tr key={dia.key}>
+                    <td>{dia.label}</td>
+                    <td>
+                      <select
+                        className="eval-select"
+                        value={row.metId || ''}
+                        onChange={(event) => handleSemanaActivityChange(dia.key, event.target.value)}
+                        disabled={readOnly || metLoading}
+                      >
+                        <option value="">{metLoading ? 'Carregando METs...' : 'Selecione'}</option>
+                        {metOptions.map((option) => (
+                          <option key={option.id} value={option.id}>{formatMetOptionLabel(option)}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>{formatMetric(parseNumeric(row.metValue), '', 'factor')}</td>
+                    <td>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="eval-input"
+                        value={row.duracaoHoras || ''}
+                        onChange={(event) => handleSemanaDurationChange(dia.key, event.target.value)}
+                        onBlur={recalculateCurrentSemana}
+                        disabled={readOnly}
+                        placeholder="0.0"
+                      />
+                    </td>
+                    <td>
+                      {row.loadingCalculo ? 'Calculando...' : formatMetric(toNumber(row.gastoKcal), 'kcal', 'kcal')}
+                      {row.erroCalculo ? <small className="get-field-message is-warning">{row.erroCalculo}</small> : null}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="get-week-summary">
+          <p><strong>Total semanal:</strong> {formatMetric(totalGastoSemanalKcal, 'kcal', 'kcal')}</p>
+          <p><strong>PAL real calculado:</strong> {formatMetric(palRealCalculado, '', 'factor')}</p>
         </div>
       </div>
 
@@ -522,14 +1106,14 @@ const GastoEnergeticoTotalForm = ({
             label="TMB utilizada"
             value={getEvaluation?.base?.tmbUsedKcal}
             unit="kcal"
-            badge={getEvaluation?.base?.formulaLabel || 'Sem formula'}
+            badge={getEvaluation?.base?.formulaLabel || 'Sem fórmula'}
             tone="info"
           />
           <ResultCard
             label="GET estimado"
             value={getEvaluation?.results?.getKcal}
             unit="kcal"
-            badge={getEvaluation?.activity?.label || 'Fator atividade'}
+            badge={Number.isFinite(palRealCalculado) ? 'PAL real semanal' : (getEvaluation?.activity?.label || 'Fator atividade')}
             tone="success"
             delta={buildComparativeDeltas({
               current: getEvaluation?.results?.getKcal,
@@ -558,7 +1142,7 @@ const GastoEnergeticoTotalForm = ({
             badge="GET + 300 a 500"
           />
           <ResultCard
-            label="Manutencao"
+            label="Manutenção"
             value={getEvaluation?.results?.maintenanceKcal}
             unit="kcal"
             badge="GET"
@@ -572,11 +1156,23 @@ const GastoEnergeticoTotalForm = ({
           {getEvaluation?.base?.sourceLabel ? <p><strong>Fonte oficial:</strong> {getEvaluation.base.sourceLabel}</p> : null}
         </div>
 
+        {cargaTreinoHint && (
+          <div className="get-cho-suggestion">
+            <p><strong>CHO periodizado sugerido:</strong> {cargaTreinoHint.choRange}</p>
+            <p>
+              <strong>Base:</strong> fase {cargaTreinoHint.faseLabel}
+              {Number.isFinite(cargaTreinoHint.acwr) ? ` | ACWR ${formatNumber(cargaTreinoHint.acwr, 2)}` : ''}
+              {cargaTreinoHint.estrategiaTreinamento ? ` | estrategia ${cargaTreinoHint.estrategiaTreinamento}` : ''}
+            </p>
+            <small>{cargaTreinoHint.note}</small>
+          </div>
+        )}
+
         {getEvaluation?.safety?.hasIntenseLowIntakeRisk && (
           <div className="get-warning">
             <AlertTriangle size={16} />
             <span>
-              Alerta de seguranca: ingestao de emagrecimento intenso abaixo de {Math.round(getEvaluation?.safety?.intenseMinThreshold || 0)} kcal/dia.
+              Alerta de segurança: ingestão de emagrecimento intenso abaixo de {Math.round(getEvaluation?.safety?.intenseMinThreshold || 0)} kcal/dia.
             </span>
           </div>
         )}
@@ -609,13 +1205,13 @@ const GastoEnergeticoTotalForm = ({
         </div>
 
         <div className="get-sparkline">
-          <p>GET (ultimos 6)</p>
+          <p>GET (últimos 6)</p>
           <MiniSparkline values={sparklineGet} width={250} height={80} />
         </div>
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Observacoes</h4>
+        <h4 className="eval-section-title">Observações</h4>
         <textarea
           className="eval-textarea"
           value={dados.observacoes}
@@ -627,7 +1223,7 @@ const GastoEnergeticoTotalForm = ({
 
       <div className="eval-actions">
         {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
-        <Button type="button" variant="primary" disabled={readOnly} onClick={handleSubmit} loading={saveStatus === 'saving'}>
+        <Button type="button" variant="primary" disabled={readOnly || isAnyRowLoading} onClick={handleSubmit} loading={saveStatus === 'saving'}>
           Salvar GET
         </Button>
       </div>
@@ -667,11 +1263,27 @@ function updateField(setDados, setHasUserInput, key, value) {
   setDados((prev) => ({ ...prev, [key]: value }));
 }
 
+function updateEsportivoField(setDados, setHasUserInput, key, value, defaultNivelCompetitivo = 'amador') {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createEsportivoData(defaultNivelCompetitivo)),
+      [key]: value
+    }
+  }));
+}
+
 function parseNumeric(value) {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const parsed = Number(String(value).replace(',', '.').trim());
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toNumber(value) {
+  const numeric = parseNumeric(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function toInputValue(value, digits = null) {
@@ -686,11 +1298,28 @@ function toTextInput(value) {
   return String(value).trim();
 }
 
+function normalizeType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_');
+}
+
+function normalizeObjectArray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === 'object');
+}
+
 function firstDefined(...values) {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== '') return value;
   }
   return null;
+}
+
+function asRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
 }
 
 function normalizeDateValue(value) {
@@ -805,3 +1434,264 @@ function resolveDate(value) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
+
+function normalizeMetCatalog(payload) {
+  if (!Array.isArray(payload)) return [];
+  return payload
+    .map((item) => {
+      const row = asRecord(item);
+      const id = toTextInput(row.id);
+      const modalidade = toTextInput(row.modalidade);
+      const categoria = toTextInput(row.categoria);
+      const intensidade = toTextInput(row.intensidade);
+      const metValue = parseNumeric(row.metValue);
+      if (!id || !modalidade || !categoria || !intensidade || !Number.isFinite(metValue)) return null;
+      return {
+        id,
+        modalidade,
+        categoria,
+        intensidade,
+        metValue: Number((metValue).toFixed(1))
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => formatMetOptionLabel(a).localeCompare(formatMetOptionLabel(b)));
+}
+
+function normalizeNivelCompetitivoApi(value) {
+  const token = toTextInput(value).toLowerCase();
+  if (!token) return 'amador';
+  if (token === 'federado') return 'semi-pro';
+  return token;
+}
+
+function resolveNivelCompetitivoPadrao(history = []) {
+  if (!Array.isArray(history)) return 'amador';
+  const ordered = [...history].sort((a, b) => {
+    const timeA = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
+    const timeB = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
+    return timeB - timeA;
+  });
+  for (const item of ordered) {
+    const tipo = toTextInput(item?.tipo).toLowerCase();
+    if (tipo !== 'anamnese_inicial') continue;
+    const dados = asRecord(item?.dados);
+    const dadosBrutos = asRecord(firstDefined(dados?.dados_brutos, dados?.input));
+    const esportivo = asRecord(firstDefined(dadosBrutos?.esportivo, dados?.esportivo));
+    const nivel = toTextInput(firstDefined(esportivo?.nivel, esportivo?.nivelCompetitivo));
+    if (nivel) return nivel;
+  }
+  return 'amador';
+}
+
+function resolvePesoReferenciaKg({ baselineAnthropometry, allEvaluationHistory }) {
+  const baseline = parseNumeric(baselineAnthropometry?.pesoKg);
+  if (Number.isFinite(baseline)) return Number((baseline).toFixed(2));
+
+  const ordered = Array.isArray(allEvaluationHistory)
+    ? [...allEvaluationHistory].sort((a, b) => {
+      const timeA = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
+      const timeB = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
+      return timeB - timeA;
+    })
+    : [];
+
+  for (const item of ordered) {
+    const dados = asRecord(item?.dados);
+    const dadosBrutos = asRecord(firstDefined(dados?.dados_brutos, dados?.input));
+    const weight = parseNumeric(firstDefined(
+      dadosBrutos?.pesoKg,
+      dadosBrutos?.peso_kg,
+      dadosBrutos?.peso,
+      dados?.peso,
+      dados?.peso_kg,
+      item?.resultados?.peso
+    ));
+    if (Number.isFinite(weight)) return Number((weight).toFixed(2));
+  }
+
+  return null;
+}
+
+function normalizeFasePeriodizacao(value) {
+  const token = toTextInput(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s-]+/g, '_');
+  if (!token) return '';
+  if (token.includes('preparacao_geral')) return 'preparacao_geral';
+  if (token.includes('preparacao_especifica')) return 'preparacao_especifica';
+  if (token.includes('pre_competicao') || token.includes('precompeticao')) return 'pre_competicao';
+  if (token.includes('competicao')) return 'competicao';
+  if (token.includes('transicao')) return 'transicao';
+  if (token.includes('taper')) return 'taper';
+  return token;
+}
+
+function buildChoPeriodizedSuggestion(source) {
+  if (!source || typeof source !== 'object') return null;
+  const faseAtual = normalizeFasePeriodizacao(source.faseAtual || source.fase_atual);
+  if (!faseAtual || !Object.prototype.hasOwnProperty.call(CHO_PERIODIZADO_BY_FASE, faseAtual)) return null;
+  const base = CHO_PERIODIZADO_BY_FASE[faseAtual];
+  const acwr = parseNumeric(source.acwr);
+  const estrategiaTreinamento = toTextInput(source.estrategiaTreinamento || source.estrategia_treinamento || source.estrategia);
+
+  let note = 'Sugestao automatica baseada na fase da periodizacao.';
+  if (Number.isFinite(acwr) && acwr > 1.5) {
+    note = 'ACWR elevado: priorizar distribuicao de CHO intra e pos-treino para recuperacao.';
+  } else if (Number.isFinite(acwr) && acwr < 0.8) {
+    note = 'ACWR em subcarga: ajustar CHO conforme retomada progressiva da carga.';
+  }
+
+  return {
+    faseAtual,
+    faseLabel: base.label,
+    choRange: base.choRange,
+    acwr: Number.isFinite(acwr) ? acwr : null,
+    estrategiaTreinamento,
+    note
+  };
+}
+
+function resolveLatestCargaTreinoContext({ allEvaluationHistory, currentSessionId }) {
+  if (!Array.isArray(allEvaluationHistory)) return null;
+  const normalizedSession = toTextInput(currentSessionId);
+  const ordered = [...allEvaluationHistory].sort((a, b) => {
+    const timeA = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
+    const timeB = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
+    return timeB - timeA;
+  });
+
+  const inSession = ordered.find((item) => (
+    normalizeType(item?.tipo) === 'carga_treino'
+    && normalizedSession
+    && toTextInput(item?.sessaoId) === normalizedSession
+  ));
+  const fallback = ordered.find((item) => normalizeType(item?.tipo) === 'carga_treino');
+  const selected = inSession || fallback;
+  if (!selected) return null;
+
+  return {
+    faseAtual: firstDefined(
+      selected?.dados?.faseAtual,
+      selected?.dados?.fase_atual
+    ),
+    acwr: firstDefined(
+      selected?.resultados?.acwr,
+      selected?.resultados?.calculated?.acwr,
+      selected?.dados?.acwr
+    ),
+    estrategiaTreinamento: firstDefined(
+      selected?.dados?.estrategiaTreinamento,
+      selected?.dados?.estrategia_treinamento,
+      selected?.dados?.estrategia
+    )
+  };
+}
+
+function resolveCargaTreinoHintFromPayload(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  return buildChoPeriodizedSuggestion(payload);
+}
+
+function normalizeDayKey(value) {
+  const token = toTextInput(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (!token) return '';
+  if (token.startsWith('seg')) return 'segunda';
+  if (token.startsWith('ter')) return 'terca';
+  if (token.startsWith('qua')) return 'quarta';
+  if (token.startsWith('qui')) return 'quinta';
+  if (token.startsWith('sex')) return 'sexta';
+  if (token.startsWith('sab')) return 'sabado';
+  if (token.startsWith('dom')) return 'domingo';
+  return '';
+}
+
+function mergeSemanaRows(defaultRows, snapshotRows) {
+  const byDia = new Map();
+  normalizeObjectArray(snapshotRows).forEach((item) => {
+    const row = asRecord(item);
+    const dia = normalizeDayKey(row.dia || row.day);
+    if (!dia) return;
+    byDia.set(dia, {
+      dia,
+      metId: toTextInput(row.metId || row.met_id),
+      atividade: toTextInput(row.atividade),
+      categoria: toTextInput(row.categoria),
+      intensidade: toTextInput(row.intensidade),
+      metValue: toInputValue(firstDefined(row.metValue, row.met_value), 1),
+      duracaoHoras: toInputValue(firstDefined(row.duracaoHoras, row.duracao_horas), 2),
+      gastoKcal: toNumber(firstDefined(row.gastoKcal, row.gasto_kcal)),
+      erroCalculo: '',
+      loadingCalculo: false
+    });
+  });
+
+  return defaultRows.map((row) => byDia.get(row.dia) || row);
+}
+
+function sumGastoSemanal(rows) {
+  const total = normalizeObjectArray(rows).reduce((acc, row) => {
+    const gasto = toNumber(row?.gastoKcal);
+    return Number.isFinite(gasto) ? acc + (gasto) : acc;
+  }, 0);
+  return Number.isFinite(total) ? Number(total.toFixed(2)) : null;
+}
+
+function formatMetOptionLabel(option) {
+  return `${capitalize(option.modalidade)} | ${capitalize(option.categoria)} | ${capitalize(option.intensidade)} | MET ${formatNumber(option.metValue, 1)}`;
+}
+
+function capitalize(value) {
+  const token = toTextInput(value);
+  if (!token) return '';
+  return token.charAt(0).toUpperCase() + token.slice(1);
+}
+
+function buildGetEsportivoPayload({ esportivo, totalGastoSemanalKcal, palRealCalculado, cargaTreinoHint }) {
+  const source = asRecord(esportivo);
+  const rows = normalizeObjectArray(source.registroAtividadesSemana).map((row) => ({
+    dia: normalizeDayKey(row.dia || row.day),
+    metId: toTextInput(row.metId || row.met_id) || null,
+    atividade: toTextInput(row.atividade) || null,
+    categoria: toTextInput(row.categoria) || null,
+    intensidade: toTextInput(row.intensidade) || null,
+    metValue: Number.isFinite(parseNumeric(firstDefined(row.metValue, row.met_value)))
+      ? Number(Number(firstDefined(row.metValue, row.met_value)).toFixed(1))
+      : null,
+    duracaoHoras: Number.isFinite(parseNumeric(firstDefined(row.duracaoHoras, row.duracao_horas)))
+      ? Number(Number(firstDefined(row.duracaoHoras, row.duracao_horas)).toFixed(2))
+      : null,
+    gastoKcal: Number.isFinite(parseNumeric(firstDefined(row.gastoKcal, row.gasto_kcal)))
+      ? Number(Number(firstDefined(row.gastoKcal, row.gasto_kcal)).toFixed(2))
+      : null
+  })).filter((row) => row.dia);
+
+  return {
+    palSubjetivoLegado: Number.isFinite(parseNumeric(source.palSubjetivoLegado))
+      ? Number(Number(source.palSubjetivoLegado).toFixed(3))
+      : null,
+    nivelCompetitivo: toTextInput(source.nivelCompetitivo) || 'amador',
+    registroAtividadesSemana: rows,
+    totalGastoSemanalKcal: Number.isFinite(totalGastoSemanalKcal)
+      ? Number((totalGastoSemanalKcal).toFixed(2))
+      : null,
+    palRealCalculado: Number.isFinite(palRealCalculado)
+      ? Number((palRealCalculado).toFixed(3))
+      : null,
+    cargaTreinoIntegracao: cargaTreinoHint ? {
+      faseAtual: cargaTreinoHint.faseAtual,
+      acwr: Number.isFinite(cargaTreinoHint.acwr)
+        ? Number((cargaTreinoHint.acwr).toFixed(4))
+        : null,
+      estrategiaTreinamento: cargaTreinoHint.estrategiaTreinamento || null,
+      choRange: cargaTreinoHint.choRange || null
+    } : asRecord(source.cargaTreinoIntegracao)
+  };
+}
+
+

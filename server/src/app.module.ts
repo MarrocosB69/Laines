@@ -18,6 +18,10 @@ import { TarefasModule } from './tarefas/tarefas.module';
 import { ConteudosModule } from './conteudos/conteudos.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SettingsModule } from './settings/settings.module';
+import { MetsModule } from './mets/mets.module';
+import { TacoModule } from './taco/taco.module';
+import { PlanosAlimentaresModule } from './planos-alimentares/planos-alimentares.module';
 
 @Module({
   imports: [
@@ -27,25 +31,33 @@ import { AnalyticsModule } from './analytics/analytics.module';
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get('db.host'),
-        port: config.get('db.port'),
-        username: config.get('db.user'),
-        password: config.get('db.password'),
-        database: config.get('db.name'),
-        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        migrationsRun: config.get('db.migrationsRun'),
-        autoLoadEntities: true,
-        synchronize: config.get('db.sync'),
-        logging: config.get('db.logging'),
-        extra: {
-          max: config.get('db.poolMax'),
-          min: config.get('db.poolMin'),
-          idleTimeoutMillis: config.get('db.poolIdleTimeoutMs'),
-          connectionTimeoutMillis: config.get('db.poolConnectionTimeoutMs')
+      useFactory: (config: ConfigService) => {
+        const nodeEnv = String(config.get('nodeEnv') || process.env.NODE_ENV || 'development');
+        const dbSync = Boolean(config.get('db.sync'));
+        if (nodeEnv === 'production' && dbSync) {
+          throw new Error('BLOQUEADO: DB_SYNC=true nao e permitido em producao. Use migrations para alterar o schema.');
         }
-      })
+
+        return {
+          type: 'postgres',
+          host: config.get('db.host'),
+          port: config.get('db.port'),
+          username: config.get('db.user'),
+          password: config.get('db.password'),
+          database: config.get('db.name'),
+          migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+          migrationsRun: config.get('db.migrationsRun'),
+          autoLoadEntities: true,
+          synchronize: dbSync,
+          logging: config.get('db.logging'),
+          extra: {
+            max: config.get('db.poolMax'),
+            min: config.get('db.poolMin'),
+            idleTimeoutMillis: config.get('db.poolIdleTimeoutMs'),
+            connectionTimeoutMillis: config.get('db.poolConnectionTimeoutMs')
+          }
+        };
+      }
     }),
     UsersModule,
     AuthModule,
@@ -59,6 +71,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
     NotificacoesModule,
     TarefasModule,
     ConteudosModule,
+    SettingsModule,
+    MetsModule,
+    TacoModule,
+    PlanosAlimentaresModule,
     ObservabilityModule,
     AnalyticsModule
   ],

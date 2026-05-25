@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationTaskCenter from '../../components/shared/NotificationTaskCenter';
 import '../admin/AdminView/AdminHeader.css';
 
 const AthleteHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
@@ -17,11 +18,9 @@ const AthleteHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   }, [user]);
 
   const labels = {
-    dashboard: 'Visao geral',
-    prontuario: 'Meu prontuario',
-    agenda: 'Minha agenda',
-    avaliacoes: 'Avaliacoes',
-    pendencias: 'Pendencias'
+    dashboard: 'Início',
+    agenda: 'Agenda',
+    prontuario: 'Meu dossiê'
   };
   const currentLabel = labels[activeTab] || activeTab;
 
@@ -44,6 +43,8 @@ const AthleteHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
           {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
+        <NotificationTaskCenter />
+
         <div className="user-profile-mini">
           <div className="avatar">{initials}</div>
         </div>
@@ -53,4 +54,3 @@ const AthleteHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
 };
 
 export default AthleteHeader;
-

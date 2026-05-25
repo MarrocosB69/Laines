@@ -14,8 +14,10 @@ import { CriarSolicitacaoDto } from './dto/criar-solicitacao.dto';
 import { AtualizarSolicitacaoDto } from './dto/atualizar-solicitacao.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { UsersService } from '../users/users.service';
+import { User } from '../users/user.entity';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { SOLICITACAO_STATUS, UserRole } from '../common/domain/access.constants';
+import { ADMIN_ROLES, SOLICITACAO_STATUS, UserRole } from '../common/domain/access.constants';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 
 type RequestLimitState = {
   count: number;
@@ -35,12 +37,87 @@ export class SolicitacoesService {
     @InjectRepository(SolicitacaoAcesso) private repo: Repository<SolicitacaoAcesso>,
     private realtime: RealtimeGateway,
     private readonly usersService: UsersService,
+    private readonly notificacoesService: NotificacoesService,
     private readonly config: ConfigService
   ) {
     this.maxAttemptsPerWindow = Math.max(Number(this.config.get('abuseProtection.accessRequestMaxAttempts') || 5), 1);
     this.rateWindowMs = Math.max(Number(this.config.get('abuseProtection.accessRequestWindowSeconds') || 900), 60) * 1000;
     this.cooldownMs = Math.max(Number(this.config.get('abuseProtection.accessRequestCooldownSeconds') || 900), 60) * 1000;
     this.duplicateWindowHours = Math.max(Number(this.config.get('abuseProtection.accessRequestDuplicateWindowHours') || 24), 1);
+  }
+
+  private normalizeRole(value?: string) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private normalizeNotificationText(value?: string | null) {
+    const normalized = String(value || '').trim();
+    return normalized || undefined;
+  }
+
+  private async notifySafe(fn: () => Promise<unknown>) {
+    try {
+      await fn();
+    } catch {
+      // Notificacoes nao devem quebrar o fluxo principal.
+    }
+  }
+
+  private async resolveRequestUserId(solicitacao: SolicitacaoAcesso) {
+    const approvedUserId = this.normalizeNotificationText(solicitacao.approvedUserId);
+    if (approvedUserId) {
+      return approvedUserId;
+    }
+
+    const email = String(solicitacao.email || '').trim().toLowerCase();
+    if (email) {
+      const byEmail = await this.usersService.findByEmail(email);
+      if (byEmail?.id) return byEmail.id;
+    }
+
+    const cpf = this.normalizeCpfForLookup(solicitacao.cpf);
+    if (cpf) {
+      const byCpf = await this.usersService.findByCpf(cpf);
+      if (byCpf?.id) return byCpf.id;
+    }
+
+    return undefined;
+  }
+
+  private async notifyAdminsAccessRequestCreated(solicitacao: SolicitacaoAcesso) {
+    const titulo = 'Nova solicitacao de acesso';
+    const nome = this.normalizeNotificationText(solicitacao.nome) || 'Usuario';
+    const email = String(solicitacao.email || '').trim().toLowerCase();
+    const cargo = this.normalizeNotificationText(solicitacao.cargoSolicitado) || 'perfil informado';
+    const mensagem = `${nome} (${email}) solicitou acesso para ${cargo}.`;
+
+    await this.notifySafe(() =>
+      this.notificacoesService.createForRoles([...ADMIN_ROLES], {
+        titulo,
+        mensagem,
+        tipo: 'acao'
+      })
+    );
+  }
+
+  private async notifyRequestDecisionToUser(solicitacao: SolicitacaoAcesso, status: 'aprovado' | 'recusado') {
+    const userId = await this.resolveRequestUserId(solicitacao);
+    if (!userId) return;
+
+    const titulo = status === 'aprovado'
+      ? 'Solicitacao aprovada'
+      : 'Solicitacao recusada';
+    const mensagem = status === 'aprovado'
+      ? 'Sua solicitacao de acesso foi aprovada. Entre em contato com a administracao para validar o primeiro acesso.'
+      : 'Sua solicitacao de acesso foi recusada. Entre em contato com a administracao para mais detalhes.';
+
+    await this.notifySafe(() =>
+      this.notificacoesService.createForUsers([userId], {
+        titulo,
+        mensagem,
+        tipo: status === 'aprovado' ? 'sucesso' : 'alerta'
+      })
+    );
   }
 
   async findAll(limit?: number, offset?: number) {
@@ -70,6 +147,11 @@ export class SolicitacoesService {
   private normalizeText(value?: string) {
     const normalized = String(value || '').trim();
     return normalized || undefined;
+  }
+
+  private normalizeCpfForLookup(cpf?: string) {
+    const digits = String(cpf || '').replace(/\D/g, '');
+    return digits.length === 11 ? digits : undefined;
   }
 
   private normalizeDate(value?: string) {
@@ -209,6 +291,7 @@ export class SolicitacoesService {
     });
     const saved = await this.repo.save(solicitacao);
     this.realtime.emit('solicitacoes-acesso.created', saved);
+    await this.notifyAdminsAccessRequestCreated(saved);
     return saved;
   }
 
@@ -217,6 +300,7 @@ export class SolicitacoesService {
     if (!solicitacao) {
       throw new NotFoundException('Solicitacao nao encontrada.');
     }
+    const previousStatus = this.normalizeRole(solicitacao.status);
     const status = this.normalizeText(dto.status)?.toLowerCase();
     const normalizedStatus = status
       ? (SOLICITACAO_STATUS.includes(status as any) ? status : undefined)
@@ -232,6 +316,11 @@ export class SolicitacoesService {
     } as any);
     const saved = await this.repo.save(merged);
     this.realtime.emit('solicitacoes-acesso.updated', saved);
+
+    const nextStatus = this.normalizeRole(saved.status);
+    if (nextStatus !== previousStatus && (nextStatus === 'aprovado' || nextStatus === 'recusado')) {
+      await this.notifyRequestDecisionToUser(saved, nextStatus as 'aprovado' | 'recusado');
+    }
     return saved;
   }
 
@@ -244,74 +333,116 @@ export class SolicitacoesService {
     return 'professor';
   }
 
+  private async findExistingUserForApproval(
+    userRepo: Repository<User>,
+    lookup: { approvedUserId?: string | null; email: string; cpf?: string }
+  ) {
+    const approvedUserId = this.normalizeText(lookup.approvedUserId || undefined);
+    if (approvedUserId) {
+      const linkedUser = await userRepo.findOne({ where: { id: approvedUserId } });
+      if (linkedUser) return linkedUser;
+    }
+
+    if (lookup.cpf) {
+      const cpfUser = await userRepo.findOne({ where: { cpf: lookup.cpf } });
+      if (cpfUser) return cpfUser;
+    }
+
+    return userRepo.findOne({ where: { email: lookup.email } });
+  }
+
   async approveAndCreateUser(id: string, fallbackCargo?: string) {
-    const solicitacao = await this.findById(id);
-    if (!solicitacao) {
-      throw new NotFoundException('Solicitacao nao encontrada.');
-    }
-    const currentStatus = String(solicitacao.status || '').toLowerCase();
-    if (currentStatus === 'recusado') {
-      throw new ConflictException('Solicitacao recusada nao pode ser aprovada.');
-    }
+    const result = await this.repo.manager.transaction(async (manager) => {
+      const solicitacaoRepo = manager.getRepository(SolicitacaoAcesso);
+      const userRepo = manager.getRepository(User);
+      const solicitacao = await solicitacaoRepo.createQueryBuilder('solicitacao')
+        .where('solicitacao.id = :id', { id })
+        .setLock('pessimistic_write')
+        .getOne();
 
-    const email = String(solicitacao.email || '').trim().toLowerCase();
-    if (!email) {
-      throw new BadRequestException('Solicitacao sem email valido.');
-    }
+      if (!solicitacao) {
+        throw new NotFoundException('Solicitacao nao encontrada.');
+      }
 
-    const role = this.resolveUserRole(fallbackCargo || solicitacao.cargoSolicitado);
-    let existingUser = await this.usersService.findByEmail(email);
-    const userExistedBeforeApproval = !!existingUser;
-    let tempPassword: string | null = null;
-    let createdUserId = existingUser?.id || null;
+      const currentStatus = String(solicitacao.status || '').toLowerCase();
+      if (currentStatus === 'recusado') {
+        throw new ConflictException('Solicitacao recusada nao pode ser aprovada.');
+      }
+      const becameApprovedNow = currentStatus !== 'aprovado';
 
-    if (currentStatus === 'aprovado' && existingUser) {
+      const email = String(solicitacao.email || '').trim().toLowerCase();
+      if (!email) {
+        throw new BadRequestException('Solicitacao sem email valido.');
+      }
+
+      const role = this.resolveUserRole(fallbackCargo || solicitacao.cargoSolicitado);
+      const cpf = this.normalizeCpfForLookup(solicitacao.cpf);
+
+      let existingUser = await this.findExistingUserForApproval(userRepo, {
+        approvedUserId: solicitacao.approvedUserId,
+        email,
+        cpf
+      });
+
+      const userExistedBeforeApproval = !!existingUser;
+      let createdUserId = existingUser?.id || null;
+      let tempPassword: string | null = null;
+
+      if (!existingUser) {
+        const payload: CreateUserDto = {
+          name: this.normalizeText(solicitacao.nome) || 'Usuario',
+          role,
+          cpf: this.normalizeText(solicitacao.cpf),
+          dataNascimento: this.normalizeText(solicitacao.dataNascimento),
+          telefone: this.normalizeText(solicitacao.telefone),
+          diretoria: this.normalizeText(solicitacao.diretoria),
+          projetoId: solicitacao.projetoId || undefined,
+          projetoNome: this.normalizeText(solicitacao.projetoNome),
+          matricula: this.normalizeText(solicitacao.matricula),
+          conselhoTipo: this.normalizeText(solicitacao.conselhoTipo),
+          conselhoNumero: this.normalizeText(solicitacao.conselhoNumero),
+          status: 'ativo'
+        };
+        const result = await this.usersService.createWithTempPassword(payload);
+        createdUserId = result.user.id;
+        tempPassword = result.tempPassword;
+        existingUser = await userRepo.findOne({ where: { id: createdUserId } });
+      }
+
+      const changes: Partial<SolicitacaoAcesso> = {};
+      if (currentStatus !== 'aprovado') {
+        changes.status = 'aprovado';
+      }
+      if (!solicitacao.approvedAt) {
+        changes.approvedAt = new Date();
+      }
+      if (createdUserId && solicitacao.approvedUserId !== createdUserId) {
+        changes.approvedUserId = createdUserId;
+      }
+
+      let saved = solicitacao;
+      if (Object.keys(changes).length > 0) {
+        saved = await solicitacaoRepo.save(solicitacaoRepo.merge(solicitacao, changes));
+        this.realtime.emit('solicitacoes-acesso.updated', saved);
+      }
+
       return {
-        solicitacao,
+        solicitacao: saved,
+        becameApprovedNow,
         user: {
-          id: existingUser.id,
-          existed: true,
+          id: createdUserId,
+          existed: userExistedBeforeApproval,
           role
         },
-        tempPassword: null
+        tempPassword
       };
+    });
+
+    if (result?.solicitacao?.status === 'aprovado' && result?.becameApprovedNow) {
+      await this.notifyRequestDecisionToUser(result.solicitacao, 'aprovado');
     }
 
-    if (!existingUser) {
-      const payload: CreateUserDto = {
-        name: this.normalizeText(solicitacao.nome) || 'Usuario',
-        email,
-        role,
-        cpf: this.normalizeText(solicitacao.cpf),
-        dataNascimento: this.normalizeText(solicitacao.dataNascimento),
-        telefone: this.normalizeText(solicitacao.telefone),
-        diretoria: this.normalizeText(solicitacao.diretoria),
-        projetoId: solicitacao.projetoId || undefined,
-        projetoNome: this.normalizeText(solicitacao.projetoNome),
-        matricula: this.normalizeText(solicitacao.matricula),
-        conselhoTipo: this.normalizeText(solicitacao.conselhoTipo),
-        conselhoNumero: this.normalizeText(solicitacao.conselhoNumero),
-        status: 'ativo'
-      };
-      const result = await this.usersService.createWithTempPassword(payload);
-      createdUserId = result.user.id;
-      tempPassword = result.tempPassword;
-      existingUser = await this.usersService.findById(createdUserId);
-    }
-
-    const saved = currentStatus === 'aprovado'
-      ? solicitacao
-      : await this.repo.save(this.repo.merge(solicitacao, { status: 'aprovado' }));
-    this.realtime.emit('solicitacoes-acesso.updated', saved);
-    return {
-      solicitacao: saved,
-      user: {
-        id: createdUserId,
-        existed: userExistedBeforeApproval,
-        role
-      },
-      tempPassword
-    };
+    return result;
   }
 
   async remove(id: string) {

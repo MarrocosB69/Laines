@@ -1,17 +1,20 @@
 .athlete-view {
-  --athlete-primary: #1d3350;
-  --athlete-muted: #64748b;
+  --athlete-primary: #1D3350;
+  --athlete-accent: #56ADDB;
 }
 
 .athlete-view .admin-bg-pattern {
-  background: radial-gradient(circle at top left, rgba(116, 168, 101, 0.1), transparent 45%),
-              linear-gradient(180deg, rgba(247, 250, 252, 0.62), rgba(247, 250, 252, 1));
+  background:
+    radial-gradient(circle at top left, rgba(86, 173, 219, 0.08), transparent 42%),
+    radial-gradient(circle at bottom right, rgba(29, 51, 80, 0.05), transparent 40%),
+    linear-gradient(180deg, #f3f8fb 0%, #f8fafb 100%);
 }
 
 .athlete-view .admin-header {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid rgba(29, 51, 80, 0.10);
+  box-shadow: 0 4px 16px rgba(29, 51, 80, 0.06);
+  backdrop-filter: blur(8px);
 }
 
 .athlete-view .icon-wrapper {
@@ -19,10 +22,9 @@
 }
 
 .athlete-view .header-page-subtitle {
-  color: var(--athlete-muted);
+  color: #64748b;
 }
 
 .athlete-view .content-area {
-  background: var(--color-surface);
+  background: transparent;
 }
-

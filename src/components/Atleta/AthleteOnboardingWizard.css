@@ -1,0 +1,375 @@
+.athlete-wizard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--pn-text-1) 34%, transparent);
+}
+
+.athlete-wizard {
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100vh - 2rem));
+  overflow: auto;
+  border: 1px solid var(--pn-border);
+  border-radius: var(--pn-r-2);
+  background: var(--pn-surface);
+  color: var(--pn-text-1);
+  box-shadow: 0 24px 60px color-mix(in srgb, var(--pn-text-1) 22%, transparent);
+}
+
+.athlete-wizard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.2rem 0.85rem;
+  border-bottom: 1px solid var(--pn-border);
+}
+
+.athlete-wizard-header p {
+  margin: 0 0 0.25rem;
+  color: var(--pn-text-3);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.athlete-wizard-header h2 {
+  margin: 0;
+  color: var(--pn-text-1);
+  font-size: 1.18rem;
+  line-height: 1.2;
+}
+
+.athlete-wizard-close {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--pn-border);
+  border-radius: var(--pn-r-1);
+  background: var(--pn-surface-2);
+  color: var(--pn-text-2);
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.athlete-wizard-close:hover {
+  border-color: var(--pn-border-mid);
+  color: var(--pn-text-1);
+}
+
+.athlete-wizard-progress {
+  padding: 0.95rem 1.2rem 0;
+}
+
+.athlete-wizard-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+  color: var(--pn-text-3);
+  font-size: 0.78rem;
+}
+
+.athlete-wizard-progress-label strong {
+  color: var(--pn-text-1);
+}
+
+.athlete-wizard-progress-track {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--pn-surface-2);
+}
+
+.athlete-wizard-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--pn-accent);
+  transition: width 180ms ease;
+}
+
+.athlete-wizard-progress-fill-step-1 { width: 25%; }
+.athlete-wizard-progress-fill-step-2 { width: 50%; }
+.athlete-wizard-progress-fill-step-3 { width: 75%; }
+.athlete-wizard-progress-fill-step-4 { width: 100%; }
+
+.athlete-wizard-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.athlete-wizard-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--pn-border-mid);
+}
+
+.athlete-wizard-dot.is-active {
+  background: var(--pn-accent);
+}
+
+.athlete-wizard-dot.is-complete {
+  background: var(--pn-ok);
+}
+
+.athlete-wizard-form {
+  padding: 1rem 1.2rem 1.2rem;
+}
+
+.athlete-wizard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.athlete-wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.athlete-wizard-field-full {
+  grid-column: 1 / -1;
+}
+
+.athlete-wizard-field span {
+  color: var(--pn-text-2);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.athlete-wizard-field input,
+.athlete-wizard-field select,
+.athlete-wizard-field textarea {
+  width: 100%;
+  border: 1px solid var(--pn-border-mid);
+  border-radius: var(--pn-r-1);
+  background: var(--pn-surface);
+  color: var(--pn-text-1);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.62rem 0.7rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.athlete-wizard-field textarea {
+  min-height: 5.2rem;
+  resize: vertical;
+}
+
+.athlete-wizard-field input:focus,
+.athlete-wizard-field select:focus,
+.athlete-wizard-field textarea:focus {
+  outline: none;
+  border-color: var(--pn-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pn-accent) 18%, transparent);
+}
+
+.athlete-wizard-error {
+  margin: 0.9rem 0 0;
+  border: 1px solid color-mix(in srgb, var(--pn-warn) 24%, transparent);
+  border-radius: var(--pn-r-1);
+  background: color-mix(in srgb, var(--pn-warn) 8%, transparent);
+  color: var(--pn-warn);
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 0.65rem 0.75rem;
+}
+
+.athlete-wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-top: 1.1rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--pn-border);
+}
+
+.athlete-wizard-actions-main {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.athlete-wizard-button {
+  min-height: 2.5rem;
+  border: 1px solid var(--pn-border-mid);
+  border-radius: var(--pn-r-1);
+  background: var(--pn-surface);
+  color: var(--pn-text-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 0.55rem 0.9rem;
+}
+
+.athlete-wizard-button:hover {
+  border-color: var(--pn-accent);
+}
+
+.athlete-wizard-button-primary {
+  border-color: var(--pn-accent);
+  background: var(--pn-accent);
+  color: var(--pn-surface);
+}
+
+.athlete-wizard-button-secondary {
+  background: var(--pn-surface-2);
+}
+
+.athlete-wizard-button-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--pn-text-3);
+}
+
+/* ── New elements ── */
+
+.athlete-wizard-section-title {
+  margin: 0.7rem 0 0.25rem;
+  color: var(--pn-text-2);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.athlete-wizard-field-label {
+  margin: 0 0 0.45rem;
+  color: var(--pn-text-2);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.athlete-wizard-checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.athlete-wizard-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  border: 1px solid var(--pn-border-mid);
+  border-radius: var(--pn-r-1);
+  padding: 0.3rem 0.6rem;
+  font-size: 0.82rem;
+  color: var(--pn-text-2);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.athlete-wizard-checkbox:has(input:checked) {
+  border-color: var(--pn-accent);
+  background: color-mix(in srgb, var(--pn-accent) 10%, transparent);
+  color: var(--pn-text-1);
+}
+
+.athlete-wizard-checkbox input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  accent-color: var(--pn-accent);
+}
+
+.athlete-wizard-list-row,
+.athlete-wizard-med-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.athlete-wizard-list-input {
+  flex: 1;
+  border: 1px solid var(--pn-border-mid);
+  border-radius: var(--pn-r-1);
+  background: var(--pn-surface);
+  color: var(--pn-text-1);
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 0.52rem 0.65rem;
+}
+
+.athlete-wizard-list-input:focus {
+  outline: none;
+  border-color: var(--pn-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pn-accent) 16%, transparent);
+}
+
+.athlete-wizard-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--pn-border-mid);
+  border-radius: var(--pn-r-1);
+  background: var(--pn-surface);
+  color: var(--pn-text-3);
+  cursor: pointer;
+}
+
+.athlete-wizard-icon-btn:hover {
+  border-color: var(--pn-danger, #ef4444);
+  color: var(--pn-danger, #ef4444);
+}
+
+.athlete-wizard-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px dashed var(--pn-border-mid);
+  border-radius: var(--pn-r-1);
+  background: transparent;
+  color: var(--pn-text-3);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.75rem;
+  margin-top: 0.25rem;
+  transition: border-color 120ms, color 120ms;
+}
+
+.athlete-wizard-add-btn:hover {
+  border-color: var(--pn-accent);
+  color: var(--pn-accent);
+}
+
+.athlete-wizard-mandatory-note {
+  color: var(--pn-text-3);
+  font-size: 0.76rem;
+}
+
+@media (width <= 640px) {
+  .athlete-wizard-overlay {
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+
+  .athlete-wizard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .athlete-wizard-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .athlete-wizard-actions-main,
+  .athlete-wizard-button {
+    width: 100%;
+  }
+}

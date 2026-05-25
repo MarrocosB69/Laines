@@ -8,9 +8,15 @@ import { AgendamentosController } from './agendamentos.controller';
 import { RolesGuard } from '../auth/roles.guard';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { ObservabilityModule } from '../observability/observability.module';
+import { NotificacoesModule } from '../notificacoes/notificacoes.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Agendamento, Paciente, User]), RealtimeModule, ObservabilityModule],
+  imports: [
+    TypeOrmModule.forFeature([Agendamento, Paciente, User]),
+    RealtimeModule,
+    ObservabilityModule,
+    NotificacoesModule,
+  ],
   providers: [AgendamentosService, RolesGuard],
   controllers: [AgendamentosController],
   exports: [AgendamentosService]

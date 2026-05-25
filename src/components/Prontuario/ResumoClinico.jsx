@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { FileText } from 'lucide-react';
+import { FeedbackState } from '../ui';
 
 const isFieldEmpty = (value) => (
   value === null
@@ -31,6 +32,10 @@ const ResumoClinico = ({
   podeEditarAvaliacoes = false,
   handleReleaseEbiaToAthlete,
   isReleasingEbia = false,
+  athleteSelfEvaluationConfigs = [],
+  athleteFormReleases = {},
+  handleToggleAthleteFormAccess,
+  togglingAthleteFormType = '',
   podeEditarResumo = false,
   isEditingSummary = false,
   setIsEditingSummary,
@@ -99,12 +104,12 @@ const ResumoClinico = ({
                 type="button"
                 className="pron-btn pron-btn-secondary"
                 onClick={handleReleaseEbiaToAthlete}
-                disabled={isReleasingEbia || ebiaSelfFormEnabled || !athleteHasLogin}
+                disabled={isReleasingEbia || !athleteHasLogin}
               >
                 {isReleasingEbia
-                  ? 'Liberando...'
+                  ? 'Atualizando...'
                   : ebiaSelfFormEnabled
-                    ? 'EBIA liberado'
+                    ? 'Suspender EBIA'
                     : 'Liberar EBIA'}
               </button>
             ) : null}
@@ -124,10 +129,56 @@ const ResumoClinico = ({
           </div>
         ) : null}
 
-        {activeGroups.length === 0 ? (
-          <div className="pron-empty" style={{ marginTop: 14 }}>
-            <span>Nenhum dado preenchido pelo atleta.</span>
+        {podeEditarAvaliacoes && athleteSelfEvaluationConfigs.length > 0 ? (
+          <div className="athlete-form-release-panel">
+            <div className="athlete-form-release-head">
+              <div>
+                <h3>Formularios do atleta</h3>
+                <p>Ligue ou suspenda o acesso no portal sem apagar rascunhos ou envios ja feitos.</p>
+              </div>
+              {!athleteHasLogin ? (
+                <span className="pron-badge pron-badge-warn">Cadastro inicial pendente</span>
+              ) : null}
+            </div>
+            <div className="athlete-form-release-grid">
+              {athleteSelfEvaluationConfigs.map((item) => {
+                const release = athleteFormReleases?.[item.type] || {};
+                const enabled = Boolean(release.enabled);
+                const isBusy = togglingAthleteFormType === item.type;
+                const releasedAt = release.releasedAt ? new Date(release.releasedAt) : null;
+                const disabledAt = release.disabledAt ? new Date(release.disabledAt) : null;
+                const statusDate = enabled ? releasedAt : disabledAt;
+                const statusLabel = enabled ? 'Liberado' : 'Suspenso';
+                return (
+                  <article key={item.type} className={`athlete-form-release-item${enabled ? ' athlete-form-release-item-enabled' : ''}`}>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <span>{item.subtitle}</span>
+                      {statusDate && !Number.isNaN(statusDate.getTime()) ? (
+                        <small>
+                          {statusLabel} em {formatDate ? formatDate(statusDate) : statusDate.toLocaleDateString('pt-BR')}
+                        </small>
+                      ) : (
+                        <small>{enabled ? 'Liberado para preenchimento' : 'Nao aparece no portal'}</small>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`pron-btn pron-btn-sm ${enabled ? 'pron-btn-secondary' : 'pron-btn-primary'}`}
+                      onClick={() => handleToggleAthleteFormAccess?.(item.type)}
+                      disabled={!athleteHasLogin || Boolean(togglingAthleteFormType)}
+                    >
+                      {isBusy ? 'Atualizando...' : enabled ? 'Suspender acesso' : 'Liberar'}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
           </div>
+        ) : null}
+
+        {activeGroups.length === 0 ? (
+          <FeedbackState empty size="sm" title="Nenhum dado preenchido pelo atleta." />
         ) : (
           <div className="pron-dados-grupos">
             {activeGroups.map((groupKey) => {

@@ -11,6 +11,7 @@ import {
   resolveOfficialTmbSelection,
   validatePhysiologicalRange
 } from '../../../services/calculationEngine';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
 import './PerimetrosCorporaisForm.css';
 
@@ -40,136 +41,145 @@ const REQUIRED_FIELDS = [
 const OPTIONAL_FIELDS = [
   {
     key: 'cinturaCm',
-    label: 'Circunferencia da cintura',
+    label: 'Circunferência da cintura',
     unit: 'cm',
     metric: 'circunferencia_cm',
     tooltip: [
-      'Usada para ICE, RCQ e risco cardiometabolico.',
+      'Usada para ICE, RCQ e risco cardiometabólico.',
       'Cortes OMS: risco aumentado > 94 cm (H) / > 80 cm (M).'
     ]
   },
   {
     key: 'quadrilCm',
-    label: 'Circunferencia do quadril',
+    label: 'Circunferência do quadril',
     unit: 'cm',
     metric: 'circunferencia_cm',
     tooltip: [
-      'Usada no calculo de RCQ (cintura/quadril).',
+      'Usada no cálculo de RCQ (cintura/quadril).',
       'Faixa valida: 10 a 200 cm.'
     ]
   },
   {
     key: 'pescocoCm',
-    label: 'Circunferencia do pescoco',
+    label: 'Circunferência do pescoço',
     unit: 'cm',
     metric: 'circunferencia_cm',
     tooltip: [
-      'Medida complementar para risco e composicao corporal.',
+      'Medida complementar para risco e composição corporal.',
       'Faixa valida: 10 a 200 cm.'
     ]
   },
   {
     key: 'bracoRelaxadoCm',
-    label: 'Braco relaxado',
+    label: 'Braço relaxado',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Perimetro do braco em repouso.']
+    tooltip: ['Perímetro do braço em repouso.']
   },
   {
     key: 'bracoContraidoCm',
-    label: 'Braco contraido',
+    label: 'Braço contraído',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Perimetro do braco contraido.']
+    tooltip: ['Perímetro do braço contraído.']
   },
   {
     key: 'antebracoCm',
-    label: 'Antebraco',
+    label: 'Antebraço',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Medida do antebraco no maior perimetro.']
+    tooltip: ['Medida do antebraço no maior perímetro.']
   },
   {
     key: 'coxaProximalCm',
     label: 'Coxa proximal',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Regiao proximal da coxa.']
+    tooltip: ['Região proximal da coxa.']
   },
   {
     key: 'coxaMedialCm',
     label: 'Coxa medial',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Regiao medial da coxa.']
+    tooltip: ['Região medial da coxa.']
   },
   {
     key: 'panturrilhaCm',
     label: 'Panturrilha',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Maior perimetro da panturrilha.']
+    tooltip: ['Maior perímetro da panturrilha.']
   },
   {
     key: 'toraxInspiradoCm',
-    label: 'Torax inspirado',
+    label: 'Tórax inspirado',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Perimetro toracico em inspiracao maxima.']
+    tooltip: ['Perímetro torácico em inspiração máxima.']
   },
   {
     key: 'toraxExpiradoCm',
-    label: 'Torax expirado',
+    label: 'Tórax expirado',
     unit: 'cm',
     metric: 'circunferencia_cm',
-    tooltip: ['Perimetro toracico em expiracao.']
+    tooltip: ['Perímetro torácico em expiração.']
   }
+];
+
+const BILATERAL_MEMBER_FIELDS = [
+  { key: 'bracoRelaxadoCm', label: 'Braço relaxado', unit: 'cm', metric: 'circunferencia_cm' },
+  { key: 'bracoContraidoCm', label: 'Braço contraído', unit: 'cm', metric: 'circunferencia_cm' },
+  { key: 'antebracoCm', label: 'Antebraço', unit: 'cm', metric: 'circunferencia_cm' },
+  { key: 'coxaProximalCm', label: 'Coxa proximal', unit: 'cm', metric: 'circunferencia_cm' },
+  { key: 'coxaMedialCm', label: 'Coxa medial', unit: 'cm', metric: 'circunferencia_cm' },
+  { key: 'panturrilhaCm', label: 'Panturrilha', unit: 'cm', metric: 'circunferencia_cm' }
 ];
 
 const CIRCUMFERENCE_SEGMENTS = [
   { key: 'cinturaCm', label: 'Cintura', metaKey: 'metaCinturaCm' },
   { key: 'quadrilCm', label: 'Quadril', metaKey: 'metaQuadrilCm' },
-  { key: 'pescocoCm', label: 'Pescoco', metaKey: 'metaPescocoCm' },
-  { key: 'bracoRelaxadoCm', label: 'Braco relaxado', metaKey: 'metaBracoRelaxadoCm' },
-  { key: 'bracoContraidoCm', label: 'Braco contraido', metaKey: 'metaBracoContraidoCm' },
-  { key: 'antebracoCm', label: 'Antebraco', metaKey: 'metaAntebracoCm' },
+  { key: 'pescocoCm', label: 'Pescoço', metaKey: 'metaPescocoCm' },
+  { key: 'bracoRelaxadoCm', label: 'Braço relaxado', metaKey: 'metaBracoRelaxadoCm' },
+  { key: 'bracoContraidoCm', label: 'Braço contraído', metaKey: 'metaBracoContraidoCm' },
+  { key: 'antebracoCm', label: 'Antebraço', metaKey: 'metaAntebraçoCm' },
   { key: 'coxaProximalCm', label: 'Coxa proximal', metaKey: 'metaCoxaProximalCm' },
   { key: 'coxaMedialCm', label: 'Coxa medial', metaKey: 'metaCoxaMedialCm' },
   { key: 'panturrilhaCm', label: 'Panturrilha', metaKey: 'metaPanturrilhaCm' },
-  { key: 'toraxInspiradoCm', label: 'Torax inspirado', metaKey: 'metaToraxInspiradoCm' },
-  { key: 'toraxExpiradoCm', label: 'Torax expirado', metaKey: 'metaToraxExpiradoCm' }
+  { key: 'toraxInspiradoCm', label: 'Tórax inspirado', metaKey: 'metaToraxInspiradoCm' },
+  { key: 'toraxExpiradoCm', label: 'Tórax expirado', metaKey: 'metaToraxExpiradoCm' }
 ];
 
 const MEASUREMENT_CONTEXT_FIELDS = [
   {
     key: 'horarioPesagem',
-    label: 'Horario da pesagem',
+    label: 'Horário da pesagem',
     type: 'select',
     options: [
       { value: '', label: 'Selecione' },
-      { value: 'manha', label: 'Manha' },
+      { value: 'manha', label: 'Manhã' },
       { value: 'tarde', label: 'Tarde' },
       { value: 'noite', label: 'Noite' }
     ],
-    tooltip: ['Horario pode explicar variacoes de peso entre sessoes.']
+    tooltip: ['Horario pode explicar variações de peso entre sessões.']
   },
   {
     key: 'condicaoMedicao',
-    label: 'Condicao da medida',
+    label: 'Condição da medida',
     type: 'select',
     options: [
-      { value: 'nao_informado', label: 'Nao informado' },
+      { value: 'nao_informado', label: 'Não informado' },
       { value: 'jejum', label: 'Em jejum' },
-      { value: 'nao_jejum', label: 'Nao em jejum' }
+      { value: 'nao_jejum', label: 'Não em jejum' }
     ],
-    tooltip: ['Padronize o contexto para comparacao longitudinal mais confiavel.']
+    tooltip: ['Padronize o contexto para comparação longitudinal mais confiável.']
   },
   {
     key: 'equipamento',
     label: 'Equipamento utilizado',
     type: 'text',
     placeholder: 'Ex.: Balanca Filizola / Estadiometro Sanny',
-    tooltip: ['Registre marca/modelo para rastreabilidade tecnica.']
+    tooltip: ['Registre marca/modelo para rastreabilidade técnica.']
   }
 ];
 
@@ -183,7 +193,7 @@ const INDICATOR_INFO = {
   rcq: {
     name: 'RCQ',
     formula: 'cintura_cm / quadril_cm',
-    reference: 'OMS - risco cardiometabolico por sexo',
+    reference: 'OMS - risco cardiometabólico por sexo',
     year: '2008'
   },
   ice: {
@@ -220,11 +230,23 @@ const createInitialData = () => ({
   quadrilCm: '',
   pescocoCm: '',
   bracoRelaxadoCm: '',
+  bracoRelaxadoCmD: '',
+  bracoRelaxadoCmE: '',
   bracoContraidoCm: '',
+  bracoContraidoCmD: '',
+  bracoContraidoCmE: '',
   antebracoCm: '',
+  antebracoCmD: '',
+  antebracoCmE: '',
   coxaProximalCm: '',
+  coxaProximalCmD: '',
+  coxaProximalCmE: '',
   coxaMedialCm: '',
+  coxaMedialCmD: '',
+  coxaMedialCmE: '',
   panturrilhaCm: '',
+  panturrilhaCmD: '',
+  panturrilhaCmE: '',
   toraxInspiradoCm: '',
   toraxExpiradoCm: '',
   focoCardiometabolico: false,
@@ -233,7 +255,7 @@ const createInitialData = () => ({
   metaPescocoCm: '',
   metaBracoRelaxadoCm: '',
   metaBracoContraidoCm: '',
-  metaAntebracoCm: '',
+  metaAntebraçoCm: '',
   metaCoxaProximalCm: '',
   metaCoxaMedialCm: '',
   metaPanturrilhaCm: '',
@@ -251,6 +273,7 @@ const PerimetrosCorporaisForm = ({
   onSalvar,
   onAutoSave,
   readOnly = false,
+  onboardingContext,
   baselineAnthropometry,
   lockSharedAnthropometry = false,
   moduleSnapshot,
@@ -258,12 +281,15 @@ const PerimetrosCorporaisForm = ({
   moduleHistory = [],
   allEvaluationHistory = []
 }) => {
+  const { confirm } = useUiFeedback();
+
   const [dados, setDados] = useState(createInitialData);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [touchedFields, setTouchedFields] = useState({});
   const [hasUserInput, setHasUserInput] = useState(false);
+  const [metaOpen, setMetaOpen] = useState(() => (moduleHistory?.length ?? 0) > 1);
 
   const autoSaveRef = useRef(null);
   const saveStatusResetRef = useRef(null);
@@ -285,6 +311,8 @@ const PerimetrosCorporaisForm = ({
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
     const metadadosFormula = source?.metadados_formula || {};
+    const esportivoRaw = asRecord(firstDefined(dadosBrutos?.esportivo, source?.esportivo));
+    const bilateralRaw = asRecord(firstDefined(esportivoRaw?.bilateral, esportivoRaw?.membros_bilaterais));
     const estaturaFromSnapshot = normalizeHeightToCm(
       firstDefined(
         dadosBrutos?.estaturaCm,
@@ -337,12 +365,36 @@ const PerimetrosCorporaisForm = ({
         source?.braco_relaxado_cm,
         source?.braco_relaxado
       )),
+      bracoRelaxadoCmD: toInputValue(firstDefined(
+        bilateralRaw?.bracoRelaxadoCmD,
+        bilateralRaw?.braco_relaxado_cm_d,
+        dadosBrutos?.bracoRelaxadoCmD,
+        dadosBrutos?.braco_relaxado_cm_d
+      )),
+      bracoRelaxadoCmE: toInputValue(firstDefined(
+        bilateralRaw?.bracoRelaxadoCmE,
+        bilateralRaw?.braco_relaxado_cm_e,
+        dadosBrutos?.bracoRelaxadoCmE,
+        dadosBrutos?.braco_relaxado_cm_e
+      )),
       bracoContraidoCm: toInputValue(firstDefined(
         dadosBrutos?.bracoContraidoCm,
         dadosBrutos?.braco_contraido_cm,
         dadosBrutos?.braco_contraido,
         source?.braco_contraido_cm,
         source?.braco_contraido
+      )),
+      bracoContraidoCmD: toInputValue(firstDefined(
+        bilateralRaw?.bracoContraidoCmD,
+        bilateralRaw?.braco_contraido_cm_d,
+        dadosBrutos?.bracoContraidoCmD,
+        dadosBrutos?.braco_contraido_cm_d
+      )),
+      bracoContraidoCmE: toInputValue(firstDefined(
+        bilateralRaw?.bracoContraidoCmE,
+        bilateralRaw?.braco_contraido_cm_e,
+        dadosBrutos?.bracoContraidoCmE,
+        dadosBrutos?.braco_contraido_cm_e
       )),
       antebracoCm: toInputValue(firstDefined(
         dadosBrutos?.antebracoCm,
@@ -351,11 +403,35 @@ const PerimetrosCorporaisForm = ({
         source?.antebraco_cm,
         source?.antebraco
       )),
+      antebracoCmD: toInputValue(firstDefined(
+        bilateralRaw?.antebracoCmD,
+        bilateralRaw?.antebraco_cm_d,
+        dadosBrutos?.antebracoCmD,
+        dadosBrutos?.antebraco_cm_d
+      )),
+      antebracoCmE: toInputValue(firstDefined(
+        bilateralRaw?.antebracoCmE,
+        bilateralRaw?.antebraco_cm_e,
+        dadosBrutos?.antebracoCmE,
+        dadosBrutos?.antebraco_cm_e
+      )),
       coxaProximalCm: toInputValue(firstDefined(
         dadosBrutos?.coxaProximalCm,
         dadosBrutos?.coxa_proximal_cm,
         source?.coxa_proximal_cm,
         source?.coxa_proximal
+      )),
+      coxaProximalCmD: toInputValue(firstDefined(
+        bilateralRaw?.coxaProximalCmD,
+        bilateralRaw?.coxa_proximal_cm_d,
+        dadosBrutos?.coxaProximalCmD,
+        dadosBrutos?.coxa_proximal_cm_d
+      )),
+      coxaProximalCmE: toInputValue(firstDefined(
+        bilateralRaw?.coxaProximalCmE,
+        bilateralRaw?.coxa_proximal_cm_e,
+        dadosBrutos?.coxaProximalCmE,
+        dadosBrutos?.coxa_proximal_cm_e
       )),
       coxaMedialCm: toInputValue(firstDefined(
         dadosBrutos?.coxaMedialCm,
@@ -363,11 +439,35 @@ const PerimetrosCorporaisForm = ({
         source?.coxa_medial_cm,
         source?.coxa_medial
       )),
+      coxaMedialCmD: toInputValue(firstDefined(
+        bilateralRaw?.coxaMedialCmD,
+        bilateralRaw?.coxa_medial_cm_d,
+        dadosBrutos?.coxaMedialCmD,
+        dadosBrutos?.coxa_medial_cm_d
+      )),
+      coxaMedialCmE: toInputValue(firstDefined(
+        bilateralRaw?.coxaMedialCmE,
+        bilateralRaw?.coxa_medial_cm_e,
+        dadosBrutos?.coxaMedialCmE,
+        dadosBrutos?.coxa_medial_cm_e
+      )),
       panturrilhaCm: toInputValue(firstDefined(
         dadosBrutos?.panturrilhaCm,
         dadosBrutos?.panturrilha_cm,
         source?.panturrilha_cm,
         source?.panturrilha
+      )),
+      panturrilhaCmD: toInputValue(firstDefined(
+        bilateralRaw?.panturrilhaCmD,
+        bilateralRaw?.panturrilha_cm_d,
+        dadosBrutos?.panturrilhaCmD,
+        dadosBrutos?.panturrilha_cm_d
+      )),
+      panturrilhaCmE: toInputValue(firstDefined(
+        bilateralRaw?.panturrilhaCmE,
+        bilateralRaw?.panturrilha_cm_e,
+        dadosBrutos?.panturrilhaCmE,
+        dadosBrutos?.panturrilha_cm_e
       )),
       toraxInspiradoCm: toInputValue(firstDefined(
         dadosBrutos?.toraxInspiradoCm,
@@ -411,8 +511,8 @@ const PerimetrosCorporaisForm = ({
         dadosBrutos?.meta_braco_contraido_cm,
         source?.meta_braco_contraido_cm
       )),
-      metaAntebracoCm: toInputValue(firstDefined(
-        dadosBrutos?.metaAntebracoCm,
+      metaAntebraçoCm: toInputValue(firstDefined(
+        dadosBrutos?.metaAntebraçoCm,
         dadosBrutos?.meta_antebraco_cm,
         source?.meta_antebraco_cm
       )),
@@ -498,12 +598,48 @@ const PerimetrosCorporaisForm = ({
     cinturaCm: parseNumeric(dados.cinturaCm),
     quadrilCm: parseNumeric(dados.quadrilCm),
     pescocoCm: parseNumeric(dados.pescocoCm),
-    bracoRelaxadoCm: parseNumeric(dados.bracoRelaxadoCm),
-    bracoContraidoCm: parseNumeric(dados.bracoContraidoCm),
-    antebracoCm: parseNumeric(dados.antebracoCm),
-    coxaProximalCm: parseNumeric(dados.coxaProximalCm),
-    coxaMedialCm: parseNumeric(dados.coxaMedialCm),
-    panturrilhaCm: parseNumeric(dados.panturrilhaCm),
+    bracoRelaxadoCmD: parseNumeric(dados.bracoRelaxadoCmD),
+    bracoRelaxadoCmE: parseNumeric(dados.bracoRelaxadoCmE),
+    bracoRelaxadoCm: resolveSingleFromBilateral({
+      single: parseNumeric(dados.bracoRelaxadoCm),
+      right: parseNumeric(dados.bracoRelaxadoCmD),
+      left: parseNumeric(dados.bracoRelaxadoCmE)
+    }),
+    bracoContraidoCmD: parseNumeric(dados.bracoContraidoCmD),
+    bracoContraidoCmE: parseNumeric(dados.bracoContraidoCmE),
+    bracoContraidoCm: resolveSingleFromBilateral({
+      single: parseNumeric(dados.bracoContraidoCm),
+      right: parseNumeric(dados.bracoContraidoCmD),
+      left: parseNumeric(dados.bracoContraidoCmE)
+    }),
+    antebracoCmD: parseNumeric(dados.antebracoCmD),
+    antebracoCmE: parseNumeric(dados.antebracoCmE),
+    antebracoCm: resolveSingleFromBilateral({
+      single: parseNumeric(dados.antebracoCm),
+      right: parseNumeric(dados.antebracoCmD),
+      left: parseNumeric(dados.antebracoCmE)
+    }),
+    coxaProximalCmD: parseNumeric(dados.coxaProximalCmD),
+    coxaProximalCmE: parseNumeric(dados.coxaProximalCmE),
+    coxaProximalCm: resolveSingleFromBilateral({
+      single: parseNumeric(dados.coxaProximalCm),
+      right: parseNumeric(dados.coxaProximalCmD),
+      left: parseNumeric(dados.coxaProximalCmE)
+    }),
+    coxaMedialCmD: parseNumeric(dados.coxaMedialCmD),
+    coxaMedialCmE: parseNumeric(dados.coxaMedialCmE),
+    coxaMedialCm: resolveSingleFromBilateral({
+      single: parseNumeric(dados.coxaMedialCm),
+      right: parseNumeric(dados.coxaMedialCmD),
+      left: parseNumeric(dados.coxaMedialCmE)
+    }),
+    panturrilhaCmD: parseNumeric(dados.panturrilhaCmD),
+    panturrilhaCmE: parseNumeric(dados.panturrilhaCmE),
+    panturrilhaCm: resolveSingleFromBilateral({
+      single: parseNumeric(dados.panturrilhaCm),
+      right: parseNumeric(dados.panturrilhaCmD),
+      left: parseNumeric(dados.panturrilhaCmE)
+    }),
     toraxInspiradoCm: parseNumeric(dados.toraxInspiradoCm),
     toraxExpiradoCm: parseNumeric(dados.toraxExpiradoCm),
     metaCinturaCm: parseNumeric(dados.metaCinturaCm),
@@ -511,7 +647,7 @@ const PerimetrosCorporaisForm = ({
     metaPescocoCm: parseNumeric(dados.metaPescocoCm),
     metaBracoRelaxadoCm: parseNumeric(dados.metaBracoRelaxadoCm),
     metaBracoContraidoCm: parseNumeric(dados.metaBracoContraidoCm),
-    metaAntebracoCm: parseNumeric(dados.metaAntebracoCm),
+    metaAntebraçoCm: parseNumeric(dados.metaAntebraçoCm),
     metaCoxaProximalCm: parseNumeric(dados.metaCoxaProximalCm),
     metaCoxaMedialCm: parseNumeric(dados.metaCoxaMedialCm),
     metaPanturrilhaCm: parseNumeric(dados.metaPanturrilhaCm),
@@ -519,13 +655,23 @@ const PerimetrosCorporaisForm = ({
     metaToraxExpiradoCm: parseNumeric(dados.metaToraxExpiradoCm)
   }), [
     dados.antebracoCm,
+    dados.antebracoCmD,
+    dados.antebracoCmE,
     dados.bracoContraidoCm,
+    dados.bracoContraidoCmD,
+    dados.bracoContraidoCmE,
     dados.bracoRelaxadoCm,
+    dados.bracoRelaxadoCmD,
+    dados.bracoRelaxadoCmE,
     dados.cinturaCm,
     dados.coxaMedialCm,
+    dados.coxaMedialCmD,
+    dados.coxaMedialCmE,
     dados.coxaProximalCm,
+    dados.coxaProximalCmD,
+    dados.coxaProximalCmE,
     dados.estaturaCm,
-    dados.metaAntebracoCm,
+    dados.metaAntebraçoCm,
     dados.metaBracoContraidoCm,
     dados.metaBracoRelaxadoCm,
     dados.metaCinturaCm,
@@ -537,12 +683,38 @@ const PerimetrosCorporaisForm = ({
     dados.metaToraxExpiradoCm,
     dados.metaToraxInspiradoCm,
     dados.panturrilhaCm,
+    dados.panturrilhaCmD,
+    dados.panturrilhaCmE,
     dados.pescocoCm,
     dados.pesoKg,
     dados.quadrilCm,
     dados.toraxExpiradoCm,
     dados.toraxInspiradoCm
   ]);
+
+  const bilateralAsymmetryRows = useMemo(
+    () => BILATERAL_MEMBER_FIELDS.map((field) => {
+      const right = numericFields[`${field.key}D`];
+      const left = numericFields[`${field.key}E`];
+      return {
+        key: field.key,
+        label: field.label,
+        right: Number.isFinite(right) ? right : null,
+        left: Number.isFinite(left) ? left : null,
+        asymmetryPct: calculateAsymmetryIndex(right, left)
+      };
+    }),
+    [numericFields]
+  );
+
+  const panturrilhaBelowCutoff = useMemo(
+    () => (
+      (Number.isFinite(numericFields.panturrilhaCmD) && numericFields.panturrilhaCmD < 31)
+      || (Number.isFinite(numericFields.panturrilhaCmE) && numericFields.panturrilhaCmE < 31)
+      || (Number.isFinite(numericFields.panturrilhaCm) && numericFields.panturrilhaCm < 31)
+    ),
+    [numericFields.panturrilhaCm, numericFields.panturrilhaCmD, numericFields.panturrilhaCmE]
+  );
 
   const anthropometry = useMemo(() => calculateAnthropometryIndicators({
     weightKg: numericFields.pesoKg,
@@ -798,6 +970,8 @@ const PerimetrosCorporaisForm = ({
         label: row.label,
         tmbKcal: row.valueKcal
       }));
+    const bilateralPayload = buildPerimetrosBilateralPayload(numericFields);
+    const asymmetryPayload = buildPerimetrosAsymmetryPayload(bilateralAsymmetryRows);
 
     const estaturaM = Number.isFinite(numericFields.estaturaCm)
       ? Number((numericFields.estaturaCm / 100).toFixed(4))
@@ -824,15 +998,31 @@ const PerimetrosCorporaisForm = ({
       coxa_proximal_cm: numericFields.coxaProximalCm,
       coxa_medial_cm: numericFields.coxaMedialCm,
       panturrilha_cm: numericFields.panturrilhaCm,
+      braco_relaxado_cm_d: bilateralPayload.bracoRelaxadoCmD,
+      braco_relaxado_cm_e: bilateralPayload.bracoRelaxadoCmE,
+      braco_contraido_cm_d: bilateralPayload.bracoContraidoCmD,
+      braco_contraido_cm_e: bilateralPayload.bracoContraidoCmE,
+      antebraco_cm_d: bilateralPayload.antebracoCmD,
+      antebraco_cm_e: bilateralPayload.antebracoCmE,
+      coxa_proximal_cm_d: bilateralPayload.coxaProximalCmD,
+      coxa_proximal_cm_e: bilateralPayload.coxaProximalCmE,
+      coxa_medial_cm_d: bilateralPayload.coxaMedialCmD,
+      coxa_medial_cm_e: bilateralPayload.coxaMedialCmE,
+      panturrilha_cm_d: bilateralPayload.panturrilhaCmD,
+      panturrilha_cm_e: bilateralPayload.panturrilhaCmE,
       torax_inspirado_cm: numericFields.toraxInspiradoCm,
       torax_expirado_cm: numericFields.toraxExpiradoCm,
+      esportivo: {
+        bilateral: bilateralPayload,
+        assimetria: asymmetryPayload
+      },
       foco_cardiometabolico: Boolean(dados.focoCardiometabolico),
       meta_cintura_cm: numericFields.metaCinturaCm,
       meta_quadril_cm: numericFields.metaQuadrilCm,
       meta_pescoco_cm: numericFields.metaPescocoCm,
       meta_braco_relaxado_cm: numericFields.metaBracoRelaxadoCm,
       meta_braco_contraido_cm: numericFields.metaBracoContraidoCm,
-      meta_antebraco_cm: numericFields.metaAntebracoCm,
+      meta_antebraco_cm: numericFields.metaAntebraçoCm,
       meta_coxa_proximal_cm: numericFields.metaCoxaProximalCm,
       meta_coxa_medial_cm: numericFields.metaCoxaMedialCm,
       meta_panturrilha_cm: numericFields.metaPanturrilhaCm,
@@ -866,6 +1056,10 @@ const PerimetrosCorporaisForm = ({
         coxaProximalCm: numericFields.coxaProximalCm,
         coxaMedialCm: numericFields.coxaMedialCm,
         panturrilhaCm: numericFields.panturrilhaCm,
+        esportivo: {
+          bilateral: bilateralPayload,
+          assimetria: asymmetryPayload
+        },
         toraxInspiradoCm: numericFields.toraxInspiradoCm,
         toraxExpiradoCm: numericFields.toraxExpiradoCm,
         focoCardiometabolico: Boolean(dados.focoCardiometabolico),
@@ -875,7 +1069,7 @@ const PerimetrosCorporaisForm = ({
           pescocoCm: numericFields.metaPescocoCm,
           bracoRelaxadoCm: numericFields.metaBracoRelaxadoCm,
           bracoContraidoCm: numericFields.metaBracoContraidoCm,
-          antebracoCm: numericFields.metaAntebracoCm,
+          antebracoCm: numericFields.metaAntebraçoCm,
           coxaProximalCm: numericFields.metaCoxaProximalCm,
           coxaMedialCm: numericFields.metaCoxaMedialCm,
           panturrilhaCm: numericFields.metaPanturrilhaCm,
@@ -936,6 +1130,10 @@ const PerimetrosCorporaisForm = ({
         cinturaCm: numericFields.cinturaCm,
         quadrilCm: numericFields.quadrilCm,
         pescocoCm: numericFields.pescocoCm,
+        esportivo: {
+          bilateral: bilateralPayload,
+          assimetria: asymmetryPayload
+        },
         horarioPesagem: dados.horarioPesagem || null,
         condicaoMedicao: dados.condicaoMedicao || 'nao_informado',
         equipamento: toTextInput(dados.equipamento) || null
@@ -966,7 +1164,8 @@ const PerimetrosCorporaisForm = ({
     sharedAge,
     sharedSex,
     circumferenceIndicators,
-    tmbComparative
+    tmbComparative,
+    bilateralAsymmetryRows
   ]);
 
   const payloadResults = useMemo(() => ({
@@ -1006,11 +1205,23 @@ const PerimetrosCorporaisForm = ({
       dados.quadrilCm,
       dados.pescocoCm,
       dados.bracoRelaxadoCm,
+      dados.bracoRelaxadoCmD,
+      dados.bracoRelaxadoCmE,
       dados.bracoContraidoCm,
+      dados.bracoContraidoCmD,
+      dados.bracoContraidoCmE,
       dados.antebracoCm,
+      dados.antebracoCmD,
+      dados.antebracoCmE,
       dados.coxaProximalCm,
+      dados.coxaProximalCmD,
+      dados.coxaProximalCmE,
       dados.coxaMedialCm,
+      dados.coxaMedialCmD,
+      dados.coxaMedialCmE,
       dados.panturrilhaCm,
+      dados.panturrilhaCmD,
+      dados.panturrilhaCmE,
       dados.toraxInspiradoCm,
       dados.toraxExpiradoCm,
       dados.horarioPesagem,
@@ -1022,11 +1233,17 @@ const PerimetrosCorporaisForm = ({
     dados.condicaoMedicao,
     dados.cinturaCm,
     dados.coxaMedialCm,
+    dados.coxaMedialCmD,
+    dados.coxaMedialCmE,
     dados.coxaProximalCm,
+    dados.coxaProximalCmD,
+    dados.coxaProximalCmE,
     dados.equipamento,
     dados.estaturaCm,
     dados.horarioPesagem,
     dados.panturrilhaCm,
+    dados.panturrilhaCmD,
+    dados.panturrilhaCmE,
     dados.pescocoCm,
     dados.pesoKg,
     dados.quadrilCm
@@ -1034,8 +1251,14 @@ const PerimetrosCorporaisForm = ({
     dados.toraxExpiradoCm,
     dados.toraxInspiradoCm,
     dados.bracoRelaxadoCm,
+    dados.bracoRelaxadoCmD,
+    dados.bracoRelaxadoCmE,
     dados.bracoContraidoCm,
-    dados.antebracoCm
+    dados.bracoContraidoCmD,
+    dados.bracoContraidoCmE,
+    dados.antebracoCm,
+    dados.antebracoCmD,
+    dados.antebracoCmE
   ]);
 
   const dispatchSave = useCallback(async (auto = false) => {
@@ -1075,7 +1298,7 @@ const PerimetrosCorporaisForm = ({
       await dispatchSave(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
         setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
@@ -1106,20 +1329,19 @@ const PerimetrosCorporaisForm = ({
     }
 
     if (outlierWarnings.length > 0) {
-      const confirmMessage = [
-        'Foram detectados valores fora da faixa fisiologica:',
-        ...outlierWarnings.map((item) => `- ${resolveFieldLabel(item.fieldKey)}: ${item.message}`),
-        '',
-        'Deseja salvar mesmo assim?'
-      ].join('\n');
-
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
+      const proceed = await confirm({
+        title: 'Valores fora da faixa fisiológica',
+        details: outlierWarnings.map((item) => `${resolveFieldLabel(item.fieldKey)}: ${item.message}`),
+        confirmLabel: 'Salvar mesmo assim',
+        cancelLabel: 'Corrigir',
+        variant: 'warning'
+      });
+      if (!proceed) return;
     }
 
     await executeSave(false);
   }, [
+    confirm,
     dados.focoCardiometabolico,
     executeSave,
     hasFieldErrors,
@@ -1136,7 +1358,7 @@ const PerimetrosCorporaisForm = ({
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       executeSave(true);
-    }, 900);
+    }, 3500);
 
     return () => clearTimeout(autoSaveRef.current);
   }, [executeSave, hasFieldErrors, hasRequiredMissing, hasUserInput, hasValues, onAutoSave, readOnly]);
@@ -1175,6 +1397,28 @@ const PerimetrosCorporaisForm = ({
     [tmbComparative]
   );
   const hasApplicableTmbRows = tmbRows.some((row) => row.applicable);
+  const onboardingResumo = useMemo(() => {
+    if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+    const resumo = [];
+    const modalidade = toTextInput(onboardingContext?.modalidadePrincipal);
+    const frequencia = parseNumeric(onboardingContext?.frequenciaSemanal);
+    const duracao = parseNumeric(onboardingContext?.duracaoSessao);
+    if (modalidade) resumo.push(`Modalidade: ${modalidade}`);
+    if (Number.isFinite(frequencia)) resumo.push(`Frequencia: ${frequencia}x/sem`);
+    if (Number.isFinite(duracao)) resumo.push(`Sessao media: ${duracao} min`);
+    return resumo.slice(0, 3);
+  }, [onboardingContext]);
+  const comparabilidadeColeta = useMemo(() => {
+    const checklist = [
+      Boolean(toTextInput(dados.horarioPesagem)),
+      Boolean(toTextInput(dados.equipamento)),
+      Boolean(toTextInput(dados.condicaoMedicao) && dados.condicaoMedicao !== 'nao_informado')
+    ];
+    const score = checklist.filter(Boolean).length;
+    if (score === 3) return 'Comparabilidade alta da coleta (contexto completo).';
+    if (score === 2) return 'Comparabilidade moderada (falta 1 item de contexto).';
+    return 'Comparabilidade baixa (padronize horario, condicao e equipamento).';
+  }, [dados.condicaoMedicao, dados.equipamento, dados.horarioPesagem]);
 
   return (
     <div className={`eval-card perimetros-form perimetros-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -1190,8 +1434,17 @@ const PerimetrosCorporaisForm = ({
         </div>
       </div>
 
+      {onboardingResumo.length > 0 ? (
+        <div className="eval-note">
+          <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
+        </div>
+      ) : null}
+      <div className="eval-note">
+        <strong>Status de comparabilidade:</strong> {comparabilidadeColeta}
+      </div>
+
       <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Dados obrigatorios</legend>
+        <legend className="eval-section-title eval-legend">Dados obrigatórios</legend>
         <div className="perimetros-grid">
           <div className="eval-field">
             <label className="eval-label">Data da avaliacao</label>
@@ -1277,27 +1530,56 @@ const PerimetrosCorporaisForm = ({
         <div className="eval-field-group">
           <span className="eval-field-group__label">Membros superiores</span>
           <div className="eval-field-group__grid">
-            {OPTIONAL_FIELDS.filter((f) => ['bracoRelaxadoCm', 'bracoContraidoCm', 'antebracoCm'].includes(f.key)).map((field) => {
-              const fieldValidation = combinedValidation[field.key];
-              const showState = submitAttempted || touchedFields[field.key];
-              const isInvalid = showState && fieldValidation?.status === 'error';
-              const isWarning = showState && fieldValidation?.status === 'warning';
+            {BILATERAL_MEMBER_FIELDS.filter((field) => ['bracoRelaxadoCm', 'bracoContraidoCm', 'antebracoCm'].includes(field.key)).map((field) => {
+              const rightKey = `${field.key}D`;
+              const leftKey = `${field.key}E`;
+              const rightValidation = validateInputField({ value: dados[rightKey], required: false, metric: field.metric });
+              const leftValidation = validateInputField({ value: dados[leftKey], required: false, metric: field.metric });
+              const rightShow = submitAttempted || touchedFields[rightKey];
+              const leftShow = submitAttempted || touchedFields[leftKey];
+              const asymmetry = bilateralAsymmetryRows.find((row) => row.key === field.key);
+
               return (
-                <NumericField
-                  key={field.key}
-                  label={field.label}
-                  unit={field.unit}
-                  value={dados[field.key]}
-                  placeholder="Opcional"
-                  disabled={readOnly}
-                  optional
-                  isInvalid={isInvalid}
-                  isWarning={isWarning}
-                  message={showState ? fieldValidation?.message : ''}
-                  tooltipLines={field.tooltip}
-                  onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, field.key, value)}
-                  onBlur={() => setTouchedFields((prev) => ({ ...prev, [field.key]: true }))}
-                />
+                <div key={field.key} className="eval-field eval-field-full perimetros-bilateral-row">
+                  <div className="perimetros-bilateral-header">
+                    <label className="eval-label">{field.label} (bilateral)</label>
+                    {Number.isFinite(asymmetry?.asymmetryPct) && (
+                      <span className={`perimetros-asymmetry-badge ${asymmetry.asymmetryPct >= 10 ? 'is-alert' : ''}`}>
+                        Assimetria: {formatNumber(asymmetry.asymmetryPct, 1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="perimetros-bilateral-grid">
+                    <NumericField
+                      label={`${field.label} D`}
+                      unit={field.unit}
+                      value={dados[rightKey]}
+                      placeholder="Opcional"
+                      disabled={readOnly}
+                      optional
+                      isInvalid={rightShow && rightValidation?.status === 'error'}
+                      isWarning={rightShow && rightValidation?.status === 'warning'}
+                      message={rightShow ? rightValidation?.message : ''}
+                      tooltipLines={['Lado direito']}
+                      onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, rightKey, value)}
+                      onBlur={() => setTouchedFields((prev) => ({ ...prev, [rightKey]: true }))}
+                    />
+                    <NumericField
+                      label={`${field.label} E`}
+                      unit={field.unit}
+                      value={dados[leftKey]}
+                      placeholder="Opcional"
+                      disabled={readOnly}
+                      optional
+                      isInvalid={leftShow && leftValidation?.status === 'error'}
+                      isWarning={leftShow && leftValidation?.status === 'warning'}
+                      message={leftShow ? leftValidation?.message : ''}
+                      tooltipLines={['Lado esquerdo']}
+                      onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, leftKey, value)}
+                      onBlur={() => setTouchedFields((prev) => ({ ...prev, [leftKey]: true }))}
+                    />
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -1306,35 +1588,69 @@ const PerimetrosCorporaisForm = ({
         <div className="eval-field-group">
           <span className="eval-field-group__label">Membros inferiores</span>
           <div className="eval-field-group__grid">
-            {OPTIONAL_FIELDS.filter((f) => ['coxaProximalCm', 'coxaMedialCm', 'panturrilhaCm'].includes(f.key)).map((field) => {
-              const fieldValidation = combinedValidation[field.key];
-              const showState = submitAttempted || touchedFields[field.key];
-              const isInvalid = showState && fieldValidation?.status === 'error';
-              const isWarning = showState && fieldValidation?.status === 'warning';
+            {BILATERAL_MEMBER_FIELDS.filter((field) => ['coxaProximalCm', 'coxaMedialCm', 'panturrilhaCm'].includes(field.key)).map((field) => {
+              const rightKey = `${field.key}D`;
+              const leftKey = `${field.key}E`;
+              const rightValidation = validateInputField({ value: dados[rightKey], required: false, metric: field.metric });
+              const leftValidation = validateInputField({ value: dados[leftKey], required: false, metric: field.metric });
+              const rightShow = submitAttempted || touchedFields[rightKey];
+              const leftShow = submitAttempted || touchedFields[leftKey];
+              const asymmetry = bilateralAsymmetryRows.find((row) => row.key === field.key);
+
               return (
-                <NumericField
-                  key={field.key}
-                  label={field.label}
-                  unit={field.unit}
-                  value={dados[field.key]}
-                  placeholder="Opcional"
-                  disabled={readOnly}
-                  optional
-                  isInvalid={isInvalid}
-                  isWarning={isWarning}
-                  message={showState ? fieldValidation?.message : ''}
-                  tooltipLines={field.tooltip}
-                  onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, field.key, value)}
-                  onBlur={() => setTouchedFields((prev) => ({ ...prev, [field.key]: true }))}
-                />
+                <div key={field.key} className="eval-field eval-field-full perimetros-bilateral-row">
+                  <div className="perimetros-bilateral-header">
+                    <label className="eval-label">{field.label} (bilateral)</label>
+                    {Number.isFinite(asymmetry?.asymmetryPct) && (
+                      <span className={`perimetros-asymmetry-badge ${asymmetry.asymmetryPct >= 10 ? 'is-alert' : ''}`}>
+                        Assimetria: {formatNumber(asymmetry.asymmetryPct, 1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="perimetros-bilateral-grid">
+                    <NumericField
+                      label={`${field.label} D`}
+                      unit={field.unit}
+                      value={dados[rightKey]}
+                      placeholder="Opcional"
+                      disabled={readOnly}
+                      optional
+                      isInvalid={rightShow && rightValidation?.status === 'error'}
+                      isWarning={rightShow && rightValidation?.status === 'warning'}
+                      message={rightShow ? rightValidation?.message : ''}
+                      tooltipLines={['Lado direito']}
+                      onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, rightKey, value)}
+                      onBlur={() => setTouchedFields((prev) => ({ ...prev, [rightKey]: true }))}
+                    />
+                    <NumericField
+                      label={`${field.label} E`}
+                      unit={field.unit}
+                      value={dados[leftKey]}
+                      placeholder="Opcional"
+                      disabled={readOnly}
+                      optional
+                      isInvalid={leftShow && leftValidation?.status === 'error'}
+                      isWarning={leftShow && leftValidation?.status === 'warning'}
+                      message={leftShow ? leftValidation?.message : ''}
+                      tooltipLines={['Lado esquerdo']}
+                      onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, leftKey, value)}
+                      onBlur={() => setTouchedFields((prev) => ({ ...prev, [leftKey]: true }))}
+                    />
+                  </div>
+                </div>
               );
             })}
           </div>
+          {panturrilhaBelowCutoff && (
+            <div className="eval-note perimetros-alert-note">
+              Panturrilha abaixo de 31 cm detectada. Revisar risco funcional e massa muscular.
+            </div>
+          )}
         </div>
       </fieldset>
 
       <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Contexto da medicao</legend>
+        <legend className="eval-section-title eval-legend">Contexto da medição</legend>
         <div className="perimetros-grid">
           {MEASUREMENT_CONTEXT_FIELDS.map((field) => (
             <div key={field.key} className={`eval-field ${field.key === 'equipamento' ? 'eval-field-full' : ''}`}>
@@ -1518,14 +1834,21 @@ const PerimetrosCorporaisForm = ({
       </div>
 
       <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Circunferencias corporais</legend>
+        <legend className="eval-section-title eval-legend">Circunferências corporais</legend>
         <div className="perimetros-circ-layout">
           <div className="perimetros-silhouette-card">
             <h5>Silhueta por segmentos</h5>
             <CircumferenceSilhouette segments={silhouetteSegments} />
           </div>
-          <div className="perimetros-meta-card">
-            <h5>Metas por segmento</h5>
+          <details
+            className="perimetros-meta-card"
+            open={metaOpen}
+            onToggle={(event) => setMetaOpen(event.currentTarget.open)}
+          >
+            <summary className="perimetros-meta-summary">
+              Metas por segmento
+              {metaOpen ? null : <span className="perimetros-meta-hint">Expandir para definir metas</span>}
+            </summary>
             <div className="perimetros-meta-grid">
               {CIRCUMFERENCE_SEGMENTS.map((segment) => (
                 <div key={segment.metaKey} className="eval-field">
@@ -1545,7 +1868,7 @@ const PerimetrosCorporaisForm = ({
                 </div>
               ))}
             </div>
-          </div>
+          </details>
         </div>
         <div className="perimetros-comparison-table-wrap">
           <table className="perimetros-comparison-table">
@@ -1828,6 +2151,51 @@ function handleFieldValueChange(setDados, setHasUserInput, key, value) {
   setDados((prev) => ({ ...prev, [key]: value }));
 }
 
+function asRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
+}
+
+function resolveSingleFromBilateral({ single, right, left }) {
+  if (Number.isFinite(single)) return single;
+  if (Number.isFinite(right) && Number.isFinite(left)) {
+    return Number(((right + left) / 2).toFixed(2));
+  }
+  if (Number.isFinite(right)) return right;
+  if (Number.isFinite(left)) return left;
+  return null;
+}
+
+function calculateAsymmetryIndex(right, left) {
+  if (!Number.isFinite(right) || !Number.isFinite(left)) return null;
+  const maxSide = Math.max(right, left);
+  if (!Number.isFinite(maxSide) || maxSide <= 0) return null;
+  return Number((Math.abs(right - left) / maxSide * 100).toFixed(2));
+}
+
+function buildPerimetrosBilateralPayload(numericFields = {}) {
+  const payload = {};
+  BILATERAL_MEMBER_FIELDS.forEach((field) => {
+    payload[`${field.key}D`] = Number.isFinite(numericFields?.[`${field.key}D`])
+      ? Number(Number(numericFields[`${field.key}D`]).toFixed(2))
+      : null;
+    payload[`${field.key}E`] = Number.isFinite(numericFields?.[`${field.key}E`])
+      ? Number(Number(numericFields[`${field.key}E`]).toFixed(2))
+      : null;
+  });
+  return payload;
+}
+
+function buildPerimetrosAsymmetryPayload(rows = []) {
+  if (!Array.isArray(rows)) return {};
+  const payload = {};
+  rows.forEach((row) => {
+    if (!row?.key) return;
+    payload[row.key] = Number.isFinite(row?.asymmetryPct) ? row.asymmetryPct : null;
+  });
+  return payload;
+}
+
 function parseNumeric(value) {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -1930,14 +2298,14 @@ function resolveFieldLabel(fieldKey) {
     cinturaCm: 'Cintura',
     quadrilCm: 'Quadril',
     pescocoCm: 'Pescoco',
-    bracoRelaxadoCm: 'Braco relaxado',
-    bracoContraidoCm: 'Braco contraido',
-    antebracoCm: 'Antebraco',
+    bracoRelaxadoCm: 'Braço relaxado',
+    bracoContraidoCm: 'Braço contraído',
+    antebracoCm: 'Antebraço',
     coxaProximalCm: 'Coxa proximal',
     coxaMedialCm: 'Coxa medial',
     panturrilhaCm: 'Panturrilha',
-    toraxInspiradoCm: 'Torax inspirado',
-    toraxExpiradoCm: 'Torax expirado'
+    toraxInspiradoCm: 'Tórax inspirado',
+    toraxExpiradoCm: 'Tórax expirado'
   };
   return map[fieldKey] || fieldKey;
 }
@@ -2310,3 +2678,4 @@ function formatProfileSummary(age, sex, weightKg, heightCm, fatFreeMassKg) {
   if (!segments.length) return 'dados incompletos';
   return segments.join(' | ');
 }
+

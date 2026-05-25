@@ -15,6 +15,7 @@ import { Paciente } from '../pacientes/paciente.entity';
 import { User } from '../users/user.entity';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { ObservabilityService } from '../observability/observability.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import {
   AuthenticatedUser,
   hasGlobalAccess,
@@ -22,6 +23,13 @@ import {
   isStudentMemberRole,
   normalizeRole
 } from '../auth/access-control';
+
+function formatDateTimeBr(date?: string | null, time?: string | null): string {
+  if (!date) return 'data a confirmar';
+  const [year, month, day] = String(date).split('-');
+  const datePart = `${day}/${month}/${year}`;
+  return time ? `${datePart} às ${time}` : datePart;
+}
 
 type FiltrosAgendamento = {
   pacienteId?: string;
@@ -50,7 +58,8 @@ export class AgendamentosService {
     @InjectRepository(Paciente) private pacientesRepo: Repository<Paciente>,
     @InjectRepository(User) private usersRepo: Repository<User>,
     private realtime: RealtimeGateway,
-    @Optional() private readonly observability?: ObservabilityService
+    @Optional() private readonly observability?: ObservabilityService,
+    @Optional() private readonly notificacoes?: NotificacoesService
   ) {}
 
   private recordQuery(label: string, startedAt: number, context = 'GET /agendamentos') {
@@ -362,7 +371,7 @@ export class AgendamentosService {
         throw new ForbiddenException('Sem permissao para criar agendamento para outro aluno.');
       }
       payload.alunoId = user.id;
-      payload.alunoNome = payload.alunoNome || user.name || '';
+      payload.alunoNome = user.name || '';
     }
 
     const paciente = await this.resolvePacienteOrThrow(payload.pacienteId);
@@ -373,13 +382,13 @@ export class AgendamentosService {
     }
     if (paciente?.alunoResponsavelId) {
       payload.alunoId = payload.alunoId || paciente.alunoResponsavelId;
-      payload.alunoNome = payload.alunoNome || paciente.alunoResponsavelNome || '';
-      payload.pacienteNome = payload.pacienteNome || paciente.nome || '';
+      payload.alunoNome = paciente.alunoResponsavelNome || '';
+      payload.pacienteNome = paciente.nome || '';
     }
     this.ensurePacienteAlunoConsistency(paciente, payload.alunoId);
     const aluno = await this.resolveAlunoOrThrow(payload.alunoId);
     if (aluno) {
-      payload.alunoNome = payload.alunoNome || aluno.name;
+      payload.alunoNome = aluno.name;
     }
 
     if (!dto.date || !dto.time) {
@@ -422,6 +431,7 @@ export class AgendamentosService {
       });
     }
 
+    void this.dispatchAppointmentNotification('agendada', saved, paciente);
     return saved;
   }
 
@@ -512,10 +522,10 @@ export class AgendamentosService {
       this.normalizeAppointmentType(agendamento.appointmentType)
     );
     if (nextPaciente?.nome) {
-      normalizedPayload.pacienteNome = normalizedPayload.pacienteNome || nextPaciente.nome;
+      normalizedPayload.pacienteNome = nextPaciente.nome;
     }
     if (nextAluno?.name) {
-      normalizedPayload.alunoNome = normalizedPayload.alunoNome || nextAluno.name;
+      normalizedPayload.alunoNome = nextAluno.name;
     }
     if (Object.prototype.hasOwnProperty.call(payloadDto, 'evaluations')) {
       const normalizedEvaluations = this.normalizeEvaluations(payloadDto.evaluations);
@@ -570,6 +580,7 @@ export class AgendamentosService {
             updatePayload.status = 'Lista de Espera';
           }
           await this.pacientesRepo.update(pacienteId, updatePayload);
+          void this.dispatchAppointmentNotification('falta', saved, paciente);
         }
       }
     }
@@ -660,11 +671,73 @@ export class AgendamentosService {
     this.realtime.emit('agendamentos.updated', result.sourceSaved);
     this.realtime.emit('agendamentos.created', result.newSaved);
 
+    const pacienteParaNotif = result.newSaved.pacienteId
+      ? await this.pacientesRepo.findOne({ where: { id: result.newSaved.pacienteId } })
+      : null;
+    void this.dispatchAppointmentNotification('remarcada', result.newSaved, pacienteParaNotif);
+
     return {
       success: true,
       source: result.sourceSaved,
       rescheduled: result.newSaved
     };
+  }
+
+  private async dispatchAppointmentNotification(
+    event: 'agendada' | 'remarcada' | 'falta',
+    agendamento: Agendamento,
+    paciente: Paciente | null
+  ): Promise<void> {
+    if (!this.notificacoes) return;
+    try {
+      const dtLabel = formatDateTimeBr(agendamento.date, agendamento.time);
+      const atletaNome = paciente?.nome || 'Atleta';
+      const atletaUserId = paciente?.atletaUserId;
+      const alunoId = agendamento.alunoId;
+
+      if (event === 'agendada') {
+        // Notifica o atleta
+        if (atletaUserId) {
+          await this.notificacoes.createForUsers([atletaUserId], {
+            titulo: 'Consulta agendada',
+            mensagem: `Sua consulta foi agendada para ${dtLabel}. Fique atento ao horário!`,
+            tipo: 'agendamento',
+          });
+        }
+        // Notifica o membro da liga responsável
+        if (alunoId) {
+          await this.notificacoes.createForUsers([alunoId], {
+            titulo: 'Consulta agendada',
+            mensagem: `Consulta com ${atletaNome} agendada para ${dtLabel}.`,
+            tipo: 'agendamento',
+          });
+        }
+      } else if (event === 'remarcada') {
+        if (atletaUserId) {
+          await this.notificacoes.createForUsers([atletaUserId], {
+            titulo: 'Consulta remarcada',
+            mensagem: `Sua consulta foi remarcada para ${dtLabel}.`,
+            tipo: 'agendamento',
+          });
+        }
+        if (alunoId) {
+          await this.notificacoes.createForUsers([alunoId], {
+            titulo: 'Consulta remarcada',
+            mensagem: `Consulta com ${atletaNome} remarcada para ${dtLabel}.`,
+            tipo: 'agendamento',
+          });
+        }
+      } else if (event === 'falta') {
+        // Notifica supervisores sobre a falta
+        await this.notificacoes.createForRoles(['professor', 'coordenador'], {
+          titulo: 'Falta registrada',
+          mensagem: `${atletaNome} não compareceu à consulta de ${dtLabel}. Verifique risco de inativação.`,
+          tipo: 'alerta_clinico',
+        });
+      }
+    } catch {
+      // Best-effort — não interrompe o fluxo
+    }
   }
 
   async remove(id: string) {

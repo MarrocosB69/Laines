@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Layers } from 'lucide-react';
 import MiniSparkline from '../../shared/MiniSparkline';
 import { Button } from '../../ui';
@@ -8,6 +8,7 @@ import {
   calculateIntegratedBodyComposition,
   validatePhysiologicalRange
 } from '../../../services/calculationEngine';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
 import './ComposicaoCorporalIntegradaForm.css';
 
@@ -35,12 +36,15 @@ const ComposicaoCorporalIntegradaForm = ({
   onSalvar,
   onAutoSave,
   readOnly = false,
+  onboardingContext,
   baselineAnthropometry,
   moduleSnapshot,
   moduleHistory = [],
   allEvaluationHistory = [],
   currentSessionId
 }) => {
+  const { confirm } = useUiFeedback();
+
   const [dados, setDados] = useState(createInitialData);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
@@ -268,7 +272,7 @@ const ComposicaoCorporalIntegradaForm = ({
       await dispatchSave(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
         setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
@@ -284,20 +288,48 @@ const ComposicaoCorporalIntegradaForm = ({
       setError('Nenhuma fonte valida disponivel para composicao integrada.');
       return;
     }
-    if (outlier && !window.confirm(`Valor fora da faixa fisiologica: ${outlier}\nDeseja salvar mesmo assim?`)) {
-      return;
+    if (outlier) {
+      const proceed = await confirm({
+        title: 'Valor fora da faixa fisiológica',
+        details: [outlier],
+        confirmLabel: 'Salvar mesmo assim',
+        cancelLabel: 'Corrigir',
+        variant: 'warning'
+      });
+      if (!proceed) return;
     }
     await executeSave(false);
-  }, [executeSave, hasOfficial, onSalvar, outlier]);
+  }, [confirm, executeSave, hasOfficial, onSalvar, outlier]);
 
   useEffect(() => {
     if (readOnly || !onAutoSave || !hasUserInput || !hasOfficial) return undefined;
     clearTimeout(autoSaveRef.current);
-    autoSaveRef.current = setTimeout(() => executeSave(true), 900);
+    autoSaveRef.current = setTimeout(() => executeSave(true), 3500);
     return () => clearTimeout(autoSaveRef.current);
   }, [executeSave, hasOfficial, hasUserInput, onAutoSave, readOnly]);
 
   const tmbRows = composition?.tmbComparative?.rows || [];
+  const onboardingResumo = useMemo(() => {
+    if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+    const resumo = [];
+    const modalidade = toText(onboardingContext?.modalidadePrincipal);
+    const frequencia = toNumber(onboardingContext?.frequenciaSemanal);
+    if (modalidade) resumo.push(`Modalidade: ${modalidade}`);
+    if (Number.isFinite(frequencia)) resumo.push(`Frequencia: ${frequencia}x/sem`);
+    return resumo.slice(0, 2);
+  }, [onboardingContext]);
+  const integridadeIntegracao = useMemo(() => {
+    const sourceCount = Array.isArray(composition?.sources) ? composition.sources.length : 0;
+    const checklist = [
+      sourceCount > 0,
+      Boolean(composition?.official?.sourceId),
+      Boolean(composition?.selectedTmb?.formulaId)
+    ];
+    const score = checklist.filter(Boolean).length;
+    if (score === 3) return `Integracao alta (${sourceCount} fonte(s) mapeadas na sessao).`;
+    if (score === 2) return `Integracao moderada (${sourceCount} fonte(s) com ajustes pendentes).`;
+    return 'Integracao baixa: complete fontes de composicao e formula TMB.';
+  }, [composition]);
 
   return (
     <div className={`eval-card composicao-integrada-form composicao-integrada-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -307,6 +339,15 @@ const ComposicaoCorporalIntegradaForm = ({
           <h3 className="eval-title">Composicao corporal integrada</h3>
           <p className="eval-subtitle">Fonte oficial por hierarquia clinica, comparativo de metodos e TMB/GET da sessao.</p>
         </div>
+      </div>
+
+      {onboardingResumo.length > 0 ? (
+        <div className="eval-note">
+          <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
+        </div>
+      ) : null}
+      <div className="eval-note">
+        <strong>Status de integracao composicional:</strong> {integridadeIntegracao}
       </div>
 
       <div className="eval-section">
@@ -577,3 +618,4 @@ function buildSparkline(rows, key, current) {
   if (Number.isFinite(current)) values.push(current);
   return values.slice(-6);
 }
+

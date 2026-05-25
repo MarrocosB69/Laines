@@ -15,8 +15,9 @@ export const generateInstitutionalEmail = (fullName, domain = EMAIL_DOMAIN) => {
 
   const firstName = tokens[0];
   const lastName = tokens.length > 1 ? tokens[tokens.length - 1] : '';
-  const localPart = lastName ? `${firstName}.${lastName}` : firstName;
+  const localPart = lastName && lastName !== firstName
+    ? `${firstName}.${lastName}`
+    : firstName;
 
   return `${localPart}@${domain}`;
 };
-

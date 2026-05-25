@@ -127,6 +127,35 @@
   --animation-float: float 3s ease-in-out infinite;
   --animation-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   --animation-glow: glow 2s ease-in-out infinite alternate;
+
+  /* ── Design tokens --pn-* (globais) ──────────────────────
+     Mesmos valores definidos em .pron-root; promovidos aqui
+     para que componentes fora do prontuário possam usá-los. */
+  --pn-accent:        #56ADDB;
+  --pn-surface:       #ffffff;
+  --pn-surface-2:     #f8fafc;
+  --pn-surface-3:     #f1f5f9;
+  --pn-border:        rgba(29, 51, 80, 0.09);
+  --pn-border-low:    rgba(29, 51, 80, 0.05);
+  --pn-border-mid:    rgba(29, 51, 80, 0.15);
+  --pn-border-strong: rgba(29, 51, 80, 0.24);
+  --pn-text-1:        #1D3350;
+  --pn-text-2:        #3d5a72;
+  --pn-text-3:        #607b8d;
+  --pn-text-4:        #94a3b8;
+  --pn-navy:          #1D3350;
+  --pn-green:         #74A865;
+  --pn-ok:            #16a34a;
+  --pn-ok-bg:         rgba(22, 163, 74, 0.08);
+  --pn-warn:          #d97706;
+  --pn-warn-bg:       rgba(217, 119, 6, 0.09);
+  --pn-danger:        #dc2626;
+  --pn-danger-bg:     rgba(220, 38, 38, 0.08);
+  --pn-info-bg:       rgba(86, 173, 219, 0.08);
+  --pn-shadow-1:      0 2px 8px rgba(29, 51, 80, 0.08);
+  --pn-r-1:           8px;
+  --pn-r-2:           12px;
+  --pn-r-3:           16px;
 }
 
 /* ============================================

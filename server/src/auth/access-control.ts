@@ -5,6 +5,8 @@ export type AuthenticatedUser = {
   email?: string;
   role?: string;
   name?: string;
+  diretoria?: string | null;
+  coordAtendimento?: boolean;
 };
 
 const GLOBAL_ACCESS_ROLES = new Set<string>([...ADMIN_AREA_ROLES]);

@@ -93,11 +93,20 @@ const StudentView = () => {
     setSelectedPatient(null);
   };
 
+  const handleAgendar = (patient) => {
+    setAgendaState((prev) => ({
+      ...(prev || {}),
+      searchTerm: patient?.nome || '',
+    }));
+    setView('agenda');
+  };
+
   const renderContent = () => {
     if (view === 'dashboard') {
       return (
         <StudentDashboard
           onSelectPatient={(patient) => handleOpenPatient(patient, { sourceView: 'dashboard' })}
+          onAgendar={handleAgendar}
         />
       );
     }
@@ -118,6 +127,7 @@ const StudentView = () => {
       return (
         <StudentDashboard
           onSelectPatient={(patient) => handleOpenPatient(patient, { sourceView: 'dashboard' })}
+          onAgendar={handleAgendar}
           defaultViewMode="list"
           showTips={false}
         />

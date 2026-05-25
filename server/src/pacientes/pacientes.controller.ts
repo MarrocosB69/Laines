@@ -95,6 +95,15 @@ export class PacientesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':id/onboarding-status')
+  onboardingStatus(
+    @Req() req: { user: AuthenticatedUser },
+    @Param('id', new ParseUUIDPipe()) id: string
+  ) {
+    return this.pacientesService.getAthleteOnboardingStatus(id, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(
     @Req() req: { user: AuthenticatedUser },

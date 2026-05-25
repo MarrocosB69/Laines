@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Utensils, Save, BarChart3 } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
@@ -9,7 +9,7 @@ import './AvaliacaoAlimentarNOVA.css';
 const ORIGENS_DISPONIVEIS = [
   { value: 'manual', label: 'Manual' },
   { value: 'questnova', label: 'QuestNova' },
-  { value: 'importacao', label: 'Importacao externa' }
+  { value: 'importacao', label: 'Importação externa' }
 ];
 
 const NOVA_GROUP_FIELDS = [
@@ -221,7 +221,7 @@ const AvaliacaoAlimentarNOVA = ({
       }));
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (dispatchError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
         setError('Nao foi possivel salvar a avaliacao alimentar.');
@@ -233,7 +233,7 @@ const AvaliacaoAlimentarNOVA = ({
     dataAvaliacao,
     hasValues,
     inconsistenciaKcal,
-    moduleSnapshot?.sessaoId,
+    moduleSnapshot,
     novaEvaluation,
     onAutoSave,
     onSalvar,
@@ -250,7 +250,7 @@ const AvaliacaoAlimentarNOVA = ({
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       dispatchSalvar(true);
-    }, 900);
+    }, 3500);
 
     return () => clearTimeout(autoSaveRef.current);
   }, [dispatchSalvar, hasValues, onAutoSave, readOnly]);
@@ -521,3 +521,4 @@ function normalizeOrigem(value) {
   if (token === 'importacao') return 'importacao';
   return 'manual';
 }
+

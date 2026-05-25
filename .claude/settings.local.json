@@ -18,7 +18,23 @@
       "Bash(timeout 8 npx ts-node -e \"console.log\\(''ts-node ok''\\)\")",
       "Read(//c/Users/bruno/**)",
       "Bash(npm create:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npx cap:*)",
+      "Bash(find c:/Users/bruno/laines-mobile/src -name App.* -o -name routes* -o -name Router*)",
+      "Bash(python -c \"import sys,json; p=json.load\\(sys.stdin\\); print\\('scripts:', list\\(p.get\\('scripts',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(Object.keys\\(p.scripts\\)\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('@capacitor/core:', p.dependencies['@capacitor/core']\\); console.log\\('react:', p.dependencies['react']\\)\")",
+      "Bash(where adb:*)",
+      "Bash(adb devices:*)",
+      "Bash(\"C:/Users/bruno/AppData/Local/Android/Sdk/platform-tools/adb.exe\" devices:*)",
+      "Bash(ls c:/Users/bruno/laines-app/src/views/admin/Reports*)",
+      "Bash(ls c:/Users/bruno/laines-mobile/android/gradlew*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\bruno\\laines-mobile\\src",
+      "c:\\Users\\bruno\\laines-mobile",
+      "c:\\Users\\bruno\\.claude\\projects\\c--Users-bruno-laines-app\\memory"
     ]
   }
 }

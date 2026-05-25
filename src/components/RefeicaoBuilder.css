@@ -1,0 +1,698 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: none;
+}
+
+/* ─── Card container ─────────────────────────────────────── */
+.refeicao-card {
+  background: #ffffff;
+  border: 1px solid rgba(29, 51, 80, 0.10);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(29, 51, 80, 0.06);
+  transition: box-shadow 0.2s, border-color 0.18s;
+}
+
+.refeicao-card[data-semaforo="verde"]    { border-top: 3px solid #16a34a; }
+.refeicao-card[data-semaforo="amarelo"]  { border-top: 3px solid #d97706; }
+.refeicao-card[data-semaforo="vermelho"] { border-top: 3px solid #dc2626; }
+.refeicao-card[data-semaforo="neutro"]   { border-top: 3px solid rgba(29, 51, 80, 0.15); }
+
+.refeicao-card:hover {
+  box-shadow: 0 3px 12px rgba(29, 51, 80, 0.10), 0 1px 4px rgba(29, 51, 80, 0.06);
+}
+
+.refeicao-card:focus-within {
+  border-color: rgba(29, 51, 80, 0.20);
+  box-shadow: 0 0 0 3px rgba(86, 173, 219, 0.11), 0 2px 8px rgba(29, 51, 80, 0.08);
+}
+
+/* ─── Header ─────────────────────────────────────────────── */
+.refeicao-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f3f8fb;
+  border-bottom: 1px solid rgba(29, 51, 80, 0.07);
+}
+
+.refeicao-header-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.btn-collapse-refeicao {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-collapse-refeicao:hover {
+  background: #e8f1f6;
+  color: #1D3350;
+}
+
+.btn-collapse-refeicao svg {
+  transition: transform 0.22s ease;
+}
+
+.btn-collapse-refeicao.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.refeicao-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.refeicao-header-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.refeicao-macro-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.refeicao-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* ─── Badge número ───────────────────────────────────────── */
+.refeicao-numero {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: linear-gradient(140deg, #1D3350, #264f6b);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(29, 51, 80, 0.22);
+}
+
+/* ─── Inputs de nome e hora ──────────────────────────────── */
+.refeicao-nome-input {
+  flex: 1;
+  min-width: 120px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #0f172a;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.refeicao-nome-input:hover {
+  border-color: rgba(29, 51, 80, 0.18);
+  background: #ffffff;
+}
+
+.refeicao-nome-input:focus {
+  outline: none;
+  border-color: #56ADDB;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+.refeicao-hora-input {
+  width: 94px;
+  height: 28px;
+  padding: 0 7px;
+  font-size: 11px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #475569;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.refeicao-hora-input:focus {
+  outline: none;
+  border-color: #56ADDB;
+  box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+.refeicao-vinculo-select {
+  width: 80px;
+}
+
+/* ─── Macro chips ────────────────────────────────────────── */
+.macro-chip {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2.5px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.macro-kcal { background: rgba(86, 173, 219, 0.13); color: #1D3350; }
+.macro-cho  { background: #fef3c7; color: #92400e; }
+.macro-ptn  { background: #ede9fe; color: #5b21b6; }
+.macro-lip  { background: #d1fae5; color: #065f46; }
+
+/* ─── Toggle peri-treino ─────────────────────────────────── */
+.toggle-treino {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  color: #475569;
+  cursor: pointer;
+  padding: 2.5px 7px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  user-select: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.toggle-treino:hover {
+  background: #f3f8fb;
+  border-color: rgba(29, 51, 80, 0.22);
+}
+
+.toggle-treino input:focus-visible {
+  outline: 2px solid rgba(86, 173, 219, 0.3);
+  outline-offset: 2px;
+}
+
+/* ─── Progress bar kcal por refeição ─────────────────────── */
+.refeicao-kcal-progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.refeicao-kcal-pct {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #64748b;
+  min-width: 26px;
+  text-align: right;
+}
+
+.refeicao-kcal-bar {
+  width: 68px;
+  height: 5px;
+  background: rgba(29, 51, 80, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.refeicao-kcal-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.refeicao-kcal-abs {
+  font-size: 9px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* ─── Botão remover refeição ─────────────────────────────── */
+.btn-remover-refeicao {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn-remover-refeicao:hover {
+  background: #fff1f2;
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.28);
+}
+
+/* ─── Body (alimentos | substitutos) ────────────────────── */
+.refeicao-body {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  gap: 0;
+  padding: 14px;
+}
+
+.refeicao-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0 12px;
+}
+
+.refeicao-divider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(29, 51, 80, 0.08);
+}
+
+.refeicao-divider-label {
+  position: relative;
+  z-index: 1;
+  background: #ffffff;
+  padding: 4px 0;
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #94a3b8;
+}
+
+.refeicao-col {
+  min-width: 0;
+}
+
+.refeicao-col-label {
+  margin: 0 0 8px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.refeicao-col-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(86, 173, 219, 0.13);
+  color: #1D3350;
+  font-size: 8.5px;
+  font-weight: 800;
+}
+
+/* ─── Buscador de alimentos ──────────────────────────────── */
+.busca-alimento-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.busca-alimento-row .alimento-buscador {
+  width: 100%;
+  gap: 8px;
+}
+
+.busca-alimento-row .alimento-buscador__row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.busca-alimento-row .alimento-buscador__search {
+  flex: 1;
+  height: 30px;
+  padding: 0 9px;
+  font-size: 11px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #f3f8fb;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.busca-alimento-row .alimento-buscador__search input,
+.busca-alimento-row .busca-input {
+  border: none;
+  width: 100%;
+  height: 100%;
+  font-size: 11px;
+  background: transparent;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+.busca-alimento-row .alimento-buscador__search:focus-within {
+  outline: none;
+  border-color: #56ADDB;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+.busca-alimento-row .busca-unidade {
+  width: 84px;
+  height: 30px;
+  padding: 0 6px;
+  font-size: 11px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.busca-alimento-row .busca-qty {
+  width: 54px;
+  height: 30px;
+  padding: 0 6px;
+  font-size: 11px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.busca-alimento-row .busca-unidade:focus,
+.busca-alimento-row .busca-qty:focus {
+  outline: none;
+  border-color: #56ADDB;
+  box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+.busca-alimento-row .btn-adicionar-alimento {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: linear-gradient(140deg, #1D3350, #264f6b);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(29, 51, 80, 0.2);
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.busca-alimento-row .btn-adicionar-alimento:hover {
+  opacity: 0.9;
+  box-shadow: 0 3px 10px rgba(29, 51, 80, 0.26);
+}
+
+.busca-alimento-row .btn-adicionar-alimento:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ─── Lista de alimentos ─────────────────────────────────── */
+.alimentos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(29, 51, 80, 0.07);
+}
+
+.alimento-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 11px;
+  transition: background 0.1s;
+}
+
+.alimento-item:hover {
+  background: #e8f1f6 !important;
+}
+
+.alimento-zebra {
+  background: #f3f8fb;
+}
+
+.alimento-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+}
+
+.alimento-nome {
+  color: #1e293b;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alimento-macros-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.alimento-macro-sep {
+  font-size: 9px;
+  color: #cbd5e1;
+}
+
+.alimento-macro-tag {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.alimento-macro-cho { color: #92400e; }
+.alimento-macro-ptn { color: #5b21b6; }
+.alimento-macro-lip { color: #065f46; }
+
+.alimento-qty {
+  font-size: 9.5px;
+  color: #64748b;
+  min-width: 48px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.alimento-kcal {
+  font-size: 10px;
+  font-weight: 700;
+  color: #1D3350;
+  min-width: 54px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.btn-remover-alimento {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #cbd5e1;
+  padding: 3px;
+  line-height: 1;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.btn-remover-alimento:hover {
+  color: #dc2626;
+  background: #fff1f2;
+}
+
+.refeicao-empty {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 11px;
+  font-style: italic;
+  color: #94a3b8;
+  border: 1.5px dashed rgba(29, 51, 80, 0.11);
+  border-radius: 8px;
+  text-align: center;
+  background: #f8fbfc;
+}
+
+/* ─── Footer semáforo ────────────────────────────────────── */
+.refeicao-footer {
+  display: flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-top: 1px solid rgba(29, 51, 80, 0.07);
+  background: #ffffff;
+}
+
+.refeicao-semaforo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3.5px 10px;
+  border-radius: 999px;
+}
+
+.refeicao-semaforo .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.refeicao-semaforo.verde    { background: #f0fdf4; color: #16a34a; }
+.refeicao-semaforo.amarelo  { background: #fffbeb; color: #d97706; }
+.refeicao-semaforo.vermelho { background: #fff1f2; color: #dc2626; }
+.refeicao-semaforo.neutro   { background: #f3f8fb; color: #475569; }
+
+/* ─── Orientações (colapsível) ───────────────────────────── */
+.refeicao-orientacoes {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(29, 51, 80, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.btn-add-orientacoes {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10.5px;
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+  transition: color 0.15s;
+}
+
+.btn-add-orientacoes:hover {
+  color: #1D3350;
+}
+
+.form-field-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+}
+
+.orientacoes-textarea {
+  width: 100%;
+  min-height: 50px;
+  padding: 7px 9px;
+  font-size: 11px;
+  border: 1px solid rgba(29, 51, 80, 0.14);
+  border-radius: 6px;
+  background: #f3f8fb;
+  color: #1e293b;
+  font-family: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.orientacoes-textarea:focus {
+  outline: none;
+  border-color: #56ADDB;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+/* ─── Responsivo ─────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .refeicao-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .refeicao-divider {
+    flex-direction: row;
+    margin: 4px 0;
+  }
+
+  .refeicao-divider::before {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+  }
+
+  .refeicao-divider-label {
+    padding: 0 6px;
+  }
+
+  .refeicao-header-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .refeicao-meta-right {
+    flex-wrap: wrap;
+  }
+
+  .busca-alimento-row .alimento-buscador__row {
+    flex-wrap: wrap;
+  }
+
+  .busca-alimento-row .alimento-buscador__search {
+    min-width: 100%;
+  }
+}

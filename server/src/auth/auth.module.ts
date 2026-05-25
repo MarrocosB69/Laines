@@ -8,14 +8,17 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { LoginAttemptsService } from './login-attempts.service';
+import { LoginAttempt } from './login-attempt.entity';
 import { RefreshTokensService } from './refresh-tokens.service';
 import { RefreshToken } from './refresh-token.entity';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
     UsersModule,
+    SettingsModule,
     ObservabilityModule,
-    TypeOrmModule.forFeature([RefreshToken]),
+    TypeOrmModule.forFeature([RefreshToken, LoginAttempt]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

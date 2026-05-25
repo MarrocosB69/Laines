@@ -9,8 +9,6 @@ import {
   Shield,
   Edit,
   Trash2,
-  Copy,
-  Check,
   GraduationCap,
   Briefcase,
   Loader2,
@@ -79,7 +77,6 @@ const UserManagement = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
   const [error, setError] = useState(null);
-  const [copiedUserId, setCopiedUserId] = useState(null);
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
@@ -118,9 +115,9 @@ const UserManagement = () => {
 
   const handleDelete = async (id) => {
     const accepted = await confirm({
-      title: 'Remover usuário',
-      message: 'Tem certeza que deseja remover este usuário?',
-      confirmLabel: 'Remover',
+      title: 'Inativar usuário',
+      message: 'Este usuário sairá das listagens ativas e terá as sessões revogadas, mas o histórico será preservado. Deseja continuar?',
+      confirmLabel: 'Inativar',
       cancelLabel: 'Cancelar',
       variant: 'danger'
     });
@@ -132,15 +129,15 @@ const UserManagement = () => {
       setUsers((prev) => prev.filter((item) => item.id !== id));
       notify({
         type: 'success',
-        title: 'Usuário removido',
-        message: 'Registro removido com sucesso.'
+        title: 'Usuário inativado',
+        message: 'Registro preservado e ocultado das listagens ativas.'
       });
     } catch (deleteError) {
-      console.error('Erro ao remover usuário:', deleteError);
+      console.error('Erro ao inativar usuário:', deleteError);
       notify({
         type: 'error',
-        title: 'Erro ao remover usuário',
-        message: getApiErrorMessage(deleteError, 'Não foi possível remover o usuário.')
+        title: 'Erro ao inativar usuário',
+        message: getApiErrorMessage(deleteError, 'Não foi possível inativar o usuário.')
       });
     } finally {
       setDeletingUserId(null);
@@ -249,32 +246,6 @@ const UserManagement = () => {
     });
   }, [filteredUsers, notify]);
 
-  const handleCopyTemporaryPassword = useCallback(async (user) => {
-    if (!user?.temporaryPassword) return;
-    try {
-      if (!navigator?.clipboard?.writeText) {
-        throw new Error('Clipboard indisponível');
-      }
-      await navigator.clipboard.writeText(user.temporaryPassword);
-      setCopiedUserId(user.id);
-      window.setTimeout(() => {
-        setCopiedUserId((current) => (current === user.id ? null : current));
-      }, 1600);
-      notify({
-        type: 'success',
-        title: 'Senha copiada',
-        message: `Senha provisória de ${user.name || 'usuário'} copiada.`
-      });
-    } catch (copyError) {
-      console.error('Erro ao copiar senha provisória:', copyError);
-      notify({
-        type: 'error',
-        title: 'Não foi possível copiar',
-        message: 'Copie manualmente a senha provisória exibida na tabela.'
-      });
-    }
-  }, [notify]);
-
   const handleResetPassword = useCallback(async (user) => {
     if (!user?.id) return;
 
@@ -301,7 +272,7 @@ const UserManagement = () => {
       notify({
         type: 'success',
         title: 'Senha redefinida',
-        message: 'Nova senha provisória gerada e exibida na lista de usuários.'
+        message: 'Credencial provisória redefinida com sucesso.'
       });
     } catch (resetError) {
       console.error('Erro ao redefinir senha:', resetError);
@@ -597,20 +568,9 @@ const UserManagement = () => {
                             <span className="admin-password-state admin-password-state--done">Senha alterada</span>
                             <p className="admin-password-hint">Usuário já definiu a senha pessoal.</p>
                           </>
-                        ) : user.temporaryPassword ? (
+                        ) : user.hasTemporaryPassword ? (
                           <>
-                            <div className="admin-temp-password-row">
-                              <code className="admin-temp-password">{user.temporaryPassword}</code>
-                              <button
-                                type="button"
-                                className="admin-temp-copy-btn"
-                                onClick={() => handleCopyTemporaryPassword(user)}
-                                title="Copiar senha provisória"
-                                disabled={isRowBusy}
-                              >
-                                {copiedUserId === user.id ? <Check size={14} /> : <Copy size={14} />}
-                              </button>
-                            </div>
+                            <span className="admin-password-state admin-password-state--pending">Credencial provisória ativa</span>
                             <p className="admin-password-hint">Senha provisória ativa (primeiro acesso).</p>
                           </>
                         ) : (
@@ -648,7 +608,7 @@ const UserManagement = () => {
                             type="button"
                             onClick={() => handleDelete(user.id)}
                             className="admin-action-btn admin-action-btn--delete"
-                            title="Excluir"
+                            title="Inativar"
                             disabled={isRowBusy}
                           >
                             {deletingUserId === user.id ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}

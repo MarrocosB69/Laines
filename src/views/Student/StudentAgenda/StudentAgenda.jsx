@@ -6,7 +6,6 @@ import {
   Clock,
   ListChecks,
   CalendarDays,
-  Download,
   RefreshCcw,
   Loader2,
   X
@@ -498,69 +497,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
     return APPOINTMENT_TYPE_LABELS[key] || 'Não informado';
   }, []);
 
-  const exportAgendaCsv = useCallback(() => {
-    if (filteredAppointments.length === 0) {
-    notify({
-      type: 'warning',
-      title: 'Sem dados para exportar',
-      message: 'Ajuste os filtros para exportar a agenda atual.'
-    });
-      return;
-    }
 
-    const sanitizeCsvValue = (value) => {
-      const raw = value === null || value === undefined ? '' : String(value);
-      if (raw.includes(';') || raw.includes('"') || raw.includes('\n')) {
-        return `"${raw.replace(/"/g, '""')}"`;
-      }
-      return raw;
-    };
-
-    const headers = [
-      'Data',
-      'Horário',
-      'Atleta',
-      'Tipo',
-      'Status',
-      'Avaliações',
-      'Remarcada para',
-      'Realizada em',
-      'Falta em'
-    ];
-
-    const sorted = [...filteredAppointments].sort((a, b) => (a.dateObj?.getTime() || 0) - (b.dateObj?.getTime() || 0));
-    const rows = sorted.map((item) => [
-      item.dateObj ? formatDate(item.dateObj) : '---',
-      item.time || '--:--',
-      item.pacienteNome || 'Atleta',
-      getAppointmentTypeLabel(item),
-      STATUS_LABELS[item.status || 'agendada'] || (item.status || 'Sem status'),
-      String((item.evaluations || []).length),
-      formatDateTimeValue(item.remarcadaPara),
-      formatDateTimeValue(item.completedAt),
-      formatDateTimeValue(item.faltouEm)
-    ]);
-
-    const csv = [headers, ...rows]
-      .map((line) => line.map(sanitizeCsvValue).join(';'))
-      .join('\n');
-
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `agenda-aluno-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    window.URL.revokeObjectURL(url);
-
-    notify({
-      type: 'success',
-      title: 'Agenda exportada',
-      message: `${filteredAppointments.length} consultas exportadas em CSV.`
-    });
-  }, [filteredAppointments, formatDate, formatDateTimeValue, getAppointmentTypeLabel, notify]);
 
   if (loading) {
     return (
@@ -718,15 +655,6 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
               disabled={!hasAppliedFilters}
             >
               Limpar filtros
-            </button>
-            <button
-              type="button"
-              className="filter-btn agenda-export-btn"
-              onClick={exportAgendaCsv}
-              disabled={filteredAppointments.length === 0 || loading || isRefreshing}
-            >
-              <Download size={14} />
-              Exportar CSV
             </button>
           </div>
           <div className="filter-group">

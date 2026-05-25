@@ -269,7 +269,6 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
 
       const payload = {
         name: formData.nome,
-        email: resolvedEmail,
         role: roleToSave,
         cpf: formData.cpf,
         dataNascimento: formData.dataNascimento,
@@ -299,7 +298,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
         notify({
           type: 'success',
           title: 'Usuário criado',
-          message: 'A conta foi criada com sucesso. Consulte a senha provisória na lista de usuários.'
+          message: 'A conta foi criada com sucesso e está com credencial provisória ativa.'
         });
       }
 

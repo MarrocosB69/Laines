@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Scale } from 'lucide-react';
 import MiniSparkline from '../../shared/MiniSparkline';
 import { Button } from '../../ui';
@@ -8,6 +8,7 @@ import {
   calculateBiaEvaluation,
   validatePhysiologicalRange
 } from '../../../services/calculationEngine';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
 import './BioimpedanciaForm.css';
 
@@ -41,14 +42,28 @@ const createInitialData = () => ({
   heightCm: '',
   ageYears: '',
   sex: '',
+  esportivo: createBioEsportivoData(),
   observacoes: ''
 });
+
+function createBioEsportivoData() {
+  return {
+    metAnterior: '',
+    checklistPreparo: {
+      jejum4h: false,
+      semExercicio24h: false,
+      bexigaVazia: false,
+      semMetais: false
+    }
+  };
+}
 
 const BioimpedanciaForm = ({
   pacienteId,
   onSalvar,
   onAutoSave,
   patient,
+  onboardingContext,
   baselineAnthropometry,
   moduleSnapshot,
   currentSessionId,
@@ -57,6 +72,8 @@ const BioimpedanciaForm = ({
   lockSharedAnthropometry = false,
   readOnly = false
 }) => {
+  const { confirm } = useUiFeedback();
+
   const [dados, setDados] = useState(createInitialData);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
@@ -127,6 +144,14 @@ const BioimpedanciaForm = ({
 
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
+    const esportivoRaw = asRecord(firstDefined(
+      dadosBrutos?.esportivo,
+      source?.esportivo
+    ));
+    const checklistRaw = asRecord(firstDefined(
+      esportivoRaw?.checklistPreparo,
+      esportivoRaw?.checklist_preparo
+    ));
 
     setDados((prev) => ({
       ...prev,
@@ -153,6 +178,19 @@ const BioimpedanciaForm = ({
       heightCm: toInputValue(firstDefined(dadosBrutos?.heightCm, dadosBrutos?.estaturaCm, source?.estatura_cm, source?.estatura), 1),
       ageYears: toInputValue(firstDefined(dadosBrutos?.ageYears, source?.idade), 0),
       sex: normalizeSexLabel(firstDefined(dadosBrutos?.sex, source?.sexo, source?.genero)),
+      esportivo: {
+        metAnterior: toInputValue(firstDefined(
+          esportivoRaw?.metAnterior,
+          esportivoRaw?.met_anterior,
+          prev?.esportivo?.metAnterior
+        ), 1),
+        checklistPreparo: {
+          jejum4h: normalizeBoolean(firstDefined(checklistRaw?.jejum4h, checklistRaw?.jejum_4h)),
+          semExercicio24h: normalizeBoolean(firstDefined(checklistRaw?.semExercicio24h, checklistRaw?.sem_exercicio_24h)),
+          bexigaVazia: normalizeBoolean(firstDefined(checklistRaw?.bexigaVazia, checklistRaw?.bexiga_vazia)),
+          semMetais: normalizeBoolean(firstDefined(checklistRaw?.semMetais, checklistRaw?.sem_metais))
+        }
+      },
       observacoes: toTextInput(firstDefined(dadosBrutos?.observacoes, source?.observacoes))
     }));
 
@@ -242,7 +280,7 @@ const BioimpedanciaForm = ({
       createComparisonRow('percentFat', '% Gordura', '%', currentMetrics.percentFat, previousMetrics.percentFat, firstMetrics.percentFat),
       createComparisonRow('leanMass', 'Massa magra', 'kg', currentMetrics.leanMass, previousMetrics.leanMass, firstMetrics.leanMass),
       createComparisonRow('ffmi', 'IMLG', '', currentMetrics.ffmi, previousMetrics.ffmi, firstMetrics.ffmi),
-      createComparisonRow('phase', 'Angulo de fase', 'graus', currentMetrics.phase, previousMetrics.phase, firstMetrics.phase)
+      createComparisonRow('phase', 'Ângulo de fase', 'graus', currentMetrics.phase, previousMetrics.phase, firstMetrics.phase)
     ];
   }, [
     evaluation?.derived?.ffmi,
@@ -282,10 +320,10 @@ const BioimpedanciaForm = ({
 
   const interpretation = useMemo(() => {
     const row = comparisonRows.find((item) => item.key === 'leanMass');
-    if (!row || !Number.isFinite(row.delta.deltaAbs)) return 'Sem comparacao suficiente para interpretar evolucao da BIA.';
-    if (Math.abs(row.delta.deltaAbs) < 0.001) return 'Massa magra estavel em relacao a ultima avaliacao.';
+    if (!row || !Number.isFinite(row.delta.deltaAbs)) return 'Sem comparação suficiente para interpretar evolução da BIA.';
+    if (Math.abs(row.delta.deltaAbs) < 0.001) return 'Massa magra estável em relação à última avaliação.';
     const direction = row.delta.deltaAbs > 0 ? 'aumentou' : 'reduziu';
-    return `Massa magra ${direction} ${formatNumber(Math.abs(row.delta.deltaAbs), 2)} kg em relacao a ultima avaliacao.`;
+    return `Massa magra ${direction} ${formatNumber(Math.abs(row.delta.deltaAbs), 2)} kg em relação à última avaliação.`;
   }, [comparisonRows]);
 
   const payloadDados = useMemo(() => {
@@ -293,6 +331,7 @@ const BioimpedanciaForm = ({
       current: evaluation?.inputNormalized?.percentFat,
       reference: previous?.metrics?.percentFat
     });
+    const esportivoPayload = buildBioEsportivoPayload(dados.esportivo);
 
     return {
       equipamento: toTextInput(dados.equipamento) || null,
@@ -316,6 +355,7 @@ const BioimpedanciaForm = ({
       estatura_cm: numberOrNull(heightCm, 1),
       idade: numberOrNull(ageYears, 0),
       sexo: sexToken,
+      esportivo: esportivoPayload,
       observacoes: toTextInput(dados.observacoes) || null,
       dados_brutos: {
         equipamento: toTextInput(dados.equipamento) || null,
@@ -339,6 +379,7 @@ const BioimpedanciaForm = ({
         heightCm: numberOrNull(heightCm, 1),
         ageYears: numberOrNull(ageYears, 0),
         sex: sexToken,
+        esportivo: esportivoPayload,
         importText: toTextInput(dados.importText) || null
       },
       resultados_calculados: {
@@ -389,7 +430,8 @@ const BioimpedanciaForm = ({
         weightKg: numberOrNull(weightKg, 2),
         heightCm: numberOrNull(heightCm, 1),
         ageYears: numberOrNull(ageYears, 0),
-        sex: sexToken
+        sex: sexToken,
+        esportivo: esportivoPayload
       },
       source: {
         mode: dados.entryMode,
@@ -412,6 +454,7 @@ const BioimpedanciaForm = ({
     dados.importText,
     dados.leanMassKg,
     dados.menstrualPhase,
+    dados.esportivo,
     dados.observacoes,
     dados.percentFat,
     dados.phaseAngle,
@@ -461,9 +504,11 @@ const BioimpedanciaForm = ({
       dados.equipamento,
       dados.observacoes
     ];
-    return candidates.some((value) => toTextInput(value) !== '');
+    if (candidates.some((value) => toTextInput(value) !== '')) return true;
+    return hasBioEsportivoValues(dados.esportivo);
   }, [
     dados.equipamento,
+    dados.esportivo,
     dados.fatMassKg,
     dados.leanMassKg,
     dados.observacoes,
@@ -473,6 +518,11 @@ const BioimpedanciaForm = ({
     dados.resistanceOhm,
     dados.tbwL
   ]);
+
+  const checklist = dados.esportivo?.checklistPreparo || {};
+  const isChecklistConfirmed = ['jejum4h', 'semExercicio24h', 'bexigaVazia', 'semMetais']
+    .every((key) => Boolean(checklist?.[key]));
+  const blockByChecklist = !readOnly && !isChecklistConfirmed;
 
   const dispatchSave = useCallback(async (auto = false) => {
     const dispatch = auto ? onAutoSave : onSalvar;
@@ -512,10 +562,10 @@ const BioimpedanciaForm = ({
       await dispatchSave(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
-        setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
+        setError('Não foi possível salvar a avaliação. Tente novamente.');
       }
     }
   }, [dispatchSave]);
@@ -525,13 +575,18 @@ const BioimpedanciaForm = ({
     setSubmitAttempted(true);
     setError('');
 
+    if (blockByChecklist) {
+      setError('Confirme todo o checklist de preparo (jejum, exercício, bexiga e metais) para liberar o formulário.');
+      return;
+    }
+
     if (!hasValues) {
       setError('Preencha ao menos uma leitura de BIA para salvar.');
       return;
     }
 
     if (hasRequiredErrors) {
-      setError('Peso e estatura invalidos. Revise os valores obrigatorios.');
+      setError('Peso e estatura inválidos. Revise os valores obrigatórios.');
       return;
     }
 
@@ -540,33 +595,56 @@ const BioimpedanciaForm = ({
       .map(([key, item]) => `${resolveFieldLabel(key)}: ${item.message}`);
 
     if (warningLines.length > 0) {
-      const proceed = window.confirm([
-        'Foram detectados valores fora da faixa fisiologica:',
-        ...warningLines.map((line) => `- ${line}`),
-        '',
-        'Deseja salvar mesmo assim?'
-      ].join('\n'));
+      const proceed = await confirm({
+        title: 'Valores fora da faixa fisiológica',
+        details: warningLines,
+        confirmLabel: 'Salvar mesmo assim',
+        cancelLabel: 'Corrigir',
+        variant: 'warning'
+      });
       if (!proceed) return;
     }
 
     await executeSave(false);
-  }, [executeSave, fieldValidation, hasRequiredErrors, hasValues, onSalvar]);
+  }, [blockByChecklist, confirm, executeSave, fieldValidation, hasRequiredErrors, hasValues, onSalvar]);
 
   useEffect(() => {
-    if (readOnly || !onAutoSave || !hasUserInput || !hasValues) return undefined;
+    if (readOnly || !onAutoSave || !hasUserInput || !hasValues || blockByChecklist) return undefined;
     if (hasRequiredErrors) return undefined;
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       executeSave(true);
-    }, 900);
+    }, 3500);
     return () => clearTimeout(autoSaveRef.current);
-  }, [executeSave, hasRequiredErrors, hasUserInput, hasValues, onAutoSave, readOnly]);
+  }, [blockByChecklist, executeSave, hasRequiredErrors, hasUserInput, hasValues, onAutoSave, readOnly]);
 
   useEffect(() => () => {
     if (saveStatusResetRef.current) clearTimeout(saveStatusResetRef.current);
   }, []);
 
   const showPrecheckAlert = Array.isArray(evaluation?.warnings?.precheck) && evaluation.warnings.precheck.length > 0;
+  const onboardingResumo = useMemo(() => {
+    if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+    const resumo = [];
+    const modalidade = toTextInput(onboardingContext?.modalidadePrincipal);
+    const frequencia = parseNumeric(onboardingContext?.frequenciaSemanal);
+    const duracao = parseNumeric(onboardingContext?.duracaoSessao);
+    if (modalidade) resumo.push(`Modalidade: ${modalidade}`);
+    if (Number.isFinite(frequencia)) resumo.push(`Frequência: ${frequencia}x/sem`);
+    if (Number.isFinite(duracao)) resumo.push(`Sessão média: ${duracao} min`);
+    return resumo.slice(0, 3);
+  }, [onboardingContext]);
+  const comparabilidadeColeta = useMemo(() => {
+    const itens = [
+      isChecklistConfirmed,
+      Boolean(toTextInput(dados.equipamento)),
+      Boolean(toTextInput(dados.entryMode))
+    ];
+    const score = itens.filter(Boolean).length;
+    if (score === 3) return 'Comparabilidade alta da coleta BIA.';
+    if (score === 2) return 'Comparabilidade moderada da coleta BIA.';
+    return 'Comparabilidade baixa: confirme checklist e equipamento.';
+  }, [dados.entryMode, dados.equipamento, isChecklistConfirmed]);
 
   return (
     <div className={`eval-card bioimpedancia-form bioimpedancia-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -576,15 +654,24 @@ const BioimpedanciaForm = ({
         </div>
         <div>
           <h3 className="eval-title">Bioimpedancia (BIA)</h3>
-          <p className="eval-subtitle">Leituras de composicao corporal com derivacoes automaticas e comparacao longitudinal.</p>
+          <p className="eval-subtitle">Leituras de composição corporal com derivações automáticas e comparação longitudinal.</p>
         </div>
       </div>
 
+      {onboardingResumo.length > 0 ? (
+        <div className="eval-note">
+          <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
+        </div>
+      ) : null}
+      <div className="eval-note">
+        <strong>Status de comparabilidade:</strong> {comparabilidadeColeta}
+      </div>
+
       <div className="eval-section">
-        <h4 className="eval-section-title">Equipamento e condicoes pre-avaliacao</h4>
+        <h4 className="eval-section-title">Equipamento e condições pré-avaliação</h4>
         <div className="bia-grid">
           <div className="eval-field">
-            <label className="eval-label">Data da avaliacao</label>
+            <label className="eval-label">Data da avaliação</label>
             <input
               type="date"
               className="eval-input"
@@ -594,14 +681,14 @@ const BioimpedanciaForm = ({
             />
           </div>
           <div className="eval-field">
-            <label className="eval-label">Equipamento (marca/modelo)</label>
+            <label className="eval-label">Equipamento (marca/modelo/frequência)</label>
             <input
               type="text"
               className="eval-input"
               value={dados.equipamento}
               onChange={(event) => updateField(setDados, setHasUserInput, 'equipamento', event.target.value)}
               disabled={readOnly}
-              placeholder="Ex.: InBody 270"
+              placeholder="Ex.: InBody 270 50kHz"
             />
           </div>
           <div className="eval-field">
@@ -618,7 +705,7 @@ const BioimpedanciaForm = ({
             </select>
           </div>
           <div className="eval-field">
-            <label className="eval-label">Modo de insercao</label>
+            <label className="eval-label">Modo de inserção</label>
             <select
               className="eval-input"
               value={dados.entryMode}
@@ -626,7 +713,7 @@ const BioimpedanciaForm = ({
               disabled={readOnly}
             >
               <option value="manual">Manual</option>
-              <option value="importacao">Importacao</option>
+              <option value="importacao">Importação</option>
             </select>
           </div>
           <BaseNumericField
@@ -638,29 +725,29 @@ const BioimpedanciaForm = ({
             placeholder="Ex.: 8"
           />
           <div className="eval-field">
-            <label className="eval-label">Hidratacao</label>
+            <label className="eval-label">Hidratação</label>
             <select
               className="eval-input"
               value={dados.hydrationStatus}
               onChange={(event) => updateField(setDados, setHasUserInput, 'hydrationStatus', event.target.value)}
               disabled={readOnly}
             >
-              <option value="nao_informado">Nao informado</option>
+              <option value="nao_informado">Não informado</option>
               <option value="adequada">Adequada</option>
               <option value="desidratado">Desidratado</option>
               <option value="hiperidratado">Hiperidratado</option>
             </select>
           </div>
           <div className="eval-field">
-            <label className="eval-label">Atividade fisica ultimas 24h</label>
+            <label className="eval-label">Atividade física nas últimas 24h</label>
             <select
               className="eval-input"
               value={dados.hadPhysicalActivity24h}
               onChange={(event) => updateField(setDados, setHasUserInput, 'hadPhysicalActivity24h', normalizeYesNo(event.target.value))}
               disabled={readOnly}
             >
-              <option value="nao_informado">Nao informado</option>
-              <option value="nao">Nao</option>
+              <option value="nao_informado">Não informado</option>
+              <option value="nao">Não</option>
               <option value="sim">Sim</option>
             </select>
           </div>
@@ -672,15 +759,75 @@ const BioimpedanciaForm = ({
               onChange={(event) => updateField(setDados, setHasUserInput, 'menstrualPhase', event.target.value)}
               disabled={readOnly}
             >
-              <option value="nao_informado">Nao informado</option>
+              <option value="nao_informado">Não informado</option>
               <option value="folicular">Folicular</option>
-              <option value="ovulatoria">Ovulatoria</option>
-              <option value="lutea">Lutea</option>
+              <option value="ovulatoria">Ovulatória</option>
+              <option value="lutea">Lútea</option>
               <option value="menstrual">Menstrual</option>
-              <option value="nenhuma">Nao se aplica</option>
+              <option value="nenhuma">Não se aplica</option>
             </select>
           </div>
+
+          <BaseNumericField
+            label="MET treino anterior"
+            unit="MET"
+            value={dados.esportivo.metAnterior}
+            onChange={(value) => updateBioEsportivoField(setDados, setHasUserInput, 'metAnterior', value)}
+            disabled={readOnly}
+            placeholder="Ex.: 9.5"
+          />
+
+          <div className="eval-field eval-field-full">
+            <label className="eval-label">Checklist de preparo (obrigatorio)</label>
+            <div className="bia-checklist-grid">
+              <label className="bia-check-item">
+                <input
+                  type="checkbox"
+                  checked={Boolean(dados.esportivo?.checklistPreparo?.jejum4h)}
+                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'jejum4h', event.target.checked)}
+                  disabled={readOnly}
+                />
+                <span>{'Jejum >= 4h'}</span>
+              </label>
+              <label className="bia-check-item">
+                <input
+                  type="checkbox"
+                  checked={Boolean(dados.esportivo?.checklistPreparo?.semExercicio24h)}
+                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'semExercicio24h', event.target.checked)}
+                  disabled={readOnly}
+                />
+                <span>Sem exercício nas últimas 24h</span>
+              </label>
+              <label className="bia-check-item">
+                <input
+                  type="checkbox"
+                  checked={Boolean(dados.esportivo?.checklistPreparo?.bexigaVazia)}
+                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'bexigaVazia', event.target.checked)}
+                  disabled={readOnly}
+                />
+                <span>Bexiga vazia</span>
+              </label>
+              <label className="bia-check-item">
+                <input
+                  type="checkbox"
+                  checked={Boolean(dados.esportivo?.checklistPreparo?.semMetais)}
+                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'semMetais', event.target.checked)}
+                  disabled={readOnly}
+                />
+                <span>Sem metais/acessorios</span>
+              </label>
+            </div>
+          </div>
         </div>
+
+        {blockByChecklist && (
+          <div className="bia-precheck-alert">
+            <AlertTriangle size={16} />
+            <div>
+              <strong>Formulário bloqueado até confirmar todo o checklist de preparo.</strong>
+            </div>
+          </div>
+        )}
 
         {showPrecheckAlert && (
           <div className="bia-precheck-alert">
@@ -699,13 +846,13 @@ const BioimpedanciaForm = ({
         <h4 className="eval-section-title">Dados de entrada ou leitura direta</h4>
         {dados.entryMode === 'importacao' && (
           <div className="eval-field eval-field-full">
-            <label className="eval-label">Importacao (colar resultado)</label>
+            <label className="eval-label">Importação (colar resultado)</label>
             <textarea
               className="eval-textarea"
               rows={4}
               value={dados.importText}
               onChange={(event) => updateField(setDados, setHasUserInput, 'importText', event.target.value)}
-              disabled={readOnly}
+              disabled={readOnly || blockByChecklist}
               placeholder="Cole o texto exportado do equipamento..."
             />
             <div className="bia-import-actions">
@@ -713,9 +860,9 @@ const BioimpedanciaForm = ({
                 type="button"
                 variant="secondary"
                 onClick={() => applyImportText(dados.importText, setDados, setHasUserInput)}
-                disabled={readOnly || !toTextInput(dados.importText)}
+                disabled={readOnly || blockByChecklist || !toTextInput(dados.importText)}
               >
-                Aplicar importacao
+                Aplicar importação
               </Button>
             </div>
           </div>
@@ -727,28 +874,28 @@ const BioimpedanciaForm = ({
             unit="ohm"
             value={dados.resistanceOhm}
             onChange={(value) => updateField(setDados, setHasUserInput, 'resistanceOhm', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
             label="Reactancia"
             unit="ohm"
             value={dados.reactanceOhm}
             onChange={(value) => updateField(setDados, setHasUserInput, 'reactanceOhm', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
-            label="Angulo de fase"
+            label="Ângulo de fase"
             unit="graus"
             value={dados.phaseAngle}
             onChange={(value) => updateField(setDados, setHasUserInput, 'phaseAngle', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
             label="% Gordura"
             unit="%"
             value={dados.percentFat}
             onChange={(value) => updateField(setDados, setHasUserInput, 'percentFat', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
             state={resolveInputState(fieldValidation.percentFat, submitAttempted || touched.percentFat)}
             onBlur={() => setTouched((prev) => ({ ...prev, percentFat: true }))}
             className="eval-field--critical"
@@ -758,14 +905,14 @@ const BioimpedanciaForm = ({
             unit="kg"
             value={dados.fatMassKg}
             onChange={(value) => updateField(setDados, setHasUserInput, 'fatMassKg', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
             label="Massa magra"
             unit="kg"
             value={dados.leanMassKg}
             onChange={(value) => updateField(setDados, setHasUserInput, 'leanMassKg', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
             className="eval-field--critical"
           />
           <BaseNumericField
@@ -773,41 +920,41 @@ const BioimpedanciaForm = ({
             unit="L"
             value={dados.tbwL}
             onChange={(value) => updateField(setDados, setHasUserInput, 'tbwL', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
             label="Agua intracelular"
             unit="L"
             value={dados.icwL}
             onChange={(value) => updateField(setDados, setHasUserInput, 'icwL', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
             label="Agua extracelular"
             unit="L"
             value={dados.ecwL}
             onChange={(value) => updateField(setDados, setHasUserInput, 'ecwL', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
           <BaseNumericField
             label="TMB pelo equipamento"
             unit="kcal/dia"
             value={dados.deviceTmbKcal}
             onChange={(value) => updateField(setDados, setHasUserInput, 'deviceTmbKcal', value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
         </div>
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Base antropometrica</h4>
+        <h4 className="eval-section-title">Base antropométrica</h4>
         <div className="bia-grid">
           <BaseNumericField
             label="Peso"
             unit="kg"
             value={dados.weightKg}
             onChange={(value) => updateField(setDados, setHasUserInput, 'weightKg', value)}
-            disabled={readOnly || lockSharedAnthropometry}
+            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
             state={resolveInputState(fieldValidation.weightKg, submitAttempted || touched.weightKg)}
             onBlur={() => setTouched((prev) => ({ ...prev, weightKg: true }))}
             className="eval-field--critical"
@@ -817,7 +964,7 @@ const BioimpedanciaForm = ({
             unit="cm"
             value={dados.heightCm}
             onChange={(value) => updateField(setDados, setHasUserInput, 'heightCm', value)}
-            disabled={readOnly || lockSharedAnthropometry}
+            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
             state={resolveInputState(fieldValidation.heightCm, submitAttempted || touched.heightCm)}
             onBlur={() => setTouched((prev) => ({ ...prev, heightCm: true }))}
           />
@@ -826,7 +973,7 @@ const BioimpedanciaForm = ({
             unit="anos"
             value={dados.ageYears}
             onChange={(value) => updateField(setDados, setHasUserInput, 'ageYears', value)}
-            disabled={readOnly || lockSharedAnthropometry}
+            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
           />
           <div className="eval-field">
             <label className="eval-label">Sexo biologico</label>
@@ -834,7 +981,7 @@ const BioimpedanciaForm = ({
               className="eval-input"
               value={dados.sex}
               onChange={(event) => updateField(setDados, setHasUserInput, 'sex', event.target.value)}
-              disabled={readOnly || lockSharedAnthropometry}
+              disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
             >
               <option value="">Selecione</option>
               <option value="MASCULINO">Masculino</option>
@@ -843,7 +990,7 @@ const BioimpedanciaForm = ({
           </div>
         </div>
         {lockSharedAnthropometry && (
-          <p className="bia-shared-hint">Peso, estatura, idade e sexo estao sincronizados com a ficha base compartilhada.</p>
+          <p className="bia-shared-hint">Peso, estatura, idade e sexo estão sincronizados com a ficha base compartilhada.</p>
         )}
       </div>
 
@@ -862,7 +1009,7 @@ const BioimpedanciaForm = ({
             value={evaluation?.inputNormalized?.leanMassKg}
             unit="kg"
             digits={2}
-            classification={{ label: 'Composicao corporal', tone: 'info', source: 'BIA' }}
+            classification={{ label: 'Composição corporal', tone: 'info', source: 'BIA' }}
             delta={buildComparativeDeltas({ current: evaluation?.inputNormalized?.leanMassKg, reference: previous?.metrics?.leanMass })}
           />
           <ResultCard
@@ -870,10 +1017,10 @@ const BioimpedanciaForm = ({
             value={evaluation?.derived?.ffmi}
             unit=""
             digits={2}
-            classification={{ label: 'Indice massa livre de gordura', tone: 'neutral', source: 'IMLG = MM/altura^2' }}
+            classification={{ label: 'Índice massa livre de gordura', tone: 'neutral', source: 'IMLG = MM/altura^2' }}
           />
           <ResultCard
-            label="Angulo de fase"
+            label="Ângulo de fase"
             value={evaluation?.inputNormalized?.phaseAngle}
             unit="graus"
             digits={2}
@@ -881,7 +1028,7 @@ const BioimpedanciaForm = ({
             delta={buildComparativeDeltas({ current: evaluation?.inputNormalized?.phaseAngle, reference: previous?.metrics?.phase })}
           />
           <ResultCard
-            label="Razao ECW/ICW"
+            label="Razão ECW/ICW"
             value={evaluation?.derived?.ecwIcwRatio}
             unit=""
             digits={3}
@@ -909,7 +1056,7 @@ const BioimpedanciaForm = ({
             classification={{
               label: Number.isFinite(evaluation?.derived?.diffDeviceVsCunningham) ? 'Comparativo de TMB' : 'Sem TMB do equipamento',
               tone: Number.isFinite(evaluation?.derived?.diffDeviceVsCunningham) ? 'info' : 'neutral',
-              source: 'BIA vs formula'
+              source: 'BIA vs fórmula'
             }}
           />
         </div>
@@ -942,7 +1089,7 @@ const BioimpedanciaForm = ({
             </table>
           </div>
           <div className="bia-sparkline-card">
-            <p>% gordura (ultimos 6)</p>
+            <p>% gordura (últimos 6)</p>
             <MiniSparkline values={sparklineValues} target={previous?.metrics?.percentFat ?? null} width={240} height={82} />
           </div>
           <p className="bia-interpretation">{interpretation}</p>
@@ -950,7 +1097,7 @@ const BioimpedanciaForm = ({
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Comparativo BIA vs Dobras vs DEXA (sessao)</h4>
+        <h4 className="eval-section-title">Comparativo BIA vs Dobras vs DEXA (sessão)</h4>
         <div className="bia-table-wrap">
           <table className="bia-table bia-source-table">
             <thead>
@@ -978,14 +1125,14 @@ const BioimpedanciaForm = ({
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Observacoes</h4>
+        <h4 className="eval-section-title">Observações</h4>
         <div className="eval-field eval-field-full">
           <textarea
             className="eval-textarea"
             rows={3}
             value={dados.observacoes}
             onChange={(event) => updateField(setDados, setHasUserInput, 'observacoes', event.target.value)}
-            disabled={readOnly}
+            disabled={readOnly || blockByChecklist}
           />
         </div>
       </div>
@@ -994,7 +1141,7 @@ const BioimpedanciaForm = ({
 
       <div className="eval-actions">
         {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
-        <Button type="button" variant="primary" onClick={handleSalvar} disabled={readOnly} loading={saveStatus === 'saving'}>
+        <Button type="button" variant="primary" onClick={handleSalvar} disabled={readOnly || blockByChecklist} loading={saveStatus === 'saving'}>
           Salvar bioimpedancia
         </Button>
       </div>
@@ -1141,15 +1288,74 @@ function normalizeYesNo(value) {
   return 'nao_informado';
 }
 
+function asRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
+}
+
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  const token = toTextInput(value).toLowerCase();
+  if (!token) return false;
+  return ['1', 'true', 'sim', 'yes', 'y', 'on'].includes(token);
+}
+
+function updateBioEsportivoField(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createBioEsportivoData()),
+      [key]: value
+    }
+  }));
+}
+
+function updateBioChecklist(setDados, setHasUserInput, key, checked) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createBioEsportivoData()),
+      checklistPreparo: {
+        ...(prev?.esportivo?.checklistPreparo || {}),
+        [key]: Boolean(checked)
+      }
+    }
+  }));
+}
+
+function buildBioEsportivoPayload(esportivo) {
+  const source = asRecord(esportivo);
+  const checklist = asRecord(source.checklistPreparo);
+
+  return {
+    metAnterior: numberOrNull(parseNumeric(source.metAnterior), 1),
+    checklistPreparo: {
+      jejum4h: normalizeBoolean(checklist.jejum4h),
+      semExercicio24h: normalizeBoolean(checklist.semExercicio24h),
+      bexigaVazia: normalizeBoolean(checklist.bexigaVazia),
+      semMetais: normalizeBoolean(checklist.semMetais)
+    }
+  };
+}
+
+function hasBioEsportivoValues(esportivo) {
+  const payload = buildBioEsportivoPayload(esportivo);
+  if (Number.isFinite(payload.metAnterior)) return true;
+  return Object.values(payload.checklistPreparo || {}).some((value) => Boolean(value));
+}
+
 function validateNumberField(value, metric, required = false) {
   const text = toTextInput(value);
   if (!text) {
-    if (required) return { status: 'error', message: 'Campo obrigatorio.' };
+    if (required) return { status: 'error', message: 'Campo obrigatório.' };
     return { status: 'empty', message: '' };
   }
 
   const numeric = parseNumeric(value);
-  if (!Number.isFinite(numeric)) return { status: 'error', message: 'Valor invalido.' };
+  if (!Number.isFinite(numeric)) return { status: 'error', message: 'Valor inválido.' };
 
   const range = validatePhysiologicalRange({ metric, value: numeric });
   if (range.status === 'warning') return { status: 'warning', message: range.message };
@@ -1338,7 +1544,7 @@ function buildCompositionSourceComparison({ allHistory = [], currentSessionId = 
     ));
     rows.push({
       source: 'dobras',
-      label: 'Dobras cutaneas',
+      label: 'Dobras cutâneas',
       percentFat: dobrasPercent,
       leanMass: dobrasLean,
       dateLabel: formatDateLabel(dobras?.updatedAt || dobras?.createdAt || dobras?.data),
@@ -1384,3 +1590,4 @@ function formatDateLabel(value) {
   if (!date) return '--';
   return date.toLocaleDateString('pt-BR');
 }
+

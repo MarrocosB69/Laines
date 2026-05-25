@@ -45,6 +45,7 @@ const { ProjetosService } = require('../server/dist/projetos/projetos.service.js
 const { UsersService } = require('../server/dist/users/users.service.js');
 const { ObservabilityController } = require('../server/dist/observability/observability.controller.js');
 const { ObservabilityService } = require('../server/dist/observability/observability.service.js');
+const { AuditoriaController } = require('../server/dist/auditoria/auditoria.controller.js');
 const { normalizeBioimpedanciaPayload } = require('../server/dist/avaliacoes/bioimpedancia-normalizer.js');
 const { normalizeDobrasCutaneasPayload } = require('../server/dist/avaliacoes/dobras-cutaneas-normalizer.js');
 const { normalizePerimetrosPayload } = require('../server/dist/avaliacoes/perimetros-normalizer.js');
@@ -89,6 +90,7 @@ const createAvaliacaoServiceHarness = ({ pacienteOverrides = {}, repoOverrides =
     projetoNome: '',
     equipeTecnicaIds: [],
     confirmacaoAtleta: {
+      completed: true,
       ebiaSelfForm: {
         enabled: true,
         releaseId: 'release-1',
@@ -102,7 +104,9 @@ const createAvaliacaoServiceHarness = ({ pacienteOverrides = {}, repoOverrides =
 
   const repo = {
     createQueryBuilder: () => createBasicAvaliacaoQueryBuilder(),
+    findOne: async () => null,
     create: (payload) => ({ id: 'avaliacao-1', ...payload }),
+    merge: (entity, payload) => ({ ...entity, ...payload }),
     save: async (payload) => ({ id: payload?.id || 'avaliacao-1', ...payload }),
     count: async () => 0,
     ...repoOverrides
@@ -254,6 +258,122 @@ const tests = [
     }
   },
   {
+    name: 'mets.controller-auth-guards',
+    run: () => {
+      const source = fs.readFileSync(
+        path.resolve('server/src/mets/mets.controller.ts'),
+        'utf8'
+      );
+
+      assert.match(source, /@UseGuards\(JwtAuthGuard\)\s*\r?\n@Controller\('mets'\)/);
+      assert.match(source, /@UseGuards\(RolesGuard\)\s*\r?\n\s*@Roles\(\.\.\.ADMIN_ROLES\)\s*\r?\n\s*@Post\(\)/);
+      assert.match(source, /@UseGuards\(RolesGuard\)\s*\r?\n\s*@Roles\(\.\.\.ADMIN_ROLES\)\s*\r?\n\s*@Patch\(':id'\)/);
+      assert.match(source, /@UseGuards\(RolesGuard\)\s*\r?\n\s*@Roles\(\.\.\.ADMIN_ROLES\)\s*\r?\n\s*@Delete\(':id'\)/);
+    }
+  },
+  {
+    name: 'auditoria.controller-client-event-allowlist',
+    run: async () => {
+      let savedPayload = null;
+      const controller = new AuditoriaController({
+        create: async (payload) => {
+          savedPayload = payload;
+          return payload;
+        }
+      });
+
+      await controller.create({
+        user: {
+          id: 'aluno-1',
+          role: 'aluno',
+          email: 'aluno@laines.ufrn.br',
+          name: 'Aluno Teste'
+        }
+      }, {
+        action: 'avaliacao_create',
+        entity: 'avaliacoes',
+        entityId: 'avaliacao-1',
+        meta: { pacienteId: 'paciente-1' }
+      });
+
+      assert.equal(savedPayload?.action, 'avaliacao_create');
+      assert.equal(savedPayload?.entity, 'avaliacoes');
+      assert.equal(savedPayload?.actor?.id, 'aluno-1');
+
+      assert.throws(
+        () => controller.create({
+          user: { id: 'atleta-1', role: 'atleta' }
+        }, {
+          action: 'avaliacao_create',
+          entity: 'avaliacoes'
+        }),
+        /nao pode registrar/i
+      );
+
+      assert.throws(
+        () => controller.create({
+          user: { id: 'admin-1', role: 'admin' }
+        }, {
+          action: 'evento_inventado',
+          entity: 'avaliacoes'
+        }),
+        /nao permitido/i
+      );
+    }
+  },
+  {
+    name: 'soft-delete.users-and-pacientes-contract',
+    run: () => {
+      const userEntitySource = fs.readFileSync(
+        path.resolve('server/src/users/user.entity.ts'),
+        'utf8'
+      );
+      const pacienteEntitySource = fs.readFileSync(
+        path.resolve('server/src/pacientes/paciente.entity.ts'),
+        'utf8'
+      );
+      const usersServiceSource = fs.readFileSync(
+        path.resolve('server/src/users/users.service.ts'),
+        'utf8'
+      );
+      const pacientesServiceSource = fs.readFileSync(
+        path.resolve('server/src/pacientes/pacientes.service.ts'),
+        'utf8'
+      );
+      const migrationSource = fs.readFileSync(
+        path.resolve('server/src/database/migrations/1775995000000-AddUsersPacientesSoftDelete.ts'),
+        'utf8'
+      );
+
+      assert.match(userEntitySource, /@DeleteDateColumn\(\{\s*name:\s*'deleted_at'/);
+      assert.match(pacienteEntitySource, /@DeleteDateColumn\(\{\s*name:\s*'deleted_at'/);
+      assert.match(usersServiceSource, /deleted_at\s+is\s+null/i);
+      assert.match(usersServiceSource, /\.softDelete\(id\)/);
+      assert.doesNotMatch(usersServiceSource, /repo\.delete\(id\)/);
+      assert.match(pacientesServiceSource, /\.softDelete\(id\)/);
+      assert.doesNotMatch(pacientesServiceSource, /repo\.delete\(id\)/);
+      assert.match(migrationSource, /ALTER TABLE "users" ADD COLUMN "deleted_at"/);
+      assert.match(migrationSource, /ALTER TABLE "pacientes" ADD COLUMN "deleted_at"/);
+    }
+  },
+  {
+    name: 'avaliacoes.athlete-public-projection-hides-sensitive-classification',
+    run: () => {
+      const source = fs.readFileSync(
+        path.resolve('server/src/avaliacoes/avaliacoes.service.ts'),
+        'utf8'
+      );
+
+      assert.match(source, /ATHLETE_SENSITIVE_RESULT_TYPES\s*=\s*new Set\(\[/);
+      assert.match(source, /'triagem_reds'/);
+      assert.match(source, /'psicologia'/);
+      assert.match(source, /'exames_laboratoriais'/);
+      assert.match(source, /const canExposeClassification = !ATHLETE_SENSITIVE_RESULT_TYPES\.has\(tipo\)/);
+      assert.match(source, /classificacao:\s*canExposeClassification \? avaliacao\.classificacao \|\| null : null/);
+      assert.match(source, /classificacaoLabel:\s*canExposeClassification \? avaliacao\.classificacaoLabel \|\| null : null/);
+    }
+  },
+  {
     name: 'user-adapter',
     run: () => {
       const normalized = normalizeUserRecord({
@@ -294,10 +414,13 @@ const tests = [
       };
       const service = new TarefasService(repo, { emit: () => {} });
 
-      await service.findAll({ role: 'aluno' }, {});
+      await service.findAll({ role: 'aluno', diretoria: 'diretoria_ensino' }, {});
       assert.equal(andWhereCalls.length, 1);
       assert.match(andWhereCalls[0].clause, /assignedRole/);
-      assert.deepEqual(andWhereCalls[0].params, { role: 'aluno', todos: 'todos' });
+      assert.deepEqual(andWhereCalls[0].params, {
+        audienceRoles: ['aluno', 'diretoria_ensino'],
+        todos: 'todos'
+      });
     }
   },
   {
@@ -1045,6 +1168,102 @@ const tests = [
     }
   },
   {
+    name: 'avaliacoes.meta-uses-registry-and-carga-required-current-load',
+    run: () => {
+      const pacienteUtilsSource = fs.readFileSync(
+        path.resolve('src/contexts/paciente/pacienteUtils.js'),
+        'utf8'
+      );
+      const frontendRegistrySource = fs.readFileSync(
+        path.resolve('src/constants/evaluationRegistry.js'),
+        'utf8'
+      );
+      const backendRegistrySource = fs.readFileSync(
+        path.resolve('server/src/avaliacoes/evaluation-registry.ts'),
+        'utf8'
+      );
+      const avaliacaoCompletaSource = fs.readFileSync(
+        path.resolve('src/views/AvaliacaoCompleta.jsx'),
+        'utf8'
+      );
+      const triagemRedsSource = fs.readFileSync(
+        path.resolve('src/views/avaliacoes/AvaliacaoTriagemREDS.jsx'),
+        'utf8'
+      );
+      const triagemRedsNormalizerSource = fs.readFileSync(
+        path.resolve('server/src/avaliacoes/normalizers/triagem-reds-normalizer.ts'),
+        'utf8'
+      );
+      const dashboardAvaliacoesSource = fs.readFileSync(
+        path.resolve('src/components/Prontuario/DashboardAvaliacoes.jsx'),
+        'utf8'
+      );
+      const avaliacaoContextSource = fs.readFileSync(
+        path.resolve('src/contexts/paciente/PacienteAvaliacaoContext.jsx'),
+        'utf8'
+      );
+      const readSources = (dir) => fs.readdirSync(dir, { withFileTypes: true })
+        .flatMap((entry) => {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) return readSources(fullPath);
+          if (!/\.(js|jsx)$/.test(entry.name)) return [];
+          return fs.readFileSync(fullPath, 'utf8');
+        });
+      const frontendSources = readSources(path.resolve('src')).join('\n');
+      const autosaveSources = [
+        'src/views/avaliacoes/AvaliacaoTriagemREDS.jsx',
+        'src/views/avaliacoes/AvaliacaoCargaTreino.jsx',
+        'src/views/avaliacoes/AvaliacaoAlimentar.jsx',
+        'src/components/Avaliacoes/avaliacao-hidratacao/AvaliacaoHidratacao.jsx',
+        'src/components/Avaliacoes/anamnese/AnamneseInicialForm.jsx',
+        'src/components/Avaliacoes/clinica/AvaliacaoClinicaForm.jsx',
+        'src/components/Avaliacoes/Antropometria/BioimpedanciaForm.jsx',
+        'src/components/Avaliacoes/Antropometria/ComposicaoCorporalIntegradaForm.jsx',
+        'src/components/Avaliacoes/Antropometria/DobrasCutaneasForm.jsx',
+        'src/components/Avaliacoes/Antropometria/GastoEnergeticoTotalForm.jsx',
+        'src/components/Avaliacoes/Antropometria/PerimetrosCorporaisForm.jsx',
+        'src/components/Avaliacoes/avaliacao-alimentar/AvaliacaoAlimentarNOVA.jsx',
+        'src/components/Avaliacoes/avaliacao-exames-laboratoriais/AvaliacaoExamesLaboratoriais.jsx',
+        'src/components/Avaliacoes/avaliacao-evolucao-retorno/AvaliacaoEvolucaoRetorno.jsx',
+        'src/components/Avaliacoes/avaliacao-socioeconomica/AvaliacaoSocioeconomica.jsx',
+        'src/components/Avaliacoes/components/AvaliacaoTextual.jsx'
+      ].map((file) => fs.readFileSync(path.resolve(file), 'utf8')).join('\n');
+
+      assert.match(pacienteUtilsSource, /EVALUATION_REGISTRY_BY_TYPE/);
+      assert.doesNotMatch(pacienteUtilsSource, /const requiredByTipo = \{/);
+      assert.match(
+        frontendRegistrySource,
+        /type:\s*'carga_treino'[\s\S]*requiredFields:\s*\['faseAtual', 'sessoesSemana', 'cargaSemanaAtual'\]/
+      );
+      assert.match(
+        backendRegistrySource,
+        /tipo:\s*'carga_treino'[\s\S]*requiredFields:\s*\['faseAtual', 'sessoesSemana', 'cargaSemanaAtual'\]/
+      );
+      assert.match(avaliacaoCompletaSource, /activeSessionId/);
+      assert.match(avaliacaoCompletaSource, /isInPinnedSession/);
+      assert.doesNotMatch(avaliacaoCompletaSource, /status\s*===\s*'rascunho'\s*\?\s*55/);
+      assert.match(avaliacaoCompletaSource, /getModuleFinalizationBlocker/);
+      assert.match(avaliacaoCompletaSource, /isRedsQuestionnaireComplete/);
+      assert.match(triagemRedsSource, /ingestaoKcalR24hAuto/);
+      assert.match(triagemRedsSource, /gastoExercicioKcalAuto/);
+      assert.match(triagemRedsSource, /massaMagraKgAuto/);
+      assert.match(triagemRedsNormalizerSource, /ingestaoKcalR24hAuto/);
+      assert.match(triagemRedsNormalizerSource, /gastoExercicioKcalAuto/);
+      assert.match(triagemRedsNormalizerSource, /massaMagraKgAuto/);
+      assert.match(
+        dashboardAvaliacoesSource,
+        /\['finalizada', 'concluida', 'realizada'\]\.includes\(token\)/
+      );
+      assert.doesNotMatch(
+        autosaveSources,
+        /autoSaveRef\.current\s*=\s*setTimeout[\s\S]{0,180},\s*(900|1000|1100)\)/
+      );
+      assert.doesNotMatch(frontendSources, /components\/avaliacoes/);
+      assert.match(avaliacaoContextSource, /wouldReopenFinalized/);
+      assert.match(avaliacaoContextSource, /couldBePreviousSession/);
+    }
+  },
+  {
     name: 'avaliacoes.service.create-finalizada-blocks-invalid-composicao-integrada',
     run: async () => {
       const { service } = createAvaliacaoServiceHarness();
@@ -1198,7 +1417,166 @@ const tests = [
     }
   },
   {
-    name: 'avaliacoes.service.create-athlete-blocks-non-ebia',
+    name: 'avaliacoes.service.create-finalizada-blocks-invalid-reds',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'triagem_reds',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            disponibilidadeEnergetica: 24,
+            ingestaoKcalR24h: 1800,
+            gastoExercicioKcal: 600,
+            massaMagraKg: 50
+          },
+          resultados: {
+            DE: 24,
+            classificacaoDE: 'reds_estabelecido'
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Triagem RED-S exige disponibilidade energetica, score de rastreio e classificacao/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-blocks-incomplete-reds-questionnaire',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'triagem_reds',
+          status: 'finalizada',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {
+            sexoBiologico: 'feminino',
+            disponibilidadeEnergetica: 24,
+            scoreLeafQ: 1,
+            classificacaoDE: 'reds_estabelecido',
+            leafQRespostas: {
+              leaf_q1: true
+            }
+          },
+          resultados: {
+            DE: 24,
+            scoreLeafQ: 1,
+            classificacaoDE: 'reds_estabelecido'
+          }
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /LEAF-Q completo/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-allows-complete-reds-questionnaire',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      const leafQRespostas = Object.fromEntries(
+        Array.from({ length: 12 }, (_, index) => [`leaf_q${index + 1}`, false])
+      );
+      const saved = await service.create({
+        tipo: 'triagem_reds',
+        status: 'finalizada',
+        pacienteId: 'paciente-1',
+        sessaoId: 'sessao-1',
+        dados: {
+          sexoBiologico: 'feminino',
+          disponibilidadeEnergetica: 46,
+          scoreLeafQ: 0,
+          classificacaoDE: 'otima',
+          leafQRespostas
+        },
+        resultados: {
+          DE: 46,
+          scoreLeafQ: 0,
+          classificacaoDE: 'otima'
+        }
+      }, {
+        id: 'admin-1',
+        role: 'admin',
+        email: 'admin@teste.com',
+        name: 'Admin Teste'
+      });
+
+      assert.equal(saved.tipo, 'triagem_reds');
+      assert.equal(saved.status, 'finalizada');
+      assert.equal(saved.classificacao, 'otima');
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-finalizada-allows-carga-without-acwr-history',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      const saved = await service.create({
+        tipo: 'carga_treino',
+        status: 'finalizada',
+        pacienteId: 'paciente-1',
+        sessaoId: 'sessao-1',
+        dados: {
+          faseAtual: 'competicao',
+          estrategiaTreinamento: 'ondulante',
+          sessoesSemana: [
+            { dia: 'segunda', tipo: 'corrida', duracaoMin: 60, pse: 5 }
+          ]
+        }
+      }, {
+        id: 'admin-1',
+        role: 'admin',
+        email: 'admin@teste.com',
+        name: 'Admin Teste'
+      });
+
+      assert.equal(saved.tipo, 'carga_treino');
+      assert.equal(saved.status, 'finalizada');
+      assert.equal(saved.resultados?.cargaSemanaAtual, 300);
+      assert.equal(saved.resultados?.acwr, null);
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-blocks-duplicate-type-in-session',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness({
+        repoOverrides: {
+          findOne: async ({ where }) => (
+            where?.sessaoId === 'sessao-1' && where?.tipo === 'alimentar'
+              ? { id: 'avaliacao-existente' }
+              : null
+          )
+        }
+      });
+
+      await assert.rejects(
+        async () => service.create({
+          tipo: 'alimentar',
+          status: 'rascunho',
+          pacienteId: 'paciente-1',
+          sessaoId: 'sessao-1',
+          dados: {}
+        }, {
+          id: 'admin-1',
+          role: 'admin',
+          email: 'admin@teste.com',
+          name: 'Admin Teste'
+        }),
+        /Ja existe uma avaliacao do tipo informado nesta sessao/i
+      );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-athlete-blocks-unsafe-type',
     run: async () => {
       const { service } = createAvaliacaoServiceHarness();
       await assert.rejects(
@@ -1213,8 +1591,36 @@ const tests = [
           email: 'atleta@teste.com',
           name: 'Atleta Teste'
         }),
-        /Atleta pode preencher apenas o formulario EBIA/
+        /Formulario nao liberado/
       );
+    }
+  },
+  {
+    name: 'avaliacoes.service.create-athlete-allows-safe-self-report-as-draft',
+    run: async () => {
+      const { service } = createAvaliacaoServiceHarness();
+      const saved = await service.create({
+        tipo: 'hidratacao',
+        pacienteId: 'paciente-1',
+        sessaoId: 'sessao-1',
+        dados: {
+          pesoAntesExercicio: 70,
+          pesoAposExercicio: 69.4,
+          duracaoExercicioMin: 60
+        }
+      }, {
+        id: 'atleta-1',
+        role: 'atleta',
+        email: 'atleta@teste.com',
+        name: 'Atleta Teste'
+      });
+
+      assert.equal(saved.tipo, 'hidratacao');
+      assert.equal(saved.status, 'rascunho');
+      assert.equal(saved.alunoId, 'aluno-1');
+      assert.equal(saved.meta?.origemPreenchimento, 'atleta');
+      assert.equal(saved.meta?.atletaSelfReport, true);
+      assert.equal(saved.meta?.aguardandoRevisao, true);
     }
   },
   {

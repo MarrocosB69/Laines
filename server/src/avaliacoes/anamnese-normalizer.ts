@@ -26,6 +26,10 @@ const asRecord = (value: unknown): JsonRecord => {
   return value as JsonRecord;
 };
 
+const mergeRecords = (...records: JsonRecord[]): JsonRecord => (
+  records.reduce<JsonRecord>((acc, record) => ({ ...acc, ...record }), {})
+);
+
 const pick = (sources: JsonRecord[], aliases: string[]): unknown => {
   for (const source of sources) {
     for (const alias of aliases) {
@@ -58,6 +62,14 @@ export const normalizeAnamneseInicialPayload = <T extends PayloadShape>(payload:
 
   const dados = asRecord(payload.dados);
   const resultados = asRecord(payload.resultados);
+  const payloadRecord = asRecord(payload as unknown);
+
+  const canonicalDadosBrutos = mergeRecords(
+    asRecord(dados.dados_brutos),
+    asRecord(dados.input),
+    asRecord(payloadRecord.dados_brutos),
+    asRecord(payloadRecord.input)
+  );
 
   const canonicalResultadosCalculados = {
     ...asRecord(dados.resultados_calculados),
@@ -71,15 +83,17 @@ export const normalizeAnamneseInicialPayload = <T extends PayloadShape>(payload:
   const valueSources = [
     canonicalResultadosCalculados,
     canonicalClassificacoes,
+    canonicalDadosBrutos,
     dados,
     resultados,
-    asRecord(payload as unknown)
+    payloadRecord
   ];
 
   const scoreRisco = toNumber(pick(valueSources, ['scoreRisco', 'score_risco', 'riscoScore']));
   const prioridade = toText(pick(valueSources, ['prioridade', 'prioridadeCuidado', 'priorityCare']));
   const flags = pick(valueSources, ['flags']) ?? [];
   const encaminhamentos = pick(valueSources, ['encaminhamentos', 'referrals']) ?? [];
+  const esportivo = asRecord(pick(valueSources, ['esportivo']));
 
   const normalizedResultadosCalculados = compact({
     ...canonicalResultadosCalculados,
@@ -96,7 +110,11 @@ export const normalizeAnamneseInicialPayload = <T extends PayloadShape>(payload:
 
   const normalizedDados = compact({
     ...dados,
-    dados_brutos: asRecord(dados.dados_brutos),
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined,
+    dados_brutos: compact({
+      ...canonicalDadosBrutos,
+      esportivo: Object.keys(esportivo).length ? esportivo : undefined
+    }),
     resultados_calculados: normalizedResultadosCalculados,
     classificacoes: normalizedClassificacoes
   });

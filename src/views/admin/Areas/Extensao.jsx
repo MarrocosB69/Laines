@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Calendar, FileText, Plus, Trash2, Users } from 'lucide-react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
+import { Calendar, FileText, Plus, Trash2 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../../services/api';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import './Areas.css';
@@ -8,7 +8,6 @@ const Extensao = () => {
   const { notify, confirm } = useUiFeedback();
   const [capacitacoes, setCapacitacoes] = useState([]);
   const [materiais, setMateriais] = useState([]);
-  const [agendamentos, setAgendamentos] = useState([]);
   const [capForm, setCapForm] = useState({
     titulo: '',
     publico: 'interno',
@@ -25,16 +24,13 @@ const Extensao = () => {
 
   const loadData = useCallback(async () => {
     try {
-      const [capRes, matRes, agendaRes] = await Promise.all([
+      const [capRes, matRes] = await Promise.all([
         api.get('/conteudos', { params: { categoria: 'capacitacoes' } }),
-        api.get('/conteudos', { params: { categoria: 'materiais_extensao' } }),
-        api.get('/agendamentos', { params: { limit: 80 } })
+        api.get('/conteudos', { params: { categoria: 'materiais_extensao' } })
       ]);
       setCapacitacoes(capRes.data || []);
       setMateriais(matRes.data || []);
-      setAgendamentos(agendaRes.data || []);
     } catch (error) {
-      console.warn('Extensão: falha ao carregar dados', error);
       notify({
         type: 'error',
         title: 'Erro ao carregar dados',
@@ -46,10 +42,6 @@ const Extensao = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const upcomingAppointments = useMemo(() => {
-    return agendamentos.slice(0, 5);
-  }, [agendamentos]);
 
   const handleAddCapacitacao = async (event) => {
     event.preventDefault();
@@ -63,7 +55,6 @@ const Extensao = () => {
       setCapForm({ titulo: '', publico: 'interno', cursos: '', data: '', descricao: '' });
       await loadData();
     } catch (error) {
-      console.warn('Extensão: falha ao criar capacitação', error);
       notify({
         type: 'error',
         title: 'Erro ao criar capacitação',
@@ -83,7 +74,6 @@ const Extensao = () => {
       setMatForm({ titulo: '', tipo: 'material', link: '', descricao: '' });
       await loadData();
     } catch (error) {
-      console.warn('Extensão: falha ao criar material', error);
       notify({
         type: 'error',
         title: 'Erro ao criar material',
@@ -111,7 +101,6 @@ const Extensao = () => {
         message: 'O item foi removido com sucesso.'
       });
     } catch (error) {
-      console.warn('Extensão: falha ao remover item', error);
       notify({
         type: 'error',
         title: 'Erro ao remover conteúdo',
@@ -128,36 +117,12 @@ const Extensao = () => {
           <p>Atendimentos, capacitações e materiais produzidos pela liga.</p>
         </div>
         <div className="area-badges">
-          <span className="area-badge"><Users size={14} /> {agendamentos.length} atendimentos</span>
           <span className="area-badge"><Calendar size={14} /> {capacitacoes.length} capacitações</span>
+          <span className="area-badge"><FileText size={14} /> {materiais.length} materiais</span>
         </div>
       </header>
 
       <div className="area-grid">
-        <section className="area-card">
-          <div className="area-card-header">
-            <div>
-              <h3>Atendimentos recentes</h3>
-              <p>Agenda e histórico rápido.</p>
-            </div>
-          </div>
-          <div className="area-list">
-            {upcomingAppointments.length === 0 ? (
-              <div className="area-empty laines-feedback-state">Nenhum atendimento registrado.</div>
-            ) : (
-              upcomingAppointments.map((item) => (
-                <div key={item.id} className="area-list-item">
-                  <div>
-                    <strong>{item.pacienteNome || 'Atleta'}</strong>
-                    <span>{item.status || 'agendada'}</span>
-                  </div>
-                  <span>{item.time || '--:--'}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
         <section className="area-card">
           <div className="area-card-header">
             <div>

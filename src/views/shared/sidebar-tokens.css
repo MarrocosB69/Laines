@@ -1,0 +1,325 @@
+/* ─── Shared sidebar design tokens ─────────────────────────────────────────
+   Import this file in every sidebar. Never duplicate these values.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.laines-sidebar {
+  /* Structure */
+  --sidebar-bg:            #0f1117;
+  --sidebar-border:        rgba(255,255,255,0.08);
+  --sidebar-header-border: rgba(255,255,255,0.06);
+  --sidebar-divider:       rgba(255,255,255,0.05);
+
+  /* Brand */
+  --brand-name-color:      #f0f0f0;
+  --brand-name-weight:     700;
+  --brand-name-spacing:    0.1em;
+  --brand-sub-color:       rgba(255,255,255,0.28);
+  --brand-sub-size:        9px;
+  --brand-sub-spacing:     0.02em;
+  --brand-sub-line-height: 1.4;
+  --logo-radius:           10px;
+  --logo-shadow:           0 0 0 1px rgba(255,255,255,0.1);
+
+  /* Navigation */
+  --section-label-color:   rgba(255,255,255,0.22);
+  --section-label-size:    10px;
+  --section-label-spacing: 0.12em;
+  --item-text:             rgba(255,255,255,0.5);
+  --item-radius:           8px;
+  --item-padding:          8px 12px;
+  --item-margin:           1px 8px;
+  --item-active-bg:        rgba(59,130,246,0.1);
+  --item-active-text:      #93c5fd;
+  --item-active-bar:       #3b82f6;
+
+  /* Footer */
+  --avatar-border:         1.5px solid rgba(59,130,246,0.3);
+  --status-online-color:   #4ade80;
+  --logout-opacity:        0.3;
+
+  /* Profile switcher */
+  --switcher-bg:           rgba(255,255,255,0.03);
+  --switcher-border:       rgba(255,255,255,0.06);
+  --switcher-icon-bg:      #1e3a5f;
+}
+
+/* ─── Blue accent — Presidência ──────────────────────────────────────────── */
+.laines-sidebar--accent-blue {
+  --accent-logo-from:    #1e3a5f;
+  --accent-logo-to:      #2d5a8e;
+  --accent-icon-stroke:  #60a5fa;
+  --accent-badge-bg:     rgba(59,130,246,0.12);
+  --accent-badge-border: rgba(59,130,246,0.2);
+  --accent-badge-text:   #93c5fd;
+  --accent-dot:          #60a5fa;
+  --accent-profile-name: #bfdbfe;
+}
+
+/* ─── Green accent — Área do Aluno ───────────────────────────────────────── */
+.laines-sidebar--accent-green {
+  --accent-logo-from:    #1a4731;
+  --accent-logo-to:      #2d6a4f;
+  --accent-icon-stroke:  #34d399;
+  --accent-badge-bg:     rgba(16,185,129,0.12);
+  --accent-badge-border: rgba(16,185,129,0.2);
+  --accent-badge-text:   #6ee7b7;
+  --accent-dot:          #34d399;
+  --accent-profile-name: #d1fae5;
+}
+
+/* ─── SidebarHeader ──────────────────────────────────────────────────────── */
+.sb-header__brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sb-header__logo-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--logo-radius);
+  background: linear-gradient(135deg, var(--accent-logo-from, #1e3a5f), var(--accent-logo-to, #2d5a8e));
+  box-shadow: var(--logo-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sb-header__brand-text {
+  min-width: 0;
+}
+
+.sb-header__name {
+  display: block;
+  color: var(--brand-name-color);
+  font-weight: var(--brand-name-weight);
+  letter-spacing: var(--brand-name-spacing);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.sb-header__sub {
+  display: block;
+  font-size: var(--brand-sub-size);
+  color: var(--brand-sub-color);
+  letter-spacing: var(--brand-sub-spacing);
+  line-height: var(--brand-sub-line-height);
+  margin-top: 3px;
+}
+
+.sb-header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-badge-border, rgba(59,130,246,0.2));
+  background: var(--accent-badge-bg, rgba(59,130,246,0.12));
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent-badge-text, #93c5fd);
+}
+
+.sb-header__badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-dot, #60a5fa);
+  flex-shrink: 0;
+}
+
+/* ─── SidebarFooter ──────────────────────────────────────────────────────── */
+.sb-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--sidebar-header-border);
+}
+
+.sb-footer__inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sb-footer--collapsed .sb-footer__inner {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sb-footer__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: #bfdbfe;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: var(--avatar-border);
+}
+
+.sb-footer__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.sb-footer__name {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.sb-footer__status {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
+
+.sb-footer__status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--status-online-color);
+  flex-shrink: 0;
+}
+
+.sb-footer__logout {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: var(--logout-opacity);
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sb-footer__logout:hover {
+  opacity: 1;
+}
+
+.sb-footer--collapsed .sb-footer__logout {
+  margin-left: 0;
+}
+
+/* ─── ProfileSwitcher ────────────────────────────────────────────────────── */
+.sb-switcher {
+  width: calc(100% - 16px);
+  margin: 2px 8px;
+  border-radius: var(--item-radius);
+  padding: var(--item-padding);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--switcher-bg);
+  border: 1px solid var(--switcher-border);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.sb-switcher:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.sb-switcher__icon-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--switcher-icon-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sb-switcher__label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sb-switcher__chevron {
+  margin-left: auto;
+  opacity: 0.3;
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ─── Student sidebar identity block ─────────────────────────────────────── */
+.sb-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid var(--sidebar-header-border);
+}
+
+.sb-identity__icon-box {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sb-identity__role {
+  margin: 0;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.1em;
+}
+
+.sb-identity__profile-name {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-profile-name, #d1fae5);
+}
+
+/* ─── Student header layout ──────────────────────────────────────────────── */
+.laines-sidebar--student-header {
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+}
+
+.laines-sidebar--student-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* ─── Student bottom tag ─────────────────────────────────────────────────── */
+.sb-bottom-tag {
+  font-size: 10px;
+  color: rgba(255,255,255,0.15);
+  padding: 4px 16px 10px;
+}

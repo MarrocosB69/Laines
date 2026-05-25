@@ -2,11 +2,28 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite' // Importamos o motor do tailwind
 
+const apiProxy = {
+  target: 'http://127.0.0.1:4000',
+  changeOrigin: true,
+  ws: true,
+  rewrite: (path) => path.replace(/^\/api/, ''),
+}
+
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(), // Ativamos o motor
   ],
+  server: {
+    proxy: {
+      '/api': apiProxy,
+    },
+  },
+  preview: {
+    proxy: {
+      '/api': apiProxy,
+    },
+  },
   build: {
     rollupOptions: {
       output: {

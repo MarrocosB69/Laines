@@ -1,9 +1,3 @@
-.avaliacao-alimentar .eval-card {
-  border-radius: 22px;
-  border: 1px solid rgba(14, 165, 233, 0.18);
-  background: #ffffff;
-}
-
 .avaliacao-alimentar {
   display: flex;
   flex-direction: column;
@@ -194,11 +188,6 @@
   justify-content: center;
 }
 
-.avaliacao-alimentar .eval-icon {
-  background: rgba(22, 163, 74, 0.13);
-  color: #15803d;
-  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.14);
-}
 
 .avaliacao-alimentar .resumo-pill {
   background: rgba(14, 165, 233, 0.12);

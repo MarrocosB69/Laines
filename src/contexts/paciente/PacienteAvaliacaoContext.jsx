@@ -8,18 +8,51 @@ import { buildAvaliacaoMeta } from './pacienteUtils';
 
 const PacienteAvaliacaoContext = createContext(null);
 
+const normalizeAvaliacaoTipo = (value) => (
+  String(value || '').trim().toLowerCase().replace(/-/g, '_')
+);
+
+const getComparableDate = (item) => {
+  const value = item?.updatedAt || item?.createdAt || item?.data || '';
+  const date = value ? new Date(value) : null;
+  return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+};
+
+const findExistingAvaliacaoForPayload = async (payload) => {
+  const pacienteId = String(payload?.pacienteId || '').trim();
+  const tipo = normalizeAvaliacaoTipo(payload?.tipo);
+  if (!pacienteId || !tipo) return null;
+
+  const { data } = await api.get('/avaliacoes', {
+    params: { pacienteId, tipo, limit: 50 }
+  });
+  const rows = Array.isArray(data) ? data : [];
+  const sameTypeRows = rows.filter((item) => normalizeAvaliacaoTipo(item?.tipo) === tipo);
+  if (sameTypeRows.length === 0) return null;
+
+  const sessaoId = String(payload?.sessaoId || '').trim();
+  const candidates = sessaoId
+    ? sameTypeRows.filter((item) => String(item?.sessaoId || '').trim() === sessaoId)
+    : sameTypeRows.filter((item) => String(item?.status || '').toLowerCase() !== 'finalizada');
+  const pool = candidates.length > 0 ? candidates : sameTypeRows;
+
+  return [...pool].sort((a, b) => getComparableDate(b) - getComparableDate(a))[0] || null;
+};
+
 export const PacienteAvaliacaoProvider = ({ children }) => {
   const { user } = useAuth();
   const { notify } = useUiFeedback();
 
   const salvarAvaliacao = useCallback(async (avaliacaoData) => {
+    const meta = buildAvaliacaoMeta(avaliacaoData);
+    const payload = {
+      ...avaliacaoData,
+      meta
+    };
+    if (user?.isAluno) {
+      payload.alunoId = user?.uid || user?.id || null;
+    }
     try {
-      const meta = buildAvaliacaoMeta(avaliacaoData);
-      const payload = {
-        ...avaliacaoData,
-        meta,
-        alunoId: user?.uid || null
-      };
       const { data } = await api.post('/avaliacoes', payload);
       logAudit({
         user,
@@ -34,13 +67,49 @@ export const PacienteAvaliacaoProvider = ({ children }) => {
       });
       return data?.id;
     } catch (err) {
+      let recoveryErrorToReport = null;
+      if (err?.response?.status === 409) {
+        try {
+          const existing = await findExistingAvaliacaoForPayload(payload);
+          const existingStatus = String(existing?.status || '').toLowerCase();
+          const payloadStatus = String(payload?.status || '').toLowerCase();
+          const hasExplicitSession = String(payload?.sessaoId || '').trim().length > 0;
+          const isAutosaveFinalizedConflict = avaliacaoData?.autoSave
+            && existingStatus === 'finalizada';
+          const wouldReopenFinalized = existingStatus === 'finalizada' && payloadStatus !== 'finalizada';
+          const couldBePreviousSession = existingStatus === 'finalizada' && !hasExplicitSession;
+          if (existing?.id && !isAutosaveFinalizedConflict && !wouldReopenFinalized && !couldBePreviousSession) {
+            const { data } = await api.patch(`/avaliacoes/${existing.id}`, payload);
+            logAudit({
+              user,
+              action: 'avaliacao_update_after_create_conflict',
+              entity: 'avaliacoes',
+              entityId: existing.id,
+              meta: {
+                pacienteId: avaliacaoData?.pacienteId || null,
+                tipo: avaliacaoData?.tipo || null,
+                projetoId: avaliacaoData?.projetoId || null,
+                sessaoId: avaliacaoData?.sessaoId || existing?.sessaoId || null
+              }
+            });
+            return data?.id || existing.id;
+          }
+        } catch (recoveryError) {
+          recoveryErrorToReport = recoveryError;
+          console.error('Erro ao recuperar rascunho existente:', recoveryError);
+        }
+      }
       console.error('Erro ao salvar avaliação:', err);
+      const isConflict = err?.response?.status === 409;
+      const reportedError = recoveryErrorToReport || err;
       notify({
         type: 'error',
-        title: 'Erro ao salvar avaliação',
-        message: getApiErrorMessage(err, 'Não foi possível salvar a avaliação.')
+        title: isConflict ? 'Avaliação já existe nesta sessão' : 'Erro ao salvar avaliação',
+        message: isConflict
+          ? getApiErrorMessage(reportedError, 'Já existe uma avaliação deste tipo nesta sessão. Continue preenchendo pelo rascunho já criado.')
+          : getApiErrorMessage(reportedError, 'Não foi possível salvar a avaliação.')
       });
-      throw err;
+      throw reportedError;
     }
   }, [notify, user]);
 

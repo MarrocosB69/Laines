@@ -1,4 +1,12 @@
-import { Injectable, NotFoundException, Optional, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Optional,
+  ForbiddenException,
+  BadRequestException,
+  ConflictException,
+  UnprocessableEntityException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Avaliacao } from './avaliacao.entity';
@@ -19,6 +27,7 @@ import {
 } from '../auth/access-control';
 import { normalizeAvaliacaoPayload } from './avaliacao-normalizer';
 import { AVALIACAO_REGISTRY_BY_TIPO, normalizeAvaliacaoTipo } from './evaluation-registry';
+import { ClinicalAlertsService } from './clinical-alerts.service';
 
 type FiltrosAvaliacao = {
   pacienteId?: string;
@@ -39,6 +48,22 @@ const AVALIACAO_STATUS_TRANSITIONS: Record<AvaliacaoStatus, readonly AvaliacaoSt
 
 const PENDENCIAS_OBRIGATORIAS = ['anamnese_inicial', 'perimetros', 'avaliacao_clinica'] as const;
 const MIN_COMPLETUDE_TO_FINALIZE = 80;
+const ATHLETE_SELF_REPORT_TYPES = new Set([
+  'alimentar',
+  'hidratacao',
+  'carga_treino',
+  'fisioterapia'
+]);
+const ATHLETE_RELEASE_CONTROLLED_TYPES = new Set(['avaliacao_socioeconomica']);
+const ATHLETE_ALLOWED_CREATE_TYPES = new Set([
+  ...ATHLETE_SELF_REPORT_TYPES,
+  ...ATHLETE_RELEASE_CONTROLLED_TYPES
+]);
+const ATHLETE_SENSITIVE_RESULT_TYPES = new Set([
+  'triagem_reds',
+  'psicologia',
+  'exames_laboratoriais'
+]);
 const COMPLETUDE_FIELD_ALIASES: Record<string, string[]> = {
   sexobiologico: ['sexo'],
   prioridade: ['prioridadecuidado'],
@@ -83,7 +108,8 @@ export class AvaliacoesService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     private realtime: RealtimeGateway,
     @Optional() private readonly observability?: ObservabilityService,
-    @Optional() private readonly auditoria?: AuditoriaService
+    @Optional() private readonly auditoria?: AuditoriaService,
+    @Optional() private readonly clinicalAlerts?: ClinicalAlertsService
   ) {}
 
   private recordQuery(label: string, startedAt: number, context = 'GET /avaliacoes') {
@@ -270,7 +296,8 @@ export class AvaliacoesService {
       where: {
         sessaoId,
         status: 'rascunho'
-      }
+      },
+      withDeleted: false
     });
     const proximoStatus = pendentes > 0 ? 'rascunho' : 'finalizada';
     if (sessao.status !== proximoStatus) {
@@ -307,6 +334,175 @@ export class AvaliacoesService {
       pontuacaoEBIA: Number.isFinite(pontuacaoEBIA) ? pontuacaoEBIA : null,
       createdAt: row.createdAt as Date,
       updatedAt: row.updatedAt as Date
+    };
+  }
+
+  private compactRecord(record: JsonObject): JsonObject {
+    return Object.entries(record).reduce<JsonObject>((acc, [key, value]) => {
+      if (value === undefined || value === null || value === '') return acc;
+      if (typeof value === 'number' && !Number.isFinite(value)) return acc;
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const nested = this.compactRecord(value as JsonObject);
+        if (Object.keys(nested).length > 0) acc[key] = nested;
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {});
+  }
+
+  private pickAthletePublicMeta(meta: unknown): JsonObject {
+    const source = this.asRecord(meta);
+    return this.compactRecord({
+      completude: typeof source.completude === 'number' ? source.completude : undefined,
+      origemPreenchimento: source.origemPreenchimento,
+      atletaSelfReport: source.atletaSelfReport,
+      aguardandoRevisao: source.aguardandoRevisao,
+      submittedAt: source.submittedAt
+    });
+  }
+
+  private pickAthletePublicData(tipo: string, avaliacao: Avaliacao): JsonObject | undefined {
+    const dados = this.asRecord(avaliacao.dados);
+    const input = this.asRecord(dados.input);
+    if (tipo === 'avaliacao_socioeconomica') {
+      return this.compactRecord({
+        temMenores: this.pickFirstValue(input.temMenores, dados.temMenores)
+      });
+    }
+    if (tipo === 'fisioterapia') {
+      return this.compactRecord({
+        intensidadeDor: this.pickFirstValue(input.intensidadeDor, dados.intensidadeDor),
+        mobilidade: this.pickFirstValue(input.mobilidade, dados.mobilidade),
+        riscoLesao: this.pickFirstValue(input.riscoLesao, dados.riscoLesao)
+      });
+    }
+    if (tipo === 'carga_treino') {
+      return this.compactRecord({
+        faseAtual: this.pickFirstValue(dados.faseAtual, input.faseAtual),
+        estrategiaTreinamento: this.pickFirstValue(dados.estrategiaTreinamento, input.estrategiaTreinamento)
+      });
+    }
+    return undefined;
+  }
+
+  private pickAthletePublicResults(tipo: string, avaliacao: Avaliacao): JsonObject | undefined {
+    const resultados = this.asRecord(avaliacao.resultados);
+    const calculated = this.asRecord(resultados.calculated);
+    const output = this.asRecord(resultados.output);
+
+    if (tipo === 'alimentar') {
+      const percentuais = this.asRecord(this.pickFirstValue(
+        calculated.percentuais,
+        resultados.percentuais,
+        avaliacao.percentuais
+      ));
+      const totalDiario = this.pickFirstValue(calculated.totalDiario, resultados.totalDiario, avaliacao.totalDiario);
+      const classificacao = this.pickFirstValue(output.classificacao, resultados.classificacao, avaliacao.classificacao);
+      return this.compactRecord({
+        calculated: {
+          totalDiario,
+          percentuais
+        },
+        output: {
+          classificacao
+        },
+        totalDiario,
+        percentuais,
+        classificacao
+      });
+    }
+
+    if (tipo === 'hidratacao') {
+      const perdaPesoPercentual = this.pickFirstValue(calculated.perdaPesoPercentual, resultados.perdaPesoPercentual);
+      const taxaSudoreseLh = this.pickFirstValue(calculated.taxaSudoreseLh, resultados.taxaSudoreseLh);
+      const classificacaoHidrica = this.pickFirstValue(output.classificacaoHidrica, resultados.classificacaoHidrica, avaliacao.classificacaoLabel);
+      return this.compactRecord({
+        calculated: {
+          perdaPesoPercentual,
+          taxaSudoreseLh
+        },
+        output: {
+          classificacaoHidrica
+        },
+        perdaPesoPercentual,
+        taxaSudoreseLh,
+        classificacaoHidrica
+      });
+    }
+
+    if (tipo === 'carga_treino') {
+      const cargaSemanaAtual = this.pickFirstValue(calculated.cargaSemanaAtual, resultados.cargaSemanaAtual);
+      const acwr = this.pickFirstValue(calculated.acwr, resultados.acwr);
+      const classificacaoAcwr = this.pickFirstValue(output.classificacaoAcwr, resultados.classificacaoAcwr, avaliacao.classificacao);
+      const monotonia = this.pickFirstValue(calculated.monotonia, resultados.monotonia);
+      const strain = this.pickFirstValue(calculated.strain, resultados.strain);
+      return this.compactRecord({
+        calculated: {
+          cargaSemanaAtual,
+          acwr,
+          classificacaoAcwr,
+          monotonia,
+          strain
+        },
+        output: {
+          classificacaoAcwr
+        },
+        cargaSemanaAtual,
+        acwr,
+        classificacaoAcwr,
+        monotonia,
+        strain
+      });
+    }
+
+    if (tipo === 'avaliacao_socioeconomica') {
+      const pontuacaoEBIA = this.pickFirstValue(calculated.pontuacaoEBIA, resultados.pontuacaoEBIA, avaliacao.pontuacaoEBIA);
+      const classificacaoLabel = this.pickFirstValue(output.classificacaoLabel, resultados.classificacaoLabel, avaliacao.classificacaoLabel);
+      return this.compactRecord({
+        calculated: {
+          pontuacaoEBIA
+        },
+        output: {
+          classificacaoLabel
+        },
+        pontuacaoEBIA,
+        classificacaoLabel
+      });
+    }
+
+    return undefined;
+  }
+
+  private mapAthleteEvaluationRow(avaliacao: Avaliacao) {
+    const tipo = normalizeAvaliacaoTipo(avaliacao.tipo);
+    const publicData = this.pickAthletePublicData(tipo, avaliacao);
+    const publicResults = this.pickAthletePublicResults(tipo, avaliacao);
+    const canExposeClassification = !ATHLETE_SENSITIVE_RESULT_TYPES.has(tipo);
+    return {
+      id: avaliacao.id,
+      sessaoId: avaliacao.sessaoId || null,
+      tipo: avaliacao.tipo,
+      pacienteId: avaliacao.pacienteId,
+      projetoId: avaliacao.projetoId || null,
+      projetoNome: avaliacao.projetoNome || null,
+      alunoId: avaliacao.alunoId || null,
+      status: avaliacao.status,
+      data: avaliacao.data || null,
+      schemaVersion: avaliacao.schemaVersion || 1,
+      formulaId: avaliacao.formulaId || null,
+      formulaVersion: avaliacao.formulaVersion || null,
+      sourceSystem: avaliacao.sourceSystem || null,
+      sourceRef: avaliacao.sourceRef || null,
+      measuredAt: avaliacao.measuredAt || null,
+      classificacao: canExposeClassification ? avaliacao.classificacao || null : null,
+      classificacaoLabel: canExposeClassification ? avaliacao.classificacaoLabel || null : null,
+      pontuacaoEBIA: Number.isFinite(avaliacao.pontuacaoEBIA) ? avaliacao.pontuacaoEBIA : null,
+      meta: this.pickAthletePublicMeta(avaliacao.meta),
+      dados: publicData,
+      resultados: publicResults,
+      createdAt: avaliacao.createdAt,
+      updatedAt: avaliacao.updatedAt
     };
   }
 
@@ -812,7 +1008,263 @@ export class AvaliacoesService {
     }
   }
 
-  private assertFinalizationRequirements(tipo: string, payload: unknown) {
+  private assertTriagemRedsFinalizationRequirements(payload: unknown) {
+    const envelope = this.asRecord(payload);
+    const dados = this.asRecord(envelope.dados);
+    const dadosBrutos = this.asRecord(dados.dados_brutos);
+    const input = this.asRecord(dados.input);
+    const resultados = this.asRecord(envelope.resultados);
+    const calculated = this.asRecord(resultados.calculated);
+    const output = this.asRecord(resultados.output);
+
+    const disponibilidadeEnergetica = this.toNumber(this.pickFirstValue(
+      dados.disponibilidadeEnergetica,
+      dados.DE,
+      input.disponibilidadeEnergetica,
+      input.DE,
+      resultados.disponibilidadeEnergetica,
+      resultados.DE,
+      calculated.disponibilidadeEnergetica,
+      calculated.DE,
+      envelope.disponibilidadeEnergetica,
+      envelope.DE
+    ));
+    const scoreRastreio = this.toNumber(this.pickFirstValue(
+      dados.scoreLeafQ,
+      dados.scoreLeaQ13,
+      input.scoreLeafQ,
+      input.scoreLeaQ13,
+      resultados.scoreLeafQ,
+      resultados.scoreLeaQ13,
+      calculated.scoreLeafQ,
+      calculated.scoreLeaQ13,
+      envelope.scoreLeafQ,
+      envelope.scoreLeaQ13
+    ));
+    const classificacaoDE = this.toText(this.pickFirstValue(
+      dados.classificacaoDE,
+      resultados.classificacaoDE,
+      calculated.classificacaoDE,
+      output.classificacaoDE,
+      envelope.classificacao
+    ));
+    const sexo = this.normalizeSexToken(this.pickFirstValue(
+      dados.sexoBiologico,
+      dados.sexo,
+      dadosBrutos.sexoBiologico,
+      dadosBrutos.sexo,
+      input.sexoBiologico,
+      input.sexo,
+      envelope.sexoBiologico,
+      envelope.sexo
+    ));
+
+    const assertQuestionnaireComplete = (source: unknown, keys: string[], message: string) => {
+      const sourceRecord = this.asRecord(source);
+      const missing = keys.filter((key, index) => {
+        const value = Array.isArray(source) ? source[index] : sourceRecord[key];
+        return this.toBooleanChoice(value) === null;
+      });
+      if (missing.length > 0) {
+        throw new BadRequestException(message);
+      }
+    };
+
+    if (!Number.isFinite(disponibilidadeEnergetica) || !Number.isFinite(scoreRastreio) || !classificacaoDE) {
+      throw new BadRequestException(
+        'Triagem RED-S exige disponibilidade energetica, score de rastreio e classificacao para finalizar.'
+      );
+    }
+    if (!sexo) {
+      throw new BadRequestException('Triagem RED-S exige sexo biologico para validar o questionario de rastreio.');
+    }
+    if (sexo === 'female') {
+      const leafAnswers = this.pickFirstValue(
+        dados.leafQRespostas,
+        dados.leaf_q_respostas,
+        input.leafQRespostas,
+        resultados.leafQRespostas,
+        envelope.leafQRespostas
+      );
+      assertQuestionnaireComplete(
+        leafAnswers,
+        Array.from({ length: 12 }, (_, index) => `leaf_q${index + 1}`),
+        'Triagem RED-S exige LEAF-Q completo para finalizar.'
+      );
+    }
+    if (sexo === 'male') {
+      const leaAnswers = this.pickFirstValue(
+        dados.leaQ13Respostas,
+        dados.lea_q13_respostas,
+        input.leaQ13Respostas,
+        resultados.leaQ13Respostas,
+        envelope.leaQ13Respostas
+      );
+      assertQuestionnaireComplete(
+        leaAnswers,
+        Array.from({ length: 13 }, (_, index) => `lea_q${index + 1}`),
+        'Triagem RED-S exige LEA-Q13 completo para finalizar.'
+      );
+    }
+  }
+
+  private assertCargaTreinoFinalizationRequirements(payload: unknown) {
+    const envelope = this.asRecord(payload);
+    const dados = this.asRecord(envelope.dados);
+    const dadosBrutos = this.asRecord(dados.dados_brutos);
+    const input = this.asRecord(dados.input);
+    const resultados = this.asRecord(envelope.resultados);
+    const calculated = this.asRecord(resultados.calculated);
+
+    const faseAtual = this.toText(this.pickFirstValue(
+      dados.faseAtual,
+      dados.fase_atual,
+      dadosBrutos.faseAtual,
+      input.faseAtual,
+      envelope.faseAtual
+    ));
+    const sessoesSemana = [
+      ...this.asArray(dados.sessoesSemana),
+      ...this.asArray(dados.sessoes_semana),
+      ...this.asArray(dadosBrutos.sessoesSemana),
+      ...this.asArray(input.sessoesSemana),
+      ...this.asArray(input.sessoes_semana),
+      ...this.asArray(envelope.sessoesSemana)
+    ];
+    const hasValidSession = sessoesSemana.some((item) => {
+      const row = this.asRecord(item);
+      const tipo = this.toText(this.pickFirstValue(row.tipo, row.modalidade, row.atividade));
+      const duracaoMin = this.toNumber(this.pickFirstValue(row.duracaoMin, row.duracao_min, row.duracao));
+      const pse = this.toNumber(this.pickFirstValue(row.pse, row.PSE, row.rpe));
+      return Boolean(tipo)
+        && Number.isFinite(duracaoMin)
+        && (duracaoMin as number) > 0
+        && Number.isFinite(pse)
+        && (pse as number) >= 0
+        && (pse as number) <= 10;
+    });
+    const cargaSemanaAtual = this.toNumber(this.pickFirstValue(
+      dados.cargaSemanaAtual,
+      dados.carga_semana_atual,
+      input.cargaSemanaAtual,
+      resultados.cargaSemanaAtual,
+      calculated.cargaSemanaAtual,
+      envelope.cargaSemanaAtual
+    ));
+
+    if (!faseAtual || !hasValidSession || !Number.isFinite(cargaSemanaAtual) || (cargaSemanaAtual as number) <= 0) {
+      throw new BadRequestException(
+        'Carga de treino exige fase atual, ao menos uma sessao valida e carga semanal calculada para finalizar.'
+      );
+    }
+  }
+
+  private assertAvaliacaoClinicaFinalizationRequirements(
+    payload: unknown,
+    context?: { pacienteRole?: string }
+  ): void {
+    const envelope = this.asRecord(payload);
+    const dados = this.asRecord(envelope.dados);
+    const input = this.asRecord(dados.input);
+    const resultados = this.asRecord(envelope.resultados);
+    const calculated = this.asRecord(resultados.calculated);
+
+    const pressaoSistolica = this.toNumber(this.pickFirstValue(
+      dados.pressaoSistolica, input.pressaoSistolica,
+      calculated.pressaoSistolica, envelope.pressaoSistolica
+    ));
+    const pressaoDiastolica = this.toNumber(this.pickFirstValue(
+      dados.pressaoDiastolica, input.pressaoDiastolica,
+      calculated.pressaoDiastolica, envelope.pressaoDiastolica
+    ));
+    const frequenciaCardiaca = this.toNumber(this.pickFirstValue(
+      dados.frequenciaCardiaca, input.frequenciaCardiaca,
+      calculated.frequenciaCardiaca, envelope.frequenciaCardiaca
+    ));
+    const frequenciaRespiratoria = this.toNumber(this.pickFirstValue(
+      dados.frequenciaRespiratoria,
+      dados.frequencia_respiratoria,
+      dados.fr,
+      input.frequenciaRespiratoria,
+      input.frequencia_respiratoria,
+      input.fr,
+      calculated.frequenciaRespiratoria,
+      calculated.frequencia_respiratoria,
+      calculated.fr,
+      resultados.frequenciaRespiratoria,
+      resultados.frequencia_respiratoria,
+      resultados.fr,
+      envelope.frequenciaRespiratoria,
+      envelope.frequencia_respiratoria,
+      envelope.fr
+    ));
+    const temperaturaCorporal = this.toNumber(this.pickFirstValue(
+      dados.temperaturaCorporal,
+      dados.temperatura_corporal,
+      dados.temperatura,
+      dados.temp,
+      input.temperaturaCorporal,
+      input.temperatura_corporal,
+      input.temperatura,
+      input.temp,
+      calculated.temperaturaCorporal,
+      calculated.temperatura_corporal,
+      calculated.temperatura,
+      calculated.temp,
+      resultados.temperaturaCorporal,
+      resultados.temperatura_corporal,
+      resultados.temperatura,
+      resultados.temp,
+      envelope.temperaturaCorporal,
+      envelope.temperatura_corporal,
+      envelope.temperatura,
+      envelope.temp
+    ));
+
+    const assertRange = (value: number | null, min: number, max: number, message: string) => {
+      if (!Number.isFinite(value) || (value as number) < min || (value as number) > max) {
+        throw new UnprocessableEntityException(message);
+      }
+    };
+
+    assertRange(pressaoSistolica, 70, 250, 'PA sistolica deve estar entre 70 e 250 mmHg.');
+    assertRange(pressaoDiastolica, 40, 150, 'PA diastolica deve estar entre 40 e 150 mmHg.');
+    assertRange(frequenciaCardiaca, 30, 220, 'Frequencia cardiaca deve estar entre 30 e 220 bpm.');
+    assertRange(frequenciaRespiratoria, 8, 40, 'Frequencia respiratoria deve estar entre 8 e 40 irpm.');
+    assertRange(temperaturaCorporal, 34, 42, 'Temperatura corporal deve estar entre 34 e 42 °C.');
+
+    const roleToken = normalizeRole(this.toText(this.pickFirstValue(
+      context?.pacienteRole,
+      dados.pacienteRole,
+      dados.rolePaciente,
+      input.pacienteRole,
+      input.rolePaciente,
+      envelope.pacienteRole,
+      envelope.rolePaciente,
+      this.asRecord(dados.meta).pacienteRole,
+      this.asRecord(envelope.meta).pacienteRole
+    )));
+    const isPacienteAtleta = roleToken === 'atleta';
+    const shouldFlagBradicardiaFisiologica = isPacienteAtleta && (frequenciaCardiaca as number) < 50;
+
+    const resultadosCalculados = this.asRecord(dados.resultados_calculados);
+    delete resultadosCalculados.bradicardiaFisiologica;
+    delete resultados.bradicardiaFisiologica;
+
+    if (shouldFlagBradicardiaFisiologica) {
+      resultadosCalculados.bradicardiaFisiologica = true;
+      resultados.bradicardiaFisiologica = true;
+    }
+
+    dados.resultados_calculados = resultadosCalculados;
+    envelope.resultados = resultados;
+  }
+
+  private assertFinalizationRequirements(
+    tipo: string,
+    payload: unknown,
+    context?: { pacienteRole?: string }
+  ) {
     const normalizedType = normalizeAvaliacaoTipo(tipo);
     if (!normalizedType) return;
 
@@ -854,6 +1306,19 @@ export class AvaliacoesService {
     }
     if (normalizedType === 'psicologia') {
       this.assertPsicologiaFinalizationRequirements(payload);
+      return;
+    }
+    if (normalizedType === 'triagem_reds') {
+      this.assertTriagemRedsFinalizationRequirements(payload);
+      return;
+    }
+    if (normalizedType === 'carga_treino') {
+      this.assertCargaTreinoFinalizationRequirements(payload);
+      return;
+    }
+    if (normalizedType === 'avaliacao_clinica') {
+      this.assertAvaliacaoClinicaFinalizationRequirements(payload, context);
+      return;
     }
   }
 
@@ -1050,6 +1515,13 @@ export class AvaliacoesService {
       qb.skip(filtros.offset!);
     }
 
+    if (role === 'atleta') {
+      const startedAt = Date.now();
+      const result = await qb.getMany();
+      this.recordQuery('avaliacoes.find_all.query', startedAt, 'GET /avaliacoes');
+      return result.map((row) => this.mapAthleteEvaluationRow(row));
+    }
+
     if (this.shouldUseListProjection(filtros)) {
       qb.select([
         'avaliacao.id AS "id"',
@@ -1087,7 +1559,26 @@ export class AvaliacoesService {
   }
 
   private findByIdRaw(id: string) {
-    return this.repo.findOne({ where: { id } });
+    return this.repo.findOne({ where: { id }, withDeleted: false });
+  }
+
+  private async assertNoSessaoTipoConflict(params: {
+    sessaoId?: string | null;
+    tipo?: string | null;
+    ignoreId?: string | null;
+  }) {
+    const sessaoId = String(params.sessaoId || '').trim();
+    const tipo = normalizeAvaliacaoTipo(String(params.tipo || ''));
+    if (!sessaoId || !tipo) return;
+
+    const existing = await this.repo.findOne({
+      where: { sessaoId, tipo },
+      select: ['id'],
+      withDeleted: false
+    });
+    if (existing?.id && existing.id !== params.ignoreId) {
+      throw new ConflictException('Ja existe uma avaliacao do tipo informado nesta sessao. Edite a avaliacao existente.');
+    }
   }
 
   async findById(id: string, user: AuthenticatedUser) {
@@ -1139,7 +1630,7 @@ export class AvaliacoesService {
         throw new ForbiddenException('Avaliacao deve manter projeto vinculado ao paciente.');
       }
       payload.projetoId = payload.projetoId || paciente.projetoId;
-      payload.projetoNome = payload.projetoNome || paciente.projetoNome || '';
+      payload.projetoNome = paciente.projetoNome || '';
     }
     let athleteReleaseMeta: {
       releaseId: string | null;
@@ -1147,36 +1638,56 @@ export class AvaliacoesService {
       releasedById: string | null;
       releasedByName: string | null;
     } | null = null;
+    let athleteUsesReleaseControlledForm = false;
     if (role === 'atleta') {
-      if (String(payload.tipo || '').toLowerCase().trim() !== 'avaliacao_socioeconomica') {
-        throw new ForbiddenException('Atleta pode preencher apenas o formulario EBIA liberado pela equipe.');
+      const athleteType = normalizeAvaliacaoTipo(String(payload.tipo || ''));
+      if (!ATHLETE_ALLOWED_CREATE_TYPES.has(athleteType)) {
+        throw new ForbiddenException('Formulario nao liberado para preenchimento pelo atleta.');
       }
-      const release = this.getEbiaSelfFormRelease(paciente);
-      if (!release.enabled) {
-        throw new ForbiddenException('Formulario EBIA ainda nao foi liberado para este atleta.');
+      if (!this.asRecord(paciente.confirmacaoAtleta).completed) {
+        throw new BadRequestException('Complete o cadastro inicial antes de enviar formularios.');
       }
       if (!paciente.alunoResponsavelId) {
-        throw new BadRequestException('Paciente sem aluno responsavel vinculado para registrar EBIA.');
+        throw new BadRequestException('Paciente sem aluno responsavel vinculado para revisar o formulario.');
       }
       payload.alunoId = paciente.alunoResponsavelId;
-      payload.status = 'finalizada';
       payload.data = payload.data || this.todayDateIso();
-      athleteReleaseMeta = {
-        releaseId: release.releaseId,
-        releasedAt: release.releasedAt,
-        releasedById: release.releasedById,
-        releasedByName: release.releasedByName
-      };
-      payload.meta = {
-        ...(this.asRecord(payload.meta)),
-        origemPreenchimento: 'atleta',
-        ebiaSelfForm: {
+
+      if (ATHLETE_RELEASE_CONTROLLED_TYPES.has(athleteType)) {
+        const release = this.getEbiaSelfFormRelease(paciente);
+        if (!release.enabled) {
+          throw new ForbiddenException('Formulario EBIA ainda nao foi liberado para este atleta.');
+        }
+        payload.status = 'finalizada';
+        athleteUsesReleaseControlledForm = true;
+        athleteReleaseMeta = {
           releaseId: release.releaseId,
           releasedAt: release.releasedAt,
           releasedById: release.releasedById,
           releasedByName: release.releasedByName
-        }
-      };
+        };
+        payload.meta = {
+          ...(this.asRecord(payload.meta)),
+          origemPreenchimento: 'atleta',
+          ebiaSelfForm: {
+            releaseId: release.releaseId,
+            releasedAt: release.releasedAt,
+            releasedById: release.releasedById,
+            releasedByName: release.releasedByName
+          }
+        };
+      } else {
+        payload.status = 'rascunho';
+        payload.meta = {
+          ...(this.asRecord(payload.meta)),
+          origemPreenchimento: 'atleta',
+          atletaSelfReport: true,
+          aguardandoRevisao: true,
+          submittedAt: new Date().toISOString(),
+          submittedById: user.id,
+          submittedByName: user.name || ''
+        };
+      }
     }
     await this.resolveAlunoOrThrow(payload.alunoId);
     const normalizedStatus = this.normalizeStatus(payload.status);
@@ -1205,7 +1716,8 @@ export class AvaliacoesService {
     if (normalizedStatus === 'finalizada') {
       this.assertFinalizationRequirements(
         normalizedPayload.tipo || payload.tipo,
-        normalizedPayload
+        normalizedPayload,
+        { pacienteRole: paciente.atletaUserId ? 'atleta' : undefined }
       );
     }
     if (role !== 'atleta' && normalizedStatus === 'finalizada' && computedCompletude < MIN_COMPLETUDE_TO_FINALIZE) {
@@ -1218,6 +1730,11 @@ export class AvaliacoesService {
       completude: computedCompletude,
       completudeComputedAt: new Date().toISOString()
     };
+
+    await this.assertNoSessaoTipoConflict({
+      sessaoId: sessao.id,
+      tipo: normalizedPayload.tipo || payload.tipo
+    });
 
     const avaliacao = this.repo.create({
       ...normalizedPayload,
@@ -1240,7 +1757,7 @@ export class AvaliacoesService {
       throw error;
     }
     await this.syncSessaoStatus(saved.sessaoId);
-    if (role === 'atleta') {
+    if (role === 'atleta' && athleteUsesReleaseControlledForm) {
       await this.consumeEbiaSelfFormRelease(paciente, saved.id);
       await this.recordAthleteEbiaSubmissionAudit({
         user,
@@ -1252,6 +1769,11 @@ export class AvaliacoesService {
       });
     }
     this.realtime.emit('avaliacoes.created', saved);
+    void this.clinicalAlerts?.dispatch(saved, {
+      nome: paciente.nome,
+      alunoResponsavelId: paciente.alunoResponsavelId,
+      professorSupervisorNome: paciente.professorSupervisorNome,
+    });
     return saved;
   }
 
@@ -1343,7 +1865,8 @@ export class AvaliacoesService {
     if (targetStatus === 'finalizada') {
       this.assertFinalizationRequirements(
         normalizedDto.tipo || avaliacao.tipo,
-        payloadParaCompletude
+        payloadParaCompletude,
+        { pacienteRole: nextPaciente.atletaUserId ? 'atleta' : undefined }
       );
     }
     if (targetStatus === 'finalizada' && computedCompletude < MIN_COMPLETUDE_TO_FINALIZE) {
@@ -1358,13 +1881,19 @@ export class AvaliacoesService {
       completudeComputedAt: new Date().toISOString()
     };
 
+    await this.assertNoSessaoTipoConflict({
+      sessaoId: nextSessaoId,
+      tipo: normalizedDto.tipo || avaliacao.tipo,
+      ignoreId: avaliacao.id
+    });
+
     const merged = this.repo.merge(avaliacao, {
       ...normalizedDto,
       meta: enrichedMeta,
       sessaoId: nextSessaoId || undefined,
       alunoId: nextAlunoId || undefined,
       projetoId: nextPaciente.projetoId || nextProjetoId || undefined,
-      projetoNome: nextPaciente.projetoNome || normalizedDto.projetoNome || avaliacao.projetoNome || undefined,
+      projetoNome: nextPaciente.projetoId ? (nextPaciente.projetoNome || '') : undefined,
       status: targetStatus,
       schemaVersion: normalizedDto.schemaVersion || avaliacao.schemaVersion || 1,
       formulaId: normalizedFormula.formulaId,
@@ -1386,6 +1915,11 @@ export class AvaliacoesService {
       await this.syncSessaoStatus(previousSessaoId);
     }
     this.realtime.emit('avaliacoes.updated', saved);
+    void this.clinicalAlerts?.dispatch(saved, {
+      nome: nextPaciente.nome,
+      alunoResponsavelId: nextPaciente.alunoResponsavelId,
+      professorSupervisorNome: nextPaciente.professorSupervisorNome,
+    });
     return saved;
   }
 
@@ -1402,7 +1936,8 @@ export class AvaliacoesService {
     const startedAt = Date.now();
     const avaliacoes = await this.repo.find({
       where: { pacienteId },
-      select: ['id', 'tipo', 'status', 'meta']
+      select: ['id', 'tipo', 'status', 'meta'],
+      withDeleted: false
     });
     this.recordQuery('avaliacoes.find_pendencias.query', startedAt, 'GET /avaliacoes/pendencias');
 
@@ -1458,7 +1993,7 @@ export class AvaliacoesService {
     if (!avaliacao) {
       throw new NotFoundException('Avaliacao nao encontrada.');
     }
-    await this.repo.delete(id);
+    await this.repo.softDelete(id);
     await this.syncSessaoStatus(avaliacao.sessaoId);
     this.realtime.emit('avaliacoes.deleted', { id });
     return { success: true };

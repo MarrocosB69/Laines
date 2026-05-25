@@ -13,7 +13,8 @@ import {
   ClipboardList,
   TrendingUp,
   Edit2,
-  Save
+  Save,
+  Trash2
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useUiFeedback } from "../../../contexts/UiFeedbackContext";
@@ -266,7 +267,7 @@ const ActivityItem = ({ activity }) => {
       </div>
       <div className="activity-details">
         <h4>{activity.action}</h4>
-        <p>{label} - {activity.time} atras</p>
+        <p>{label} — {activity.time} atrás</p>
       </div>
       <span className="activity-tag" style={{ color, background: `${color}10` }}>
         {activity.type}
@@ -307,16 +308,20 @@ const DashboardStats = () => {
   const [taskSearch, setTaskSearch] = useState("");
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
-  const { notify } = useUiFeedback();
+  const { notify, confirm } = useUiFeedback();
 
   const loadTasks = useCallback(async () => {
     try {
       const { data } = await api.get("/tarefas");
       setTasks(data || []);
     } catch (error) {
-      console.warn("DashboardStats: falha ao carregar tarefas", error);
+      notify({
+        type: "error",
+        title: "Falha ao carregar tarefas",
+        message: getApiErrorMessage(error, "Não foi possível atualizar as tarefas.")
+      });
     }
-  }, []);
+  }, [notify]);
 
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!user) return;
@@ -360,7 +365,6 @@ const DashboardStats = () => {
       setActivityFeed(summaryActivities);
       setTasks(tarefasRes.data || []);
     } catch (error) {
-      console.warn("DashboardStats: falha ao carregar dados", error);
       if (!silent) {
         notify({
           type: "error",
@@ -503,7 +507,6 @@ const DashboardStats = () => {
       });
       handleCancelEdit();
     } catch (error) {
-      console.warn("DashboardStats: falha ao editar tarefa", error);
       notify({
         type: "error",
         title: "Falha ao atualizar",
@@ -512,15 +515,39 @@ const DashboardStats = () => {
     }
   };
 
+  const handleDeleteTask = async (task) => {
+    const confirmed = await confirm({
+      title: "Excluir tarefa",
+      message: `Deseja excluir "${task.title}"? Esta ação não pode ser desfeita.`,
+      confirmLabel: "Excluir",
+      cancelLabel: "Cancelar"
+    });
+    if (!confirmed) return;
+    try {
+      await api.delete(`/tarefas/${task.id}`);
+      await loadTasks();
+      notify({
+        type: "success",
+        title: "Tarefa excluída",
+        message: "A tarefa foi removida do painel."
+      });
+    } catch (error) {
+      notify({
+        type: "error",
+        title: "Falha ao excluir",
+        message: getApiErrorMessage(error, "Não foi possível excluir a tarefa.")
+      });
+    }
+  };
+
   const statCards = [
     { id: 1, title: "Total Atletas", value: stats.totalPatients, icon: Users, color: "blue", delay: 1 },
     { id: 2, title: "Professores/Profissionais", value: stats.professors, icon: GraduationCap, color: "purple", delay: 2 },
-    { id: 3, title: "Em Atendimento", value: stats.activePatients, icon: Activity, gradient: true, color: "green", description: "Atletas ativos", delay: 3 },
+    { id: 3, title: "Pacientes Ativos", value: stats.activePatients, icon: Activity, gradient: true, color: "green", description: "Status ativo no sistema", delay: 3 },
     { id: 4, title: "Fila de Espera", value: stats.waitingList, icon: ClipboardList, color: "orange", delay: 4 }
   ];
 
   const insights = [
-    { id: 1, title: "Consultas hoje", value: appointmentMetrics.todayCount, subtitle: "Agenda do dia", tone: "primary" },
     { id: 2, title: "Consultas 7 dias", value: appointmentMetrics.weekCount, subtitle: "Próxima semana", tone: "info" },
     { id: 3, title: "Taxa de faltas", value: `${appointmentMetrics.noShowRate}%`, subtitle: "Últimos 30 dias", tone: "danger" },
     { id: 4, title: "Taxa de remarcação", value: `${appointmentMetrics.rescheduleRate}%`, subtitle: "Últimos 30 dias", tone: "warning" },
@@ -528,10 +555,8 @@ const DashboardStats = () => {
   ];
 
   const pulseCards = [
-    { id: "pulse-1", title: "Hoje", value: appointmentMetrics.todayCount, subtitle: "Consultas", tone: "primary" },
-    { id: "pulse-2", title: "Próximos 7 dias", value: appointmentMetrics.weekCount, subtitle: "Agenda geral", tone: "info" },
-    { id: "pulse-3", title: "Conclusão", value: `${appointmentMetrics.completionRate}%`, subtitle: "Últimos 30 dias", tone: "success" },
-    { id: "pulse-4", title: "Fila de espera", value: stats.waitingList, subtitle: "Triagem/Espera", tone: "warning" }
+    { id: "pulse-1", title: "Hoje", value: appointmentMetrics.todayCount, subtitle: "Consultas agendadas", tone: "primary" },
+    { id: "pulse-4", title: "Fila de espera", value: stats.waitingList, subtitle: "Triagem / aguardando vaga", tone: "warning" }
   ];
 
   const firstName = useMemo(() => {
@@ -694,6 +719,9 @@ const DashboardStats = () => {
                       </button>
                       <Button type="button" variant="ghost" size="sm" onClick={() => handleStartEdit(task)}>
                         <Edit2 size={14} />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => handleDeleteTask(task)} aria-label="Excluir tarefa">
+                        <Trash2 size={14} />
                       </Button>
                     </div>
                   </div>

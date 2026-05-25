@@ -10,9 +10,12 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { AvaliacoesService } from './avaliacoes.service';
+import { RelatorioClinicoService } from './relatorio-clinico.service';
 import { CriarAvaliacaoDto } from './dto/criar-avaliacao.dto';
 import { AtualizarAvaliacaoDto } from './dto/atualizar-avaliacao.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,12 +25,15 @@ import { AuthenticatedUser } from '../auth/access-control';
 import { parsePagination } from '../common/pagination';
 import { ADMIN_ROLES, STUDENT_MEMBER_ROLES } from '../common/domain/access.constants';
 
-const ROLES_EDICAO = [...ADMIN_ROLES, ...STUDENT_MEMBER_ROLES];
+const ROLES_EDICAO = [...ADMIN_ROLES, 'coord_atendimento', ...STUDENT_MEMBER_ROLES];
 const ROLES_CRIACAO = [...ROLES_EDICAO, 'atleta'];
 
 @Controller('avaliacoes')
 export class AvaliacoesController {
-  constructor(private readonly avaliacoesService: AvaliacoesService) {}
+  constructor(
+    private readonly avaliacoesService: AvaliacoesService,
+    private readonly relatorioClinicoService: RelatorioClinicoService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -59,6 +65,19 @@ export class AvaliacoesController {
     @Param('pacienteId', new ParseUUIDPipe()) pacienteId: string
   ) {
     return this.avaliacoesService.findPendencias(pacienteId, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('paciente/:pacienteId/relatorio-clinico')
+  async relatorioClinicoPdf(
+    @Req() req: { user: AuthenticatedUser },
+    @Param('pacienteId', new ParseUUIDPipe()) pacienteId: string,
+    @Res() res: Response
+  ) {
+    const pdfBuffer = await this.relatorioClinicoService.gerarPDF(pacienteId, req.user);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=relatorio-clinico-${pacienteId}.pdf`);
+    res.send(pdfBuffer);
   }
 
   @UseGuards(JwtAuthGuard)

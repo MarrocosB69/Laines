@@ -115,7 +115,7 @@ const ReportsPage = () => {
       satisfacao: {
         value: Number(metrics.satisfacao || 0).toFixed(1),
         trend: { value: `${Number(metrics.completionRate || 0)}%`, direction: 'up' },
-        description: getMetricDescription('satisfacao', 'Índice proxy operacional (0-5)')
+        description: getMetricDescription('satisfacao', 'Índice calculado a partir de métricas operacionais (0–5). Não representa pesquisa de satisfação com pacientes.')
       },
       retencao: {
         value: `${Number(metrics.retencao || 0)}%`,
@@ -203,12 +203,12 @@ const ReportsPage = () => {
       description: reportsData.integridade.description
     },
     {
-      title: 'Satisfação estimada',
+      title: 'Qualidade operacional',
       value: reportsData.satisfacao.value,
       icon: TrendingUp,
       color: 'gradient-rose',
       trend: reportsData.satisfacao.trend,
-      description: reportsData.satisfacao.description
+      description: reportsData.satisfacao.description || 'Índice calculado a partir de métricas operacionais (0–5)'
     },
     {
       title: 'Retenção',

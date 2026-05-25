@@ -14,6 +14,8 @@ import { access, unlink } from 'fs/promises';
 import { basename, extname, resolve } from 'path';
 import { Paciente } from './paciente.entity';
 import { User } from '../users/user.entity';
+import { Avaliacao } from '../avaliacoes/avaliacao.entity';
+import { AvaliacaoSessao } from '../avaliacoes/avaliacao-sessao.entity';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { CriarPacienteDto } from './dto/criar-paciente.dto';
@@ -56,6 +58,8 @@ export class PacientesService {
   constructor(
     @InjectRepository(Paciente) private repo: Repository<Paciente>,
     @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(Avaliacao) private avaliacoesRepo: Repository<Avaliacao>,
+    @InjectRepository(AvaliacaoSessao) private sessoesRepo: Repository<AvaliacaoSessao>,
     private usersService: UsersService,
     private realtime: RealtimeGateway,
     private readonly config: ConfigService,
@@ -95,6 +99,47 @@ export class PacientesService {
         .filter(Boolean);
     }
     return [];
+  }
+
+  private normalizeOptionalStringArray(value: unknown): string[] | undefined {
+    if (value === undefined) return undefined;
+    return this.normalizeStringArray(value);
+  }
+
+  private normalizeOptionalNumber(value: unknown): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  private compactRecord(record: Record<string, unknown>): Record<string, unknown> {
+    return Object.entries(record).reduce<Record<string, unknown>>((acc, [key, value]) => {
+      if (value === undefined) return acc;
+      if (Array.isArray(value)) {
+        acc[key] = value;
+        return acc;
+      }
+      if (value && typeof value === 'object') {
+        acc[key] = this.compactRecord(value as Record<string, unknown>);
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {});
+  }
+
+  private hasMeaningfulValue(value: unknown): boolean {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'string') return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') {
+      return Object.values(value as Record<string, unknown>).some((item) => this.hasMeaningfulValue(item));
+    }
+    return true;
+  }
+
+  private todayDateIso() {
+    return new Date().toISOString().slice(0, 10);
   }
 
   private extractClinicalSummaryFromOnboarding(
@@ -194,6 +239,56 @@ export class PacientesService {
     return cpf.replace(/\D/g, '');
   }
 
+  private maskCpf(cpf?: string) {
+    const digits = this.normalizeCpf(cpf);
+    if (digits.length < 2) return '';
+    return `***.***.***-${digits.slice(-2)}`;
+  }
+
+  private mapAthletePaciente(paciente: Paciente) {
+    const confirmacaoAtleta = this.asObject(paciente.confirmacaoAtleta);
+    const ebiaSelfForm = this.asObject(confirmacaoAtleta.ebiaSelfForm);
+    return {
+      id: paciente.id,
+      prontuario: paciente.prontuario,
+      nome: paciente.nome,
+      cpf: this.maskCpf(paciente.cpf),
+      dataNascimento: paciente.dataNascimento || null,
+      genero: paciente.genero,
+      status: paciente.status,
+      modalidadePrincipal: paciente.modalidadePrincipal || null,
+      tempoPratica: paciente.tempoPratica || null,
+      frequenciaSemanal: paciente.frequenciaSemanal ?? null,
+      duracaoSessao: paciente.duracaoSessao ?? null,
+      outrasModalidades: paciente.outrasModalidades || null,
+      tipoTreino: paciente.tipoTreino,
+      intensidade: paciente.intensidade,
+      objetivo: paciente.objetivo,
+      projetoId: paciente.projetoId || null,
+      projetoNome: paciente.projetoNome || null,
+      alunoResponsavelId: paciente.alunoResponsavelId || null,
+      alunoResponsavelNome: paciente.alunoResponsavelNome || null,
+      professorSupervisorNome: paciente.professorSupervisorNome || null,
+      atletaUserId: paciente.atletaUserId || null,
+      consentimentoPesquisa: paciente.consentimentoPesquisa,
+      consentimentoData: paciente.consentimentoData || null,
+      faltas: paciente.faltas,
+      confirmacaoAtleta: {
+        completed: Boolean(confirmacaoAtleta.completed),
+        submittedAt: confirmacaoAtleta.submittedAt || null,
+        dados: this.asObject(confirmacaoAtleta.dados),
+        ebiaSelfForm: {
+          enabled: Boolean(ebiaSelfForm.enabled),
+          releasedAt: ebiaSelfForm.releasedAt || null,
+          releaseId: ebiaSelfForm.releaseId || null,
+          consumedAt: ebiaSelfForm.consumedAt || null
+        }
+      },
+      createdAt: paciente.createdAt,
+      updatedAt: paciente.updatedAt
+    };
+  }
+
   private normalizeEmail(email?: string) {
     const normalized = String(email || '').trim().toLowerCase();
     return normalized || '';
@@ -243,7 +338,6 @@ export class PacientesService {
     }
 
     const athleteCreatePayload: CreateUserDto = {
-      email: email || 'placeholder@laines.ufrn.br',
       name: this.normalizeText(payload.nome),
       role: 'atleta',
       cpf: payload.cpf,
@@ -384,6 +478,9 @@ export class PacientesService {
     const startedAt = Date.now();
     return qb.getMany().then((result) => {
       this.recordQuery('pacientes.find_all.query', startedAt, 'GET /pacientes');
+      if (normalizeRole(user.role) === 'atleta') {
+        return result.map((paciente) => this.mapAthletePaciente(paciente));
+      }
       return result;
     });
   }
@@ -392,6 +489,9 @@ export class PacientesService {
     const paciente = await this.findByIdRaw(id);
     if (!paciente) return null;
     if (!this.canAccessPaciente(user, paciente)) return null;
+    if (normalizeRole(user.role) === 'atleta') {
+      return this.mapAthletePaciente(paciente);
+    }
     return paciente;
   }
 
@@ -409,13 +509,13 @@ export class PacientesService {
           throw new ForbiddenException('Sem permissao para vincular paciente a outro aluno.');
         }
         payload.alunoResponsavelId = user.id;
-        payload.alunoResponsavelNome = payload.alunoResponsavelNome || user.name || '';
+        payload.alunoResponsavelNome = user.name || '';
       } else if (hasTeamScopedAccess(role)) {
         if (payload.professorSupervisorId && payload.professorSupervisorId !== user.id) {
           throw new ForbiddenException('Sem permissao para definir outro supervisor.');
         }
         payload.professorSupervisorId = payload.professorSupervisorId || user.id;
-        payload.professorSupervisorNome = payload.professorSupervisorNome || user.name || '';
+        payload.professorSupervisorNome = user.name || '';
       } else {
         throw new ForbiddenException('Sem permissao para criar pacientes.');
       }
@@ -428,19 +528,19 @@ export class PacientesService {
     if (payload.alunoResponsavelId) {
       const aluno = await this.resolveAlunoResponsavelOrThrow(payload.alunoResponsavelId);
       payload.alunoResponsavelId = aluno.id;
-      payload.alunoResponsavelNome = payload.alunoResponsavelNome || aluno.name;
+      payload.alunoResponsavelNome = aluno.name;
       payload.professorSupervisorId = payload.professorSupervisorId || aluno.supervisorId;
       if (payload.projetoId && aluno.projetoId && payload.projetoId !== aluno.projetoId) {
         throw new BadRequestException('Projeto informado diverge do projeto vinculado ao aluno responsavel.');
       }
       payload.projetoId = payload.projetoId || aluno.projetoId;
-      payload.projetoNome = payload.projetoNome || aluno.projetoNome || '';
+      payload.projetoNome = aluno.projetoNome || '';
     }
 
     if (payload.professorSupervisorId) {
       const supervisor = await this.resolveProfessorSupervisorOrThrow(payload.professorSupervisorId);
       payload.professorSupervisorId = supervisor.id;
-      payload.professorSupervisorNome = payload.professorSupervisorNome || supervisor.name;
+      payload.professorSupervisorNome = supervisor.name;
     }
 
     if (payload.alunoResponsavelId && !payload.professorSupervisorId) {
@@ -541,20 +641,20 @@ export class PacientesService {
       if (nextAlunoId) {
         const aluno = await this.resolveAlunoResponsavelOrThrow(nextAlunoId);
         dto.alunoResponsavelId = aluno.id;
-        dto.alunoResponsavelNome = dto.alunoResponsavelNome || aluno.name;
+        dto.alunoResponsavelNome = aluno.name;
         nextSupervisorId = nextSupervisorId || aluno.supervisorId;
         if (nextProjetoId && aluno.projetoId && nextProjetoId !== aluno.projetoId) {
           throw new BadRequestException('Projeto informado diverge do projeto vinculado ao aluno responsavel.');
         }
         nextProjetoId = nextProjetoId || aluno.projetoId;
         dto.projetoId = dto.projetoId || nextProjetoId;
-        dto.projetoNome = dto.projetoNome || aluno.projetoNome || '';
+        dto.projetoNome = aluno.projetoNome || '';
       }
 
       if (nextSupervisorId) {
         const supervisor = await this.resolveProfessorSupervisorOrThrow(nextSupervisorId);
         dto.professorSupervisorId = supervisor.id;
-        dto.professorSupervisorNome = dto.professorSupervisorNome || supervisor.name;
+        dto.professorSupervisorNome = supervisor.name;
       }
 
       if (nextAlunoId && !nextSupervisorId) {
@@ -643,6 +743,222 @@ export class PacientesService {
     return payload;
   }
 
+  private buildOnboardingEsportivoPayload(dto?: AtualizarOnboardingAtletaDto['esportivo']) {
+    if (!dto || typeof dto !== 'object') return {};
+    const carga = this.asObject(dto.cargaSemanal);
+    const historicoLesoes = Array.isArray(dto.historicoLesoes)
+      ? dto.historicoLesoes
+        .map((item) => this.compactRecord({
+          local: this.normalizeText(item?.local) || undefined,
+          tempoAfastado: this.normalizeText(item?.tempoAfastado) || undefined
+        }))
+        .filter((item) => this.hasMeaningfulValue(item))
+      : undefined;
+    const proximasCompeticoes = Array.isArray(dto.proximasCompeticoes)
+      ? dto.proximasCompeticoes
+        .map((item) => this.compactRecord({
+          nome: this.normalizeText(item?.nome) || undefined,
+          data: this.normalizeText(item?.data) || undefined
+        }))
+        .filter((item) => this.hasMeaningfulValue(item))
+      : undefined;
+
+    return this.compactRecord({
+      modalidade: this.normalizeText(dto.modalidade) || undefined,
+      posicao: this.normalizeText(dto.posicao) || undefined,
+      provas: this.normalizeOptionalStringArray(dto.provas),
+      nivel: this.normalizeText(dto.nivel) || undefined,
+      clube: this.normalizeText(dto.clube) || undefined,
+      frequenciaSemanal: this.normalizeOptionalNumber(dto.frequenciaSemanal),
+      duracaoSessao: this.normalizeOptionalNumber(dto.duracaoSessao),
+      cargaSemanal: this.compactRecord({
+        tecnico: this.normalizeOptionalNumber(carga.tecnico),
+        tatico: this.normalizeOptionalNumber(carga.tatico),
+        fisico: this.normalizeOptionalNumber(carga.fisico),
+        preventivo: this.normalizeOptionalNumber(carga.preventivo)
+      }),
+      fasePeriodizacao: this.normalizeText(dto.fasePeriodizacao) || undefined,
+      historicoLesoes,
+      proximasCompeticoes,
+      historicaREDS: dto.historicaREDS
+    });
+  }
+
+  private normalizeOnboardingMedicamentos(value: unknown) {
+    if (value === undefined) return undefined;
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => {
+        const record = this.asObject(item);
+        return this.compactRecord({
+          nome: this.normalizeText(record.nome),
+          dose: this.normalizeText(record.dose) || undefined,
+          frequencia: this.normalizeText(record.frequencia) || undefined
+        });
+      })
+      .filter((item) => this.normalizeText(item.nome).length > 0);
+  }
+
+  private buildFamilyHistoryFlags(comorbidadesFamiliares?: string[]) {
+    const normalized = this.normalizeStringArray(comorbidadesFamiliares)
+      .map((item) => item.toLowerCase());
+    if (normalized.length === 0) return {};
+    const includes = (terms: string[]) => normalized.some((item) => terms.some((term) => item.includes(term)));
+    return {
+      familyCardiovascular: includes(['cardio', 'coracao', 'coração', 'hipertens']),
+      familyDiabetes: includes(['diabetes']),
+      familyCancer: includes(['cancer', 'câncer', 'neoplas']),
+      familyObesity: includes(['obes'])
+    };
+  }
+
+  private buildOnboardingAnamneseDados(
+    dto: AtualizarOnboardingAtletaDto,
+    paciente: Paciente,
+    dataAvaliacao: string
+  ) {
+    const esportivo = this.buildOnboardingEsportivoPayload(dto.esportivo);
+    const objetivos = this.normalizeOptionalStringArray(dto.objetivos);
+    const patologias = this.normalizeOptionalStringArray(dto.patologias);
+    const comorbidadesFamiliares = this.normalizeOptionalStringArray(dto.comorbidadesFamiliares);
+
+    const dadosBrutos = this.compactRecord({
+      dataAvaliacao,
+      nomePaciente: paciente.nome,
+      dataNascimento: this.normalizeText(dto.dataNascimento || paciente.dataNascimento) || undefined,
+      genero: this.normalizeText(dto.genero) || undefined,
+      sexoBiologico: this.normalizeText(dto.genero) || undefined,
+      identidadeGenero: this.normalizeText(dto.identidadeGenero) || undefined,
+      telefone: this.normalizeText(dto.telefone) || undefined,
+      cidade: this.normalizeText(dto.cidade) || undefined,
+      estado: this.normalizeText(dto.estado) || undefined,
+      objetivos,
+      queixaPrincipal: this.normalizeText(dto.queixaPrincipal) || undefined,
+      patologias,
+      medicamentos: this.normalizeOnboardingMedicamentos(dto.medicamentos),
+      suplementos: this.normalizeOnboardingMedicamentos(dto.suplementos),
+      alergias: this.normalizeText(dto.alergias) || undefined,
+      cirurgias: this.normalizeText(dto.cirurgias) || undefined,
+      sonoHoras: this.normalizeOptionalNumber(dto.sonoHoras),
+      sonoQualidade: this.normalizeOptionalNumber(dto.sonoQualidade),
+      estresseNivel: this.normalizeOptionalNumber(dto.estresseNivel),
+      alcoolUso: this.normalizeText(dto.alcoolUso) || undefined,
+      tabacoUso: this.normalizeText(dto.tabacoUso) || undefined,
+      cicloMenstrualRegularidade: this.normalizeText(dto.cicloMenstrualRegularidade) || undefined,
+      cicloMenstrualContraceptivo: this.normalizeText(dto.cicloMenstrualContraceptivo) || undefined,
+      comorbidadesFamiliares,
+      ...this.buildFamilyHistoryFlags(comorbidadesFamiliares),
+      atividadeTipo: this.normalizeText(dto.esportivo?.modalidade) || undefined,
+      atividadeFrequencia: this.normalizeOptionalNumber(dto.esportivo?.frequenciaSemanal),
+      atividadeDuracao: this.normalizeOptionalNumber(dto.esportivo?.duracaoSessao),
+      esportivo: this.hasMeaningfulValue(esportivo) ? esportivo : undefined
+    });
+
+    return {
+      dados_brutos: dadosBrutos,
+      esportivo
+    };
+  }
+
+  private buildOnboardingPacientePatch(dto: AtualizarOnboardingAtletaDto): Partial<Paciente> {
+    const patch: Partial<Paciente> = {};
+    const has = (key: keyof AtualizarOnboardingAtletaDto) => Object.prototype.hasOwnProperty.call(dto, key);
+    const assignText = (dtoKey: keyof AtualizarOnboardingAtletaDto, entityKey: keyof Paciente) => {
+      if (!has(dtoKey)) return;
+      const value = this.normalizeText(dto[dtoKey]);
+      if (value) {
+        (patch as Record<string, unknown>)[entityKey as string] = value;
+      }
+    };
+
+    assignText('dataNascimento', 'dataNascimento');
+    assignText('genero', 'genero');
+    assignText('telefone', 'telefone');
+    assignText('cidade', 'cidade');
+    assignText('estado', 'estado');
+
+    if (has('objetivos')) {
+      const objetivos = this.normalizeStringArray(dto.objetivos);
+      if (objetivos[0]) {
+        patch.objetivo = objetivos[0];
+      }
+    }
+    if (has('patologias')) {
+      patch.comorbidadesPessoais = this.normalizeStringArray(dto.patologias);
+    }
+    if (has('comorbidadesFamiliares')) {
+      patch.comorbidadesFamiliares = this.normalizeStringArray(dto.comorbidadesFamiliares);
+    }
+
+    if (dto.esportivo && typeof dto.esportivo === 'object') {
+      const modalidade = this.normalizeText(dto.esportivo.modalidade);
+      const frequenciaSemanal = this.normalizeOptionalNumber(dto.esportivo.frequenciaSemanal);
+      const duracaoSessao = this.normalizeOptionalNumber(dto.esportivo.duracaoSessao);
+      if (modalidade) patch.modalidadePrincipal = modalidade;
+      if (frequenciaSemanal !== undefined) patch.frequenciaSemanal = frequenciaSemanal;
+      if (duracaoSessao !== undefined) patch.duracaoSessao = duracaoSessao;
+    }
+
+    return patch;
+  }
+
+  private async resolveOnboardingSessao(
+    paciente: Paciente,
+    sessoesRepo: Repository<AvaliacaoSessao>
+  ) {
+    const existente = await sessoesRepo.findOne({
+      where: { pacienteId: paciente.id },
+      order: { createdAt: 'DESC' }
+    });
+    if (existente) return existente;
+
+    return sessoesRepo.save(sessoesRepo.create({
+      pacienteId: paciente.id,
+      projetoId: paciente.projetoId || undefined,
+      dataReferencia: this.todayDateIso(),
+      status: 'rascunho',
+      meta: {
+        origem: 'athlete_onboarding'
+      }
+    }));
+  }
+
+  private async saveOnboardingAnamnese(
+    paciente: Paciente,
+    sessao: AvaliacaoSessao,
+    dto: AtualizarOnboardingAtletaDto,
+    avaliacoesRepo: Repository<Avaliacao>
+  ) {
+    const dataAvaliacao = this.todayDateIso();
+    const payload: Partial<Avaliacao> = {
+      sessaoId: sessao.id,
+      tipo: 'anamnese_inicial',
+      pacienteId: paciente.id,
+      projetoId: paciente.projetoId || undefined,
+      projetoNome: paciente.projetoNome || undefined,
+      alunoId: paciente.alunoResponsavelId || undefined,
+      status: 'rascunho',
+      data: dataAvaliacao,
+      dados: this.buildOnboardingAnamneseDados(dto, paciente, dataAvaliacao),
+      autoSave: false,
+      schemaVersion: 1,
+      sourceSystem: 'athlete_onboarding',
+      sourceRef: paciente.id
+    };
+
+    const existente = await avaliacoesRepo.findOne({
+      where: {
+        sessaoId: sessao.id,
+        tipo: 'anamnese_inicial'
+      }
+    });
+
+    if (existente) {
+      return avaliacoesRepo.save(avaliacoesRepo.merge(existente, payload));
+    }
+    return avaliacoesRepo.save(avaliacoesRepo.create(payload));
+  }
+
   async updateAthleteOnboarding(
     id: string,
     dto: AtualizarOnboardingAtletaDto,
@@ -661,34 +977,80 @@ export class PacientesService {
       throw new ForbiddenException('Sem permissao para atualizar onboarding do atleta.');
     }
 
-    if (!dto.confirmacaoAtleta || Object.keys(dto.confirmacaoAtleta).length === 0) {
+    if (paciente.atletaUserId !== user.id) {
+      throw new ForbiddenException('Sem permissao para atualizar onboarding deste atleta.');
+    }
+
+    if (!this.hasMeaningfulValue(dto)) {
       throw new BadRequestException('Dados de onboarding invalidos.');
     }
 
-    const currentConfirmation = this.asObject(paciente.confirmacaoAtleta);
-    const incomingConfirmation = this.asObject(dto.confirmacaoAtleta);
-    const currentData = this.asObject(currentConfirmation.dados);
-    const incomingData = this.asObject(incomingConfirmation.dados);
-    const mergedOnboardingData: Record<string, unknown> = {
-      ...currentData,
-      ...incomingData
-    };
-    const mergedConfirmation: Record<string, unknown> = {
-      ...currentConfirmation,
-      ...incomingConfirmation,
-      dados: mergedOnboardingData
-    };
-    const onboardingSummary = this.extractClinicalSummaryFromOnboarding(mergedOnboardingData);
+    const saved = await this.repo.manager.transaction(async (manager) => {
+      const pacientesRepo = manager.getRepository(Paciente);
+      const sessoesRepo = manager.getRepository(AvaliacaoSessao);
+      const avaliacoesRepo = manager.getRepository(Avaliacao);
+      const currentPaciente = await pacientesRepo.findOne({ where: { id } });
+      if (!currentPaciente) {
+        throw new NotFoundException('Paciente nao encontrado.');
+      }
+      if (currentPaciente.atletaUserId !== user.id) {
+        throw new ForbiddenException('Sem permissao para atualizar onboarding deste atleta.');
+      }
 
-    const nextProntuario = paciente.prontuario || await this.generateProntuarioNumber();
-    const merged = this.repo.merge(paciente, {
-      prontuario: nextProntuario,
-      confirmacaoAtleta: mergedConfirmation,
-      ...onboardingSummary
-    } as any);
-    const saved = await this.repo.save(merged);
+      const sessao = await this.resolveOnboardingSessao(currentPaciente, sessoesRepo);
+      const avaliacao = await this.saveOnboardingAnamnese(currentPaciente, sessao, dto, avaliacoesRepo);
+      const completedAt = new Date().toISOString();
+      const confirmation = {
+        ...this.asObject(dto.confirmacaoAtleta),
+        completadoEm: completedAt,
+        versao: '1.0',
+        anamneseId: avaliacao.id,
+        completed: true,
+        submittedAt: completedAt
+      };
+      const nextProntuario = currentPaciente.prontuario || await this.generateProntuarioNumber();
+      const merged = pacientesRepo.merge(currentPaciente, {
+        prontuario: nextProntuario,
+        ...this.buildOnboardingPacientePatch(dto),
+        confirmacaoAtleta: confirmation
+      } as Partial<Paciente>);
+      return pacientesRepo.save(merged);
+    });
     this.realtime.emit('pacientes.updated', saved);
     return saved;
+  }
+
+  async getAthleteOnboardingStatus(id: string, user: AuthenticatedUser) {
+    const paciente = await this.findByIdRaw(id);
+    if (!paciente) {
+      throw new NotFoundException('Paciente nao encontrado.');
+    }
+    if (!this.canAccessPaciente(user, paciente)) {
+      throw new NotFoundException('Paciente nao encontrado.');
+    }
+
+    const role = normalizeRole(user.role);
+    const canViewStatus = role === 'atleta'
+      ? paciente.atletaUserId === user.id
+      : hasGlobalAccess(role) || hasTeamScopedAccess(role) || isStudentMemberRole(role);
+    if (!canViewStatus) {
+      throw new ForbiddenException('Sem permissao para consultar onboarding do atleta.');
+    }
+
+    const confirmation = this.asObject(paciente.confirmacaoAtleta);
+    const completadoEm = this.normalizeText(
+      confirmation.completadoEm || confirmation.submittedAt || confirmation.completedAt
+    );
+    const concluido = Boolean(
+      confirmation.completed
+      || confirmation.anamneseId
+      || completadoEm
+    );
+
+    return {
+      concluido,
+      ...(completadoEm ? { completadoEm } : {})
+    };
   }
 
   async remove(id: string) {
@@ -696,9 +1058,12 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    await this.repo.delete(id);
+    await this.repo.update(id, {
+      status: 'Inativo'
+    });
+    await this.repo.softDelete(id);
     this.realtime.emit('pacientes.deleted', { id });
-    return { success: true };
+    return { success: true, softDeleted: true };
   }
 
   private resolveAttachmentMimeType(filename: string, fallbackType?: string) {

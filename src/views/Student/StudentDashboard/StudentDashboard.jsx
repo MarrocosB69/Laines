@@ -6,7 +6,9 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  CalendarPlus,
+  ClipboardList,
 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../../services/api';
 import { usePacientes } from '../../../contexts/PacienteContext';
@@ -14,6 +16,8 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { toDateKey } from '../../../utils/dateUtils';
 
+import ProximasAcoes from '../../../components/Dashboard/ProximasAcoes';
+import { FeedbackState } from '../../../components/ui';
 import './StudentDashboard.css';
 
 const CalendarWidget = ({ items }) => {
@@ -133,13 +137,19 @@ const CalendarWidget = ({ items }) => {
     </div>
   );
 };
-const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips = true }) => {
+const getCurrentSemester = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const semester = now.getMonth() < 6 ? 1 : 2;
+  return `${year}.${semester}`;
+};
+
+const StudentDashboard = ({ onSelectPatient, onAgendar, defaultViewMode = 'cards', showTips = true }) => {
   const { pacientes, loading, convertFirebaseDate, formatDate } = usePacientes();
   const { user } = useAuth();
   const { notify } = useUiFeedback();
   const [viewMode, setViewMode] = useState(defaultViewMode);
   const [searchTerm, setSearchTerm] = useState('');
-  const [nextAppointment, setNextAppointment] = useState(null);
   const [appointments, setAppointments] = useState([]);
 
   const firstName = useMemo(() => {
@@ -175,25 +185,61 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
         ...item,
         dateObj: convertFirebaseDate(item.scheduledAt || item.date)
       }));
-      const upcoming = normalized
-        .filter((item) => item.dateObj && item.dateObj >= new Date() && (item.status || 'agendada') === 'agendada')
-        .sort((a, b) => a.dateObj - b.dateObj)[0];
       setAppointments(normalized);
-      setNextAppointment(upcoming || null);
     } catch (error) {
       setAppointments([]);
-      setNextAppointment(null);
       notify({
         type: 'warning',
         title: 'Agenda indisponível',
         message: getApiErrorMessage(error, 'Não foi possível carregar os agendamentos agora.')
       });
     }
-  }, [convertFirebaseDate, notify, user?.uid]);
+  }, [convertFirebaseDate, notify, user]);
 
   useEffect(() => {
     loadAppointments();
   }, [loadAppointments]);
+
+  const proximasAcoesItems = useMemo(() => {
+    const items = [];
+    const now = new Date();
+
+    const upcoming = appointments
+      .filter((a) => a.dateObj && a.dateObj >= now && (a.status || 'agendada') === 'agendada')
+      .sort((a, b) => a.dateObj - b.dateObj)
+      .slice(0, 5);
+
+    for (const apt of upcoming) {
+      items.push({
+        id: `consulta-${apt.id}`,
+        tipo: 'consulta',
+        label: 'Consulta agendada',
+        pacienteNome: apt.pacienteNome || 'Atleta',
+        detalhe: `${formatDate(apt.dateObj)}${apt.time ? ` · ${apt.time}` : ''}`,
+        onClick: () => {
+          const patient = pacientesOrdenados.find((p) => p.id === apt.pacienteId);
+          if (patient) onSelectPatient(patient);
+        }
+      });
+    }
+
+    const pendentes = pacientesOrdenados
+      .filter((p) => (p.status || '').toLowerCase() === 'pendente')
+      .slice(0, 5);
+
+    for (const p of pendentes) {
+      items.push({
+        id: `avaliacao-${p.id}`,
+        tipo: 'avaliacao',
+        label: 'Avaliação pendente',
+        pacienteNome: p.nome || 'Atleta',
+        detalhe: null,
+        onClick: () => onSelectPatient(p)
+      });
+    }
+
+    return items;
+  }, [appointments, pacientesOrdenados, formatDate, onSelectPatient]);
 
   return (
     <div className="student-dashboard">
@@ -229,7 +275,7 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
           </div>
           <div className="semester-badge">
             <CalendarCheck size={18} />
-            Semestre 2026.1
+            Semestre {getCurrentSemester()}
           </div>
         </div>
       </div>
@@ -244,62 +290,95 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
           </div>
 
           {loading ? (
-            <div className="loading-state laines-feedback-state">Carregando atletas...</div>
+            <FeedbackState loading skeletonLines={4} />
           ) : pacientesOrdenados.length === 0 ? (
-            <div className="empty-state laines-feedback-state">
-              <UserPlus size={36} aria-hidden="true" />
-              <strong>Nenhum atleta vinculado ainda.</strong>
-              <span>Acesse "Meus Atletas" na barra lateral para adicionar o primeiro.</span>
-            </div>
+            <FeedbackState
+              empty
+              icon={UserPlus}
+              title="Nenhum atleta vinculado ainda."
+              description='Acesse "Meus Atletas" na barra lateral para adicionar o primeiro.'
+            />
           ) : viewMode === 'list' ? (
             <div className="patients-list">
               {pacientesOrdenados.map((p) => (
-                <button
-                  key={p.id}
-                  className="patient-list-item"
-                  onClick={() => onSelectPatient(p)}
-                  type="button"
-                >
-                  <div className="patient-list-main">
+                <div key={p.id} className="patient-list-item">
+                  <button
+                    type="button"
+                    className="patient-list-item__info"
+                    onClick={() => onSelectPatient(p)}
+                  >
                     <div className="patient-avatar">
                       {p.nome?.charAt(0).toUpperCase() || 'P'}
                     </div>
                     <div className="patient-list-info">
                       <h4 className="patient-name">{p.nome || 'Atleta'}</h4>
                       <p className="last-visit">
-                        Cadastro: {p.dataCadastroFormatada || p.dataCadastro || '---'}
+                        {p.modalidade || `Cadastro: ${p.dataCadastroFormatada || '---'}`}
                       </p>
                     </div>
-                  </div>
+                  </button>
                   <span className={`status-badge ${p.status === 'Ativo' ? 'badge-ok' : 'badge-attention'}`}>
                     {p.status || 'Pendente'}
                   </span>
-                </button>
+                  <div className="patient-list-item__actions">
+                    <button
+                      type="button"
+                      className="pat-action-btn"
+                      onClick={() => onSelectPatient(p)}
+                      title="Abrir prontuário"
+                    >
+                      <ClipboardList size={14} />
+                    </button>
+                    {onAgendar && (
+                      <button
+                        type="button"
+                        className="pat-action-btn"
+                        onClick={() => onAgendar(p)}
+                        title="Agendar consulta"
+                      >
+                        <CalendarPlus size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
             <div className="patients-grid">
               {pacientesOrdenados.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => onSelectPatient(p)}
-                  className="patient-card"
-                  type="button"
-                >
-                  <div className={`card-decoration ${p.status === 'Ativo' ? 'decor-ok' : 'decor-attention'}`} />
-                  <div className="card-top">
-                    <div className="patient-avatar">
-                      {p.nome?.charAt(0).toUpperCase() || 'P'}
+                <div key={p.id} className="patient-card">
+                  <button
+                    type="button"
+                    className="patient-card__body"
+                    onClick={() => onSelectPatient(p)}
+                  >
+                    <div className={`card-decoration ${p.status === 'Ativo' ? 'decor-ok' : 'decor-attention'}`} />
+                    <div className="card-top">
+                      <div className="patient-avatar">
+                        {p.nome?.charAt(0).toUpperCase() || 'P'}
+                      </div>
                     </div>
-                  </div>
-                  <h4 className="patient-name">{p.nome || 'Atleta'}</h4>
-                  <p className="last-visit">
-                    Cadastro: {p.dataCadastroFormatada || p.dataCadastro || '---'}
-                  </p>
-                  <div className={`status-badge ${p.status === 'Ativo' ? 'badge-ok' : 'badge-attention'}`}>
-                    {p.status || 'Pendente'}
-                  </div>
-                </button>
+                    <h4 className="patient-name">{p.nome || 'Atleta'}</h4>
+                    <p className="last-visit">
+                      {p.modalidade || `Cadastro: ${p.dataCadastroFormatada || '---'}`}
+                    </p>
+                    <div className={`status-badge ${p.status === 'Ativo' ? 'badge-ok' : 'badge-attention'}`}>
+                      {p.status || 'Pendente'}
+                    </div>
+                  </button>
+                  {onAgendar && (
+                    <div className="patient-card__actions">
+                      <button
+                        type="button"
+                        className="pat-action-btn pat-action-btn--labeled"
+                        onClick={() => onAgendar(p)}
+                      >
+                        <CalendarPlus size={13} />
+                        <span>Agendar</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -316,30 +395,11 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
 
             <CalendarWidget items={appointments} />
 
-            <div className="section-header">
-              <div className="section-icon icon-green">
-                <CalendarCheck size={20} />
-              </div>
-              <h3 className="section-title">Próxima ação</h3>
-            </div>
-
-            <div className="next-action-card">
-              {nextAppointment ? (
-                <>
-                  <p className="next-action-label">Consulta agendada</p>
-                  <h4 className="next-action-title">{nextAppointment.pacienteNome || 'Atleta'}</h4>
-                  <p className="next-action-meta">
-                    {formatDate(nextAppointment.dateObj)} - {nextAppointment.time || '--:--'}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="next-action-label">Sem consultas futuras</p>
-                  <h4 className="next-action-title">Agenda livre</h4>
-                  <p className="next-action-meta">Organize novos atendimentos</p>
-                </>
-              )}
-            </div>
+            <ProximasAcoes
+              items={proximasAcoesItems}
+              loading={loading}
+              titulo="Próximas ações"
+            />
 
           </div>
         )}
@@ -350,4 +410,3 @@ const StudentDashboard = ({ onSelectPatient, defaultViewMode = 'cards', showTips
 };
 
 export default StudentDashboard;
-

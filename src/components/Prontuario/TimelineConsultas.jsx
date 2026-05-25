@@ -1,5 +1,6 @@
 import React from 'react';
 import { Download, Loader2, RefreshCcw } from 'lucide-react';
+import { FeedbackState, Skeleton } from '../ui';
 
 const TimelineConsultas = ({
   consultationHistory = [],
@@ -124,10 +125,7 @@ const TimelineConsultas = ({
     </div>
 
     {loadingAppointments ? (
-      <div className="pron-empty" role="status" aria-live="polite">
-        <Loader2 size={16} className="spin" />
-        <span>Carregando histórico de consultas...</span>
-      </div>
+      <Skeleton lines={4} />
     ) : appointmentsError ? (
       <div className="pron-error-block">
         <p>{appointmentsError}</p>
@@ -136,13 +134,13 @@ const TimelineConsultas = ({
         </button>
       </div>
     ) : filteredConsultationHistory.length === 0 ? (
-      <div className="pron-empty">
-        <span>
-          {hasConsultationFiltersApplied
-            ? 'Nenhuma consulta encontrada com os filtros aplicados.'
-            : 'Nenhuma consulta registrada para este atleta.'}
-        </span>
-      </div>
+      <FeedbackState
+        empty
+        size="sm"
+        title={hasConsultationFiltersApplied
+          ? 'Nenhuma consulta encontrada com os filtros aplicados.'
+          : 'Nenhuma consulta registrada para este atleta.'}
+      />
     ) : (
       <div className="timeline">
         {visibleConsultationHistory.map((item) => (

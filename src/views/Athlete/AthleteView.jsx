@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AlertTriangle,
   CalendarDays,
-  ClipboardList,
   FileText,
   LayoutDashboard
 } from 'lucide-react';
@@ -42,10 +40,8 @@ const AthleteView = () => {
 
   const tabIcons = useMemo(() => ({
     dashboard: <LayoutDashboard size={16} />,
-    prontuario: <FileText size={16} />,
     agenda: <CalendarDays size={16} />,
-    avaliacoes: <ClipboardList size={16} />,
-    pendencias: <AlertTriangle size={16} />
+    prontuario: <FileText size={16} />
   }), []);
 
   return (

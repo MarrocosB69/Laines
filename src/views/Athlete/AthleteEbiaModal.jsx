@@ -62,9 +62,9 @@ const AthleteEbiaModal = ({
             <FileSpreadsheet size={20} />
           </div>
           <div className="app-modal-heading">
-            <h2 id="athlete-ebia-modal-title" className="app-modal-title">Preencher EBIA</h2>
+            <h2 id="athlete-ebia-modal-title" className="app-modal-title">Avaliação de segurança alimentar</h2>
             <p className="app-modal-subtitle">
-              Formulário liberado pela equipe em {releaseDate}. Complete para registrar no prontuário.
+              Liberado pela equipe em {releaseDate}. Complete o formulário para que a equipe possa revisar.
             </p>
           </div>
           <button

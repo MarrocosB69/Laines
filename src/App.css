@@ -1,8 +1,19 @@
 ﻿/* Global bridge styles loaded by App.jsx */
 :root {
   --laines-primary: var(--color-primary);
-  --laines-dark: var(--color-dark-blue);
-  --laines-accent: var(--color-light-blue);
+  --laines-dark:    var(--color-dark-blue);
+  --laines-accent:  var(--pn-accent);
+
+  /* Single source of truth: --color-* tokens that are semantically identical
+     to --pn-* now delegate to them. Any future brand change only needs
+     to update the --pn-* value. */
+  --color-accent:        var(--pn-accent);
+  --color-surface:       var(--pn-surface);
+  --color-surface-alt:   var(--pn-surface-3);
+  --color-text-primary:  var(--pn-text-1);
+  --color-text-tertiary: var(--pn-text-4);
+  --color-error:         var(--pn-danger);
+  --color-success:       var(--pn-ok);
 }
 
 #root {

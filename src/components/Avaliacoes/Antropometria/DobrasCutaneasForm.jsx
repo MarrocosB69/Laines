@@ -4,35 +4,63 @@ import MiniSparkline from '../../shared/MiniSparkline';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
-  SKINFOLD_PROTOCOLS,
   buildComparativeDeltas,
   calculateSkinfoldEvaluation,
-  getSkinfoldProtocolRequiredFields,
   validatePhysiologicalRange
 } from '../../../services/calculationEngine';
+import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
 import './DobrasCutaneasForm.css';
 
 const FOLD_FIELDS = [
-  { key: 'peitoral', label: 'Peitoral', tooltip: ['Dobra na linha axilar anterior, obliqua.'] },
-  { key: 'axilar_media', label: 'Axilar media', tooltip: ['Ponto medio da linha axilar.'] },
-  { key: 'triceps', label: 'Triceps', tooltip: ['Ponto medio posterior do braco.'] },
-  { key: 'subescapular', label: 'Subescapular', tooltip: ['Abaixo do angulo inferior da escapula.'] },
+  { key: 'peitoral', label: 'Peitoral', tooltip: ['Dobra na linha axilar anterior, oblíqua.'] },
+  { key: 'axilar_media', label: 'Axilar média', tooltip: ['Ponto médio da linha axilar.'] },
+  { key: 'triceps', label: 'Tríceps', tooltip: ['Ponto médio posterior do braço.'] },
+  { key: 'subescapular', label: 'Subescapular', tooltip: ['Abaixo do ângulo inferior da escápula.'] },
   { key: 'abdominal', label: 'Abdominal', tooltip: ['2 cm ao lado da cicatriz umbilical.'] },
-  { key: 'suprailiaca', label: 'Suprailiaca', tooltip: ['Acima da crista iliaca, linha axilar media.'] },
-  { key: 'coxa', label: 'Coxa', tooltip: ['Face anterior da coxa, ponto medio.'] },
-  { key: 'panturrilha_medial', label: 'Panturrilha medial', tooltip: ['Regiao medial, maior perimetro.'] },
-  { key: 'biceps', label: 'Biceps', tooltip: ['Face anterior do braco, ponto medio.'] }
+  { key: 'suprailiaca', label: 'Supraíliaca', tooltip: ['Acima da crista ilíaca, linha axilar média.'] },
+  { key: 'coxa', label: 'Coxa', tooltip: ['Face anterior da coxa, ponto médio.'] },
+  { key: 'panturrilha_medial', label: 'Panturrilha medial', tooltip: ['Região medial, maior perímetro.'] },
+  { key: 'biceps', label: 'Bíceps', tooltip: ['Face anterior do braço, ponto médio.'] }
 ];
 
-const PROTOCOL_OPTIONS = SKINFOLD_PROTOCOLS.map((protocol) => ({
-  value: protocol.id,
-  label: protocol.label
-}));
+const PROTOCOL_OPTIONS = [
+  { value: '', label: 'Selecione' },
+  { value: 'pollock3h', label: 'Pollock 3H' },
+  { value: 'pollock3m', label: 'Pollock 3M' },
+  { value: 'pollock7', label: 'Pollock 7' },
+  { value: 'durnin_womersley', label: 'Durnin-Womersley' },
+  { value: 'guedes', label: 'Guedes' }
+];
+
+const PROTOCOL_CONFIG = {
+  pollock3h: {
+    calculationProtocol: 'jackson_pollock_3',
+    sexOverride: 'male',
+    visibleFields: ['peitoral', 'abdominal', 'coxa']
+  },
+  pollock3m: {
+    calculationProtocol: 'jackson_pollock_3',
+    sexOverride: 'female',
+    visibleFields: ['triceps', 'suprailiaca', 'coxa']
+  },
+  pollock7: {
+    calculationProtocol: 'jackson_pollock_7',
+    visibleFields: ['peitoral', 'axilar_media', 'triceps', 'subescapular', 'abdominal', 'suprailiaca', 'coxa']
+  },
+  durnin_womersley: {
+    calculationProtocol: 'durnin_womersley',
+    visibleFields: ['biceps', 'triceps', 'suprailiaca', 'subescapular']
+  },
+  guedes: {
+    calculationProtocol: 'guedes_1985',
+    visibleFields: ['triceps', 'suprailiaca', 'abdominal']
+  }
+};
 
 const createInitialData = () => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
-  protocolo: 'jackson_pollock_7',
+  protocolo: '',
   avaliador: '',
   equipamento: '',
   ladoMedicao: 'direito',
@@ -50,14 +78,23 @@ const createInitialData = () => ({
   suprailiaca: '',
   coxa: '',
   panturrilha_medial: '',
-  biceps: ''
+  biceps: '',
+  esportivo: createDobrasEsportivoData()
 });
+
+function createDobrasEsportivoData() {
+  return {
+    limitacaoTecnica: false,
+    limitacaoTecnicaDescricao: ''
+  };
+}
 
 const DobrasCutaneasForm = ({
   pacienteId,
   onSalvar,
   onAutoSave,
   patient,
+  onboardingContext,
   baselineAnthropometry,
   moduleSnapshot,
   currentSessionId,
@@ -66,6 +103,8 @@ const DobrasCutaneasForm = ({
   lockSharedAnthropometry = false,
   readOnly = false
 }) => {
+  const { confirm } = useUiFeedback();
+
   const [dados, setDados] = useState(createInitialData);
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
@@ -148,16 +187,20 @@ const DobrasCutaneasForm = ({
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
     const dobras = dadosBrutos?.dobras || {};
+    const esportivoRaw = asRecord(firstDefined(dadosBrutos?.esportivo, source?.esportivo));
 
     setDados((prev) => ({
       ...prev,
       dataAvaliacao: normalizeDateValue(moduleSnapshot?.data || source?.dataAvaliacao || dadosBrutos?.dataAvaliacao || prev.dataAvaliacao),
-      protocolo: toTextInput(firstDefined(
-        dadosBrutos?.protocolo,
-        dadosBrutos?.protocolId,
-        source?.protocolo,
-        prev.protocolo
-      )) || 'jackson_pollock_7',
+      protocolo: resolveUiProtocol(
+        toTextInput(firstDefined(
+          dadosBrutos?.protocolo,
+          dadosBrutos?.protocolId,
+          source?.protocolo,
+          prev.protocolo
+        )),
+        normalizeSexToken(firstDefined(dadosBrutos?.sexo, source?.sexo, prev?.sexo))
+      ),
       avaliador: toTextInput(firstDefined(dadosBrutos?.avaliador, source?.avaliador)),
       equipamento: toTextInput(firstDefined(dadosBrutos?.equipamento, source?.equipamento)),
       ladoMedicao: toTextInput(firstDefined(dadosBrutos?.ladoMedicao, dadosBrutos?.lado_medicao, source?.lado_medicao, 'direito')) || 'direito',
@@ -175,13 +218,33 @@ const DobrasCutaneasForm = ({
       suprailiaca: toInputValue(firstDefined(dobras?.suprailiaca, source?.supraIliaca, source?.suprailiaca)),
       coxa: toInputValue(firstDefined(dobras?.coxa, source?.coxa)),
       panturrilha_medial: toInputValue(firstDefined(dobras?.panturrilha_medial, source?.panturrilha_medial)),
-      biceps: toInputValue(firstDefined(dobras?.biceps, source?.biceps))
+      biceps: toInputValue(firstDefined(dobras?.biceps, source?.biceps)),
+      esportivo: {
+        limitacaoTecnica: normalizeBoolean(firstDefined(
+          esportivoRaw?.limitacaoTecnica,
+          esportivoRaw?.limitacao_tecnica
+        )),
+        limitacaoTecnicaDescricao: toTextInput(firstDefined(
+          esportivoRaw?.limitacaoTecnicaDescricao,
+          esportivoRaw?.limitacao_tecnica_descricao
+        ))
+      }
     }));
 
     loadedSnapshotIdRef.current = snapshotId;
   }, [moduleSnapshot]);
 
   const sexToken = useMemo(() => normalizeSexToken(dados.sexo), [dados.sexo]);
+  const selectedProtocolConfig = useMemo(
+    () => PROTOCOL_CONFIG[dados.protocolo] || null,
+    [dados.protocolo]
+  );
+  const calculationProtocolId = selectedProtocolConfig?.calculationProtocol || '';
+  const calculationSexToken = selectedProtocolConfig?.sexOverride || sexToken;
+  const visibleFoldFields = useMemo(
+    () => selectedProtocolConfig?.visibleFields || [],
+    [selectedProtocolConfig]
+  );
   const ageYears = useMemo(() => parseNumeric(dados.idade), [dados.idade]);
   const weightKg = useMemo(() => parseNumeric(dados.pesoKg), [dados.pesoKg]);
   const heightCm = useMemo(() => normalizeHeightCm(dados.estaturaCm), [dados.estaturaCm]);
@@ -195,19 +258,44 @@ const DobrasCutaneasForm = ({
   }, [dados]);
 
   const requiredFoldFields = useMemo(
-    () => getSkinfoldProtocolRequiredFields({ protocolId: dados.protocolo, sex: sexToken }),
-    [dados.protocolo, sexToken]
+    () => [...visibleFoldFields],
+    [visibleFoldFields]
   );
 
-  const skinfold = useMemo(() => calculateSkinfoldEvaluation({
-    protocolId: dados.protocolo,
-    sex: sexToken,
+  const displayedFoldFields = useMemo(
+    () => FOLD_FIELDS.filter((field) => visibleFoldFields.includes(field.key)),
+    [visibleFoldFields]
+  );
+
+  const foldsForCalculation = useMemo(() => {
+    const cloned = { ...foldsMap };
+    if (dados.protocolo === 'guedes' && !Number.isFinite(cloned.coxa) && Number.isFinite(cloned.abdominal)) {
+      // Compatibilidade temporaria para manter o calculo ativo no motor legado.
+      cloned.coxa = cloned.abdominal;
+    }
+    return cloned;
+  }, [dados.protocolo, foldsMap]);
+
+  const skinfold = useMemo(() => {
+    if (!calculationProtocolId) return null;
+    return calculateSkinfoldEvaluation({
+      protocolId: calculationProtocolId,
+      sex: calculationSexToken,
+      ageYears,
+      weightKg,
+      folds: foldsForCalculation,
+      conversionMethod: dados.conversionMethod,
+      maturationStage: dados.maturationStage
+    });
+  }, [
     ageYears,
-    weightKg,
-    folds: foldsMap,
-    conversionMethod: dados.conversionMethod,
-    maturationStage: dados.maturationStage
-  }), [ageYears, dados.conversionMethod, dados.maturationStage, dados.protocolo, foldsMap, sexToken, weightKg]);
+    calculationProtocolId,
+    calculationSexToken,
+    dados.conversionMethod,
+    dados.maturationStage,
+    foldsForCalculation,
+    weightKg
+  ]);
 
   const foldValidation = useMemo(() => {
     const validation = {};
@@ -218,14 +306,14 @@ const DobrasCutaneasForm = ({
 
       if (!text) {
         validation[field.key] = isRequired
-          ? { status: 'error', message: 'Campo obrigatorio para o protocolo.' }
+          ? { status: 'error', message: 'Campo obrigatório para o protocolo.' }
           : { status: 'empty', message: '' };
         return;
       }
 
       const numeric = parseNumeric(value);
       if (!Number.isFinite(numeric)) {
-        validation[field.key] = { status: 'error', message: 'Valor invalido.' };
+        validation[field.key] = { status: 'error', message: 'Valor inválido.' };
         return;
       }
 
@@ -251,12 +339,13 @@ const DobrasCutaneasForm = ({
   );
 
   const baseMissing = useMemo(() => {
-    if (!sexToken) return 'Informe sexo biologico.';
-    if (['jackson_pollock_3', 'jackson_pollock_7', 'petroski_1995', 'durnin_womersley'].includes(dados.protocolo) && !Number.isFinite(ageYears)) {
+    if (!dados.protocolo) return 'Selecione o protocolo antes de preencher as dobras.';
+    if (!calculationSexToken) return 'Informe sexo biológico.';
+    if (['jackson_pollock_3', 'jackson_pollock_7', 'petroski_1995', 'durnin_womersley', 'guedes_1985'].includes(calculationProtocolId) && !Number.isFinite(ageYears)) {
       return 'Informe idade para este protocolo.';
     }
     return '';
-  }, [ageYears, dados.protocolo, sexToken]);
+  }, [ageYears, calculationProtocolId, calculationSexToken, dados.protocolo]);
 
   const history = useMemo(() => normalizeDobrasHistory(moduleHistory), [moduleHistory]);
   const currentSnapshotId = moduleSnapshot?.id || '';
@@ -312,6 +401,7 @@ const DobrasCutaneasForm = ({
       current: selectedBodyFat,
       reference: previous?.metrics?.percentual
     });
+    const esportivoPayload = buildDobrasEsportivoPayload(dados.esportivo);
 
     const dobrasPayload = {};
     FOLD_FIELDS.forEach((field) => {
@@ -322,6 +412,7 @@ const DobrasCutaneasForm = ({
     return {
       protocoloDobras: dados.protocolo,
       protocolo: dados.protocolo,
+      protocoloCalculo: calculationProtocolId || null,
       avaliador: toTextInput(dados.avaliador) || null,
       equipamento: toTextInput(dados.equipamento) || null,
       lado_medicao: dados.ladoMedicao || 'direito',
@@ -331,8 +422,9 @@ const DobrasCutaneasForm = ({
       peso_kg: Number.isFinite(weightKg) ? Number(weightKg.toFixed(2)) : null,
       estatura_cm: Number.isFinite(heightCm) ? Number(heightCm.toFixed(1)) : null,
       idade: Number.isFinite(ageYears) ? Math.round(ageYears) : null,
-      sexo: sexToken,
+      sexo: calculationSexToken,
       dobras: dobrasPayload,
+      esportivo: esportivoPayload,
       soma_dobras: Number.isFinite(skinfold?.sums?.requiredFolds) ? Number(skinfold.sums.requiredFolds.toFixed(2)) : null,
       soma_dobras_total: Number.isFinite(skinfold?.sums?.allMeasuredFolds) ? Number(skinfold.sums.allMeasuredFolds.toFixed(2)) : null,
       densidade_corporal: Number.isFinite(skinfold?.density) ? Number(skinfold.density.toFixed(6)) : null,
@@ -352,8 +444,9 @@ const DobrasCutaneasForm = ({
         pesoKg: Number.isFinite(weightKg) ? Number(weightKg.toFixed(2)) : null,
         estaturaCm: Number.isFinite(heightCm) ? Number(heightCm.toFixed(1)) : null,
         idade: Number.isFinite(ageYears) ? Math.round(ageYears) : null,
-        sexo: sexToken,
-        dobras: dobrasPayload
+        sexo: calculationSexToken,
+        dobras: dobrasPayload,
+        esportivo: esportivoPayload
       },
       resultados_calculados: {
         soma_dobras: Number.isFinite(skinfold?.sums?.requiredFolds) ? Number(skinfold.sums.requiredFolds.toFixed(2)) : null,
@@ -369,11 +462,12 @@ const DobrasCutaneasForm = ({
         referencia: skinfold?.classification?.source || 'Lohman 1992'
       },
       metadados_formula: {
-        formulaId: `${dados.protocolo}-${selectedMethod || 'siri'}`,
+        formulaId: `${calculationProtocolId || dados.protocolo}-${selectedMethod || 'siri'}`,
         formulaVersion: skinfold?.protocol?.version || '1.0.0',
         equacao_dc: skinfold?.formulas?.densityEquationId || null,
         equacao_percentual: selectedMethod || null,
         protocolo: dados.protocolo,
+        protocolo_calculo: calculationProtocolId || null,
         protocolo_ref: skinfold?.protocol?.reference || null,
         campos_obrigatorios_protocolo: requiredFoldFields
       },
@@ -384,14 +478,16 @@ const DobrasCutaneasForm = ({
       },
       input: {
         protocolo: dados.protocolo,
+        protocoloCalculo: calculationProtocolId || null,
         conversionMethod: dados.conversionMethod || 'siri',
         maturationStage: dados.maturationStage || 'default',
         dataAvaliacao: normalizeDateValue(dados.dataAvaliacao),
-        sexo: sexToken,
+        sexo: calculationSexToken,
         idade: Number.isFinite(ageYears) ? Math.round(ageYears) : null,
         pesoKg: Number.isFinite(weightKg) ? Number(weightKg.toFixed(2)) : null,
         estaturaCm: Number.isFinite(heightCm) ? Number(heightCm.toFixed(1)) : null,
-        dobrasMm: dobrasPayload
+        dobrasMm: dobrasPayload,
+        esportivo: esportivoPayload
       },
       source: {
         mode: 'manual',
@@ -403,10 +499,13 @@ const DobrasCutaneasForm = ({
     dados.avaliador,
     dados.conversionMethod,
     dados.dataAvaliacao,
+    dados.esportivo,
     dados.equipamento,
     dados.ladoMedicao,
     dados.maturationStage,
     dados.protocolo,
+    calculationProtocolId,
+    calculationSexToken,
     foldsMap,
     heightCm,
     requiredFoldFields,
@@ -442,8 +541,9 @@ const DobrasCutaneasForm = ({
     if (hasAnyFoldValue) return true;
     if (toTextInput(dados.avaliador)) return true;
     if (toTextInput(dados.equipamento)) return true;
+    if (hasDobrasEsportivoValues(dados.esportivo)) return true;
     return false;
-  }, [dados.avaliador, dados.equipamento, hasAnyFoldValue]);
+  }, [dados.avaliador, dados.equipamento, dados.esportivo, hasAnyFoldValue]);
 
   const canCalculate = useMemo(
     () => !baseMissing && !requiredErrors && skinfold?.hasEnoughData,
@@ -460,7 +560,7 @@ const DobrasCutaneasForm = ({
       resultados: payloadResults,
       data: dados.dataAvaliacao,
       schemaVersion: 3,
-      formulaId: payloadDados?.metadados_formula?.formulaId || `${dados.protocolo}-siri`,
+      formulaId: payloadDados?.metadados_formula?.formulaId || `${calculationProtocolId || dados.protocolo}-siri`,
       formulaVersion: payloadDados?.metadados_formula?.formulaVersion || '1.0.0',
       sourceSystem: 'manual',
       measuredAt: normalizeDateValue(dados.dataAvaliacao),
@@ -469,6 +569,7 @@ const DobrasCutaneasForm = ({
     });
   }, [
     currentSessionId,
+    calculationProtocolId,
     dados.dataAvaliacao,
     dados.protocolo,
     moduleSnapshot?.sessaoId,
@@ -486,10 +587,10 @@ const DobrasCutaneasForm = ({
       await savePayload(auto);
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3000);
-    } catch (saveError) {
+    } catch (error) {
       setSaveStatus('error');
       if (!auto) {
-        setError('Nao foi possivel salvar a avaliacao. Tente novamente.');
+        setError('Não foi possível salvar a avaliação. Tente novamente.');
       }
     }
   }, [savePayload]);
@@ -504,6 +605,11 @@ const DobrasCutaneasForm = ({
       return;
     }
 
+    if (!dados.protocolo) {
+      setError('Selecione o protocolo de dobras antes de salvar.');
+      return;
+    }
+
     if (baseMissing) {
       setError(baseMissing);
       return;
@@ -514,7 +620,7 @@ const DobrasCutaneasForm = ({
         .filter((field) => !Number.isFinite(parseNumeric(dados[field])))
         .map(resolveFoldLabel);
       const suffix = missingLabels.length ? ` Campos ausentes: ${missingLabels.join(', ')}.` : '';
-      setError(`Existem dobras obrigatorias nao preenchidas para o protocolo selecionado.${suffix}`);
+      setError(`Existem dobras obrigatórias não preenchidas para o protocolo selecionado.${suffix}`);
       return;
     }
 
@@ -523,25 +629,25 @@ const DobrasCutaneasForm = ({
       .map(([field, item]) => `${resolveFoldLabel(field)}: ${item.message}`);
 
     if (warningFields.length > 0) {
-      const proceed = window.confirm([
-        'Existem valores fora da faixa fisiologica:',
-        ...warningFields.map((line) => `- ${line}`),
-        '',
-        'Deseja salvar mesmo assim?'
-      ].join('\n'));
-
+      const proceed = await confirm({
+        title: 'Valores fora da faixa fisiológica',
+        details: warningFields,
+        confirmLabel: 'Salvar mesmo assim',
+        cancelLabel: 'Corrigir',
+        variant: 'warning'
+      });
       if (!proceed) return;
     }
 
     await executeSave(false);
-  }, [baseMissing, dados, executeSave, foldValidation, hasValues, onSalvar, requiredErrors, requiredFoldFields]);
+  }, [baseMissing, confirm, dados, executeSave, foldValidation, hasValues, onSalvar, requiredErrors, requiredFoldFields]);
 
   useEffect(() => {
     if (readOnly || !onAutoSave || !hasUserInput || !hasValues || !canCalculate) return undefined;
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => {
       executeSave(true);
-    }, 900);
+    }, 3500);
     return () => clearTimeout(autoSaveRef.current);
   }, [canCalculate, executeSave, hasUserInput, hasValues, onAutoSave, readOnly]);
 
@@ -561,6 +667,27 @@ const DobrasCutaneasForm = ({
     () => buildComparativeDeltas({ current: skinfold?.sums?.requiredFolds, reference: previous?.metrics?.somaDobras }),
     [previous?.metrics?.somaDobras, skinfold?.sums?.requiredFolds]
   );
+  const onboardingResumo = useMemo(() => {
+    if (!onboardingContext || typeof onboardingContext !== 'object') return [];
+    const resumo = [];
+    const modalidade = toTextInput(onboardingContext?.modalidadePrincipal);
+    const frequencia = parseNumeric(onboardingContext?.frequenciaSemanal);
+    if (modalidade) resumo.push(`Modalidade: ${modalidade}`);
+    if (Number.isFinite(frequencia)) resumo.push(`Frequência: ${frequencia}x/sem`);
+    return resumo.slice(0, 2);
+  }, [onboardingContext]);
+  const comparabilidadeColeta = useMemo(() => {
+    const itens = [
+      Boolean(dados.protocolo),
+      Boolean(toTextInput(dados.avaliador)),
+      Boolean(toTextInput(dados.equipamento)),
+      Boolean(toTextInput(dados.ladoMedicao))
+    ];
+    const score = itens.filter(Boolean).length;
+    if (score === 4) return 'Comparabilidade alta da coleta de dobras.';
+    if (score >= 2) return 'Comparabilidade moderada da coleta de dobras.';
+    return 'Comparabilidade baixa: defina protocolo e identificação da coleta.';
+  }, [dados.avaliador, dados.equipamento, dados.ladoMedicao, dados.protocolo]);
 
   return (
     <div className={`eval-card dobras-form dobras-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -569,18 +696,27 @@ const DobrasCutaneasForm = ({
           <Activity size={22} />
         </div>
         <div>
-          <h3 className="eval-title">Dobras cutaneas</h3>
+          <h3 className="eval-title">Dobras cutâneas</h3>
           <p className="eval-subtitle">
-            Protocolos dinamicos com densidade corporal, % gordura (Siri/Brozek) e comparacao evolutiva.
+            Protocolos dinâmicos com densidade corporal, % gordura (Siri/Brozek) e comparação evolutiva.
           </p>
         </div>
       </div>
 
+      {onboardingResumo.length > 0 ? (
+        <div className="eval-note">
+          <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
+        </div>
+      ) : null}
+      <div className="eval-note">
+        <strong>Status de comparabilidade:</strong> {comparabilidadeColeta}
+      </div>
+
       <div className="eval-section">
-        <h4 className="eval-section-title">Protocolo e identificacao</h4>
+        <h4 className="eval-section-title">Protocolo e identificação</h4>
         <div className="dobras-grid">
           <div className="eval-field">
-            <label className="eval-label">Data da avaliacao</label>
+            <label className="eval-label">Data da avaliação</label>
             <input
               type="date"
               className="eval-input"
@@ -608,8 +744,9 @@ const DobrasCutaneasForm = ({
             <label className="eval-label">
               Conversao de % gordura
               <InlineHelp lines={[
-                'Siri (1956): %G = (495 / DC) - 450',
-                'Brozek (1963): %G = (4.57 / DC - 4.142) x 100'
+                'Siri (1956): %G = (495 / DC) - 450  [padrão clínico]',
+                'Brozek (1963): %G = (4.57 / DC - 4.142) x 100',
+                'Para atletas com alta musculatura, Brozek pode ser preferível pois Siri tende a superestimar %G.'
               ]}
               />
             </label>
@@ -617,29 +754,12 @@ const DobrasCutaneasForm = ({
               className="eval-input"
               value={dados.conversionMethod}
               onChange={(event) => updateField(setDados, setHasUserInput, 'conversionMethod', event.target.value)}
-              disabled={readOnly || dados.protocolo === 'slaughter_1988'}
+              disabled={readOnly || !dados.protocolo}
             >
-              <option value="siri">Siri</option>
-              <option value="brozek">Brozek</option>
+              <option value="siri">Siri (padrão clínico)</option>
+              <option value="brozek">Brozek (atletas alta musculatura)</option>
             </select>
           </div>
-
-          {dados.protocolo === 'slaughter_1988' && (
-            <div className="eval-field">
-              <label className="eval-label">Maturacao sexual</label>
-              <select
-                className="eval-input"
-                value={dados.maturationStage}
-                onChange={(event) => updateField(setDados, setHasUserInput, 'maturationStage', event.target.value)}
-                disabled={readOnly}
-              >
-                <option value="default">Nao informado</option>
-                <option value="pre_pubere">Pre-pubere</option>
-                <option value="pubere">Pubere</option>
-                <option value="pos_pubere">Pos-pubere</option>
-              </select>
-            </div>
-          )}
 
           <div className="eval-field">
             <label className="eval-label">Avaliador</label>
@@ -666,7 +786,7 @@ const DobrasCutaneasForm = ({
           </div>
 
           <div className="eval-field">
-            <label className="eval-label">Lado da medicao</label>
+            <label className="eval-label">Lado da medição</label>
             <select
               className="eval-input"
               value={dados.ladoMedicao}
@@ -677,11 +797,38 @@ const DobrasCutaneasForm = ({
               <option value="esquerdo">Esquerdo</option>
             </select>
           </div>
+
+          <div className="eval-field eval-field-full">
+            <label className="eval-label">Limitação técnica</label>
+            <label className="dobras-toggle">
+              <input
+                type="checkbox"
+                checked={Boolean(dados.esportivo?.limitacaoTecnica)}
+                onChange={(event) => updateDobrasEsportivoField(setDados, setHasUserInput, 'limitacaoTecnica', event.target.checked)}
+                disabled={readOnly}
+              />
+              <span>Houve limitação técnica relevante durante a coleta.</span>
+            </label>
+          </div>
+
+          {Boolean(dados.esportivo?.limitacaoTecnica) && (
+            <div className="eval-field eval-field-full">
+              <label className="eval-label">Descrição da limitação técnica</label>
+              <textarea
+                className="eval-textarea"
+                rows={3}
+                value={dados.esportivo?.limitacaoTecnicaDescricao || ''}
+                onChange={(event) => updateDobrasEsportivoField(setDados, setHasUserInput, 'limitacaoTecnicaDescricao', event.target.value)}
+                disabled={readOnly}
+                placeholder="Descreva o motivo da limitação e impacto na medida."
+              />
+            </div>
+          )}
         </div>
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Contexto base</h4>
+        <h4 className="eval-section-title">Dados do avaliado</h4>
         <div className="dobras-grid">
           <BaseNumericField
             label="Peso"
@@ -724,17 +871,21 @@ const DobrasCutaneasForm = ({
           </div>
         </div>
         {lockSharedAnthropometry && (
-          <p className="dobras-shared-hint">Peso, estatura, idade e sexo estao sincronizados com a ficha base da sessao.</p>
+          <p className="dobras-shared-hint">Peso, estatura, idade e sexo estão sincronizados com a ficha base da sessão.</p>
         )}
       </div>
 
       <div className="eval-section">
         <h4 className="eval-section-title">Dobras do protocolo</h4>
-        <p className="eval-section-subtitle">
-          Campos obrigatorios para o protocolo atual: {requiredFoldFields.map(resolveFoldLabel).join(', ') || 'defina sexo para listar campos'}.
-        </p>
-        <div className="dobras-grid">
-          {FOLD_FIELDS.map((field) => {
+        {!dados.protocolo ? (
+          <div className="eval-note">Selecione um protocolo para liberar os campos de dobras.</div>
+        ) : (
+          <>
+            <p className="eval-section-subtitle">
+              Campos obrigatórios para o protocolo atual: {requiredFoldFields.map(resolveFoldLabel).join(', ') || 'não definidos'}.
+            </p>
+            <div className="dobras-grid">
+              {displayedFoldFields.map((field) => {
             const isRequired = requiredFoldFields.includes(field.key);
             const status = foldValidation[field.key]?.status || 'empty';
             const showState = submitAttempted || touched[field.key];
@@ -761,15 +912,17 @@ const DobrasCutaneasForm = ({
               </div>
             );
           })}
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="eval-results-section">
         <div className="dobras-section-heading">
           <InlineHelp
             lines={[
-              `Equacao DC: ${skinfold?.formulas?.densityEquation || 'Nao disponivel'}`,
-              `Referencia protocolo: ${skinfold?.protocol?.reference || 'Nao informada'}`,
+              `Equacao DC: ${skinfold?.formulas?.densityEquation || 'Não disponível'}`,
+              `Referencia protocolo: ${skinfold?.protocol?.reference || 'Não informada'}`,
               `${skinfold?.formulas?.conversionSiri || ''}`,
               `${skinfold?.formulas?.conversionBrozek || ''}`
             ]}
@@ -831,11 +984,11 @@ const DobrasCutaneasForm = ({
             tone={dados.conversionMethod === 'brozek' ? 'info' : 'neutral'}
           />
           <ResultCard
-            label="% Gordura (direto Slaughter)"
+            label="% Gordura (direto)"
             value={skinfold?.percentFat?.direct}
             unit="%"
             digits={2}
-            tone={dados.protocolo === 'slaughter_1988' ? 'warning' : 'neutral'}
+            tone="neutral"
           />
         </div>
 
@@ -848,18 +1001,18 @@ const DobrasCutaneasForm = ({
 
         <div className="dobras-visual-grid">
           <div className="dobras-radar-card">
-            <h5>Padrao regional (radar)</h5>
+            <h5>Padrão regional (radar)</h5>
             <SkinfoldRadar series={skinfold?.radarSeries || []} />
           </div>
           <div className="dobras-sparkline-card">
-            <h5>Evolucao % gordura</h5>
+            <h5>Evolução % gordura</h5>
             <MiniSparkline values={sparklineValues} target={previous?.metrics?.percentual ?? null} width={240} height={82} />
           </div>
         </div>
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Comparacao longitudinal</h4>
+        <h4 className="eval-section-title">Comparação longitudinal</h4>
         <div className="dobras-table-wrap">
           <table className="dobras-table">
             <thead>
@@ -926,7 +1079,7 @@ const BaseNumericField = ({ label, unit, value, onChange, disabled, placeholder,
 );
 
 const InlineHelp = ({ lines = [] }) => (
-  <span className="dobras-help" tabIndex={0} role="button" aria-label="Abrir informacao">
+  <span className="dobras-help" tabIndex={0} role="button" aria-label="Abrir informação">
     ?
     <span className="dobras-help-tooltip" role="tooltip">
       {lines.filter(Boolean).map((line, index) => (
@@ -939,8 +1092,8 @@ const InlineHelp = ({ lines = [] }) => (
 const ResultCard = ({ label, value, unit = '', digits = 2, tone = 'neutral', classification = '', delta }) => (
   <article className="dobras-result-card">
     <span className="dobras-result-label">{label}</span>
-    <strong>{Number.isFinite(value) ? `${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}` : 'Nao calculado'}</strong>
-    <span className={`dobras-status-badge dobras-tone-${tone}`}>{classification || 'Sem classificacao'}</span>
+    <strong>{Number.isFinite(value) ? `${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}` : 'Não calculado'}</strong>
+    <span className={`dobras-status-badge dobras-tone-${tone}`}>{classification || 'Sem classificação'}</span>
     {delta && Number.isFinite(delta.deltaAbs) ? (
       <small className={`dobras-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
         {formatSigned(delta.deltaAbs, unit, unit === '%' ? 'percent' : 'default')}
@@ -1008,6 +1161,44 @@ export default DobrasCutaneasForm;
 function updateField(setDados, setHasUserInput, field, value) {
   setHasUserInput(true);
   setDados((prev) => ({ ...prev, [field]: value }));
+}
+
+function updateDobrasEsportivoField(setDados, setHasUserInput, key, value) {
+  setHasUserInput(true);
+  setDados((prev) => ({
+    ...prev,
+    esportivo: {
+      ...(prev?.esportivo || createDobrasEsportivoData()),
+      [key]: value
+    }
+  }));
+}
+
+function asRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value;
+}
+
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  const token = toTextInput(value).toLowerCase();
+  if (!token) return false;
+  return ['1', 'true', 'sim', 'yes', 'y', 'on'].includes(token);
+}
+
+function buildDobrasEsportivoPayload(esportivo) {
+  const source = asRecord(esportivo);
+  return {
+    limitacaoTecnica: normalizeBoolean(source.limitacaoTecnica),
+    limitacaoTecnicaDescricao: toTextInput(source.limitacaoTecnicaDescricao) || null
+  };
+}
+
+function hasDobrasEsportivoValues(esportivo) {
+  const payload = buildDobrasEsportivoPayload(esportivo);
+  if (payload.limitacaoTecnica) return true;
+  return Boolean(payload.limitacaoTecnicaDescricao);
 }
 
 function parseNumeric(value) {
@@ -1079,6 +1270,19 @@ function normalizeSexToken(value) {
   if (token.includes('fem') || token === 'f' || token === 'female') return 'female';
   if (token.includes('masc') || token === 'm' || token === 'male') return 'male';
   return null;
+}
+
+function resolveUiProtocol(rawValue, sexToken = null) {
+  const token = toTextInput(rawValue).toLowerCase();
+  if (!token) return '';
+  if (Object.prototype.hasOwnProperty.call(PROTOCOL_CONFIG, token)) return token;
+  if (token === 'jackson_pollock_7') return 'pollock7';
+  if (token === 'durnin_womersley') return 'durnin_womersley';
+  if (token === 'guedes_1985') return 'guedes';
+  if (token === 'jackson_pollock_3') {
+    return sexToken === 'female' ? 'pollock3m' : 'pollock3h';
+  }
+  return '';
 }
 
 function calculateAge(dateValue) {
@@ -1230,3 +1434,4 @@ function resolveLatestFatFreeMass(history = []) {
 
   return null;
 }
+

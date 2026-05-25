@@ -16,6 +16,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RecoverPasswordDto } from './dto/recover-password.dto';
 import { UsersService } from '../users/users.service';
 import { extractClientIp } from '../common/request-ip';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -85,13 +86,21 @@ export class AuthController {
     return readCookie(request, cookieName);
   }
 
+  private applyAuthFlowDeprecationHeaders(response: Response, authFlow?: AuthFlowVersion) {
+    if (authFlow === 'v1') {
+      response.setHeader('Deprecation', 'authFlow/v1');
+    }
+  }
+
   @Post('register')
-  register(@Body() dto: RegisterDto) {
+  async register(@Res({ passthrough: true }) res: Response, @Body() dto: RegisterDto) {
     const allowRegister = this.config.get('auth.allowRegister');
     if (!allowRegister) {
       throw new ForbiddenException('Cadastro publico desativado.');
     }
-    return this.authService.register(dto);
+    const response = await this.authService.register(dto);
+    this.applyAuthFlowDeprecationHeaders(res, response.authFlow);
+    return response;
   }
 
   @Post('login')
@@ -107,6 +116,7 @@ export class AuthController {
     }
 
     const { refreshToken, refreshTokenExpiresAt, ...safeResponse } = response;
+    this.applyAuthFlowDeprecationHeaders(res, safeResponse.authFlow);
     return safeResponse;
   }
 
@@ -131,6 +141,11 @@ export class AuthController {
     await this.authService.logout(refreshToken);
     this.clearRefreshCookie(res);
     return { success: true };
+  }
+
+  @Post('recover-password')
+  recoverPassword(@Body() dto: RecoverPasswordDto) {
+    return this.authService.recoverPassword(dto);
   }
 
   @UseGuards(JwtAuthGuard)

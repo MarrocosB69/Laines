@@ -28,6 +28,11 @@ import {
 
 import './SettingsPage.css';
 
+const isEndpointUnavailable = (error) => {
+  const status = Number(error?.response?.status || 0);
+  return status === 404 || status === 405 || status === 501;
+};
+
 const SettingsPage = () => {
   const { user } = useAuth();
   const { confirm, notify } = useUiFeedback();
@@ -76,33 +81,73 @@ const SettingsPage = () => {
     return `Persistido em ${parsed.toLocaleString('pt-BR')}${by}`;
   }, [lastSavedMeta?.at, lastSavedMeta?.by]);
 
+  const loadLegacySettingsFromAudit = useCallback(async () => {
+    const { data } = await api.get('/auditoria', {
+      params: {
+        action: SETTINGS_AUDIT_ACTION,
+        entity: SETTINGS_AUDIT_ENTITY,
+        entityId: SETTINGS_AUDIT_SCOPE,
+        limit: 1
+      }
+    });
+    const latest = Array.isArray(data) ? data[0] : null;
+    const persistedRaw = latest?.meta?.settings;
+    const normalized = normalizeSettingsPayload(persistedRaw);
+    setSettings(normalized);
+    setSavedSnapshot(normalized);
+    if (latest) {
+      setLastSavedMeta({
+        at: latest.createdAt || null,
+        by: latest?.actor?.name || latest?.actor?.email || ''
+      });
+    }
+  }, []);
+
+  const persistLegacySettingsToAudit = useCallback(async (normalized, changedKeys, mode) => {
+    await api.post('/auditoria', {
+      action: SETTINGS_AUDIT_ACTION,
+      entity: SETTINGS_AUDIT_ENTITY,
+      entityId: SETTINGS_AUDIT_SCOPE,
+      meta: {
+        settings: normalized,
+        changedKeys,
+        mode
+      }
+    });
+  }, []);
+
   useEffect(() => {
     let active = true;
 
     const loadSettings = async () => {
       setIsLoadingSettings(true);
       try {
-        const { data } = await api.get('/auditoria', {
-          params: {
-            action: SETTINGS_AUDIT_ACTION,
-            entity: SETTINGS_AUDIT_ENTITY,
-            entityId: SETTINGS_AUDIT_SCOPE,
-            limit: 1
-          }
-        });
-        const latest = Array.isArray(data) ? data[0] : null;
-        const persistedRaw = latest?.meta?.settings;
-        const normalized = normalizeSettingsPayload(persistedRaw);
+        const { data } = await api.get('/settings/admin-console');
+        const normalized = normalizeSettingsPayload(data?.settings);
         if (!active) return;
         setSettings(normalized);
         setSavedSnapshot(normalized);
-        if (latest) {
+        if (data?.updatedAt || data?.updatedBy) {
           setLastSavedMeta({
-            at: latest.createdAt || null,
-            by: latest?.actor?.name || latest?.actor?.email || ''
+            at: data?.updatedAt || null,
+            by: data?.updatedBy?.name || data?.updatedBy?.email || ''
           });
         }
       } catch (error) {
+        if (isEndpointUnavailable(error)) {
+          try {
+            await loadLegacySettingsFromAudit();
+            return;
+          } catch (legacyError) {
+            if (!active) return;
+            notify({
+              type: 'error',
+              title: 'Erro ao carregar configurações',
+              message: getApiErrorMessage(legacyError, 'Não foi possível carregar as configurações persistidas.')
+            });
+            return;
+          }
+        }
         const status = Number(error?.response?.status || 0);
         if (status !== 403) {
           notify({
@@ -120,7 +165,7 @@ const SettingsPage = () => {
     return () => {
       active = false;
     };
-  }, [notify]);
+  }, [loadLegacySettingsFromAudit, notify]);
 
   const persistSettings = useCallback(async (nextSettings, mode = 'manual') => {
     if (!ensureCanManageSettings('Salvar configurações')) return false;
@@ -131,23 +176,29 @@ const SettingsPage = () => {
 
     setIsSaving(true);
     try {
-      await api.post('/auditoria', {
-        action: SETTINGS_AUDIT_ACTION,
-        entity: SETTINGS_AUDIT_ENTITY,
-        entityId: SETTINGS_AUDIT_SCOPE,
-        meta: {
-          settings: normalized,
-          changedKeys,
+      let persistedMeta = {
+        at: new Date().toISOString(),
+        by: user?.name || user?.email || ''
+      };
+      try {
+        const { data } = await api.patch('/settings/admin-console', {
+          ...normalized,
           mode
+        });
+        persistedMeta = {
+          at: data?.updatedAt || persistedMeta.at,
+          by: data?.updatedBy?.name || data?.updatedBy?.email || persistedMeta.by
+        };
+      } catch (error) {
+        if (!isEndpointUnavailable(error)) {
+          throw error;
         }
-      });
+        await persistLegacySettingsToAudit(normalized, changedKeys, mode);
+      }
 
       setSettings(normalized);
       setSavedSnapshot(normalized);
-      setLastSavedMeta({
-        at: new Date().toISOString(),
-        by: user?.name || user?.email || ''
-      });
+      setLastSavedMeta(persistedMeta);
       setSaveMessage({
         type: 'success',
         text: 'Configurações salvas com sucesso.'
@@ -176,7 +227,7 @@ const SettingsPage = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [ensureCanManageSettings, notify, savedSnapshot, user?.email, user?.name]);
+  }, [ensureCanManageSettings, notify, persistLegacySettingsToAudit, savedSnapshot, user?.email, user?.name]);
 
   const handleSave = useCallback(async () => {
     await persistSettings(settings, 'manual');

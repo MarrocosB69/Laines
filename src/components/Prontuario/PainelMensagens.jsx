@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2, MessageSquare } from 'lucide-react';
+import { FeedbackState } from '../ui';
 
 const PainelMensagens = ({
   isProfessor = false,
@@ -21,7 +22,7 @@ const PainelMensagens = ({
     </header>
 
     {professorMessages.length === 0 ? (
-      <div className="pron-empty">Nenhuma mensagem enviada.</div>
+      <FeedbackState empty icon={MessageSquare} title="Nenhuma mensagem enviada." size="sm" />
     ) : (
       <div className="pron-messages-list">
         {professorMessages.map((msg) => (

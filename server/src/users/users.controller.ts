@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -70,8 +71,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...ADMIN_ROLES)
   @Delete(':id')
-  remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.usersService.remove(id);
+  remove(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: { user?: { id?: string } }
+  ) {
+    return this.usersService.remove(id, req.user?.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

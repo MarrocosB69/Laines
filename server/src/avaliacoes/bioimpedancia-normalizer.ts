@@ -149,6 +149,7 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
   const tmbGuedes = toNumber(pick(valueSources, ['tmbGuedes', 'tmb_guedes']));
   const diffDeviceVsCunningham = toNumber(pick(valueSources, ['diffDeviceVsCunningham', 'diff_device_vs_cunningham']));
   const diffDeviceVsGuedes = toNumber(pick(valueSources, ['diffDeviceVsGuedes', 'diff_device_vs_guedes']));
+  const esportivo = asRecord(pick(valueSources, ['esportivo']));
 
   let percentualAguaPesoCorporal = toNumber(
     pick(valueSources, ['percentual_agua_peso_corporal', 'percentualAguaPesoCorporal'])
@@ -191,7 +192,8 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
     reactanceOhm: reatancia,
     weightKg: pesoTotal,
     ageYears: idade,
-    sex: sexo
+    sex: sexo,
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined
   });
 
   const normalizedResultadosCalculados = compact({
@@ -264,6 +266,7 @@ export const normalizeBioimpedanciaPayload = <T extends PayloadShape>(payload: T
     alvo_peso_total: alvoPesoTotal,
     sexo,
     idade,
+    esportivo: Object.keys(esportivo).length ? esportivo : undefined,
     dados_brutos: normalizedDadosBrutos,
     resultados_calculados: normalizedResultadosCalculados,
     classificacoes: normalizedClassificacoes,
