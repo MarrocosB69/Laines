@@ -718,7 +718,8 @@ export class PlanoAlimentarService {
   }
 
   private stampRevisaoFinal(dados: JsonRecord | null | undefined): JsonRecord {
-    return { ...this.normalizeDados(dados), revisaoFinal: { confirmada: false } };
+    const { revisaoFinal: _untrustedReview, ...safeDados } = this.normalizeDados(dados);
+    return { ...safeDados, revisaoFinal: { confirmada: false } };
   }
 
   private versionOf(plano: { dados?: JsonRecord | null }) {
