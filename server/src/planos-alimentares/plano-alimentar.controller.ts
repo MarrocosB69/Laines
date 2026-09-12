@@ -157,6 +157,14 @@ class ReviewPlanoDto {
   confirmarComposicaoManual?: boolean;
 }
 
+class ExportPlanoQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  expectedVersion?: number;
+}
+
 @Controller('planos-alimentares')
 export class PlanoAlimentarController {
   constructor(private readonly service: PlanoAlimentarService) {}
@@ -197,7 +205,7 @@ export class PlanoAlimentarController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdatePlanoDto
   ) {
-    return this.service.update(id, dto as any, req.user);
+    return this.service.update(id, dto, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -219,9 +227,11 @@ export class PlanoAlimentarController {
   async exportPdf(
     @Req() req: { user: AuthenticatedUser },
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() query: ExportPlanoQueryDto,
     @Res() res: Response
   ) {
-    const pdfBuffer = await this.service.gerarPDF(id, req.user);
+    const pdfBuffer = await this.service.gerarPDF(id, req.user, query.expectedVersion);
+    res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=plano-alimentar-${id}.pdf`);
     res.send(pdfBuffer);

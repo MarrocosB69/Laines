@@ -96,12 +96,13 @@ export function portion(item: RecordData, catalogo: RecordData) {
   if (!food || !medida) throw new BadRequestException('Alimento ou medida ausente do catálogo da prescrição.');
   const grams = Number(item.quantidade) * Number(medida.gramas);
   return { descricao: food.nome, quantidadeGramas: grams, medidaCaseira: medida.descricao,
+    quantidadeMedidas: medida.descricao && food.fonte !== 'plano' ? Number(item.quantidade) : null,
     ...Object.fromEntries(Object.entries(nutrients).map(([label, key]) => [label,
       number(food.comp?.[key]) === null ? null : Number(food.comp[key]) * grams / 100
     ])) };
 }
 
-/** Derived legacy projection used only by the PDF; alternatives never contribute to totals. */
+/** Shared delivery projection for PDF and athlete portal; alternatives never contribute to totals. */
 export function mealsForPrint(dados: RecordData) {
   return dados.refeicoes.map((meal: RecordData) => {
     const alimentos = meal.itens.map((item: RecordData) => portion(item, dados.catalogo));
@@ -132,7 +133,7 @@ export function mealsForPrint(dados: RecordData) {
       }
     }
     const totalRefeicao = prescriptionTotals({ ...dados, refeicoes: [meal] });
-    return { ...meal, horario, alimentos, totalRefeicao, substitutos: [...substitutos, ...meal.substitutosSemVinculo] };
+    return { ...meal, horario, alimentos, totalRefeicao, substitutos: [...substitutos, ...array(meal.substitutosSemVinculo)] };
   });
 }
 

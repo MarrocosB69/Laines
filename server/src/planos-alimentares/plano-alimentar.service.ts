@@ -29,6 +29,7 @@ type PlanoAlimento = {
   descricao?: string;
   quantidadeGramas?: number | null;
   medidaCaseira?: string | null;
+  quantidadeMedidas?: number | null;
   calorias?: number | null;
   cho?: number | null;
   ptn?: number | null;
@@ -451,15 +452,8 @@ export class PlanoAlimentarService {
   async calcularTotais(refeicoes: PlanoRefeicao[], catalogo: JsonRecord = {}): Promise<NutrientesTotais> {
     const resolvedCatalogo = Object.keys(catalogo).length
       ? catalogo
-      : (refeicoes as PlanoRefeicao[] & { __catalogo?: JsonRecord }).__catalogo || {};
-    const trustedMeals = refeicoes.map((meal) => {
-      const { alimentos: _alimentos, substitutos: _substitutos, ...safeMeal } = meal;
-      return {
-        ...safeMeal,
-        itens: (meal.itens || []).filter((item) => Boolean(resolvedCatalogo[item.alimentoId || '']))
-      };
-    });
-    return prescriptionTotals(this.normalizeDados({ refeicoes: trustedMeals, catalogo: resolvedCatalogo }));
+      : this.asRecord(Reflect.get(refeicoes, '__catalogo'));
+    return prescriptionTotals(this.normalizeDados({ refeicoes, catalogo: resolvedCatalogo }));
   }
 
   async validarAdequacao(plano: { pacienteId: string; dados?: JsonRecord | null }): Promise<ValidacaoResult> {
@@ -520,7 +514,7 @@ export class PlanoAlimentarService {
     const dados = this.normalizeDados(plano?.dados || {});
     const validacao = await this.validarAdequacao({
       pacienteId,
-      dados: dados as unknown as JsonRecord
+      dados: dados
     });
     const itens: AtivacaoChecklistItem[] = [];
 
@@ -686,7 +680,7 @@ export class PlanoAlimentarService {
       metaFibrasg: this.toNumber(input?.metaFibrasg),
       faseAtual: this.toText(input?.faseAtual) || null,
       validadoAntidoping: this.toBoolean(input?.validadoAntidoping) ?? false,
-      dados: dados as unknown as JsonRecord,
+      dados: dados,
       resultados: {
         ...(this.asRecord(input?.resultados)),
         totaisCalculados: totais
@@ -724,6 +718,18 @@ export class PlanoAlimentarService {
 
   private versionOf(plano: { dados?: JsonRecord | null }) {
     return Number(this.asRecord(plano.dados).version) || 0;
+  }
+
+  private hasCurrentReview(plano: { dados?: JsonRecord | null }) {
+    const review = this.asRecord(this.asRecord(plano.dados).revisaoFinal);
+    return review.confirmada === true && review.origem === 'servidor'
+      && review.version === this.versionOf(plano);
+  }
+
+  private responseFor(plano: PlanoAlimentar) {
+    const dados = this.normalizeDados(plano.dados);
+    return { ...plano, dados, entrega: plano.status === PlanoAlimentarStatus.ATIVO && this.hasCurrentReview(plano)
+      ? { version: this.versionOf(plano), refeicoes: mealsForPrint(dados) } : null };
   }
 
   private assertVersion(current: PlanoAlimentar, expectedVersion: unknown) {
@@ -780,15 +786,20 @@ export class PlanoAlimentarService {
     return dados;
   }
 
-  private async persistVersion(current: PlanoAlimentar, patch: Partial<PlanoAlimentar>) {
+  private async persistVersion(current: PlanoAlimentar, patch: Partial<PlanoAlimentar>, repo = this.repo) {
     const expected = this.versionOf(current);
-    const result = await this.repo.createQueryBuilder().update(PlanoAlimentar).set(patch)
+    const { dados, resultados, ...fields } = patch;
+    const result = await repo.createQueryBuilder().update(PlanoAlimentar).set({
+      ...fields,
+      ...(dados !== undefined ? { dados: () => 'CAST(:planDados AS jsonb)' } : {}),
+      ...(resultados !== undefined ? { resultados: () => 'CAST(:planResultados AS jsonb)' } : {})
+    }).setParameters({ planDados: JSON.stringify(dados), planResultados: JSON.stringify(resultados) })
       .where('id = :id', { id: current.id })
       .andWhere('deleted_at IS NULL')
       .andWhere("COALESCE((dados->>'version')::int, 0) = :version", { version: expected })
       .execute();
     if (result.affected !== 1) throw new ConflictException('Outra pessoa alterou este plano. Reabra antes de continuar.');
-    return this.repo.findOneByOrFail({ id: current.id });
+    return repo.findOneByOrFail({ id: current.id });
   }
 
   async findAll(
@@ -818,9 +829,14 @@ export class PlanoAlimentarService {
     const offset = Math.max(0, Math.floor(this.toNumber(filtros?.offset) || 0));
     qb.take(limit).skip(offset);
 
-    if (role === 'atleta') qb.andWhere('plano.status = :publishedStatus', { publishedStatus: PlanoAlimentarStatus.ATIVO });
+    if (role === 'atleta') {
+      qb.andWhere('plano.status = :publishedStatus', { publishedStatus: PlanoAlimentarStatus.ATIVO })
+        .andWhere("plano.dados->'revisaoFinal'->>'confirmada' = 'true'")
+        .andWhere("plano.dados->'revisaoFinal'->>'origem' = 'servidor'")
+        .andWhere("plano.dados->'revisaoFinal'->>'version' = plano.dados->>'version'");
+    }
     const planos = await qb.getMany();
-    return planos.map((plano) => ({ ...plano, dados: this.normalizeDados(plano.dados) }));
+    return planos.map((plano) => this.responseFor(plano));
   }
 
   async findById(id: string, user: AuthenticatedUser) {
@@ -830,10 +846,10 @@ export class PlanoAlimentarService {
     });
     if (!plano) throw new NotFoundException('Plano alimentar nao encontrado.');
     await this.assertCanAccessPaciente(user, plano.pacienteId);
-    if (normalizeRole(user.role) === 'atleta' && plano.status !== PlanoAlimentarStatus.ATIVO) {
+    if (normalizeRole(user.role) === 'atleta' && (plano.status !== PlanoAlimentarStatus.ATIVO || !this.hasCurrentReview(plano))) {
       throw new ForbiddenException('Este plano ainda não foi publicado.');
     }
-    return { ...plano, dados: this.normalizeDados(plano.dados) };
+    return this.responseFor(plano);
   }
 
   async getPacienteContext(pacienteId: string, user: AuthenticatedUser) {
@@ -867,10 +883,6 @@ export class PlanoAlimentarService {
       criadoPorId: user.id, criadoEm: new Date().toISOString() };
     if (patch.status === PlanoAlimentarStatus.ATIVO) {
       throw new ForbiddenException('Salve, envie para revisão profissional e ative a versão revisada.');
-    }
-
-    if (patch.status === PlanoAlimentarStatus.ATIVO) {
-      await this.assertCanActivatePlano(patch);
     }
 
     const enrichedPatch = await this.enrichPatchWithValidation(patch);
@@ -923,6 +935,22 @@ export class PlanoAlimentarService {
       ? PlanoAlimentarStatus.RASCUNHO : current.status);
     const enriched = await this.enrichPatchWithValidation(patch);
     const { expectedVersion: _expected, ...persistent } = enriched;
+    if ([PlanoAlimentarStatus.ATIVO, PlanoAlimentarStatus.ARQUIVADO, PlanoAlimentarStatus.ENCERRADO].includes(current.status)) {
+      // Published content remains intact while the next prescription is prepared.
+      const copy = this.repo.create({
+        pacienteId: current.pacienteId, alunoId: user.id, projetoId: persistent.projetoId,
+        status: input.status === PlanoAlimentarStatus.EM_REVISAO ? PlanoAlimentarStatus.EM_REVISAO : PlanoAlimentarStatus.RASCUNHO,
+        dataInicio: persistent.dataInicio || current.dataInicio, dataFim: persistent.dataFim,
+        tipoDieta: persistent.tipoDieta || current.tipoDieta, metaCalorica: persistent.metaCalorica,
+        metaCHOg: persistent.metaCHOg, metaPTNg: persistent.metaPTNg, metaLIPg: persistent.metaLIPg,
+        metaFibrasg: persistent.metaFibrasg, faseAtual: persistent.faseAtual,
+        validadoAntidoping: persistent.validadoAntidoping ?? false,
+        dados: { ...dados, version: 1, revisaoFinal: { confirmada: false }, historicoRevisoes: [],
+          origemPlanoId: current.id, origemVersion: this.versionOf(current), criadoPorId: user.id, criadoEm: new Date().toISOString() },
+        resultados: persistent.resultados
+      });
+      return this.repo.save(copy);
+    }
     return this.persistVersion(current, persistent as Partial<PlanoAlimentar>);
   }
 
@@ -935,13 +963,14 @@ export class PlanoAlimentarService {
     }
     const dados = this.normalizeDados(current.dados);
     validatePrescription(dados);
-    const pending = Object.values(dados.catalogo).filter((food: any) => food.origemComposicao !== 'catalogo' && !food.validacaoComposicao);
+    const pending = Object.values(this.asRecord(dados.catalogo)).map((food) => this.asRecord(food))
+      .filter((food) => food.origemComposicao !== 'catalogo' && !food.validacaoComposicao);
     if (pending.length && !confirmarComposicaoManual) {
       throw new BadRequestException('Confira e confirme explicitamente a composição dos alimentos manuais ou legados antes de aprovar.');
     }
     const now = new Date().toISOString();
     dados.version = this.versionOf(current) + 1;
-    for (const food of pending as any[]) food.validacaoComposicao = { porId: reviewer.id, em: now, version: dados.version };
+    for (const food of pending) food.validacaoComposicao = { porId: reviewer.id, em: now, version: dados.version };
     dados.revisaoFinal = { confirmada: true, origem: 'servidor', version: dados.version,
       confirmadoEm: now, confirmadoPorId: reviewer.id, confirmadoPorNome: reviewer.name, crn: reviewer.crn };
     const enriched = await this.enrichPatchWithValidation({ ...current, dados });
@@ -956,15 +985,36 @@ export class PlanoAlimentarService {
       throw new BadRequestException('Somente um plano em revisão pode ser ativado.');
     }
     await this.assertCanActivatePlano(current);
-    const dados = this.normalizeDados(current.dados);
-    dados.version = this.versionOf(current) + 1;
-    dados.revisaoFinal = { ...dados.revisaoFinal, version: dados.version,
-      ativadoEm: new Date().toISOString(), ativadoPorId: user.id };
-    return this.persistVersion(current, { status: PlanoAlimentarStatus.ATIVO, dados });
+    return this.repo.manager.transaction(async (manager) => {
+      const patient = await manager.getRepository(Paciente).findOne({
+        where: { id: current.pacienteId }, lock: { mode: 'pessimistic_write' }
+      });
+      if (!patient) throw new NotFoundException('Paciente nao encontrado.');
+      const plans = manager.getRepository(PlanoAlimentar);
+      const locked = await plans.findOne({ where: { id }, lock: { mode: 'pessimistic_write' } });
+      if (!locked) throw new NotFoundException('Plano alimentar nao encontrado.');
+      this.assertVersion(locked, expectedVersion);
+      const dados = this.normalizeDados(locked.dados);
+      const publishedAt = new Date().toISOString();
+      dados.version = this.versionOf(locked) + 1;
+      dados.revisaoFinal = { ...dados.revisaoFinal, version: dados.version,
+        ativadoEm: publishedAt, ativadoPorId: user.id };
+      await plans.createQueryBuilder().update(PlanoAlimentar).set({
+        status: PlanoAlimentarStatus.ARQUIVADO,
+        dados: () => "COALESCE(dados, '{}'::jsonb) || jsonb_build_object('substituidoPorPlanoId', CAST(:newPlan AS text), 'arquivadoEm', CAST(:archivedAt AS text))"
+      }).setParameters({ newPlan: id, archivedAt: publishedAt })
+        .where('paciente_id = :patientId', { patientId: locked.pacienteId })
+        .andWhere('status = :active', { active: PlanoAlimentarStatus.ATIVO })
+        .andWhere('id <> :id', { id }).andWhere('deleted_at IS NULL').execute();
+      return this.persistVersion(locked, { status: PlanoAlimentarStatus.ATIVO, dados }, plans);
+    });
   }
 
   async remove(id: string, user: AuthenticatedUser) {
     const current = await this.findById(id, user);
+    if (![PlanoAlimentarStatus.RASCUNHO, PlanoAlimentarStatus.EM_REVISAO].includes(current.status)) {
+      throw new ForbiddenException('Prescrições publicadas fazem parte do histórico e não podem ser excluídas.');
+    }
     await this.repo.softDelete(current.id);
     return { deleted: true };
   }
@@ -1007,15 +1057,15 @@ export class PlanoAlimentarService {
     return 'Critico';
   }
 
-  async gerarPDF(planoId: string, user?: AuthenticatedUser): Promise<Buffer> {
+  async gerarPDF(planoId: string, user?: AuthenticatedUser, expectedVersion?: number): Promise<Buffer> {
     const plano = user
       ? await this.findById(planoId, user)
       : await this.repo.findOne({ where: { id: planoId }, withDeleted: false });
     if (!plano) throw new NotFoundException('Plano alimentar nao encontrado.');
+    if (expectedVersion !== undefined) this.assertVersion(plano, expectedVersion);
 
     let PDFDocument: any;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       PDFDocument = require('pdfkit');
     } catch {
       throw new BadRequestException('Dependencia pdfkit nao instalada no servidor.');
@@ -1153,9 +1203,7 @@ export class PlanoAlimentarService {
 
       drawSectionTitle('Identificacao');
       drawSimpleLine(`Paciente: ${this.toText(paciente?.nome) || '-'}  |  Prontuario: ${this.toText(paciente?.prontuario) || '-'}`);
-      drawSimpleLine(`CPF: ${this.toText(paciente?.cpf) || '-'}  |  Modalidade: ${this.toText(paciente?.modalidadePrincipal) || '-'}`);
-      drawSimpleLine(`Genero: ${this.toText(paciente?.genero) || '-'}  |  Status atleta: ${this.toText(paciente?.status) || '-'}`);
-      drawSimpleLine(`Plano ID: ${plano.id}`);
+      drawSimpleLine(`Plano: ${plano.id} | Versao: ${this.versionOf(plano)}`);
 
       drawSectionTitle('Configuracao do plano');
       drawSimpleLine(`Status: ${this.mapPlanoStatusForPdf(plano.status)}  |  Tipo de dieta: ${this.toText(plano.tipoDieta) || '-'}`);
@@ -1221,7 +1269,7 @@ export class PlanoAlimentarService {
             alimentos.forEach((alimento) => {
               ensureSpace(14);
               doc.fillColor('#111827').font('Helvetica').fontSize(9).text(
-                `- ${this.toText(alimento.descricao) || 'Alimento'} | ${this.formatNumberForPdf(alimento.quantidadeGramas, 1)} g | ${this.formatNumberForPdf(alimento.calorias, 1)} kcal`
+                `- ${this.toText(alimento.descricao) || 'Alimento'} | ${alimento.medidaCaseira ? `${alimento.quantidadeMedidas != null ? `${this.formatNumberForPdf(alimento.quantidadeMedidas, 1)} ` : ''}${alimento.medidaCaseira} | ` : ''}${this.formatNumberForPdf(alimento.quantidadeGramas, 1)} g | ${this.formatNumberForPdf(alimento.calorias, 1)} kcal`
               );
             });
           }
@@ -1233,7 +1281,7 @@ export class PlanoAlimentarService {
             substitutos.forEach((item) => {
               ensureSpace(14);
               doc.fillColor('#475569').font('Helvetica-Oblique').fontSize(9).text(
-                `  - ${item.substitui ? `Em lugar de ${item.substitui}: ` : 'Alternativa sem vínculo: '}${this.toText(item.descricao) || 'Substituto'} | ${this.formatNumberForPdf(item.quantidadeGramas, 1)} g`
+                `  - ${item.substitui ? `Em lugar de ${item.substitui}: ` : 'Alternativa sem vínculo: '}${this.toText(item.descricao) || 'Substituto'} | ${item.medidaCaseira ? `${item.quantidadeMedidas != null ? `${this.formatNumberForPdf(item.quantidadeMedidas, 1)} ` : ''}${item.medidaCaseira} | ` : ''}${this.formatNumberForPdf(item.quantidadeGramas, 1)} g`
               );
             });
           }

@@ -236,7 +236,9 @@ export function usePrescricaoApi(pacienteId) {
     if (!planoId) return;
     setErro('');
     try {
-      const { data } = await api.get(`/planos-alimentares/${planoId}/pdf`, { responseType: 'blob' });
+      const { data } = await api.get(`/planos-alimentares/${planoId}/pdf`, {
+        params: { expectedVersion: plano?.version || 0 }, responseType: 'blob'
+      });
       const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
@@ -244,9 +246,9 @@ export function usePrescricaoApi(pacienteId) {
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      setErro(getApiErrorMessage(e, 'Não foi possível exportar o PDF do plano salvo.'));
+      setErro(e.response?.status === 409 ? 'O plano foi atualizado. Recarregue a prescrição antes de baixar o PDF.' : getApiErrorMessage(e, 'Não foi possível exportar o PDF do plano salvo.'));
     }
-  }, [planoId]);
+  }, [planoId, plano?.version]);
 
   return {
     carregando, erro, paciente, metas, plano, setPlano,
