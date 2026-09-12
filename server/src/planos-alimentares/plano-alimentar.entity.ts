@@ -10,7 +10,9 @@ import {
 
 export enum PlanoAlimentarStatus {
   RASCUNHO = 'rascunho',
+  EM_REVISAO = 'em_revisao',
   ATIVO = 'ativo',
+  ARQUIVADO = 'arquivado',
   ENCERRADO = 'encerrado'
 }
 

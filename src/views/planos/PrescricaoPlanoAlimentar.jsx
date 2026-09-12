@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, PlusCircle, Save, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Download, PlusCircle, Save, ShieldCheck } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePacientes } from '../../contexts/PacienteContext';
 import api, { getApiErrorMessage } from '../../services/api';
@@ -9,7 +9,7 @@ import './PrescricaoPlanoAlimentar.css';
 
 const EMPTY_REFEICAO = (index = 1) => ({
   id: `refeicao-${Date.now()}-${index}`,
-  nome: `Refeicao ${index}`,
+  nome: `Refeição ${index}`,
   horario: '',
   vinculadoTreino: false,
   tipoVinculo: null,
@@ -20,7 +20,8 @@ const EMPTY_REFEICAO = (index = 1) => ({
     calorias: 0,
     cho: 0,
     ptn: 0,
-    lip: 0
+    lip: 0,
+    fibra: 0
   }
 });
 
@@ -30,7 +31,8 @@ const EMPTY_SUPLEMENTO = () => ({
   horario: '',
   marca: '',
   loteVerificado: '',
-  statusWADA: 'risco'
+  statusWADA: 'risco',
+  justificativaClinica: ''
 });
 
 const toNumber = (value) => {
@@ -73,16 +75,28 @@ const sumTotais = (refeicoes = []) => {
     acc.cho += Number(toNumber(t.cho) || 0);
     acc.ptn += Number(toNumber(t.ptn) || 0);
     acc.lip += Number(toNumber(t.lip) || 0);
+    acc.fibra += Number(toNumber(t.fibra) || 0);
     return acc;
-  }, { calorias: 0, cho: 0, ptn: 0, lip: 0 });
+  }, { calorias: 0, cho: 0, ptn: 0, lip: 0, fibra: 0 });
 
   return {
     calorias: Number(total.calorias.toFixed(2)),
     cho: Number(total.cho.toFixed(2)),
     ptn: Number(total.ptn.toFixed(2)),
-    lip: Number(total.lip.toFixed(2))
+    lip: Number(total.lip.toFixed(2)),
+    fibra: Number(total.fibra.toFixed(2))
   };
 };
+
+const getEffectiveMeta = (manualValue, getValue) => {
+  const manual = toNumber(manualValue);
+  if (Number.isFinite(manual) && manual > 0) return manual;
+  const fromGet = toNumber(getValue);
+  if (Number.isFinite(fromGet) && fromGet > 0) return fromGet;
+  return null;
+};
+
+const hasClinicalJustification = (value) => String(value || '').trim().length >= 10;
 
 const PrescricaoPlanoAlimentar = () => {
   const { pacienteId } = useParams();
@@ -119,18 +133,26 @@ const PrescricaoPlanoAlimentar = () => {
   const [orientacoesGerais, setOrientacoesGerais] = useState('');
   const [refeicoes, setRefeicoes] = useState([EMPTY_REFEICAO(1)]);
   const [suplementos, setSuplementos] = useState([]);
+  const [revisaoFinalConfirmada, setRevisaoFinalConfirmada] = useState(false);
+  const [validacaoAberta, setValidacaoAberta] = useState(false);
 
   const metaCaloricaNum = toNumber(metaCalorica) || 0;
+  // Dividir a meta do dia pelo numero de refeicoes cadastradas *ate agora* faz
+  // a primeira refeicao ser comparada com o dia inteiro — e o status de uma
+  // refeicao muda sozinho quando outra e criada. Abaixo de tres refeicoes a
+  // divisao nao significa nada, entao nao ha meta por refeicao para julgar.
+  const MINIMO_REFEICOES_PARA_META = 3;
   const metaCaloricaPorRefeicao = useMemo(() => {
     if (!metaCaloricaNum || metaCaloricaNum <= 0) return 0;
-    const divisor = Math.max(refeicoes.length, 1);
-    return Number((metaCaloricaNum / divisor).toFixed(2));
+    if (refeicoes.length < MINIMO_REFEICOES_PARA_META) return 0;
+    return Number((metaCaloricaNum / refeicoes.length).toFixed(2));
   }, [metaCaloricaNum, refeicoes.length]);
 
   const totais = useMemo(() => sumTotais(refeicoes), [refeicoes]);
   const statusLabel = useMemo(() => {
     if (status === 'ativo') return 'Ativo';
-    if (status === 'encerrado') return 'Encerrado';
+    if (status === 'em_revisao') return 'Em revisão';
+    if (status === 'arquivado' || status === 'encerrado') return 'Arquivado';
     return 'Rascunho';
   }, [status]);
 
@@ -176,11 +198,11 @@ const PrescricaoPlanoAlimentar = () => {
       label: 'Fibras',
       value: metasGet?.fibras,
       unit: 'g',
-      prescrito: 0,
+      prescrito: totais.fibra,
       color: '#0F6E56',
       digits: 0
     }
-  ]), [metasGet?.calorias, metasGet?.cho, metasGet?.fibras, metasGet?.lip, metasGet?.ptn, totais.calorias, totais.cho, totais.lip, totais.ptn]);
+  ]), [metasGet?.calorias, metasGet?.cho, metasGet?.fibras, metasGet?.lip, metasGet?.ptn, totais.calorias, totais.cho, totais.fibra, totais.lip, totais.ptn]);
 
   const totaisCards = useMemo(() => ([
     {
@@ -214,8 +236,16 @@ const PrescricaoPlanoAlimentar = () => {
       meta: metasGet?.lip,
       unit: 'g',
       digits: 1
+    },
+    {
+      key: 'fibra',
+      label: 'Fibras',
+      value: totais.fibra,
+      meta: metasGet?.fibras,
+      unit: 'g',
+      digits: 1
     }
-  ]), [metasGet?.calorias, metasGet?.cho, metasGet?.lip, metasGet?.ptn, totais.calorias, totais.cho, totais.lip, totais.ptn]);
+  ]), [metasGet?.calorias, metasGet?.cho, metasGet?.fibras, metasGet?.lip, metasGet?.ptn, totais.calorias, totais.cho, totais.fibra, totais.lip, totais.ptn]);
 
   const mapPlano = useCallback((plano) => {
     if (!plano) return;
@@ -235,6 +265,7 @@ const PrescricaoPlanoAlimentar = () => {
     setValidadoAntidoping(Boolean(plano.validadoAntidoping));
     setVersaoCompeticion(Boolean(dados.versaoCompeticion));
     setOrientacoesGerais(String(dados.orientacoesGerais || ''));
+    setRevisaoFinalConfirmada(Boolean(dados?.revisaoFinal?.confirmada));
 
     const refeicoesPlano = Array.isArray(dados.refeicoes) && dados.refeicoes.length
       ? dados.refeicoes
@@ -273,7 +304,7 @@ const PrescricaoPlanoAlimentar = () => {
         }
       } catch (requestError) {
         if (!mounted) return;
-        setError(getApiErrorMessage(requestError, 'Nao foi possivel carregar o contexto do plano alimentar.'));
+        setError(getApiErrorMessage(requestError, 'Não foi possível carregar o contexto do plano alimentar.'));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -294,6 +325,8 @@ const PrescricaoPlanoAlimentar = () => {
   };
 
   const removeRefeicao = (index) => {
+    const confirmed = window.confirm('Tem certeza que deseja remover esta refeicao? Os alimentos e substituicoes vinculados tambem serao removidos.');
+    if (!confirmed) return;
     setRefeicoes((prev) => {
       const next = prev.filter((_, idx) => idx !== index);
       return next.length ? next : [EMPTY_REFEICAO(1)];
@@ -309,14 +342,166 @@ const PrescricaoPlanoAlimentar = () => {
   };
 
   const removeSuplemento = (index) => {
+    const confirmed = window.confirm('Tem certeza que deseja remover este suplemento do plano?');
+    if (!confirmed) return;
     setSuplementos((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const buildPayload = () => ({
+  const metasEfetivas = useMemo(() => ({
+    calorias: getEffectiveMeta(metaCalorica, metasGet?.calorias),
+    cho: getEffectiveMeta(metaCho, metasGet?.cho),
+    ptn: getEffectiveMeta(metaPtn, metasGet?.ptn),
+    lip: getEffectiveMeta(metaLip, metasGet?.lip),
+    fibras: getEffectiveMeta(metaFibras, metasGet?.fibras)
+  }), [metaCalorica, metaCho, metaFibras, metaLip, metaPtn, metasGet?.calorias, metasGet?.cho, metasGet?.fibras, metasGet?.lip, metasGet?.ptn]);
+
+  const refeicoesComAlimentos = useMemo(() => (
+    refeicoes.filter((refeicao) => Array.isArray(refeicao?.alimentos) && refeicao.alimentos.length > 0).length
+  ), [refeicoes]);
+
+  const suplementosProibidos = useMemo(() => (
+    suplementos.filter((item) => String(item?.statusWADA || '').toLowerCase() === 'proibido')
+  ), [suplementos]);
+
+  const suplementosRiscoSemJustificativa = useMemo(() => (
+    suplementos.filter((item) => (
+      String(item?.statusWADA || 'risco').toLowerCase() === 'risco'
+      && !hasClinicalJustification(item?.justificativaClinica)
+    ))
+  ), [suplementos]);
+
+  const energiaAdequacao = useMemo(() => {
+    const meta = metasEfetivas.calorias;
+    if (!meta || meta <= 0) return null;
+    return (totais.calorias / meta) * 100;
+  }, [metasEfetivas.calorias, totais.calorias]);
+
+  const activationChecklist = useMemo(() => {
+    const hasGet = Boolean(metasGet?.avaliacaoId);
+    const metasCompletas = Object.values(metasEfetivas).every((value) => Number.isFinite(value) && value > 0);
+    const totaisValidos = totais.calorias > 0 && totais.cho >= 0 && totais.ptn >= 0 && totais.lip >= 0 && totais.fibra >= 0;
+
+    const items = [
+      {
+        id: 'get',
+        label: 'GET cadastrado',
+        ok: hasGet,
+        severity: 'blocker',
+        message: hasGet
+          ? 'GET localizado para apoiar a prescrição.'
+          : 'Este paciente ainda não possui GET cadastrado. Você pode montar um rascunho, mas não será possível ativar o plano até preencher as metas energéticas e nutricionais.'
+      },
+      {
+        id: 'metas',
+        label: 'Metas completas',
+        ok: metasCompletas,
+        severity: 'blocker',
+        message: metasCompletas
+          ? 'Metas de kcal, CHO, PTN, LIP e fibras definidas.'
+          : 'Metas incompletas. Revise kcal, carboidratos, proteínas, lipídios e fibras antes da ativação.'
+      },
+      {
+        id: 'refeicoes',
+        label: 'Refeições cadastradas',
+        ok: refeicoesComAlimentos > 0,
+        severity: 'blocker',
+        message: refeicoesComAlimentos > 0
+          ? `${refeicoesComAlimentos} refeicao(oes) com alimentos cadastrados.`
+          : 'Cadastre ao menos uma refeição com alimento antes de ativar.'
+      },
+      {
+        id: 'totais',
+        label: 'Totais calculados',
+        ok: totaisValidos,
+        severity: 'blocker',
+        message: totaisValidos
+          ? 'Totais nutricionais calculados com fibras incluidas.'
+          : 'Não foi possível calcular totais nutricionais válidos.'
+      },
+      {
+        id: 'proibidos',
+        label: 'Suplementos proibidos',
+        ok: suplementosProibidos.length === 0,
+        severity: 'blocker',
+        message: suplementosProibidos.length === 0
+          ? 'Nenhum suplemento proibido informado.'
+          : 'Ha suplemento marcado como proibido. Remova ou substitua antes de ativar.'
+      },
+      {
+        id: 'risco',
+        label: 'Suplementos em risco',
+        ok: suplementosRiscoSemJustificativa.length === 0,
+        severity: 'blocker',
+        message: suplementosRiscoSemJustificativa.length === 0
+          ? 'Suplementos em risco possuem justificativa clínica ou não foram informados.'
+          : 'Suplemento em risco exige justificativa clinica antes da ativacao.'
+      },
+      {
+        id: 'revisao',
+        label: 'Revisão final',
+        ok: revisaoFinalConfirmada,
+        severity: 'blocker',
+        message: revisaoFinalConfirmada
+          ? 'Revisão final confirmada pelo profissional.'
+          : 'Confirme a revisão final profissional antes de ativar.'
+      }
+    ];
+
+    if (energiaAdequacao !== null && energiaAdequacao < 80) {
+      items.push({
+        id: 'energia',
+        label: 'Distância em relação ao GET',
+        ok: false,
+        severity: 'warning',
+        message: 'O plano está distante da meta energética definida. Revise as refeições antes de ativar.'
+      });
+    }
+
+    if (!metasEfetivas.fibras) {
+      items.push({
+        id: 'fibras',
+        label: 'Fibras ausentes',
+        ok: false,
+        severity: 'warning',
+        message: 'A meta de fibras não foi definida. O plano poderá ser salvo, mas revise este dado antes da ativação.'
+      });
+    }
+
+    return items;
+  }, [
+    energiaAdequacao,
+    metasEfetivas,
+    metasGet?.avaliacaoId,
+    refeicoesComAlimentos,
+    revisaoFinalConfirmada,
+    suplementosProibidos.length,
+    suplementosRiscoSemJustificativa.length,
+    totais.calorias,
+    totais.cho,
+    totais.fibra,
+    totais.lip,
+    totais.ptn
+  ]);
+
+  const activationBlockers = useMemo(() => (
+    activationChecklist
+      .filter((item) => item.severity === 'blocker' && !item.ok)
+      .map((item) => item.message)
+  ), [activationChecklist]);
+
+  const activationWarnings = useMemo(() => (
+    activationChecklist
+      .filter((item) => item.severity === 'warning' && !item.ok)
+      .map((item) => item.message)
+  ), [activationChecklist]);
+
+  const canActivate = activationBlockers.length === 0;
+
+  const buildPayload = (statusOverride = status) => ({
     pacienteId,
     alunoId: null,
     projetoId: patient?.projetoId || null,
-    status,
+    status: statusOverride,
     dataInicio,
     dataFim: dataFim || null,
     tipoDieta,
@@ -331,16 +516,25 @@ const PrescricaoPlanoAlimentar = () => {
       refeicoes,
       suplementos,
       versaoCompeticion,
-      orientacoesGerais
+      orientacoesGerais,
+      revisaoFinal: {
+        confirmada: revisaoFinalConfirmada
+      }
     },
     resultados: {
       totaisCalculados: totais
     }
   });
 
-  const handleSave = async () => {
+  const handleSave = async (statusOverride) => {
     if (!pacienteId) return;
+    const nextStatus = typeof statusOverride === 'string' ? statusOverride : status;
     setError('');
+
+    if (nextStatus === 'ativo' && activationBlockers.length > 0) {
+      setError(activationBlockers[0]);
+      return;
+    }
 
     if (status === 'ativo' && !metasGet?.avaliacaoId) {
       setError('Configure o Gasto Energético Total antes de ativar o plano');
@@ -349,21 +543,26 @@ const PrescricaoPlanoAlimentar = () => {
 
     setSaveStatus('saving');
     try {
-      const payload = buildPayload();
+      const payload = buildPayload(nextStatus);
       if (planId) {
         const { data } = await api.patch(`/planos-alimentares/${planId}`, payload);
         setPlanId(data?.id || planId);
+        mapPlano(data);
       } else {
         const { data } = await api.post('/planos-alimentares', payload);
         setPlanId(data?.id || '');
+        mapPlano(data);
       }
+      setStatus(nextStatus);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus(null), 2500);
     } catch (requestError) {
       setSaveStatus('error');
-      setError(getApiErrorMessage(requestError, 'Nao foi possivel salvar o plano alimentar.'));
+      setError(getApiErrorMessage(requestError, 'Não foi possível salvar o plano alimentar.'));
     }
   };
+
+  const handleActivate = () => handleSave('ativo');
 
   const handleDownloadPdf = async () => {
     if (!planId) return;
@@ -381,7 +580,7 @@ const PrescricaoPlanoAlimentar = () => {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Nao foi possivel gerar o PDF do plano.'));
+      setError(getApiErrorMessage(requestError, 'Não foi possível gerar o PDF do plano.'));
     }
   };
 
@@ -408,16 +607,73 @@ const PrescricaoPlanoAlimentar = () => {
               type="button"
               className="btn-secondary"
               onClick={handleDownloadPdf}
-              disabled={!planId}
+              disabled={!planId || saveStatus === 'saving'}
             >
               <Download size={14} /> PDF
             </button>
-            <button type="button" className="btn-salvar" onClick={handleSave}>
+            <button type="button" className="btn-secondary" onClick={handleSave} disabled={saveStatus === 'saving'}>
               <Save size={14} /> Salvar plano
+            </button>
+            <button
+              type="button"
+              className="btn-ativar"
+              onClick={handleActivate}
+              disabled={!canActivate || saveStatus === 'saving'}
+              title={!canActivate ? activationBlockers[0] : 'Ativar plano alimentar'}
+            >
+              <ShieldCheck size={14} /> Ativar plano
             </button>
           </div>
         </div>
       </header>
+
+      {/* A validacao abria com nove cartoes de bloqueio antes do plano aparecer.
+          O contador ja diz se e preciso olhar; a lista fica a um clique. */}
+      <section className="prescricao-card prescricao-section">
+        <div className="prescricao-section-header">
+          <button
+            type="button"
+            className="validacao-toggle"
+            onClick={() => setValidacaoAberta((v) => !v)}
+            aria-expanded={validacaoAberta}
+          >
+            <ChevronDown
+              size={14}
+              className={`validacao-toggle__seta${validacaoAberta ? ' aberta' : ''}`}
+              aria-hidden="true"
+            />
+            <span className="section-title">Validação clínica para ativação</span>
+          </button>
+          <span className={`activation-summary ${canActivate ? 'ok' : 'blocker'}`}>
+            {canActivate
+              ? 'Pronto para ativação'
+              : `${activationBlockers.length} ${activationBlockers.length === 1 ? 'bloqueio' : 'bloqueios'}`}
+          </span>
+        </div>
+
+        <div className={`clinical-checklist${validacaoAberta ? '' : ' recolhida'}`}>
+          {activationChecklist.map((item) => (
+            <article
+              key={item.id}
+              className={`clinical-checklist__item ${item.ok ? 'ok' : item.severity}`}
+            >
+              <span className="clinical-checklist__dot" aria-hidden="true" />
+              <div>
+                <strong>{item.label}</strong>
+                <p>{item.message}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {activationWarnings.length > 0 && (
+          <div className="clinical-warning-list">
+            {activationWarnings.map((message) => (
+              <p key={message}>{message}</p>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="prescricao-card">
         <h2 className="section-title">Metas do GET (última avaliação)</h2>
@@ -467,8 +723,9 @@ const PrescricaoPlanoAlimentar = () => {
               aria-required="true"
             >
               <option value="rascunho">Rascunho</option>
+              <option value="em_revisao">Em revisao</option>
               <option value="ativo">Ativo</option>
-              <option value="encerrado">Encerrado</option>
+              <option value="arquivado">Arquivado</option>
             </select>
           </div>
 
@@ -498,7 +755,7 @@ const PrescricaoPlanoAlimentar = () => {
           </div>
 
           <div className="form-field">
-            <label htmlFor="plano-data-inicio">Data inicio</label>
+            <label htmlFor="plano-data-inicio">Data início</label>
             <input
               id="plano-data-inicio"
               type="date"
@@ -596,7 +853,7 @@ const PrescricaoPlanoAlimentar = () => {
               onChange={(event) => setVersaoCompeticion(event.target.checked)}
             />
             <span className="config-toggle-track" />
-            Versao competicion
+            Versão competição
           </label>
         </div>
       </section>
@@ -605,7 +862,7 @@ const PrescricaoPlanoAlimentar = () => {
         <div className="prescricao-section-header">
           <h2 className="section-title">Refeições</h2>
           <button type="button" className="btn-secondary" onClick={addRefeicao}>
-            <PlusCircle size={16} /> Adicionar refeicao
+            <PlusCircle size={16} /> Adicionar refeição
           </button>
         </div>
 
@@ -654,8 +911,41 @@ const PrescricaoPlanoAlimentar = () => {
           rows={4}
           value={orientacoesGerais}
           onChange={(event) => setOrientacoesGerais(event.target.value)}
-          placeholder="Observacoes para o paciente, timing de refeicoes e condutas complementares."
+          placeholder="Observações para o paciente, timing de refeições e condutas complementares."
         />
+      </section>
+
+      <section className="prescricao-card prescricao-section">
+        <h2 className="section-title">Revisão final</h2>
+        <div className="review-summary-grid">
+          <div>
+            <span>Energia prescrita</span>
+            <strong>{formatValue(totais.calorias, 1)} kcal</strong>
+          </div>
+          <div>
+            <span>Fibras prescritas</span>
+            <strong>{formatValue(totais.fibra, 1)} g</strong>
+          </div>
+          <div>
+            <span>Refeições com alimentos</span>
+            <strong>{refeicoesComAlimentos}</strong>
+          </div>
+          <div>
+            <span>Suplementos em risco</span>
+            <strong>{suplementosRiscoSemJustificativa.length}</strong>
+          </div>
+        </div>
+
+        <label className="review-confirmation">
+          <input
+            type="checkbox"
+            checked={revisaoFinalConfirmada}
+            onChange={(event) => setRevisaoFinalConfirmada(event.target.checked)}
+          />
+          <span>
+            Confirmo que revisei metas, refeições, fibras, suplementos e alertas clínicos antes da ativação.
+          </span>
+        </label>
       </section>
 
       <section className="prescricao-card">
@@ -696,4 +986,3 @@ const PrescricaoPlanoAlimentar = () => {
 };
 
 export default PrescricaoPlanoAlimentar;
-

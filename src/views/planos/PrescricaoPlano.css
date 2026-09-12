@@ -1,0 +1,407 @@
+/**
+ * Escopo da tela de prescrição.
+ *
+ * A tela é uma tabela clínica densa, montada com utilitários. O CSS global do
+ * app estiliza `table`, `thead th`, `tbody td` e `input` para tabelas
+ * administrativas — cabeçalho em caixa alta com fundo, células com 13px 16px
+ * de padding e campos com altura mínima de controle.
+ *
+ * Somados, esses padrões consomem cerca de 290px por linha só em espaçamento
+ * lateral (nove colunas × 32px), o que esmaga a coluna do nome do alimento e
+ * empurra a medida caseira para o corte. Aqui esses padrões são desligados
+ * dentro da tela; fora dela nada muda.
+ */
+
+:where(.prescricao-plano) table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+:where(.prescricao-plano) thead th {
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 0;
+  border-bottom: 0;
+}
+
+:where(.prescricao-plano) tbody td,
+:where(.prescricao-plano) tbody th {
+  padding: 0;
+  border-bottom: 0;
+  background: none;
+}
+
+/* Zebra e hover de tabela administrativa atrapalham a leitura por linha de
+   alimento, que já tem fio próprio. */
+:where(.prescricao-plano) tbody tr:nth-child(even) td,
+:where(.prescricao-plano) tbody tr:hover td {
+  background: none;
+}
+
+/* O campo de quantidade é uma célula de planilha, não um controle de
+   formulário: altura mínima de 40px empilharia a tabela inteira. */
+.prescricao-plano input[type='number'] {
+  min-height: 0;
+  height: auto;
+  border-radius: 4px;
+}
+
+.prescricao-plano input[type='number']:focus {
+  box-shadow: none;
+  border-color: #78716c;
+}
+
+/* Some com os spinners: a quantidade se edita digitando ou pela seta do
+   teclado, e os botões roubam largura de uma coluna estreita. */
+.prescricao-plano input[type='number']::-webkit-outer-spin-button,
+.prescricao-plano input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.prescricao-plano input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/**
+ * Devolve as utilidades de espaçamento do Tailwind dentro desta tela.
+ *
+ * `src/index.css` traz `* { margin: 0; padding: 0 }` fora de qualquer camada,
+ * e o Tailwind v4 emite tudo em `@layer utilities`. Regra sem camada vence
+ * regra em camada, independente de especificidade — então `p-4`, `ml-6`,
+ * `py-1.5` e afins são descartados no app inteiro (medido: `ml-6` computa
+ * 0px). `gap`, cor e raio não passam por isso e funcionam.
+ *
+ * `revert-layer` desfaz o reset e deixa o valor da camada anterior valer, que
+ * é justamente a utilidade. O seletor é mais específico que `*` e também não
+ * tem camada, então ganha dele sem tocar no resto do sistema.
+ */
+.prescricao-plano *,
+.prescricao-plano *::before,
+.prescricao-plano *::after {
+  margin: revert-layer;
+  padding: revert-layer;
+}
+
+/* ------------------------------------------------------------------ *
+ * Identidade visual
+ *
+ * A tela nasceu com a paleta stone-* do Tailwind (cinza quente) e o resto
+ * do app e navy frio com acento azul. Lado a lado parecia outro produto.
+ *
+ * Em vez de reescrever cada utilitario no JSX, os utilitarios de cor sao
+ * remapeados aqui dentro da tela: como o Tailwind emite suas classes dentro
+ * de @layer e este arquivo esta fora de camada, estas regras vencem sem
+ * precisar de especificidade artificial. Fora da tela nada muda.
+ * ------------------------------------------------------------------ */
+
+.prescricao-plano {
+  --pp-navy: var(--pn-navy, #1D3350);
+  --pp-texto-medio: rgba(29, 51, 80, 0.62);
+  --pp-texto-fraco: rgba(29, 51, 80, 0.42);
+  --pp-borda: rgba(29, 51, 80, 0.11);
+  --pp-borda-forte: rgba(29, 51, 80, 0.18);
+  --pp-fundo: #f5f7fa;
+  --pp-faixa: rgba(29, 51, 80, 0.045);
+  --pp-acento: var(--pn-accent, #56ADDB);
+
+  /* O shell ja rola; 100vh criava barra dupla e deixava faixa escura embaixo. */
+  min-height: 100%;
+  background: var(--pp-fundo);
+  color: var(--pp-navy);
+}
+
+.prescricao-plano .bg-stone-50  { background-color: var(--pp-fundo); }
+.prescricao-plano .bg-stone-100 { background-color: var(--pp-faixa); }
+.prescricao-plano .bg-white     { background-color: #fff; }
+
+.prescricao-plano .text-stone-900 { color: var(--pp-navy); }
+.prescricao-plano .text-stone-700,
+.prescricao-plano .text-stone-600,
+.prescricao-plano .text-stone-500 { color: var(--pp-texto-medio); }
+.prescricao-plano .text-stone-400,
+.prescricao-plano .text-stone-300 { color: var(--pp-texto-fraco); }
+
+.prescricao-plano .border-stone-200 { border-color: var(--pp-borda); }
+.prescricao-plano .border-stone-300 { border-color: var(--pp-borda-forte); }
+
+.prescricao-plano .hover\:bg-stone-100:hover { background-color: var(--pp-faixa); }
+.prescricao-plano .hover\:text-stone-800:hover { color: var(--pp-navy); }
+
+/* Cartoes ganham profundidade discreta em vez de so contorno. */
+.prescricao-plano .rounded-xl.border {
+  box-shadow: 0 1px 2px rgba(29, 51, 80, 0.04);
+}
+
+/* Foco visivel — a tela e operada muito por teclado durante o atendimento. */
+.prescricao-plano :is(button, input, select):focus-visible {
+  outline: 2px solid var(--pp-acento);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Estado vazio da refeicao. */
+.prescricao-plano .pp-vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.35rem 1rem;
+  margin-top: 0.5rem;
+  border: 1px dashed var(--pp-borda-forte);
+  border-radius: 0.6rem;
+  background: rgba(29, 51, 80, 0.02);
+  text-align: center;
+}
+
+.prescricao-plano .pp-vazio__titulo {
+  font-size: 0.8125rem;
+  color: var(--pp-texto-medio);
+}
+
+.prescricao-plano .pp-vazio__dica {
+  font-size: 0.75rem;
+  color: var(--pp-texto-fraco);
+  max-width: 34ch;
+}
+
+/* O app estiliza `h1` globalmente com tamanho de display; dentro da tela o
+   nome do paciente e identificacao de contexto, nao manchete. */
+.prescricao-plano h1 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--pp-navy);
+}
+
+/* O container da rota nao propaga altura, entao `min-height: 100%` nao tinha
+   contra o que resolver e sobrava faixa clara sob o conteudo. */
+.prescricao-plano {
+  min-height: calc(100vh - 4.5rem);
+}
+
+/* Barra de adequacao: com percentual muito baixo sobrava um ponto vermelho
+   solto, que lia como defeito em vez de medida. Um minimo visivel resolve. */
+.prescricao-plano .adequacao-barra {
+  min-width: 3px;
+  border-radius: 999px;
+}
+
+/* O estilo global de controle ainda impunha padding e fonte proprios ao
+   campo de quantidade, que aparecia como uma caixa larga desproporcional
+   ao dado que carrega (dois ou tres digitos). */
+.prescricao-plano input[type='number'],
+.prescricao-plano input[type='text'] {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  border-color: var(--pp-borda);
+  background: #fff;
+  color: var(--pp-navy);
+}
+
+.prescricao-plano input[type='number']:focus {
+  border-color: var(--pp-acento);
+}
+
+/* A tela e um documento clinico: no papel o fundo desaparece e so o
+   conteudo importa. */
+@media print {
+  .prescricao-plano { background: #fff; min-height: 0; }
+  .prescricao-plano .sticky { position: static; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Busca de alimento
+ *
+ * Antes era uma fileira flex com dois inputs. O estilo global de controle
+ * impunha largura propria, o campo de texto colapsava para poucos pixels e
+ * o de quantidade escapava para fora do painel.
+ *
+ * Aqui a grade e explicita e as colunas tem largura declarada, entao nenhum
+ * estilo herdado consegue redistribui-las.
+ * ------------------------------------------------------------------ */
+
+.prescricao-plano .pp-busca {
+  margin-top: 0.5rem;
+  border: 1px solid var(--pp-borda-forte);
+  border-radius: 0.6rem;
+  background: #fff;
+  padding: 0.5rem;
+}
+
+.prescricao-plano .pp-busca__topo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prescricao-plano .pp-busca__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  border: 1px solid var(--pp-borda);
+  border-radius: 4px;
+}
+
+.prescricao-plano .pp-busca__fechar {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: var(--pp-texto-medio);
+}
+
+.prescricao-plano .pp-busca__fechar:hover { color: var(--pp-navy); }
+
+.prescricao-plano .pp-busca__aviso {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--pp-texto-fraco);
+}
+
+.prescricao-plano .pp-busca__aviso--erro { color: var(--pn-danger, #dc2626); }
+
+.prescricao-plano .pp-busca__lista {
+  margin-top: 0.4rem;
+  max-height: 15rem;
+  overflow-y: auto;
+}
+
+.prescricao-plano .pp-busca__cabecalho,
+.prescricao-plano .pp-busca__linha {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.prescricao-plano .pp-busca__cabecalho {
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--pp-borda);
+  color: var(--pp-texto-fraco);
+}
+
+.prescricao-plano .pp-busca__linha {
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--pp-borda);
+  color: var(--pp-texto-medio);
+}
+
+.prescricao-plano .pp-busca__linha:hover { background: var(--pp-faixa); }
+
+/* O nome cede espaco; medida e numeros nunca — sao o que decide a escolha. */
+.prescricao-plano .pp-busca__col-nome {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pp-navy);
+}
+
+.prescricao-plano .pp-busca__cabecalho .pp-busca__col-nome { color: inherit; }
+
+.prescricao-plano .pp-busca__col-medida {
+  flex: 0 0 6.5rem;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-busca__col-num {
+  flex: 0 0 2.5rem;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.prescricao-plano .pp-busca__col-num--forte { color: var(--pp-navy); }
+
+/* Acao destrutiva so ganha cor no hover/foco: vermelho permanente numa lista
+   de alimentos vira ruido e compete com o alerta clinico de verdade. */
+.prescricao-plano .pp-excluir:hover,
+.prescricao-plano .pp-excluir:focus-visible { color: var(--pn-danger, #dc2626); }
+
+/* Campo de orientacao: parece texto ate receber o cursor. */
+.prescricao-plano .pp-orientacao {
+  border: 0;
+  border-top: 1px solid var(--pp-borda);
+  border-radius: 0;
+  padding: 0.5rem 0 0;
+  background: transparent;
+  color: var(--pp-texto-medio);
+}
+
+.prescricao-plano .pp-orientacao::placeholder { color: var(--pp-texto-fraco); }
+
+.prescricao-plano input[type='time'],
+.prescricao-plano select {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+  min-height: 0;
+  height: auto;
+  border-color: var(--pp-borda);
+  background: #fff;
+  color: var(--pp-navy);
+}
+
+/* O estilo global de formulario da largura total a todo controle — util num
+   formulario empilhado, destrutivo numa barra horizontal: hora, duracao e
+   ancoragem viravam tres linhas com os rotulos soltos entre elas.
+   Aqui a largura volta a ser a do proprio controle, e quem precisa de largura
+   declara a sua. */
+/* Larguras dos controles.
+ *
+ * O seletor global e `input:not([type="checkbox"]):not([type="radio"])` com
+ * `width: 100%`. Como `:not()` carrega a especificidade do argumento, ele vale
+ * (0,2,1) — mais que uma classe dentro de escopo. Cada regra abaixo qualifica
+ * o elemento para empatar em (0,2,1) e vencer por ordem, ja que o CSS deste
+ * chunk e injetado depois do tema.
+ *
+ * Um reset generico aqui seria pior: com os dois `:not()` ele chegaria a
+ * (0,3,1) e passaria a vencer as proprias regras especificas abaixo. */
+.prescricao-plano input.pp-largura-num { width: 4rem; flex: 0 0 auto; }
+.prescricao-plano input.pp-largura-nome { width: 11rem; flex: 0 0 auto; }
+.prescricao-plano input[type='time'] { width: 6.5rem; flex: 0 0 auto; }
+.prescricao-plano input.pp-busca__campo { width: 100%; flex: 1 1 auto; min-width: 0; }
+.prescricao-plano input.pp-orientacao { width: 100%; flex: 1 1 auto; }
+
+/* `select` nao entra no seletor global com `:not()`, entao uma classe basta. */
+.prescricao-plano select { width: auto; flex: 0 0 auto; }
+
+/* Selo de equivalência: mesmo desenho do selo da fonte (TACO/TBCA), porque
+   os dois respondem a "de onde vem este número e quanto ele vale". */
+.prescricao-plano .pp-selo-equiv {
+  flex: 0 0 auto;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-selo-equiv--exata {
+  background: rgba(92, 145, 80, 0.14);
+  color: #3F6837;
+}
+
+.prescricao-plano .pp-selo-equiv--boa {
+  background: rgba(29, 51, 80, 0.06);
+  color: var(--pp-texto-medio);
+}
+
+.prescricao-plano .pp-selo-equiv--limite {
+  background: rgba(176, 131, 72, 0.16);
+  color: #7A5A2E;
+}
+
+.prescricao-plano .pp-selo-equiv--sem {
+  background: rgba(29, 51, 80, 0.05);
+  color: var(--pp-texto-fraco);
+}

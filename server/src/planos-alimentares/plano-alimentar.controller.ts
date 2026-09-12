@@ -67,6 +67,11 @@ class ListPlanosQueryDto {
 }
 
 class UpsertPlanoDto {
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  expectedVersion?: number;
+
   @IsString()
   pacienteId!: string;
 
@@ -136,6 +141,22 @@ class UpsertPlanoDto {
   resultados?: Record<string, unknown>;
 }
 
+class UpdatePlanoDto extends UpsertPlanoDto {
+  @IsOptional()
+  @IsString()
+  pacienteId!: string;
+}
+
+class ReviewPlanoDto {
+  @IsInt()
+  @Min(0)
+  expectedVersion!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  confirmarComposicaoManual?: boolean;
+}
+
 @Controller('planos-alimentares')
 export class PlanoAlimentarController {
   constructor(private readonly service: PlanoAlimentarService) {}
@@ -174,16 +195,23 @@ export class PlanoAlimentarController {
   update(
     @Req() req: { user: AuthenticatedUser },
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() dto: Record<string, unknown>
+    @Body() dto: UpdatePlanoDto
   ) {
     return this.service.update(id, dto as any, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...ROLES_EDICAO)
+  @Post(':id/revisar')
+  revisar(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string, @Body() dto: ReviewPlanoDto) {
+    return this.service.revisar(id, dto.expectedVersion, req.user, dto.confirmarComposicaoManual);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...ROLES_EDICAO)
   @Post(':id/ativar')
-  ativar(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string) {
-    return this.service.ativar(id, req.user);
+  ativar(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string, @Body() dto: ReviewPlanoDto) {
+    return this.service.ativar(id, req.user, dto.expectedVersion);
   }
 
   @UseGuards(JwtAuthGuard)

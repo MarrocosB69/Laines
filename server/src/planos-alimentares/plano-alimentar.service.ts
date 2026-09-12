@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  ConflictException,
+  Optional,
   ForbiddenException,
   Injectable,
   NotFoundException
@@ -16,6 +18,9 @@ import {
 import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 import { Paciente } from '../pacientes/paciente.entity';
 import { PlanoAlimentar, PlanoAlimentarStatus } from './plano-alimentar.entity';
+import { User } from '../users/user.entity';
+import { TacoFood } from '../taco/taco.entity';
+import { normalizePrescription, mealsForPrint, prescriptionTotals, validatePrescription } from './prescricao-contract';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -31,12 +36,35 @@ type PlanoAlimento = {
   fibra?: number | null;
 };
 
+/**
+ * Item da refeicao no modelo novo: o alimento pertence a refeicao e o
+ * substituto pertence ao item. No modelo antigo (`alimentos`/`substitutos`)
+ * os substitutos ficavam soltos na refeicao e nao se sabia qual alimento cada
+ * um trocava.
+ */
+type PlanoItem = {
+  id?: string;
+  alimentoId?: string;
+  medidaIdx?: number | null;
+  quantidade?: number | null;
+  substitutos?: Array<{
+    alimentoId?: string;
+    medidaIdx?: number | null;
+    modo?: 'auto' | 'fixa';
+    quantidade?: number | null;
+  }>;
+};
+
 type PlanoRefeicao = {
   id?: string;
   nome?: string;
   horario?: string;
+  horarioFixo?: string | null;
+  ancora?: { ref?: 'inicio' | 'fim'; min?: number | null } | null;
+  etiqueta?: string | null;
   vinculadoTreino?: boolean;
   tipoVinculo?: 'pre' | 'peri' | 'pos' | null;
+  itens?: PlanoItem[];
   alimentos?: PlanoAlimento[];
   substitutos?: PlanoAlimento[];
   orientacoes?: string;
@@ -45,11 +73,21 @@ type PlanoRefeicao = {
     cho?: number | null;
     ptn?: number | null;
     lip?: number | null;
+    fibra?: number | null;
   };
 };
 
 type PlanoDados = {
   refeicoes?: PlanoRefeicao[];
+  /**
+   * Instantaneo dos alimentos usados por este plano, por id. Guardado com o
+   * plano para que a composicao prescrita nao mude quando o catalogo for
+   * atualizado.
+   */
+  catalogo?: JsonRecord;
+  treinoInicio?: string | null;
+  treinoDuracao?: number | null;
+  pesoPaciente?: number | null;
   suplementos?: Array<{
     nome?: string;
     dose?: string;
@@ -57,9 +95,16 @@ type PlanoDados = {
     marca?: string;
     loteVerificado?: string;
     statusWADA?: 'aprovado' | 'risco' | 'proibido';
+    justificativaClinica?: string;
   }>;
   versaoCompeticion?: boolean;
   orientacoesGerais?: string;
+  revisaoFinal?: {
+    confirmada?: boolean;
+    confirmadoEm?: string;
+    confirmadoPorId?: string;
+    confirmadoPorNome?: string;
+  };
 };
 
 export type NutrientesTotais = {
@@ -101,8 +146,25 @@ export type ValidacaoResult = {
   alertaAtivacao: string | null;
 };
 
+type AtivacaoChecklistItem = {
+  id: string;
+  label: string;
+  ok: boolean;
+  severity: 'blocker' | 'warning' | 'info';
+  message: string;
+};
+
+export type AtivacaoClinicaResult = {
+  podeAtivar: boolean;
+  bloqueios: string[];
+  avisos: string[];
+  itens: AtivacaoChecklistItem[];
+  validacao: ValidacaoResult;
+};
+
 type PlanoPatch = {
   pacienteId: string;
+  expectedVersion?: number;
   alunoId?: string | null;
   projetoId?: string | null;
   status?: PlanoAlimentarStatus | null;
@@ -120,7 +182,7 @@ type PlanoPatch = {
   resultados?: JsonRecord | null;
 };
 
-const ACTIVE_GUARD_MESSAGE = 'Configure o Gasto Energetico Total antes de ativar o plano';
+const ACTIVE_GUARD_MESSAGE = 'Este paciente ainda nao possui GET cadastrado. Voce pode montar um rascunho, mas nao sera possivel ativar o plano ate preencher as metas energeticas e nutricionais.';
 
 const round = (value: number, digits = 2) => {
   const factor = 10 ** digits;
@@ -135,7 +197,9 @@ export class PlanoAlimentarService {
     @InjectRepository(Paciente)
     private readonly pacientesRepo: Repository<Paciente>,
     @InjectRepository(Avaliacao)
-    private readonly avaliacoesRepo: Repository<Avaliacao>
+    private readonly avaliacoesRepo: Repository<Avaliacao>,
+    @Optional() @InjectRepository(User) private readonly usersRepo?: Repository<User>,
+    @Optional() @InjectRepository(TacoFood) private readonly foodsRepo?: Repository<TacoFood>
   ) {}
 
   private toText(value: unknown): string {
@@ -171,8 +235,11 @@ export class PlanoAlimentarService {
 
   private normalizeStatus(value?: unknown): PlanoAlimentarStatus {
     const token = this.toText(value).toLowerCase();
+    if (token === PlanoAlimentarStatus.EM_REVISAO) return PlanoAlimentarStatus.EM_REVISAO;
     if (token === PlanoAlimentarStatus.ATIVO) return PlanoAlimentarStatus.ATIVO;
-    if (token === PlanoAlimentarStatus.ENCERRADO) return PlanoAlimentarStatus.ENCERRADO;
+    if (token === PlanoAlimentarStatus.ARQUIVADO || token === PlanoAlimentarStatus.ENCERRADO) {
+      return PlanoAlimentarStatus.ARQUIVADO;
+    }
     return PlanoAlimentarStatus.RASCUNHO;
   }
 
@@ -227,7 +294,9 @@ export class PlanoAlimentarService {
 
     if (isStudentMemberRole(role)) {
       const isResponsavel = paciente.alunoResponsavelId === userId;
-      const isEquipe = Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
+      const isEquipeTecnica = Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
+      const isEquipeMulti = Array.isArray(paciente.equipeMultiIds) && paciente.equipeMultiIds.includes(userId);
+      const isEquipe = isEquipeTecnica || isEquipeMulti;
       if (isResponsavel || isEquipe) return;
       throw new ForbiddenException('Acesso negado para este paciente.');
     }
@@ -235,7 +304,9 @@ export class PlanoAlimentarService {
     if (hasTeamScopedAccess(role)) {
       const isSupervisor = paciente.professorSupervisorId === userId;
       const isResponsavel = paciente.alunoResponsavelId === userId;
-      const isEquipe = Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
+      const isEquipeTecnica = Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
+      const isEquipeMulti = Array.isArray(paciente.equipeMultiIds) && paciente.equipeMultiIds.includes(userId);
+      const isEquipe = isEquipeTecnica || isEquipeMulti;
       if (isSupervisor || isResponsavel || isEquipe) return;
       throw new ForbiddenException('Acesso negado para este paciente.');
     }
@@ -257,11 +328,13 @@ export class PlanoAlimentarService {
       qb.where('paciente.atletaUserId = :userId', { userId });
     } else if (isStudentMemberRole(role)) {
       qb.where('paciente.alunoResponsavelId = :userId', { userId })
-        .orWhere(':userId = ANY(paciente.equipeTecnicaIds)', { userId });
+        .orWhere(':userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[]))', { userId })
+        .orWhere(':userId = ANY(COALESCE(paciente.equipeMultiIds, ARRAY[]::uuid[]))', { userId });
     } else if (hasTeamScopedAccess(role)) {
       qb.where('paciente.professorSupervisorId = :userId', { userId })
         .orWhere('paciente.alunoResponsavelId = :userId', { userId })
-        .orWhere(':userId = ANY(paciente.equipeTecnicaIds)', { userId });
+        .orWhere(':userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[]))', { userId })
+        .orWhere(':userId = ANY(COALESCE(paciente.equipeMultiIds, ARRAY[]::uuid[]))', { userId });
     } else {
       return [];
     }
@@ -347,69 +420,8 @@ export class PlanoAlimentarService {
     };
   }
 
-  private normalizeDados(input: unknown): PlanoDados {
-    const dados = this.asRecord(input);
-    const refeicoes = this.asArray<JsonRecord>(dados.refeicoes).map((refeicao, idx) => {
-      const alimentos = this.asArray<JsonRecord>(refeicao.alimentos).map((alimento) => ({
-        tacoId: this.toNumber(alimento.tacoId),
-        descricao: this.toText(alimento.descricao),
-        quantidadeGramas: this.toNumber(alimento.quantidadeGramas),
-        medidaCaseira: this.toText(alimento.medidaCaseira) || null,
-        calorias: this.toNumber(alimento.calorias),
-        cho: this.toNumber(alimento.cho),
-        ptn: this.toNumber(alimento.ptn),
-        lip: this.toNumber(alimento.lip),
-        fibra: this.toNumber(alimento.fibra)
-      }));
-
-      const substitutos = this.asArray<JsonRecord>(refeicao.substitutos).map((item) => ({
-        tacoId: this.toNumber(item.tacoId),
-        descricao: this.toText(item.descricao),
-        quantidadeGramas: this.toNumber(item.quantidadeGramas),
-        medidaCaseira: this.toText(item.medidaCaseira) || null,
-        calorias: this.toNumber(item.calorias),
-        cho: this.toNumber(item.cho),
-        ptn: this.toNumber(item.ptn),
-        lip: this.toNumber(item.lip),
-        fibra: this.toNumber(item.fibra)
-      }));
-
-      return {
-        id: this.toText(refeicao.id) || `refeicao-${idx + 1}`,
-        nome: this.toText(refeicao.nome) || `Refeicao ${idx + 1}`,
-        horario: this.toText(refeicao.horario) || '',
-        vinculadoTreino: this.toBoolean(refeicao.vinculadoTreino) || false,
-        tipoVinculo: (['pre', 'peri', 'pos'].includes(this.toText(refeicao.tipoVinculo)) ? this.toText(refeicao.tipoVinculo) : null) as 'pre' | 'peri' | 'pos' | null,
-        alimentos,
-        substitutos,
-        orientacoes: this.toText(refeicao.orientacoes),
-        totalRefeicao: {
-          calorias: this.toNumber(this.asRecord(refeicao.totalRefeicao).calorias),
-          cho: this.toNumber(this.asRecord(refeicao.totalRefeicao).cho),
-          ptn: this.toNumber(this.asRecord(refeicao.totalRefeicao).ptn),
-          lip: this.toNumber(this.asRecord(refeicao.totalRefeicao).lip)
-        }
-      };
-    });
-
-    const suplementos = this.asArray<JsonRecord>(dados.suplementos).map((item) => {
-      const statusWADA = this.toText(item.statusWADA).toLowerCase();
-      return {
-        nome: this.toText(item.nome),
-        dose: this.toText(item.dose),
-        horario: this.toText(item.horario),
-        marca: this.toText(item.marca),
-        loteVerificado: this.toText(item.loteVerificado),
-        statusWADA: (['aprovado', 'risco', 'proibido'].includes(statusWADA) ? statusWADA : 'risco') as 'aprovado' | 'risco' | 'proibido'
-      };
-    });
-
-    return {
-      refeicoes,
-      suplementos,
-      versaoCompeticion: this.toBoolean(dados.versaoCompeticion) || false,
-      orientacoesGerais: this.toText(dados.orientacoesGerais)
-    };
+  private normalizeDados(input: unknown): any {
+    return normalizePrescription(input);
   }
 
   private computeComparativo(meta: number | null, prescrito: number): ValidacaoComparativoItem {
@@ -430,33 +442,13 @@ export class PlanoAlimentarService {
     };
   }
 
-  async calcularTotais(refeicoes: PlanoRefeicao[]): Promise<NutrientesTotais> {
-    const seed: NutrientesTotais = { calorias: 0, cho: 0, ptn: 0, lip: 0, fibra: 0 };
-
-    const totals = this.asArray<PlanoRefeicao>(refeicoes).reduce((acc, refeicao) => {
-      const alimentos = this.asArray<PlanoAlimento>(refeicao?.alimentos);
-      alimentos.forEach((alimento) => {
-        acc.calorias += this.toNumber(alimento.calorias) || 0;
-        acc.cho += this.toNumber(alimento.cho) || 0;
-        acc.ptn += this.toNumber(alimento.ptn) || 0;
-        acc.lip += this.toNumber(alimento.lip) || 0;
-        acc.fibra += this.toNumber(alimento.fibra) || 0;
-      });
-      return acc;
-    }, seed);
-
-    return {
-      calorias: round(totals.calorias, 2),
-      cho: round(totals.cho, 2),
-      ptn: round(totals.ptn, 2),
-      lip: round(totals.lip, 2),
-      fibra: round(totals.fibra, 2)
-    };
+  async calcularTotais(refeicoes: PlanoRefeicao[], catalogo: JsonRecord = {}): Promise<NutrientesTotais> {
+    return prescriptionTotals(this.normalizeDados({ refeicoes, catalogo }));
   }
 
   async validarAdequacao(plano: { pacienteId: string; dados?: JsonRecord | null }): Promise<ValidacaoResult> {
     const dados = this.normalizeDados(plano?.dados || {});
-    const totaisPrescritos = await this.calcularTotais(dados.refeicoes || []);
+    const totaisPrescritos = prescriptionTotals(dados);
     const avaliacaoGet = await this.resolveUltimaAvaliacaoGet(this.toText(plano?.pacienteId));
     const metasGet = this.extractGetMetasFromAvaliacao(avaliacaoGet);
 
@@ -492,10 +484,162 @@ export class PlanoAlimentarService {
     };
   }
 
-  private async assertCanActivatePlano(pacienteId: string) {
-    const avaliacaoGet = await this.resolveUltimaAvaliacaoGet(pacienteId);
-    if (!avaliacaoGet) {
-      throw new BadRequestException(ACTIVE_GUARD_MESSAGE);
+  private effectiveMeta(plano: Partial<PlanoPatch>, metasGet: MetasGet, key: keyof MetasGet, planoValue: unknown): number | null {
+    const fromPlano = this.toNumber(planoValue);
+    if (Number.isFinite(fromPlano) && (fromPlano as number) > 0) return fromPlano;
+    const fromGet = this.toNumber(metasGet[key]);
+    if (Number.isFinite(fromGet) && (fromGet as number) > 0) return fromGet;
+    return null;
+  }
+
+  private pushChecklist(
+    itens: AtivacaoChecklistItem[],
+    item: AtivacaoChecklistItem
+  ) {
+    itens.push(item);
+  }
+
+  async validarAtivacaoClinica(plano: Partial<PlanoPatch>): Promise<AtivacaoClinicaResult> {
+    const pacienteId = this.toText(plano?.pacienteId);
+    const dados = this.normalizeDados(plano?.dados || {});
+    const validacao = await this.validarAdequacao({
+      pacienteId,
+      dados: dados as unknown as JsonRecord
+    });
+    const itens: AtivacaoChecklistItem[] = [];
+
+    const add = (id: string, label: string, ok: boolean, severity: 'blocker' | 'warning' | 'info', message: string) => {
+      this.pushChecklist(itens, { id, label, ok, severity, message });
+    };
+
+    add(
+      'get',
+      'GET existente',
+      validacao.hasMetasGet,
+      'blocker',
+      validacao.hasMetasGet
+        ? 'GET localizado para apoiar a prescricao.'
+        : ACTIVE_GUARD_MESSAGE
+    );
+
+    const metas = {
+      calorias: this.effectiveMeta(plano, validacao.metasGet, 'calorias', plano?.metaCalorica),
+      cho: this.effectiveMeta(plano, validacao.metasGet, 'cho', plano?.metaCHOg),
+      ptn: this.effectiveMeta(plano, validacao.metasGet, 'ptn', plano?.metaPTNg),
+      lip: this.effectiveMeta(plano, validacao.metasGet, 'lip', plano?.metaLIPg),
+      fibras: this.effectiveMeta(plano, validacao.metasGet, 'fibras', plano?.metaFibrasg)
+    };
+    const missingMetas = Object.entries(metas)
+      .filter(([, value]) => !Number.isFinite(value) || Number(value) <= 0)
+      .map(([key]) => key);
+    add(
+      'metas_completas',
+      'Metas completas',
+      missingMetas.length === 0,
+      'blocker',
+      missingMetas.length === 0
+        ? 'Metas de kcal, CHO, PTN, LIP e fibras definidas.'
+        : `Metas incompletas: ${missingMetas.join(', ')}.`
+    );
+
+    const refeicoes = dados.refeicoes || [];
+    const refeicoesComAlimentos = refeicoes.filter((refeicao) => this.asArray(refeicao.itens).length > 0);
+    add(
+      'refeicoes',
+      'Refeicoes cadastradas',
+      refeicoesComAlimentos.length > 0,
+      'blocker',
+      refeicoesComAlimentos.length > 0
+        ? `${refeicoesComAlimentos.length} refeicao(oes) com alimentos cadastrados.`
+        : 'Cadastre ao menos uma refeicao com alimento antes de ativar.'
+    );
+
+    const totaisValidos = validacao.totaisPrescritos.calorias > 0
+      && validacao.totaisPrescritos.cho >= 0
+      && validacao.totaisPrescritos.ptn >= 0
+      && validacao.totaisPrescritos.lip >= 0
+      && validacao.totaisPrescritos.fibra >= 0;
+    add(
+      'totais_backend',
+      'Totais recalculados',
+      totaisValidos,
+      'blocker',
+      totaisValidos
+        ? 'Totais nutricionais recalculados pelo backend.'
+        : 'Nao foi possivel calcular totais nutricionais validos.'
+    );
+
+    const suplementos = dados.suplementos || [];
+    const proibidos = suplementos.filter((item) => item.statusWADA === 'proibido');
+    add(
+      'suplementos_proibidos',
+      'Suplementos proibidos',
+      proibidos.length === 0,
+      'blocker',
+      proibidos.length === 0
+        ? 'Nenhum suplemento proibido informado.'
+        : 'Ha suplemento marcado como proibido. Remova ou substitua antes de ativar.'
+    );
+
+    const riscoSemJustificativa = suplementos.filter((item) => (
+      item.statusWADA === 'risco'
+      && this.toText(item.justificativaClinica).length < 10
+    ));
+    add(
+      'suplementos_risco',
+      'Suplementos em risco',
+      riscoSemJustificativa.length === 0,
+      'blocker',
+      riscoSemJustificativa.length === 0
+        ? 'Suplementos em risco possuem justificativa clinica ou nao foram informados.'
+        : 'Suplemento em risco exige justificativa clinica antes da ativacao.'
+    );
+
+    const revisado = Boolean(dados.revisaoFinal?.confirmada
+      && dados.revisaoFinal?.origem === 'servidor'
+      && dados.revisaoFinal?.version === dados.version
+      && dados.revisaoFinal?.confirmadoPorId); 
+    add(
+      'revisao_final',
+      'Revisao final',
+      revisado,
+      'blocker',
+      revisado
+        ? 'Revisao final confirmada pelo profissional.'
+        : 'Confirme a revisao final profissional antes de ativar.'
+    );
+
+    if (Number.isFinite(validacao.comparativo.calorias.adequacao)
+      && Number(validacao.comparativo.calorias.adequacao) < 80) {
+      add(
+        'distancia_get',
+        'Distancia contra GET',
+        false,
+        'warning',
+        'O plano esta distante da meta energetica definida. Revise as refeicoes antes de ativar.'
+      );
+    }
+
+    const bloqueios = itens
+      .filter((item) => item.severity === 'blocker' && !item.ok)
+      .map((item) => item.message);
+    const avisos = itens
+      .filter((item) => item.severity === 'warning' && !item.ok)
+      .map((item) => item.message);
+
+    return {
+      podeAtivar: bloqueios.length === 0,
+      bloqueios,
+      avisos,
+      itens,
+      validacao
+    };
+  }
+
+  private async assertCanActivatePlano(plano: Partial<PlanoPatch>) {
+    const ativacao = await this.validarAtivacaoClinica(plano);
+    if (!ativacao.podeAtivar) {
+      throw new BadRequestException(ativacao.bloqueios[0] || ACTIVE_GUARD_MESSAGE);
     }
   }
 
@@ -509,7 +653,7 @@ export class PlanoAlimentarService {
       ? undefined
       : this.normalizeStatus(input.status);
     const dados = this.normalizeDados(input?.dados || {});
-    const totais = await this.calcularTotais(dados.refeicoes || []);
+    const totais = prescriptionTotals(dados);
 
     const normalized: PlanoPatch = {
       pacienteId,
@@ -545,14 +689,89 @@ export class PlanoAlimentarService {
       pacienteId: patch.pacienteId,
       dados: patch.dados || {}
     });
+    const ativacaoClinica = await this.validarAtivacaoClinica(patch);
 
     return {
       ...patch,
       resultados: {
         ...(this.asRecord(patch.resultados)),
-        validacao
+        validacao,
+        ativacaoClinica
       }
     };
+  }
+
+  private stampRevisaoFinal(dados: JsonRecord | null | undefined): JsonRecord {
+    return { ...this.normalizeDados(dados), revisaoFinal: { confirmada: false } };
+  }
+
+  private versionOf(plano: { dados?: JsonRecord | null }) {
+    return Number(this.asRecord(plano.dados).version) || 0;
+  }
+
+  private assertVersion(current: PlanoAlimentar, expectedVersion: unknown) {
+    if (!Number.isInteger(expectedVersion) || expectedVersion !== this.versionOf(current)) {
+      throw new ConflictException('O plano foi alterado ou a versão está ausente. Reabra o plano antes de salvar ou revisar.');
+    }
+  }
+
+  private async assertReviewer(user: AuthenticatedUser) {
+    const account = await this.usersRepo?.findOne({ where: { id: user.id }, withDeleted: false });
+    const role = normalizeRole(account?.role);
+    const crn = this.toText(account?.crn)
+      || (this.toText(account?.conselhoTipo).toUpperCase() === 'CRN' ? this.toText(account?.conselhoNumero) : '');
+    if (!account || account.status !== 'ativo' || !['professor', 'profissional'].includes(role) || !crn) {
+      throw new ForbiddenException('A revisão exige professor ou profissional ativo com registro CRN cadastrado.');
+    }
+    return { id: account.id, name: account.name, crn };
+  }
+
+  private async prepareComposition(input: unknown, current?: PlanoAlimentar) {
+    const dados = this.normalizeDados(input);
+    const previous = current ? this.normalizeDados(current.dados) : { catalogo: {} };
+    const used = new Set<string>();
+    for (const meal of dados.refeicoes) for (const item of meal.itens) {
+      used.add(String(item.alimentoId));
+      for (const sub of item.substitutos || []) used.add(String(sub.alimentoId));
+    }
+    const catalogo: JsonRecord = {};
+    for (const id of used) {
+      const incoming = this.asRecord(dados.catalogo[id]);
+      const old = previous.catalogo[id];
+      if (old) {
+        // A composition already prescribed is immutable under the same identifier.
+        if (JSON.stringify(incoming.comp) !== JSON.stringify(old.comp)
+          || JSON.stringify(incoming.medidas) !== JSON.stringify(old.medidas)) {
+          throw new BadRequestException('A composição histórica não pode ser sobrescrita. Selecione outro alimento ou mantenha a composição salva.');
+        }
+        catalogo[id] = old;
+      } else if (/^[1-9][0-9]*$/.test(id)) {
+        const source = await this.foodsRepo?.findOne({ where: { id: Number(id) } });
+        if (!source) throw new BadRequestException('Alimento não encontrado no catálogo de origem.');
+        const fields = { kcal: 'energiaKcal', cho: 'carboidrato', ptn: 'proteina', lip: 'lipidios', fibra: 'fibra',
+          ferro: 'ferro', calcio: 'calcio', zinco: 'zinco', magnesio: 'magnesio', vitaminaD: 'vitaminaD', potassio: 'potassio', sodio: 'sodio' };
+        catalogo[id] = { ...incoming, id, nome: source.descricao, fonte: source.fonte || 'TACO', grupo: source.grupo,
+          origemComposicao: 'catalogo', validacaoComposicao: null,
+          medidas: [{ descricao: null, gramas: 1 }],
+          comp: Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, this.toNumber(source[field])])) };
+      } else {
+        catalogo[id] = { ...incoming, origemComposicao: incoming.fonte === 'plano' ? 'legado_pendente' : 'manual_pendente', validacaoComposicao: null };
+      }
+    }
+    dados.catalogo = { ...previous.catalogo, ...catalogo };
+    validatePrescription(dados);
+    return dados;
+  }
+
+  private async persistVersion(current: PlanoAlimentar, patch: Partial<PlanoAlimentar>) {
+    const expected = this.versionOf(current);
+    const result = await this.repo.createQueryBuilder().update(PlanoAlimentar).set(patch)
+      .where('id = :id', { id: current.id })
+      .andWhere('deleted_at IS NULL')
+      .andWhere("COALESCE((dados->>'version')::int, 0) = :version", { version: expected })
+      .execute();
+    if (result.affected !== 1) throw new ConflictException('Outra pessoa alterou este plano. Reabra antes de continuar.');
+    return this.repo.findOneByOrFail({ id: current.id });
   }
 
   async findAll(
@@ -582,7 +801,9 @@ export class PlanoAlimentarService {
     const offset = Math.max(0, Math.floor(this.toNumber(filtros?.offset) || 0));
     qb.take(limit).skip(offset);
 
-    return qb.getMany();
+    if (role === 'atleta') qb.andWhere('plano.status = :publishedStatus', { publishedStatus: PlanoAlimentarStatus.ATIVO });
+    const planos = await qb.getMany();
+    return planos.map((plano) => ({ ...plano, dados: this.normalizeDados(plano.dados) }));
   }
 
   async findById(id: string, user: AuthenticatedUser) {
@@ -592,7 +813,10 @@ export class PlanoAlimentarService {
     });
     if (!plano) throw new NotFoundException('Plano alimentar nao encontrado.');
     await this.assertCanAccessPaciente(user, plano.pacienteId);
-    return plano;
+    if (normalizeRole(user.role) === 'atleta' && plano.status !== PlanoAlimentarStatus.ATIVO) {
+      throw new ForbiddenException('Este plano ainda não foi publicado.');
+    }
+    return { ...plano, dados: this.normalizeDados(plano.dados) };
   }
 
   async getPacienteContext(pacienteId: string, user: AuthenticatedUser) {
@@ -619,17 +843,23 @@ export class PlanoAlimentarService {
   }
 
   async create(input: PlanoPatch, user: AuthenticatedUser) {
-    const patch = await this.normalizePatch(input);
-    await this.assertCanAccessPaciente(user, patch.pacienteId);
+    await this.assertCanAccessPaciente(user, input.pacienteId);
+    const prepared = await this.prepareComposition(input.dados);
+    const patch = await this.normalizePatch({ ...input, dados: prepared });
+    patch.dados = { ...this.stampRevisaoFinal(patch.dados), version: 1, historicoRevisoes: [],
+      criadoPorId: user.id, criadoEm: new Date().toISOString() };
+    if (patch.status === PlanoAlimentarStatus.ATIVO) {
+      throw new ForbiddenException('Salve, envie para revisão profissional e ative a versão revisada.');
+    }
 
     if (patch.status === PlanoAlimentarStatus.ATIVO) {
-      await this.assertCanActivatePlano(patch.pacienteId);
+      await this.assertCanActivatePlano(patch);
     }
 
     const enrichedPatch = await this.enrichPatchWithValidation(patch);
     const entity = this.repo.create({
       pacienteId: enrichedPatch.pacienteId,
-      alunoId: enrichedPatch.alunoId || user.id || null,
+      alunoId: user.id || null,
       projetoId: enrichedPatch.projetoId || null,
       status: enrichedPatch.status || PlanoAlimentarStatus.RASCUNHO,
       dataInicio: enrichedPatch.dataInicio || new Date().toISOString().slice(0, 10),
@@ -651,49 +881,69 @@ export class PlanoAlimentarService {
 
   async update(id: string, input: Partial<PlanoPatch>, user: AuthenticatedUser) {
     const current = await this.findById(id, user);
-    const mergedInput: PlanoPatch = {
-      ...current,
-      ...input,
-      pacienteId: input?.pacienteId || current.pacienteId,
-      dados: input?.dados ?? current.dados ?? {},
-      resultados: input?.resultados ?? current.resultados ?? {}
-    };
-
-    const patch = await this.normalizePatch(mergedInput, current.pacienteId);
-    await this.assertCanAccessPaciente(user, patch.pacienteId);
-
-    const nextStatus = patch.status ?? current.status;
-    if (nextStatus === PlanoAlimentarStatus.ATIVO) {
-      await this.assertCanActivatePlano(patch.pacienteId);
+    this.assertVersion(current, input.expectedVersion);
+    if (input.pacienteId && input.pacienteId !== current.pacienteId) {
+      throw new BadRequestException('Não é permitido transferir a prescrição para outro paciente.');
     }
-
-    const enrichedPatch = await this.enrichPatchWithValidation(patch);
-    const toSave = this.repo.merge(current, {
-      pacienteId: enrichedPatch.pacienteId,
-      alunoId: enrichedPatch.alunoId || current.alunoId || null,
-      projetoId: enrichedPatch.projetoId || null,
-      status: nextStatus,
-      dataInicio: enrichedPatch.dataInicio || current.dataInicio,
-      dataFim: enrichedPatch.dataFim || null,
-      tipoDieta: this.normalizeTipoDieta(enrichedPatch.tipoDieta),
-      metaCalorica: this.toNumber(enrichedPatch.metaCalorica),
-      metaCHOg: this.toNumber(enrichedPatch.metaCHOg),
-      metaPTNg: this.toNumber(enrichedPatch.metaPTNg),
-      metaLIPg: this.toNumber(enrichedPatch.metaLIPg),
-      metaFibrasg: this.toNumber(enrichedPatch.metaFibrasg),
-      faseAtual: this.toText(enrichedPatch.faseAtual) || null,
-      validadoAntidoping: Boolean(enrichedPatch.validadoAntidoping),
-      dados: this.asRecord(enrichedPatch.dados),
-      resultados: this.asRecord(enrichedPatch.resultados)
-    });
-
-    return this.repo.save(toSave);
+    if (input.status === PlanoAlimentarStatus.ATIVO) {
+      throw new ForbiddenException('Use a ativação da versão revisada para publicar o plano.');
+    }
+    const dados = await this.prepareComposition(input.dados ?? current.dados, current);
+    const prior = this.asRecord(current.dados);
+    const history = this.asArray(prior.historicoRevisoes);
+    const review = this.asRecord(prior.revisaoFinal);
+    dados.historicoRevisoes = review.confirmada
+      ? [...history, { ...review, invalidadaEm: new Date().toISOString(), invalidadaPorId: user.id }]
+      : history;
+    dados.revisaoFinal = { confirmada: false };
+    dados.version = this.versionOf(current) + 1;
+    dados.criadoPorId = prior.criadoPorId;
+    dados.criadoEm = prior.criadoEm;
+    const patch = await this.normalizePatch({ ...current, ...input, pacienteId: current.pacienteId,
+      alunoId: current.alunoId, dados, resultados: current.resultados });
+    // Every write invalidates a review, including changes to dates, goals and supplements.
+    patch.status = input.status || (current.status === PlanoAlimentarStatus.ATIVO
+      ? PlanoAlimentarStatus.RASCUNHO : current.status);
+    const enriched = await this.enrichPatchWithValidation(patch);
+    const { expectedVersion: _expected, ...persistent } = enriched;
+    return this.persistVersion(current, persistent as Partial<PlanoAlimentar>);
   }
 
-  async ativar(id: string, user: AuthenticatedUser) {
+  async revisar(id: string, expectedVersion: number, user: AuthenticatedUser, confirmarComposicaoManual = false) {
     const current = await this.findById(id, user);
-    await this.assertCanActivatePlano(current.pacienteId);
-    return this.update(id, { status: PlanoAlimentarStatus.ATIVO }, user);
+    this.assertVersion(current, expectedVersion);
+    const reviewer = await this.assertReviewer(user);
+    if (current.status !== PlanoAlimentarStatus.EM_REVISAO) {
+      throw new BadRequestException('Envie o plano para revisão antes de aprovar.');
+    }
+    const dados = this.normalizeDados(current.dados);
+    validatePrescription(dados);
+    const pending = Object.values(dados.catalogo).filter((food: any) => food.origemComposicao !== 'catalogo' && !food.validacaoComposicao);
+    if (pending.length && !confirmarComposicaoManual) {
+      throw new BadRequestException('Confira e confirme explicitamente a composição dos alimentos manuais ou legados antes de aprovar.');
+    }
+    const now = new Date().toISOString();
+    dados.version = this.versionOf(current) + 1;
+    for (const food of pending as any[]) food.validacaoComposicao = { porId: reviewer.id, em: now, version: dados.version };
+    dados.revisaoFinal = { confirmada: true, origem: 'servidor', version: dados.version,
+      confirmadoEm: now, confirmadoPorId: reviewer.id, confirmadoPorNome: reviewer.name, crn: reviewer.crn };
+    const enriched = await this.enrichPatchWithValidation({ ...current, dados });
+    return this.persistVersion(current, { dados, resultados: enriched.resultados });
+  }
+
+  async ativar(id: string, user: AuthenticatedUser, expectedVersion?: number) {
+    const current = await this.findById(id, user);
+    this.assertVersion(current, expectedVersion);
+    await this.assertReviewer(user);
+    if (current.status !== PlanoAlimentarStatus.EM_REVISAO) {
+      throw new BadRequestException('Somente um plano em revisão pode ser ativado.');
+    }
+    await this.assertCanActivatePlano(current);
+    const dados = this.normalizeDados(current.dados);
+    dados.version = this.versionOf(current) + 1;
+    dados.revisaoFinal = { ...dados.revisaoFinal, version: dados.version,
+      ativadoEm: new Date().toISOString(), ativadoPorId: user.id };
+    return this.persistVersion(current, { status: PlanoAlimentarStatus.ATIVO, dados });
   }
 
   async remove(id: string, user: AuthenticatedUser) {
@@ -720,8 +970,9 @@ export class PlanoAlimentarService {
 
   private mapPlanoStatusForPdf(status: unknown): string {
     const token = this.toText(status).toLowerCase();
+    if (token === PlanoAlimentarStatus.EM_REVISAO) return 'Em revisao';
     if (token === PlanoAlimentarStatus.ATIVO) return 'Ativo';
-    if (token === PlanoAlimentarStatus.ENCERRADO) return 'Encerrado';
+    if (token === PlanoAlimentarStatus.ARQUIVADO || token === PlanoAlimentarStatus.ENCERRADO) return 'Arquivado';
     return 'Rascunho';
   }
 
@@ -758,6 +1009,23 @@ export class PlanoAlimentarService {
       dados: (plano.dados || {}) as JsonRecord
     });
     const dados = this.normalizeDados(plano.dados || {});
+    dados.refeicoes = mealsForPrint(dados);
+    const ativacaoClinica = await this.validarAtivacaoClinica({
+      pacienteId: plano.pacienteId,
+      status: plano.status,
+      dataInicio: plano.dataInicio,
+      dataFim: plano.dataFim,
+      tipoDieta: plano.tipoDieta,
+      metaCalorica: plano.metaCalorica,
+      metaCHOg: plano.metaCHOg,
+      metaPTNg: plano.metaPTNg,
+      metaLIPg: plano.metaLIPg,
+      metaFibrasg: plano.metaFibrasg,
+      faseAtual: plano.faseAtual,
+      validadoAntidoping: plano.validadoAntidoping,
+      dados: (plano.dados || {}) as JsonRecord,
+      resultados: (plano.resultados || {}) as JsonRecord
+    });
     const paciente = await this.pacientesRepo.findOne({
       where: { id: plano.pacienteId }
     });
@@ -878,6 +1146,13 @@ export class PlanoAlimentarService {
       drawSimpleLine(`Fase atual: ${this.toText(plano.faseAtual) || '-'}  |  Antidoping validado: ${plano.validadoAntidoping ? 'Sim' : 'Nao'}`);
       drawSimpleLine(`Score geral de adequacao: ${this.formatNumberForPdf(validacao.scoreAdequacaoPercent, 2)}%`);
 
+      drawSectionTitle('Revisao clinica de ativacao');
+      drawSimpleLine(`Pronto para ativacao: ${ativacaoClinica.podeAtivar ? 'Sim' : 'Nao'}`);
+      ativacaoClinica.itens.forEach((item) => {
+        const marcador = item.ok ? 'OK' : item.severity === 'warning' ? 'Aviso' : 'Bloqueio';
+        drawSimpleLine(`${marcador} - ${item.label}: ${item.message}`);
+      });
+
       drawSectionTitle('Metas nutricionais e adequacao');
       ensureSpace(24);
       const headY = doc.y;
@@ -918,7 +1193,7 @@ export class PlanoAlimentarService {
           doc.y = cardY + 22;
 
           doc.fillColor('#334155').font('Helvetica').fontSize(9).text(
-            `Totais da refeicao: ${this.formatNumberForPdf(totais.calorias, 1)} kcal | CHO ${this.formatNumberForPdf(totais.cho, 1)} g | PTN ${this.formatNumberForPdf(totais.ptn, 1)} g | LIP ${this.formatNumberForPdf(totais.lip, 1)} g`
+            `Totais da refeicao: ${this.formatNumberForPdf(totais.calorias, 1)} kcal | CHO ${this.formatNumberForPdf(totais.cho, 1)} g | PTN ${this.formatNumberForPdf(totais.ptn, 1)} g | LIP ${this.formatNumberForPdf(totais.lip, 1)} g | FIB ${this.formatNumberForPdf(totais.fibra, 1)} g`
           );
           doc.moveDown(0.2);
 
@@ -941,7 +1216,7 @@ export class PlanoAlimentarService {
             substitutos.forEach((item) => {
               ensureSpace(14);
               doc.fillColor('#475569').font('Helvetica-Oblique').fontSize(9).text(
-                `  - ${this.toText(item.descricao) || 'Substituto'} | ${this.formatNumberForPdf(item.quantidadeGramas, 1)} g`
+                `  - ${item.substitui ? `Em lugar de ${item.substitui}: ` : 'Alternativa sem vínculo: '}${this.toText(item.descricao) || 'Substituto'} | ${this.formatNumberForPdf(item.quantidadeGramas, 1)} g`
               );
             });
           }
@@ -967,12 +1242,17 @@ export class PlanoAlimentarService {
           drawSimpleLine(
             `${index + 1}. ${this.toText(item.nome) || 'Suplemento'} | Dose: ${this.toText(item.dose) || '-'} | Horario: ${this.toText(item.horario) || '--:--'} | Marca: ${this.toText(item.marca) || '-'} | WADA: ${this.mapWadaStatusForPdf(item.statusWADA)}`
           );
+          if (this.toText(item.justificativaClinica)) {
+            drawSimpleLine(`   Justificativa clinica: ${this.toText(item.justificativaClinica)}`);
+          }
         });
       }
 
+      drawSectionTitle('Revisão e versão');
+      drawSimpleLine(`Versão ${dados.version || 0} | ${dados.revisaoFinal?.confirmada ? `Revisado por ${dados.revisaoFinal.confirmadoPorNome} · CRN ${dados.revisaoFinal.crn} · ${dados.revisaoFinal.confirmadoEm}` : 'Rascunho sem revisão profissional'}`);
       drawSectionTitle('Orientacoes gerais e observacoes');
       drawSimpleLine(this.toText(dados.orientacoesGerais) || 'Sem orientacoes gerais registradas.');
-      drawSimpleLine('Aviso: validar suplementos no GlobalDRO antes de uso em atletas federados.');
+      drawSimpleLine('Suplementos exigem avaliação profissional específica. O GlobalDRO informa sobre medicamentos e não certifica a segurança antidopagem de suplementos.');
 
       ensureSpace(72);
       doc.moveDown(1);

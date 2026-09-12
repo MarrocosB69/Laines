@@ -12,7 +12,7 @@
 
 /* ─── Card container ─────────────────────────────────────── */
 .refeicao-card {
-  background: #ffffff;
+  background: var(--pn-surface);
   border: 1px solid rgba(29, 51, 80, 0.10);
   border-radius: 14px;
   overflow: hidden;
@@ -20,9 +20,9 @@
   transition: box-shadow 0.2s, border-color 0.18s;
 }
 
-.refeicao-card[data-semaforo="verde"]    { border-top: 3px solid #16a34a; }
-.refeicao-card[data-semaforo="amarelo"]  { border-top: 3px solid #d97706; }
-.refeicao-card[data-semaforo="vermelho"] { border-top: 3px solid #dc2626; }
+.refeicao-card[data-semaforo="verde"]    { border-top: 3px solid var(--pn-ok); }
+.refeicao-card[data-semaforo="amarelo"]  { border-top: 3px solid var(--pn-warn); }
+.refeicao-card[data-semaforo="vermelho"] { border-top: 3px solid var(--pn-danger); }
 .refeicao-card[data-semaforo="neutro"]   { border-top: 3px solid rgba(29, 51, 80, 0.15); }
 
 .refeicao-card:hover {
@@ -55,8 +55,8 @@
   height: 24px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
-  background: #ffffff;
-  color: #64748b;
+  background: var(--pn-surface);
+  color: var(--pn-text-3);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -67,7 +67,7 @@
 
 .btn-collapse-refeicao:hover {
   background: #e8f1f6;
-  color: #1D3350;
+  color: var(--pn-navy);
 }
 
 .btn-collapse-refeicao svg {
@@ -114,8 +114,8 @@
   width: 24px;
   height: 24px;
   border-radius: 7px;
-  background: linear-gradient(140deg, #1D3350, #264f6b);
-  color: #fff;
+  background: linear-gradient(140deg, var(--pn-navy), #264f6b);
+  color: var(--pn-surface);
   font-size: 10px;
   font-weight: 800;
   display: inline-flex;
@@ -136,19 +136,19 @@
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
-  color: #0f172a;
+  color: var(--pn-text-1);
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .refeicao-nome-input:hover {
   border-color: rgba(29, 51, 80, 0.18);
-  background: #ffffff;
+  background: var(--pn-surface);
 }
 
 .refeicao-nome-input:focus {
   outline: none;
-  border-color: #56ADDB;
-  background: #ffffff;
+  border-color: var(--pn-accent);
+  background: var(--pn-surface);
   box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
 }
 
@@ -159,8 +159,8 @@
   font-size: 11px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
-  background: #ffffff;
-  color: #475569;
+  background: var(--pn-surface);
+  color: var(--pn-text-2);
   flex-shrink: 0;
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -168,7 +168,7 @@
 
 .refeicao-hora-input:focus {
   outline: none;
-  border-color: #56ADDB;
+  border-color: var(--pn-accent);
   box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
 }
 
@@ -186,10 +186,11 @@
   letter-spacing: 0.02em;
 }
 
-.macro-kcal { background: rgba(86, 173, 219, 0.13); color: #1D3350; }
+.macro-kcal { background: rgba(86, 173, 219, 0.13); color: var(--pn-navy); }
 .macro-cho  { background: #fef3c7; color: #92400e; }
 .macro-ptn  { background: #ede9fe; color: #5b21b6; }
 .macro-lip  { background: #d1fae5; color: #065f46; }
+.macro-fibra { background: #e0f2fe; color: #075985; }
 
 /* ─── Toggle peri-treino ─────────────────────────────────── */
 .toggle-treino {
@@ -197,12 +198,12 @@
   align-items: center;
   gap: 5px;
   font-size: 10.5px;
-  color: #475569;
+  color: var(--pn-text-2);
   cursor: pointer;
   padding: 2.5px 7px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--pn-surface);
   user-select: none;
   transition: background 0.15s, border-color 0.15s;
 }
@@ -228,7 +229,7 @@
 .refeicao-kcal-pct {
   font-size: 9.5px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--pn-text-3);
   min-width: 26px;
   text-align: right;
 }
@@ -249,7 +250,7 @@
 
 .refeicao-kcal-abs {
   font-size: 9px;
-  color: #94a3b8;
+  color: var(--pn-text-4);
   white-space: nowrap;
 }
 
@@ -259,8 +260,8 @@
   height: 26px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
-  background: #ffffff;
-  color: #94a3b8;
+  background: var(--pn-surface);
+  color: var(--pn-text-4);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -271,14 +272,17 @@
 
 .btn-remover-refeicao:hover {
   background: #fff1f2;
-  color: #dc2626;
+  color: var(--pn-danger);
   border-color: rgba(220, 38, 38, 0.28);
 }
 
 /* ─── Body (alimentos | substitutos) ────────────────────── */
 .refeicao-body {
+  /* Era grid de duas colunas ("Alimentos | Substitutos") com um fio de 1px no
+     meio. Com o substituto pertencendo ao alimento sobrou uma coluna so — e a
+     trilha de 1px continuava viva, espremendo o que caisse nela. */
   display: grid;
-  grid-template-columns: 1fr 1px 1fr;
+  grid-template-columns: 1fr;
   gap: 0;
   padding: 14px;
 }
@@ -305,13 +309,13 @@
 .refeicao-divider-label {
   position: relative;
   z-index: 1;
-  background: #ffffff;
+  background: var(--pn-surface);
   padding: 4px 0;
   font-size: 8.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: #94a3b8;
+  color: var(--pn-text-4);
 }
 
 .refeicao-col {
@@ -324,7 +328,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: var(--pn-text-3);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -339,7 +343,7 @@
   padding: 0 4px;
   border-radius: 999px;
   background: rgba(86, 173, 219, 0.13);
-  color: #1D3350;
+  color: var(--pn-navy);
   font-size: 8.5px;
   font-weight: 800;
 }
@@ -381,14 +385,14 @@
   height: 100%;
   font-size: 11px;
   background: transparent;
-  color: #1e293b;
+  color: var(--pn-text-1);
   font-family: inherit;
 }
 
 .busca-alimento-row .alimento-buscador__search:focus-within {
   outline: none;
-  border-color: #56ADDB;
-  background: #ffffff;
+  border-color: var(--pn-accent);
+  background: var(--pn-surface);
   box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
 }
 
@@ -399,8 +403,8 @@
   font-size: 11px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--pn-surface);
+  color: var(--pn-text-1);
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -412,8 +416,8 @@
   font-size: 11px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--pn-surface);
+  color: var(--pn-text-1);
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -421,7 +425,7 @@
 .busca-alimento-row .busca-unidade:focus,
 .busca-alimento-row .busca-qty:focus {
   outline: none;
-  border-color: #56ADDB;
+  border-color: var(--pn-accent);
   box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
 }
 
@@ -430,8 +434,8 @@
   padding: 0 10px;
   font-size: 10.5px;
   font-weight: 700;
-  background: linear-gradient(140deg, #1D3350, #264f6b);
-  color: #fff;
+  background: linear-gradient(140deg, var(--pn-navy), #264f6b);
+  color: var(--pn-surface);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -490,7 +494,7 @@
 }
 
 .alimento-nome {
-  color: #1e293b;
+  color: var(--pn-text-1);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -505,7 +509,7 @@
 
 .alimento-macro-sep {
   font-size: 9px;
-  color: #cbd5e1;
+  color: var(--color-text-light);
 }
 
 .alimento-macro-tag {
@@ -516,10 +520,11 @@
 .alimento-macro-cho { color: #92400e; }
 .alimento-macro-ptn { color: #5b21b6; }
 .alimento-macro-lip { color: #065f46; }
+.alimento-macro-fibra { color: #075985; }
 
 .alimento-qty {
   font-size: 9.5px;
-  color: #64748b;
+  color: var(--pn-text-3);
   min-width: 48px;
   text-align: right;
   flex-shrink: 0;
@@ -528,7 +533,7 @@
 .alimento-kcal {
   font-size: 10px;
   font-weight: 700;
-  color: #1D3350;
+  color: var(--pn-navy);
   min-width: 54px;
   text-align: right;
   flex-shrink: 0;
@@ -538,7 +543,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #cbd5e1;
+  color: var(--color-text-light);
   padding: 3px;
   line-height: 1;
   border-radius: 5px;
@@ -549,7 +554,7 @@
 }
 
 .btn-remover-alimento:hover {
-  color: #dc2626;
+  color: var(--pn-danger);
   background: #fff1f2;
 }
 
@@ -558,7 +563,7 @@
   padding: 14px 12px;
   font-size: 11px;
   font-style: italic;
-  color: #94a3b8;
+  color: var(--pn-text-4);
   border: 1.5px dashed rgba(29, 51, 80, 0.11);
   border-radius: 8px;
   text-align: center;
@@ -571,7 +576,7 @@
   align-items: center;
   padding: 7px 14px;
   border-top: 1px solid rgba(29, 51, 80, 0.07);
-  background: #ffffff;
+  background: var(--pn-surface);
 }
 
 .refeicao-semaforo {
@@ -592,10 +597,10 @@
   flex-shrink: 0;
 }
 
-.refeicao-semaforo.verde    { background: #f0fdf4; color: #16a34a; }
-.refeicao-semaforo.amarelo  { background: #fffbeb; color: #d97706; }
-.refeicao-semaforo.vermelho { background: #fff1f2; color: #dc2626; }
-.refeicao-semaforo.neutro   { background: #f3f8fb; color: #475569; }
+.refeicao-semaforo.verde    { background: #f0fdf4; color: var(--pn-ok); }
+.refeicao-semaforo.amarelo  { background: #fffbeb; color: var(--pn-warn); }
+.refeicao-semaforo.vermelho { background: #fff1f2; color: var(--pn-danger); }
+.refeicao-semaforo.neutro   { background: #f3f8fb; color: var(--pn-text-2); }
 
 /* ─── Orientações (colapsível) ───────────────────────────── */
 .refeicao-orientacoes {
@@ -611,7 +616,7 @@
   border: none;
   cursor: pointer;
   font-size: 10.5px;
-  color: #94a3b8;
+  color: var(--pn-text-4);
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -620,7 +625,7 @@
 }
 
 .btn-add-orientacoes:hover {
-  color: #1D3350;
+  color: var(--pn-navy);
 }
 
 .form-field-label {
@@ -628,7 +633,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: var(--pn-text-3);
 }
 
 .orientacoes-textarea {
@@ -639,7 +644,7 @@
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 6px;
   background: #f3f8fb;
-  color: #1e293b;
+  color: var(--pn-text-1);
   font-family: inherit;
   resize: vertical;
   box-sizing: border-box;
@@ -648,8 +653,8 @@
 
 .orientacoes-textarea:focus {
   outline: none;
-  border-color: #56ADDB;
-  background: #ffffff;
+  border-color: var(--pn-accent);
+  background: var(--pn-surface);
   box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
 }
 
@@ -695,4 +700,122 @@
   .busca-alimento-row .alimento-buscador__search {
     min-width: 100%;
   }
+}
+
+/* ── Alinhamento com a linguagem do sistema ──────────────────────────────
+   As tarjas de 3px no topo do cartao marcavam estado, mas uma refeicao vazia
+   nascia vermelha. Com o semaforo corrigido, a tarja neutra fica discreta e
+   a cor volta a significar desvio real. */
+.refeicao-card[data-semaforo="neutro"] { border-top-color: rgba(29, 51, 80, 0.10); }
+
+/* Macros como texto, nao como cinco pilulas coloridas por refeicao. */
+.alimento-macro-tag {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none !important;
+  font-weight: 500;
+  font-size: 0.68rem;
+  color: var(--pn-text-3, #77909f);
+}
+
+.alimento-macro-sep { color: var(--pn-text-4, #9bb0bd); }
+
+/* ── Alinhamento com a linguagem do sistema ──────────────────────────────
+   Cinco pílulas coloridas no cabeçalho de cada refeição competiam com o
+   próprio nome dela. Macro é dado de apoio: vira texto, e a cor volta a
+   marcar só desvio. */
+.macro-chip {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none !important;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--pn-text-3, #77909f) !important;
+}
+
+/* O primeiro chip é a energia da refeição — esse continua legível. */
+.macro-chip:first-child {
+  font-weight: 600;
+  color: var(--pn-text-1, #1D3350) !important;
+}
+
+/* "Café da manh" — o nome não cabia. */
+.refeicao-nome-input {
+  min-width: 180px;
+}
+
+/* ── Substituto pertence ao alimento ─────────────────────────────────────
+   Antes eram duas colunas paralelas — "Alimentos" e "Substitutos" — e a
+   disposição sugeria soma. Substituto é alternativa, e agora fica recuado
+   sob o alimento que ele troca, com o "ou" na frente. */
+.refeicao-col--unica { grid-column: 1 / -1; min-width: 0; }
+
+.alimento-opcoes {
+  list-style: none;
+  margin: 0 0 0.5rem 1.75rem;
+  padding: 0.5rem 0 0.6rem 0.9rem;
+  border-left: 2px solid rgba(29, 51, 80, 0.10);
+}
+
+.alimentos-lista--opcoes { margin: 0; padding: 0; }
+
+.alimento-item--opcao {
+  background: none;
+  opacity: 0.92;
+}
+
+.alimento-prefixo {
+  flex-shrink: 0;
+  width: 1.4rem;
+  font-size: 10px;
+  color: var(--pn-text-4, #9bb0bd);
+}
+
+.btn-opcoes-alimento {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--pn-text-4, #9bb0bd);
+  cursor: pointer;
+}
+
+.btn-opcoes-alimento:hover,
+.btn-opcoes-alimento.aberto { color: var(--pn-accent, #74A865); }
+
+.btn-opcoes-alimento__n {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.busca-alimento-row--opcao { margin-top: 0.4rem; }
+
+/* Bloco legado: existe só enquanto houver plano do modelo antigo. */
+.refeicao-col--legado {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed rgba(217, 119, 6, 0.35);
+}
+
+/* O substituto mostra a diferença, não o valor absoluto: é o que responde
+   "vale a pena trocar?" na hora de escolher. */
+.alimento-macros-row--delta { font-variant-numeric: tabular-nums; }
+
+.alimento-delta {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--pn-text-3, #77909f);
+}
+
+.alimento-kcal--delta {
+  font-variant-numeric: tabular-nums;
+  color: var(--pn-text-3, #77909f);
 }

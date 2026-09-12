@@ -1,5 +1,5 @@
 ﻿import React, { useId, useMemo, useState } from 'react';
-import { ChevronDown, PlusCircle, Trash2 } from 'lucide-react';
+import { ChevronDown, PlusCircle, Repeat, Trash2 } from 'lucide-react';
 import AlimentoBuscador from './AlimentoBuscador';
 import './RefeicaoBuilder.css';
 
@@ -8,6 +8,22 @@ const toNumber = (value) => {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   const parsed = Number(String(value).replace(',', '.').trim());
   return Number.isFinite(parsed) ? parsed : 0;
+};
+
+// Um substituto listado com os macros absolutos parece só mais um alimento.
+// O que a troca precisa dizer e o que MUDA em relacao ao alimento que ele
+// substitui — e isso e aritmetica sobre dados que ja existem, sem depender da
+// ancora de equivalencia.
+const sinalDelta = (valor, casas = 1) => {
+  if (valor === null || valor === undefined || Number.isNaN(valor)) return '—';
+  const n = Number(valor);
+  if (Math.abs(n) < 0.05) return '=';
+  return `${n > 0 ? '+' : '−'}${Math.abs(n).toFixed(casas)}`;
+};
+
+const deltaEntre = (substituto, base, campo) => {
+  if (!base) return null;
+  return toNumber(substituto?.[campo]) - toNumber(base?.[campo]);
 };
 
 const computeTotals = (items = []) => {
@@ -29,13 +45,19 @@ const computeTotals = (items = []) => {
 };
 
 const getSemaforo = (caloriasRefeicao, metaCaloricaPorRefeicao) => {
+  // Refeicao sem alimento nao esta errada — ela nao foi comecada. Antes, zero
+  // kcal contra a meta dava 100% de desvio e a refeicao nascia "critica",
+  // com tarja vermelha, antes de qualquer digitacao.
+  if (!Number(caloriasRefeicao)) {
+    return { status: 'neutro', label: 'Sem alimentos' };
+  }
   if (!metaCaloricaPorRefeicao || metaCaloricaPorRefeicao <= 0) {
-    return { status: 'neutro', label: 'Sem meta por refeicao' };
+    return { status: 'neutro', label: 'Sem meta por refeição' };
   }
   const deltaPercent = (Math.abs(caloriasRefeicao - metaCaloricaPorRefeicao) / metaCaloricaPorRefeicao) * 100;
   if (deltaPercent <= 10) return { status: 'verde', label: 'Adequada' };
   if (deltaPercent <= 20) return { status: 'amarelo', label: 'Ajuste moderado' };
-  return { status: 'vermelho', label: 'Ajuste critico' };
+  return { status: 'vermelho', label: 'Ajuste crítico' };
 };
 
 const SEMAFORO_COLORS = {
@@ -56,6 +78,7 @@ const RefeicaoBuilder = ({
   const idPrefix = useId();
   const [orientacoesExpanded, setOrientacoesExpanded] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [opcoesAbertas, setOpcoesAbertas] = useState(() => new Set());
 
   const alimentos = Array.isArray(value?.alimentos) ? value.alimentos : [];
   const substitutos = Array.isArray(value?.substitutos) ? value.substitutos : [];
@@ -81,33 +104,114 @@ const RefeicaoBuilder = ({
         calorias: nextTotals.calorias,
         cho: nextTotals.cho,
         ptn: nextTotals.ptn,
-        lip: nextTotals.lip
+        lip: nextTotals.lip,
+        fibra: nextTotals.fibra
       }
     });
   };
 
-  const addAlimento = (item) => patch({ alimentos: [...alimentos, item] });
-  const addSubstituto = (item) => patch({ substitutos: [...substitutos, item] });
-  const removeAlimento = (index) => patch({ alimentos: alimentos.filter((_, idx) => idx !== index) });
-  const removeSubstituto = (index) => patch({ substitutos: substitutos.filter((_, idx) => idx !== index) });
+  const addAlimento = (item) => patch({ alimentos: [...alimentos, { ...item, substitutos: [] }] });
 
-  const renderItem = (item, index, onRemoveItem) => (
+  const removeAlimento = (index) => {
+    const confirmed = window.confirm('Remover este alimento da refeição? As opções de substituição dele saem junto.');
+    if (!confirmed) return;
+    patch({ alimentos: alimentos.filter((_, idx) => idx !== index) });
+  };
+
+  // O substituto passa a pertencer ao alimento, não à refeição: numa refeição
+  // com arroz, feijão e ovo, uma lista solta de substitutos não dizia qual
+  // deles trocava qual.
+  const addSubstitutoAoItem = (alimentoIndex, item) => {
+    patch({
+      alimentos: alimentos.map((a, idx) => (
+        idx === alimentoIndex
+          ? { ...a, substitutos: [...(a.substitutos ?? []), item] }
+          : a
+      ))
+    });
+  };
+
+  const removeSubstitutoDoItem = (alimentoIndex, subIndex) => {
+    const confirmed = window.confirm('Remover esta opção de substituição?');
+    if (!confirmed) return;
+    patch({
+      alimentos: alimentos.map((a, idx) => (
+        idx === alimentoIndex
+          ? { ...a, substitutos: (a.substitutos ?? []).filter((_, i) => i !== subIndex) }
+          : a
+      ))
+    });
+  };
+
+  // Planos salvos antes desta mudança guardavam substitutos no nível da
+  // refeição. Continuam visíveis e removíveis, sem vínculo, para que nenhum
+  // dado se perca — mas nada novo é gravado aqui.
+  const removeSubstitutoLegado = (index) => {
+    const confirmed = window.confirm('Remover este substituto sem vínculo?');
+    if (!confirmed) return;
+    patch({ substitutos: substitutos.filter((_, idx) => idx !== index) });
+  };
+
+  const alternarOpcoes = (index) => {
+    setOpcoesAbertas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(index)) proximo.delete(index);
+      else proximo.add(index);
+      return proximo;
+    });
+  };
+
+  const renderItem = (item, index, onRemoveItem, extra = {}) => (
     <li
       key={index}
-      className={`alimento-item ${index % 2 === 1 ? 'alimento-zebra' : ''}`}
+      className={`alimento-item ${index % 2 === 1 ? 'alimento-zebra' : ''}${extra.prefixo ? ' alimento-item--opcao' : ''}`}
     >
+      {extra.prefixo && <span className="alimento-prefixo" aria-hidden="true">{extra.prefixo}</span>}
       <div className="alimento-info">
         <span className="alimento-nome">{item.descricao || 'Alimento'}</span>
-        <span className="alimento-macros-row">
-          <span className="alimento-macro-tag alimento-macro-cho">CHO {toNumber(item.cho).toFixed(1)}g</span>
-          <span className="alimento-macro-sep">-</span>
-          <span className="alimento-macro-tag alimento-macro-ptn">PTN {toNumber(item.ptn).toFixed(1)}g</span>
-          <span className="alimento-macro-sep">-</span>
-          <span className="alimento-macro-tag alimento-macro-lip">LIP {toNumber(item.lip).toFixed(1)}g</span>
-        </span>
+        {extra.base ? (
+          <span className="alimento-macros-row alimento-macros-row--delta">
+            <span className="alimento-delta">CHO {sinalDelta(deltaEntre(item, extra.base, 'cho'))}</span>
+            <span className="alimento-macro-sep">·</span>
+            <span className="alimento-delta">PTN {sinalDelta(deltaEntre(item, extra.base, 'ptn'))}</span>
+            <span className="alimento-macro-sep">·</span>
+            <span className="alimento-delta">LIP {sinalDelta(deltaEntre(item, extra.base, 'lip'))}</span>
+            <span className="alimento-macro-sep">·</span>
+            <span className="alimento-delta">FIB {sinalDelta(deltaEntre(item, extra.base, 'fibra'))}</span>
+          </span>
+        ) : (
+          <span className="alimento-macros-row">
+            <span className="alimento-macro-tag alimento-macro-cho">CHO {toNumber(item.cho).toFixed(1)}g</span>
+            <span className="alimento-macro-sep">-</span>
+            <span className="alimento-macro-tag alimento-macro-ptn">PTN {toNumber(item.ptn).toFixed(1)}g</span>
+            <span className="alimento-macro-sep">-</span>
+            <span className="alimento-macro-tag alimento-macro-lip">LIP {toNumber(item.lip).toFixed(1)}g</span>
+            <span className="alimento-macro-sep">-</span>
+            <span className="alimento-macro-tag alimento-macro-fibra">FIB {toNumber(item.fibra).toFixed(1)}g</span>
+          </span>
+        )}
       </div>
       <span className="alimento-qty">{toNumber(item.quantidadeGramas).toFixed(1)} g</span>
-      <span className="alimento-kcal">{toNumber(item.calorias).toFixed(1)} kcal</span>
+      {extra.base ? (
+        <span className="alimento-kcal alimento-kcal--delta">
+          {sinalDelta(deltaEntre(item, extra.base, 'calorias'), 0)} kcal
+        </span>
+      ) : (
+        <span className="alimento-kcal">{toNumber(item.calorias).toFixed(1)} kcal</span>
+      )}
+      {extra.onAlternar && (
+        <button
+          type="button"
+          className={`btn-opcoes-alimento${extra.aberto ? ' aberto' : ''}`}
+          onClick={extra.onAlternar}
+          aria-expanded={extra.aberto}
+          aria-label={`Opções de substituição de ${item.descricao || 'alimento'}`}
+          title="Opções de substituição"
+        >
+          <Repeat size={13} />
+          {extra.opcoes > 0 && <span className="btn-opcoes-alimento__n">{extra.opcoes}</span>}
+        </button>
+      )}
       {!readOnly && (
         <button
           type="button"
@@ -154,7 +258,7 @@ const RefeicaoBuilder = ({
             type="button"
             className={`btn-collapse-refeicao ${collapsed ? 'collapsed' : ''}`}
             onClick={() => setCollapsed((prev) => !prev)}
-            aria-label={collapsed ? 'Expandir refeicao' : 'Colapsar refeicao'}
+            aria-label={collapsed ? 'Expandir refeição' : 'Colapsar refeição'}
           >
             <ChevronDown size={15} />
           </button>
@@ -177,6 +281,7 @@ const RefeicaoBuilder = ({
             <span className="macro-chip macro-cho">CHO {totalRefeicao.cho.toFixed(1)}g</span>
             <span className="macro-chip macro-ptn">PTN {totalRefeicao.ptn.toFixed(1)}g</span>
             <span className="macro-chip macro-lip">LIP {totalRefeicao.lip.toFixed(1)}g</span>
+            <span className="macro-chip macro-fibra">FIB {totalRefeicao.fibra.toFixed(1)}g</span>
           </div>
 
           <div className="refeicao-meta-right">
@@ -236,7 +341,7 @@ const RefeicaoBuilder = ({
       {!collapsed && (
         <>
           <div className="refeicao-body">
-            <section className="refeicao-col">
+            <section className="refeicao-col refeicao-col--unica">
               <h5 className="refeicao-col-label">
                 <PlusCircle size={13} /> Alimentos
                 {alimentos.length > 0 && (
@@ -252,35 +357,69 @@ const RefeicaoBuilder = ({
                 <p className="refeicao-empty">Nenhum alimento adicionado.</p>
               ) : (
                 <ul className="alimentos-lista">
-                  {alimentos.map((item, index) => renderItem(item, index, () => removeAlimento(index)))}
+                  {alimentos.map((item, index) => {
+                    const opcoes = Array.isArray(item.substitutos) ? item.substitutos : [];
+                    const aberto = opcoesAbertas.has(index);
+                    return (
+                      <React.Fragment key={index}>
+                        {renderItem(item, index, () => removeAlimento(index), {
+                          opcoes: opcoes.length,
+                          aberto,
+                          onAlternar: () => alternarOpcoes(index)
+                        })}
+                        {aberto && (
+                          <li className="alimento-opcoes">
+                            {opcoes.length === 0 && (
+                              <p className="refeicao-empty">Nenhuma opção de substituição para este alimento.</p>
+                            )}
+                            <ul className="alimentos-lista alimentos-lista--opcoes">
+                              {opcoes.map((sub, subIndex) => (
+                                <React.Fragment key={subIndex}>
+                                  {renderItem(sub, subIndex, () => removeSubstitutoDoItem(index, subIndex), {
+                                    prefixo: 'ou',
+                                    base: item
+                                  })}
+                                </React.Fragment>
+                              ))}
+                            </ul>
+                            {!readOnly && (
+                              <div className="busca-alimento-row busca-alimento-row--opcao">
+                                <AlimentoBuscador
+                                  onAdd={(novo) => addSubstitutoAoItem(index, novo)}
+                                  disabled={readOnly}
+                                />
+                              </div>
+                            )}
+                          </li>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </ul>
               )}
             </section>
 
-            <div className="refeicao-divider" aria-hidden="true">
-              <span className="refeicao-divider-label">ou</span>
-            </div>
-
-            <section className="refeicao-col">
-              <h5 className="refeicao-col-label">
-                Substitutos
-                {substitutos.length > 0 && (
+            {/* Só aparece se o plano vier do modelo antigo, em que o substituto
+                pertencia à refeição e não se sabia qual alimento ele trocava. */}
+            {substitutos.length > 0 && (
+              <section className="refeicao-col refeicao-col--legado">
+                <h5 className="refeicao-col-label">
+                  Substitutos sem vínculo
                   <span className="refeicao-col-count">{substitutos.length}</span>
-                )}
-              </h5>
-              {!readOnly && (
-                <div className="busca-alimento-row">
-                  <AlimentoBuscador onAdd={addSubstituto} disabled={readOnly} />
-                </div>
-              )}
-              {substitutos.length === 0 ? (
-                <p className="refeicao-empty">Nenhum substituto adicionado.</p>
-              ) : (
+                </h5>
+                <p className="refeicao-empty">
+                  Vieram de um plano anterior, quando o substituto era da refeição inteira.
+                  Adicione-os na opção do alimento correspondente e remova daqui.
+                </p>
                 <ul className="alimentos-lista">
-                  {substitutos.map((item, index) => renderItem(item, index, () => removeSubstituto(index)))}
+                  {substitutos.map((item, index) => (
+                    <React.Fragment key={index}>
+                      {renderItem(item, index, () => removeSubstitutoLegado(index))}
+                    </React.Fragment>
+                  ))}
                 </ul>
-              )}
-            </section>
+              </section>
+            )}
           </div>
 
           <footer className="refeicao-footer">
@@ -298,7 +437,7 @@ const RefeicaoBuilder = ({
                   className="btn-add-orientacoes"
                   onClick={() => setOrientacoesExpanded(true)}
                 >
-                  <PlusCircle size={12} /> Adicionar orientacoes
+                  <PlusCircle size={12} /> Adicionar orientações
                 </button>
               )
             ) : (

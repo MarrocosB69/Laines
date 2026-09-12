@@ -140,6 +140,13 @@
   border-color: var(--pp-ok-border);
 }
 
+.status-badge[data-status="Em revisao"] {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: rgba(79, 70, 229, 0.22);
+}
+
+.status-badge[data-status="Arquivado"],
 .status-badge[data-status="Encerrado"] {
   background: var(--pp-surface-2);
   color: #475569;
@@ -190,8 +197,30 @@
   box-shadow: 0 5px 16px rgba(29, 51, 80, 0.26), 0 2px 5px rgba(29, 51, 80, 0.14);
 }
 
+.btn-ativar {
+  background: linear-gradient(140deg, #0f6e56, #5f9859);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.42rem 1rem;
+  font-size: 0.71rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  box-shadow: 0 3px 10px rgba(15, 110, 86, 0.18), 0 1px 3px rgba(15, 110, 86, 0.10);
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.btn-ativar:hover {
+  opacity: 0.92;
+  box-shadow: 0 5px 16px rgba(15, 110, 86, 0.24), 0 2px 5px rgba(15, 110, 86, 0.12);
+}
+
 .btn-secondary:disabled,
-.btn-salvar:disabled {
+.btn-salvar:disabled,
+.btn-ativar:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -312,6 +341,113 @@
   font-weight: 700;
   color: var(--meta-base-color, var(--pp-navy));
   margin-top: 0.12rem;
+}
+
+/* ============================================================
+   Clinical activation checklist
+   ============================================================ */
+.activation-summary {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.activation-summary.ok {
+  background: var(--pp-ok-bg);
+  color: var(--pp-ok-text);
+  border-color: var(--pp-ok-border);
+}
+
+.activation-summary.blocker {
+  background: var(--pp-danger-bg);
+  color: var(--pp-danger-text);
+  border-color: var(--pp-danger-border);
+}
+
+.clinical-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.clinical-checklist__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  align-items: flex-start;
+  padding: 0.72rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--pp-border);
+  background: var(--pp-surface-2);
+}
+
+.clinical-checklist__item strong {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--pp-navy);
+  margin-bottom: 0.18rem;
+}
+
+.clinical-checklist__item p {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.clinical-checklist__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 0.22rem;
+  background: #94a3b8;
+}
+
+.clinical-checklist__item.ok {
+  background: var(--pp-ok-bg);
+  border-color: var(--pp-ok-border);
+}
+
+.clinical-checklist__item.ok .clinical-checklist__dot {
+  background: var(--pp-ok-accent);
+}
+
+.clinical-checklist__item.blocker {
+  background: var(--pp-danger-bg);
+  border-color: var(--pp-danger-border);
+}
+
+.clinical-checklist__item.blocker .clinical-checklist__dot {
+  background: var(--pp-danger-accent);
+}
+
+.clinical-checklist__item.warning {
+  background: var(--pp-warn-bg);
+  border-color: var(--pp-warn-border);
+}
+
+.clinical-checklist__item.warning .clinical-checklist__dot {
+  background: var(--pp-warn-accent);
+}
+
+.clinical-warning-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.clinical-warning-list p {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: var(--pp-warn-bg);
+  border: 1px solid var(--pp-warn-border);
+  color: var(--pp-warn-text);
+  font-size: 0.72rem;
 }
 
 /* ============================================================
@@ -486,11 +622,61 @@
 }
 
 /* ============================================================
+   Final review
+   ============================================================ */
+.review-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+
+.review-summary-grid > div {
+  padding: 0.72rem 0.85rem;
+  border-radius: 10px;
+  background: var(--pp-surface-2);
+  border: 1px solid var(--pp-border);
+}
+
+.review-summary-grid span {
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+  margin-bottom: 0.28rem;
+}
+
+.review-summary-grid strong {
+  font-size: 1.05rem;
+  color: var(--pp-navy);
+}
+
+.review-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--pp-border-mid);
+  background: var(--pp-surface-2);
+  color: #334155;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.review-confirmation input {
+  margin-top: 0.12rem;
+  flex-shrink: 0;
+}
+
+/* ============================================================
    Totais cards
    ============================================================ */
 .totais-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 0.6rem;
 }
 
@@ -622,6 +808,11 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .clinical-checklist,
+  .review-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .config-grid-meta {
     grid-template-columns: 1fr 1fr 1fr;
   }
@@ -653,6 +844,8 @@
 
   .metas-grid,
   .totais-grid,
+  .clinical-checklist,
+  .review-summary-grid,
   .config-grid-meta,
   .config-grid-metas-nutricionais {
     grid-template-columns: 1fr;
@@ -661,4 +854,234 @@
   .prescricao-card {
     padding: 0.9rem 1rem;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PRESCRIÇÃO — mesma linguagem do prontuário
+   ───────────────────────────────────────────────────────────────────────
+   A tela abria com nove cartoes de bloqueio antes de mostrar o plano, e
+   repetia dois avisos logo abaixo com o mesmo texto. Aqui as secoes voltam
+   a ser area, a validacao recua para apoio e o numero volta a ser o que se
+   le de longe.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.prescricao-page,
+.plano-alimentar-root {
+  --pp-display: var(--font-poppins, "Poppins", sans-serif);
+  --pp-rule: rgba(29, 51, 80, 0.11);
+  --pp-ink: #1D3350;
+  --pp-mid: #46617a;
+  --pp-soft: #7b93a3;
+}
+
+/* ── Secao: area, nao cartao flutuante ───────────────────────────────── */
+.prescricao-card {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin-bottom: 2.5rem;
+}
+
+.section-title {
+  font-family: var(--pp-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--pp-ink);
+  padding-bottom: 0.55rem;
+  margin-bottom: 1.15rem;
+  border-bottom: 1px solid var(--pp-rule);
+}
+
+/* ── Metas: o número é o que se lê de longe ──────────────────────────── */
+.meta-item {
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--pp-rule);
+  border-radius: 0;
+  padding: 0.8rem 0.9rem 0.9rem 0;
+  overflow: visible;
+}
+
+/* Uma cor por meta era decoracao: no resto do sistema a cor marca alarme. */
+.meta-item::before { display: none; }
+
+.meta-item-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-soft);
+}
+
+.meta-item-value {
+  font-family: var(--pp-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: var(--pp-ink);
+}
+
+.meta-item-unit,
+.meta-item-sub,
+.meta-item-pct { font-size: 0.7rem; color: var(--pp-soft); }
+
+.meta-progress-bar {
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(29, 51, 80, 0.08);
+}
+
+.meta-progress-fill { border-radius: 99px; }
+
+/* ── Validação: apoio, não muralha ───────────────────────────────────── */
+.clinical-checklist { gap: 0; }
+
+.clinical-checklist__item {
+  background: none !important;
+  border: 0;
+  border-top: 1px solid var(--pp-rule);
+  border-radius: 0;
+  padding: 0.6rem 0.5rem 0.7rem 0;
+  font-size: 0.8rem;
+}
+
+/* Um item resolvido nao precisa de fundo verde para dizer que esta bem —
+   basta nao chamar atencao. O tom fica no marcador. */
+.clinical-checklist__item strong { font-weight: 600; color: var(--pp-ink); }
+.clinical-checklist__item p,
+.clinical-checklist__item span { color: var(--pp-mid); }
+
+.clinical-warning-list {
+  margin-top: 1rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid rgba(217, 119, 6, 0.4);
+  background: none;
+  border-radius: 0;
+  font-size: 0.8rem;
+  color: var(--pp-mid);
+}
+
+.clinical-warning-list > * {
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0.2rem 0 !important;
+}
+
+/* ── Cabeçalho da prescrição ─────────────────────────────────────────── */
+.prescricao-header {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--pp-rule);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0 1.15rem;
+  margin-bottom: 2rem;
+}
+
+.prescricao-header h1,
+.prescricao-header h2 {
+  font-family: var(--pp-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* ── Campos: linha, não pastilha ─────────────────────────────────────── */
+.form-field input,
+.form-field select,
+.form-field textarea,
+.orientacoes-textarea {
+  border: 0;
+  border-bottom: 1.5px solid var(--pp-rule);
+  border-radius: 4px 4px 0 0;
+  background: rgba(29, 51, 80, 0.028);
+  font-family: var(--pp-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--pp-ink);
+}
+
+.orientacoes-textarea { font-family: inherit; font-size: 0.88rem; font-weight: 400; }
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.orientacoes-textarea:focus {
+  outline: none;
+  border-bottom-color: var(--pp-accent, #74A865);
+  border-bottom-width: 2px;
+  background: rgba(116, 168, 101, 0.06);
+}
+
+.form-field-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pp-soft);
+}
+
+/* ── Validação recolhível ────────────────────────────────────────────── */
+.validacao-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.validacao-toggle .section-title {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.validacao-toggle__seta {
+  color: var(--pp-soft);
+  transform: rotate(-90deg);
+  transition: transform 0.18s ease;
+}
+
+.validacao-toggle__seta.aberta { transform: rotate(0deg); }
+
+.clinical-checklist.recolhida { display: none; }
+.clinical-checklist.recolhida ~ .clinical-warning-list { display: none; }
+
+/* Um bloqueio pendente merece cor no contador — e essa e a unica cor da secao. */
+.activation-summary.blocker {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--pp-danger, #dc2626);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.activation-summary.ok {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--pp-accent, #74A865);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .validacao-toggle__seta { transition: none; }
+}
+
+/* O cabecalho e sticky: sem chao opaco, o conteudo passa a ser visto por
+   baixo dele enquanto se rola. */
+.prescricao-header {
+  background: var(--pp-bg, #f5f8f8);
 }
