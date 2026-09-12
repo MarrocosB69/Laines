@@ -1,23 +1,13 @@
-import { IsDateString, IsString, Matches, MinLength } from 'class-validator';
+import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class RecoverPasswordDto {
   @IsString()
-  @MinLength(3)
-  identifier!: string;
-
-  @IsString()
-  @Matches(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/, {
-    message: 'CPF invalido.'
-  })
-  cpf!: string;
-
-  @IsDateString({}, {
-    message: 'Data de nascimento invalida.'
-  })
-  dataNascimento!: string;
+  @Matches(/^[a-f0-9]{64}$/, { message: 'Link invalido ou expirado.' })
+  token!: string;
 
   @IsString()
   @MinLength(8)
+  @MaxLength(72)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
     message: 'Senha deve conter ao menos 1 letra maiuscula, 1 minuscula e 1 numero.'
   })

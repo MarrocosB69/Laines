@@ -1,0 +1,547 @@
+{
+  "generatedAt": "2026-09-11T16:27:17.989Z",
+  "mode": "Frontend real em dev; API interceptada; dados sintéticos; sem teste de backend",
+  "captures": [
+    {
+      "key": "desktop-atleta-inicio",
+      "file": "desktop-atleta-inicio.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "MEU ACOMPANHAMENTO",
+        "Minhas pendências"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Pendências\n2",
+          "label": "Pendências",
+          "title": "Pendências",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Cadastro",
+          "label": "Cadastro",
+          "title": "Cadastro",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Acompanhamento",
+          "label": "Acompanhamento",
+          "title": "Acompanhamento",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nAtleta\nMEU ACOMPANHAMENTO\nPendências\n2\nCadastro\nAcompanhamento\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nMinhas pendências\n\nArea do atleta\n\nPD\nPRÓXIMA CONSULTA\n\nSem consultas agendadas.\n\nFORMULÁRIOS DISPONÍVEIS\n\nNenhum formulário foi liberado ou solicitado em consulta pela equipe até o momento.\n\nO QUE FAZER AGORA\nConsentimento de pesquisa pendente\nA assinatura do termo ainda não foi registrada.\nSem próxima consulta agendada\nSolicite um novo horário para manter o acompanhamento em dia.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "desktop-atleta-Pendências2",
+      "file": "desktop-atleta-pendencias2.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "MEU ACOMPANHAMENTO",
+        "Minhas pendências"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Pendências\n2",
+          "label": "Pendências",
+          "title": "Pendências",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Cadastro",
+          "label": "Cadastro",
+          "title": "Cadastro",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Acompanhamento",
+          "label": "Acompanhamento",
+          "title": "Acompanhamento",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nAtleta\nMEU ACOMPANHAMENTO\nPendências\n2\nCadastro\nAcompanhamento\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nMinhas pendências\n\nArea do atleta\n\nPD\nPRÓXIMA CONSULTA\n\nSem consultas agendadas.\n\nFORMULÁRIOS DISPONÍVEIS\n\nNenhum formulário foi liberado ou solicitado em consulta pela equipe até o momento.\n\nO QUE FAZER AGORA\nConsentimento de pesquisa pendente\nA assinatura do termo ainda não foi registrada.\nSem próxima consulta agendada\nSolicite um novo horário para manter o acompanhamento em dia.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "desktop-atleta-Cadastro",
+      "file": "desktop-atleta-cadastro.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "Algo deu errado"
+      ],
+      "buttons": [
+        {
+          "text": "Recarregar",
+          "label": null,
+          "title": "",
+          "width": 111,
+          "height": 39,
+          "disabled": false
+        },
+        {
+          "text": "Voltar ao início",
+          "label": null,
+          "title": "",
+          "width": 134,
+          "height": 39,
+          "disabled": false
+        }
+      ],
+      "text": "⚠\nAlgo deu errado\n\nUm erro inesperado ocorreu nesta seção. Você pode tentar recarregar ou voltar ao início.\n\nRecarregar\nVoltar ao início",
+      "dialogs": 0,
+      "tables": [],
+      "images": [],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "mobile-atleta-inicio",
+      "file": "mobile-atleta-inicio.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "headings": [
+        "MEU ACOMPANHAMENTO",
+        "Minhas pendências"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Pendências\n2",
+          "label": "Pendências",
+          "title": "Pendências",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Cadastro",
+          "label": "Cadastro",
+          "title": "Cadastro",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Acompanhamento",
+          "label": "Acompanhamento",
+          "title": "Acompanhamento",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Fechar menu",
+          "title": "",
+          "width": 390,
+          "height": 844,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nAtleta\nMEU ACOMPANHAMENTO\nPendências\n2\nCadastro\nAcompanhamento\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nMinhas pendências\nPD\nPRÓXIMA CONSULTA\n\nSem consultas agendadas.\n\nFORMULÁRIOS DISPONÍVEIS\n\nNenhum formulário foi liberado ou solicitado em consulta pela equipe até o momento.\n\nO QUE FAZER AGORA\nConsentimento de pesquisa pendente\nA assinatura do termo ainda não foi registrada.\nSem próxima consulta agendada\nSolicite um novo horário para manter o acompanhamento em dia.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "mobile-atleta-menu-fechado",
+      "file": "mobile-atleta-menu-fechado.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "headings": [
+        "Minhas pendências"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Expandir barra lateral",
+          "title": "Expandir barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Pendências: abrir seção",
+          "title": "Pendências",
+          "width": 77,
+          "height": 36,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Cadastro: abrir seção",
+          "title": "Cadastro",
+          "width": 77,
+          "height": 36,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Acompanhamento: abrir seção",
+          "title": "Acompanhamento",
+          "width": 77,
+          "height": 36,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        }
+      ],
+      "text": "PD\nMinhas pendências\nPD\nPRÓXIMA CONSULTA\n\nSem consultas agendadas.\n\nFORMULÁRIOS DISPONÍVEIS\n\nNenhum formulário foi liberado ou solicitado em consulta pela equipe até o momento.\n\nO QUE FAZER AGORA\nConsentimento de pesquisa pendente\nA assinatura do termo ainda não foi registrada.\nSem próxima consulta agendada\nSolicite um novo horário para manter o acompanhamento em dia.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    }
+  ],
+  "requests": [
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/avaliacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/avaliacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/agendamentos",
+      "method": "GET"
+    }
+  ],
+  "navigationChecks": []
+}

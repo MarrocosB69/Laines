@@ -6,7 +6,10 @@ export type AuthenticatedUser = {
   role?: string;
   name?: string;
   diretoria?: string | null;
+  permissions?: string[];
   coordAtendimento?: boolean;
+  curso?: string | null;
+  projetoId?: string | null;
 };
 
 const GLOBAL_ACCESS_ROLES = new Set<string>([...ADMIN_AREA_ROLES]);
@@ -24,8 +27,7 @@ export const normalizeRole = (role?: string) => (role || '').toLowerCase().trim(
 export const hasGlobalAccess = (role?: string) => {
   const normalized = normalizeRole(role);
   if (!normalized) return false;
-  if (GLOBAL_ACCESS_ROLES.has(normalized)) return true;
-  return normalized.startsWith('diretoria_');
+  return GLOBAL_ACCESS_ROLES.has(normalized);
 };
 
 export const hasTeamScopedAccess = (role?: string) => TEAM_ACCESS_ROLES.has(normalizeRole(role));

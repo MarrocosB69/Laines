@@ -1,0 +1,2295 @@
+{
+  "recordedAt": "2026-09-11T16:39:12.265Z",
+  "head": "1532b622473326d179c8411bf2360f2b2373df2d",
+  "note": "Estado local com alterações pré-existentes; HEAD isoladamente não representa o material auditado; .env e credenciais excluídos",
+  "files": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "sha256": "c8b056d6fe3d311a46b750071565f0a00506633719cd76f2fc69217c8b456279"
+    },
+    {
+      "file": ".github/workflows/deploy.yml",
+      "sha256": "1ec0479d9b4910f0252675cc7e7a57401fb259ff5ce584dc7d641d272e1aabdd"
+    },
+    {
+      "file": ".github/workflows/operational-drill.yml",
+      "sha256": "968b30ae6ab2a4f32b39c0d378540e2a46c352f134448f8932e5c19de7f72d6e"
+    },
+    {
+      "file": ".github/workflows/rollback.yml",
+      "sha256": "951101160032c66f9aa72bf0eb1cef539f529648c99ee0a63adba68f7547f5e4"
+    },
+    {
+      "file": "deploy/nginx/laines.facisa.ufrn.br-http.conf",
+      "sha256": "78896c80e355174f21db1e539803d372b1ca2f3fb2691c33e45304efeee13548"
+    },
+    {
+      "file": "deploy/nginx/laines.facisa.ufrn.br.conf",
+      "sha256": "9f09628e7112b1f5edcb4107452a4b56d8696ab8f1a1a0e49ce135f481c962e7"
+    },
+    {
+      "file": "docker-compose.yml",
+      "sha256": "fc294c5070da60cffdcbdce5e4361f0db0a98d9a708963e0660a688b802c97c4"
+    },
+    {
+      "file": "laines-image-processor/calibration_store.py",
+      "sha256": "d5090866e1c1038cdbabe1bb87a92f8144db388d2d6529aca358b68a77bdc5bb"
+    },
+    {
+      "file": "laines-image-processor/capture.py",
+      "sha256": "2588b17ed6b6810a506518ae840bd10be1fe63638fcef5511ee254fd0197c54a"
+    },
+    {
+      "file": "laines-image-processor/config.py",
+      "sha256": "09184e267030e776e5a4002620eb4248b8593b60b8946d8984917ee205beaff8"
+    },
+    {
+      "file": "laines-image-processor/core/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "laines-image-processor/core/aruco_calibration.py",
+      "sha256": "5c7cc0d656bbfea62013eb4b68065ec463fdf43fdc717f6d0839930752c21d6d"
+    },
+    {
+      "file": "laines-image-processor/core/body_composition.py",
+      "sha256": "966c55dc51f678cf61b3c3c8103fd35a48390bd3970aabbc990e19b051483537"
+    },
+    {
+      "file": "laines-image-processor/core/body_parsing.py",
+      "sha256": "25af40865ceca4586f676f76e7f1224040f055267d4703271066bd948a45c6bf"
+    },
+    {
+      "file": "laines-image-processor/core/calibration.py",
+      "sha256": "727bb777880d39f6a693b143195b9f26112e405c487dd83bfa12d47cf88b4df2"
+    },
+    {
+      "file": "laines-image-processor/core/ellipse_fitter.py",
+      "sha256": "604f6165ecc1f245882b9ef0319386fbc66276d123fc48a2ebee18fd348a8828"
+    },
+    {
+      "file": "laines-image-processor/core/image_analysis.py",
+      "sha256": "49f7c3445475270c3d7bb1cbaca230e370111d9778928cbe88d5332227838b53"
+    },
+    {
+      "file": "laines-image-processor/core/smplx_estimator.py",
+      "sha256": "2685f4a6c8c090a8b541920b726ddcf5e93a017763440d49e0cc48d38a248d72"
+    },
+    {
+      "file": "laines-image-processor/core/usnavy.py",
+      "sha256": "55c68f92c1ceb2ab26254bebff7ba8a5d5f100ab0253713c12196a623effee85"
+    },
+    {
+      "file": "laines-image-processor/core/video_analysis.py",
+      "sha256": "60dc91b22f95ee65be154dc3e693519e44343b2fe26c0ba2ca25adffb4cab489"
+    },
+    {
+      "file": "laines-image-processor/jobs_status.py",
+      "sha256": "8860dcd13840198e1168d23e563b52cd5ae598a1f78d32068b6c42b84324bf66"
+    },
+    {
+      "file": "laines-image-processor/main.py",
+      "sha256": "6f8231f2508dae4fdbc2b82ab81ef633ad7add51fc865117a05e6eeca731c60f"
+    },
+    {
+      "file": "laines-image-processor/pipeline.py",
+      "sha256": "2b11c1400c43b7b0ab8bd2376a2410a103bd9464d51346f55398ff928ace0459"
+    },
+    {
+      "file": "laines-image-processor/requirements-capture.txt",
+      "sha256": "d1badf84902a12a51ccd88a2f16383622faf68700156cecb8194fa608cb907cb"
+    },
+    {
+      "file": "laines-image-processor/requirements.txt",
+      "sha256": "15ac5000ed835d491c73aacf3c1cd7066c8c1570d1cdb776da568ef670fe30e8"
+    },
+    {
+      "file": "laines-image-processor/submit.py",
+      "sha256": "f65ad9e3252184fa3dc8ab96f46d9b96764c8cd4641740223b856028a83311fd"
+    },
+    {
+      "file": "laines-image-processor/tests/test_core.py",
+      "sha256": "be20b0e9b888e34a27e28195b8ddf160a220004411b4c61558219d6671b14e82"
+    },
+    {
+      "file": "laines-image-processor/tests/test_regression.py",
+      "sha256": "c5c1ce31e33582c75478234c3110c5c49ddda51caa8ec48fe6e4f5a30da9bee5"
+    },
+    {
+      "file": "laines-image-processor/tests/test_smplx_e2e.py",
+      "sha256": "b26f5af089eb0a53d8884dcffcc6979490a1cd9bbbc0ceb376fc0cd200403cca"
+    },
+    {
+      "file": "package-lock.json",
+      "sha256": "72082282f8919274f22cc05000e103129f1559cd6dea6536365f98008273e3ea"
+    },
+    {
+      "file": "package.json",
+      "sha256": "687fe382dd975981d5763028a9f9c6a0e58c0f2ae984934ec95bb62fa41c5d66"
+    },
+    {
+      "file": "public/sw.js",
+      "sha256": "10a982a0328183a912243e060b19761861464d4e7ea597a98cdeab1ee16944ea"
+    },
+    {
+      "file": "scripts/.tmp-api.mjs",
+      "sha256": "9e9e80eb6a213d79359042e51d949f10c60f576cd20ccd68c7db8a47222332b0"
+    },
+    {
+      "file": "scripts/.tmp-fluxo.mjs",
+      "sha256": "dad33ad40ec1c944162f6f25c2d051e2956a28ef68cc7fc2f07accd957c292ff"
+    },
+    {
+      "file": "scripts/audit-visual.mjs",
+      "sha256": "b184a0b64a743b19939b385fed2f67e82cef6c2c0048cdb312bd6b43d15b630c"
+    },
+    {
+      "file": "scripts/browser-assessment.mjs",
+      "sha256": "d194cbb20ce8aeac789d453b9c5384e4ee422114afca8b78d244ff69254529db"
+    },
+    {
+      "file": "scripts/capture-profile-screenshots.mjs",
+      "sha256": "e10d763928c2c5aae175bbcfc44a322d74d785558c1e6d3555347f3822afe430"
+    },
+    {
+      "file": "scripts/capture-tcc-figures.mjs",
+      "sha256": "ce695111fb8854c1dd274f50325313c0b189b33a1012c5a689ae68372cfd00b1"
+    },
+    {
+      "file": "scripts/capture-tcc-screenshots.mjs",
+      "sha256": "cd80594e03c3651f7771643fa09273393f8a491fa56762be32c3a99be02d2214"
+    },
+    {
+      "file": "scripts/capture-triagem-screenshots.mjs",
+      "sha256": "30c91ebf1727b4ce976a9730d58a65e3f22060b9e33139bad3cb72eebb08edfa"
+    },
+    {
+      "file": "scripts/capture-visual-baseline.mjs",
+      "sha256": "def2934feb068dd08d1e466ec016dc36fd52948c38ea08a067ceb64d0a71cce1"
+    },
+    {
+      "file": "scripts/check-copy-permission-guardrails.mjs",
+      "sha256": "7d78c84cf788ac5225314024fdc9f501de7ccc28b1672acfadeb23c7c12c577a"
+    },
+    {
+      "file": "scripts/check-encoding.mjs",
+      "sha256": "54e50f9e9c948373ab5ba2eabbac4460472cbf47d530e998fc4b87ecf2b8b481"
+    },
+    {
+      "file": "scripts/check-runtime-schema-patches.mjs",
+      "sha256": "3c2679ee029d32dad23e70c12a72e3db5a2f514bd0721a2ddc3bfc2c94f64704"
+    },
+    {
+      "file": "scripts/convert-manual-to-docx.mjs",
+      "sha256": "2c27aa4305f0db44088734b2ee05b6a344b1e03550ea89813c346dbc2fa65983"
+    },
+    {
+      "file": "scripts/deploy-production-ubuntu.sh",
+      "sha256": "e8018d6dbe7aa6c08388879c44f092ba265e352bc910091f6e9f513928abda12"
+    },
+    {
+      "file": "scripts/e2e-analytics-local.mjs",
+      "sha256": "e3e698d8460e98dc8563e6d5a2c9a3f20a96fa6174789685168e433cb92e4db1"
+    },
+    {
+      "file": "scripts/e2e-analytics.mjs",
+      "sha256": "952f4089049e16f2a9863ece3faa360abfe4f0815cc3fae163f5012b92786d37"
+    },
+    {
+      "file": "scripts/e2e-auth-session.mjs",
+      "sha256": "b4cdafb14f819ef7ae473bf367001e0ed41237b464e143dc269613dee224aa78"
+    },
+    {
+      "file": "scripts/e2e-avaliacoes-finalizacao.mjs",
+      "sha256": "624120f46ff3855240ed6851e30c8ef722d3dd07c918f757a624508e0a5f60e0"
+    },
+    {
+      "file": "scripts/e2e-critical.mjs",
+      "sha256": "1c5ecb7d15d208f6ec0f1f32474cfe1abb2fd4c4228a7bd794e8530b6f751053"
+    },
+    {
+      "file": "scripts/e2e-role-contract.mjs",
+      "sha256": "15827f8ce7ffd5c6cc50bc51415b16db67510e073bdeebd9330916c0e140db33"
+    },
+    {
+      "file": "scripts/generate-manual.mjs",
+      "sha256": "13623b92463f6aefda73ca3445bc936c31a612897548322d6fc68d6598cc6e5a"
+    },
+    {
+      "file": "scripts/generate-profile-manuals.mjs",
+      "sha256": "2a2a9b3a8bc47f429e9f192e7496b6cd97ebe1bbce34f6af785b892f948aca8c"
+    },
+    {
+      "file": "scripts/journey-audit.mjs",
+      "sha256": "06de2c8931a10b7f4da1c68ed7db1ee5ba9b6bec86b975f9a58367d3cd2048fa"
+    },
+    {
+      "file": "scripts/observability-drill.mjs",
+      "sha256": "c191007d7e7e02f2a9226ac69fc514a84ec492a79fbca675b3b45fb68fdbcff1"
+    },
+    {
+      "file": "scripts/perf-load-assessment.mjs",
+      "sha256": "7eeeb36cf9691dd589f5447f4fa7c58797b1020688ac453b47b53200ed8e476e"
+    },
+    {
+      "file": "scripts/reset-observability.mjs",
+      "sha256": "f3bcf1a29d7c8023cb279b4c8cb97685e821dd1da3262d2db9db21de7f4afaba"
+    },
+    {
+      "file": "scripts/run-core-tests.mjs",
+      "sha256": "c5658f5cd4416b219681d00c92fc693de07632e3b68c67dd4361c53670a03f96"
+    },
+    {
+      "file": "scripts/security-assessment.mjs",
+      "sha256": "c9de35ccb3bdfc50991ecfbe2a03956bee7539bea0dc9ba6d317450d4126664c"
+    },
+    {
+      "file": "scripts/simulate-usage.mjs",
+      "sha256": "ea08f49f2d6d90d7413f2706e1f6e3293174951a60e9c1c8c7ee3e915f350d4d"
+    },
+    {
+      "file": "scripts/smoke-api.mjs",
+      "sha256": "8a9bf45481a76006d1658db6f135479e8e079770a787de15b78d7731cf014896"
+    },
+    {
+      "file": "scripts/smoke-perfis.mjs",
+      "sha256": "693669953ce28a107227eac386f229aab63e42ed07670d5e65099a41e8cdb034"
+    },
+    {
+      "file": "scripts/smoke-prescricao-nova.mjs",
+      "sha256": "aef861f833b77343708b21bd5154f431bc3a603721d457e632ac2338cc117155"
+    },
+    {
+      "file": "scripts/smoke-prescricao.mjs",
+      "sha256": "fd98b41a75194b3e6d689c64fbfa7c9e48d525261935f262b557ee5ec413ef87"
+    },
+    {
+      "file": "scripts/spa-static-server.mjs",
+      "sha256": "a80ea69e60075b0c3ec9a68b37c1e71460583b65123fbd4d70f4091fde6dd02c"
+    },
+    {
+      "file": "scripts/verify-e2e-env.mjs",
+      "sha256": "5ed5f027b0af90baba45ce6877964ae29266fb0305a299ad5c4c574d24cf757d"
+    },
+    {
+      "file": "server/package-lock.json",
+      "sha256": "37c3212f92f1fc3f7d561bfcc2bb41c4b9f061896ef502595901fc1210ad8fb0"
+    },
+    {
+      "file": "server/package.json",
+      "sha256": "2e16af5acd7b67b7cedc99dcc3cfb7b5cc67033e9198cb9c55fa77aff19b8f9c"
+    },
+    {
+      "file": "server/src/agendamentos/agendamento.entity.ts",
+      "sha256": "c7393f47305fae81848061dd38abfdda58a7ba9905bedbbf598ba2c8de120ffb"
+    },
+    {
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "sha256": "b8e5858c53e277316db865e3f457737e4455b92bc46183c5a18ed31c8824fc5d"
+    },
+    {
+      "file": "server/src/agendamentos/agendamentos.module.ts",
+      "sha256": "69a93ffbc67b6faa6c36dbdfe6f6a9295aeeb53121509fcf5eab64e00ea9766b"
+    },
+    {
+      "file": "server/src/agendamentos/agendamentos.service.ts",
+      "sha256": "3b4faa15c8daf985a2535427ce4450ca6a800eba9e700713e2fa0ef449df0afa"
+    },
+    {
+      "file": "server/src/agendamentos/dto/atualizar-agendamento.dto.ts",
+      "sha256": "06f62a8201b815b387e0f0c09ccbf5f670c544ca8ffe414d59816cd3929f49f9"
+    },
+    {
+      "file": "server/src/agendamentos/dto/criar-agendamento.dto.ts",
+      "sha256": "b87f064a39f3ee0b34271a00bb509a795a95c1c933ae6253174578468e829d6d"
+    },
+    {
+      "file": "server/src/agendamentos/dto/remarcar-agendamento.dto.ts",
+      "sha256": "6fd9d8f0a5613db9f905b6ba4e38661c115f2c6a16738637d2ac16144d850991"
+    },
+    {
+      "file": "server/src/analytics/analytics.controller.ts",
+      "sha256": "a37d541d1a410eba1e9a5f50fcf27cb99f711c2e5a751d271123ddd0b3beea26"
+    },
+    {
+      "file": "server/src/analytics/analytics.module.ts",
+      "sha256": "98d2fc957dfe4d63af6e78c7f0c4d682e1d5c0c284488b660cf76fef4bea6b71"
+    },
+    {
+      "file": "server/src/analytics/analytics.service.ts",
+      "sha256": "a5da3ca67a80a47e4238ec6fd2ffb1d8d69b75b2acf74b1eef87d20386b5cd11"
+    },
+    {
+      "file": "server/src/app.controller.ts",
+      "sha256": "3265ec3818b3d93e8ea466e63624bec23f76d8028649db5e22d4a420b71335c7"
+    },
+    {
+      "file": "server/src/app.module.ts",
+      "sha256": "54658443d6ee9e76262b3708d54f5ea5f3ee7bbd84b78243fd409118f9f5c7e1"
+    },
+    {
+      "file": "server/src/app.service.ts",
+      "sha256": "ca66874f6ec9c37517af17ec2db5b66f84c06f5038e581c7c87142aa1edd23fc"
+    },
+    {
+      "file": "server/src/auditoria/auditoria.controller.ts",
+      "sha256": "d3019fa4cdd5478bceb0c0016415962d5972d9c10b31eb4afd06f6a4c239d48c"
+    },
+    {
+      "file": "server/src/auditoria/auditoria.entity.ts",
+      "sha256": "db4daea92d16b2f9ae1a14395c1c7f37a34c49e426de6a2ba5223140c87ced1e"
+    },
+    {
+      "file": "server/src/auditoria/auditoria.module.ts",
+      "sha256": "db5aeb6dcea201f163c78f49af253e3dd4b17642603fa4bedf4a58c1664998ee"
+    },
+    {
+      "file": "server/src/auditoria/auditoria.service.ts",
+      "sha256": "b83e9bdd0b3a727b79307fade01d7f2a5d740e24dfd2a86f0ecb4fdea77c5354"
+    },
+    {
+      "file": "server/src/auditoria/dto/criar-auditoria.dto.ts",
+      "sha256": "ebccd3b1e3559b101d2421dddab9424f128c4ef3bfb0f25e0b782cebe47b5772"
+    },
+    {
+      "file": "server/src/auth/access-control.ts",
+      "sha256": "16c794332118e3cc36b954a82fe4504255097c56203308560aa04409b0438230"
+    },
+    {
+      "file": "server/src/auth/auth.controller.ts",
+      "sha256": "67900f43afea7c0c03dccc8ee6db8c693f17e8a3e0fa5e16dd562b6fa7a9c827"
+    },
+    {
+      "file": "server/src/auth/auth.module.ts",
+      "sha256": "a763c4b82b492c3ca372d22e36a549ba6f07466e2c71ef2f8979822c9819ae7a"
+    },
+    {
+      "file": "server/src/auth/auth.service.ts",
+      "sha256": "d36690f8000edd199a9eff4e010fdf7b71cba7bed2c77e0fc1753c9dc7a0a257"
+    },
+    {
+      "file": "server/src/auth/dto/change-password.dto.ts",
+      "sha256": "91406c629623b62f3b3f849e853770c94ab8407eb84830b31c94b59ade7c01ac"
+    },
+    {
+      "file": "server/src/auth/dto/login.dto.ts",
+      "sha256": "b0b5ca819e985515aa4bc6e112c473643fb16074f2fd851ad26854009e2056c6"
+    },
+    {
+      "file": "server/src/auth/dto/recover-password.dto.ts",
+      "sha256": "dbc6d8a8279859afdf9001ee5e376f987189979914810b1e25a0400ab9e9a681"
+    },
+    {
+      "file": "server/src/auth/dto/recovery-request.dto.ts",
+      "sha256": "40eaa69404858c4f2044651a2f40ed4d1e8604843d202280f25923543678c366"
+    },
+    {
+      "file": "server/src/auth/dto/register.dto.ts",
+      "sha256": "55ae322c0c80c73145bf703b2d3abbb098672c92dd9b7b649b35590722c6811f"
+    },
+    {
+      "file": "server/src/auth/dto/set-permissions.dto.ts",
+      "sha256": "3c78d260a162809f6a6684f2681b7a3e0467fd2693172b84aff866c6bfa56cff"
+    },
+    {
+      "file": "server/src/auth/dto/update-profile.dto.ts",
+      "sha256": "6a9c96aaaf826696e808dec61c15fffac37c72133c5d465133e7ef4655628f3a"
+    },
+    {
+      "file": "server/src/auth/jwt-auth.guard.ts",
+      "sha256": "42351087dc362634cd1631bacce39978fab9bcc1611e5934c3252e3815ad9acf"
+    },
+    {
+      "file": "server/src/auth/jwt.strategy.ts",
+      "sha256": "fd23706606cfc5c9742cba7f987c31a0a6a2c53280d40116f20357255724fcd5"
+    },
+    {
+      "file": "server/src/auth/login-attempt.entity.ts",
+      "sha256": "2ead3d0d3de26cc9ae9e1f89cf90928ba580f2034042f05e6ea4138dfeadf9d2"
+    },
+    {
+      "file": "server/src/auth/login-attempts.service.ts",
+      "sha256": "90181709322822f87dbaf1d72599d0fc593b032f4e48f8cbb95910598942691b"
+    },
+    {
+      "file": "server/src/auth/refresh-token.entity.ts",
+      "sha256": "18b0a78ee1d5be3550865db03e1e32a3a222fe9db57b55a269ccdfc92c024a43"
+    },
+    {
+      "file": "server/src/auth/refresh-tokens.service.ts",
+      "sha256": "56a9676ea98d9a45818296cf0d8df2147dd7c2bc09803eebe2c2be6c4b7b107d"
+    },
+    {
+      "file": "server/src/auth/roles.decorator.ts",
+      "sha256": "8080391fc73ab433dcea7bfa51c3ab08e5bb1cab10572fcbc16481ed755d9fac"
+    },
+    {
+      "file": "server/src/auth/roles.guard.ts",
+      "sha256": "bc5de76a9bdfdf6e648ed303f4daaba248b08d9a07ccb003f17b259326504505"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem-captura.entity.ts",
+      "sha256": "0ceff6073c8de43ced000d7a5f9ab35d0c4fd71a325379bf3ba091897963113a"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem-processamento.entity.ts",
+      "sha256": "95a0c7c7d02597ca6dd60a760422dba868cd0f93e786910e2d5aa91fba70b21d"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem-storage.service.ts",
+      "sha256": "89121f9c1e65d249135c5af92857e9a63560d51d0368cb9cb38f51b3b1d0e75b"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "sha256": "5793b0e35b95a16ff1eb97850ef918a74172a4161018c320a664024b6567fb3d"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.module.ts",
+      "sha256": "7eee27c60ceb0bf53d1f8330ff74bfeca725dea1de3140bc0844fd5a1c40a5f7"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.service.ts",
+      "sha256": "f6856d7e9699ca8f38aaf96aea8d12ca590bdaf5729586465a2f39a09afae9a9"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/dto/concluir-upload.dto.ts",
+      "sha256": "d3534267dbd31063c3fe18763502095a168042ca35e24edcf3e75ce36b20286f"
+    },
+    {
+      "file": "server/src/avaliacao-imagem/dto/criar-avaliacao-imagem.dto.ts",
+      "sha256": "9d79c90405ead0eacd1c8649f35cced87acb5624c4f00ddbdd0a17c7691b0aac"
+    },
+    {
+      "file": "server/src/avaliacoes/alimentar-normalizer.ts",
+      "sha256": "1101587e6d20b4ffb1879bf03a2511f7f78c446fc409527bc7bc65143f962cd3"
+    },
+    {
+      "file": "server/src/avaliacoes/anamnese-normalizer.ts",
+      "sha256": "fffd2340ade42e1703de6eb14d7f800d5b56eb16c8dbfedc740c2a809ec57c7d"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacao-clinica-normalizer.ts",
+      "sha256": "5956924bda6ff142987d52a35d16fe1249449f949ab6e53376691ea684f60a46"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacao-normalizer.ts",
+      "sha256": "3a7e25f82acbe9197987510c1070543d4d15b6271ff9bd63efda2ea2ebf028a7"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacao-sessao.entity.ts",
+      "sha256": "3a36e0df43241141f0d9a6516a94082fabfbad48c69c316fce73f46d10aa8a94"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacao-socioeconomica-normalizer.ts",
+      "sha256": "587276e3fd8d5e9db4b036e21a2f4f207fc451b51c71f5a936d600d62ad16c09"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacao.entity.ts",
+      "sha256": "901bdaf110abccd05139482ecfd0a533456b7b457f506ba9e635c1fd8d05aa21"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "sha256": "78d47f2e03027e583b30bb888627b5c9cd5e316e71bd5f9ef447a575685f3a20"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacoes.module.ts",
+      "sha256": "279c38831f9e737e183a85ec206d8ebf48be6736f4e194ce2785145c9f2d62af"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacoes.service.spec.ts",
+      "sha256": "cc0b1c154de5086d2b8e1782f7017cb9e13b4d7cecfc4729e4285f3d73f37fb4"
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacoes.service.ts",
+      "sha256": "e0d675cd569d56a981739b3990bb2728fd2ed31d0bca292f331923311c2c025d"
+    },
+    {
+      "file": "server/src/avaliacoes/bioimpedancia-normalizer.ts",
+      "sha256": "497aef5460ca11931a7c68217a40419e4d5374a5634b772d28c0115d67873a99"
+    },
+    {
+      "file": "server/src/avaliacoes/clinical-alerts.service.ts",
+      "sha256": "ffd9124153b0c61bd39f3851794de41b8f7470b49f27ae6336418c3ab4840406"
+    },
+    {
+      "file": "server/src/avaliacoes/composicao-corporal-integrada-normalizer.ts",
+      "sha256": "f794475fa7d3f825e1cd7e4f898ef745c1ee14c8b86a01b164b70a9b0aec13d5"
+    },
+    {
+      "file": "server/src/avaliacoes/dobras-cutaneas-normalizer.ts",
+      "sha256": "2ecfccab8120288ec7fb665e20378ed9ef17b6a486ac8e169cce34e939c9a21a"
+    },
+    {
+      "file": "server/src/avaliacoes/dto/atualizar-avaliacao.dto.ts",
+      "sha256": "f8ad46f34e61305267e1132267f9b4e7e0cba956f4797e30b5b8f43c3a3588fb"
+    },
+    {
+      "file": "server/src/avaliacoes/dto/criar-avaliacao.dto.ts",
+      "sha256": "d478b8833397e5c0ae6bb0de6620252a47eca2e55346574653f236e9e1584466"
+    },
+    {
+      "file": "server/src/avaliacoes/dto/revisar-avaliacao.dto.ts",
+      "sha256": "cff2499ca74d0f2d382b61c144493d2e65065239689a7c280bc998dd2737a618"
+    },
+    {
+      "file": "server/src/avaliacoes/evaluation-registry.ts",
+      "sha256": "65e316c2f63ddffefa3cfe8c4da1f01a17835eefb591c0d4a22710c750cdb671"
+    },
+    {
+      "file": "server/src/avaliacoes/evolucao-retorno-normalizer.ts",
+      "sha256": "dfd00b39facb1b80c4091a1448a448e30d765574a11d1241adb616a1060f62ba"
+    },
+    {
+      "file": "server/src/avaliacoes/exames-laboratoriais-normalizer.ts",
+      "sha256": "47315e8d4ae43c1ad3bdd789d7a8f44342c2df223827ee324cbfaf842a061dce"
+    },
+    {
+      "file": "server/src/avaliacoes/fisioterapia-normalizer.ts",
+      "sha256": "d61e3a0c95e911e7e3a4c48f2aa1d51f75e70d136671384e83bcdc467fc85117"
+    },
+    {
+      "file": "server/src/avaliacoes/gasto-energetico-total-normalizer.ts",
+      "sha256": "0b7dabf87c424ad28884ae07a9b84d5d5eaefa6ba881b9d0b449695362a958f4"
+    },
+    {
+      "file": "server/src/avaliacoes/hidratacao-normalizer.ts",
+      "sha256": "bdf0787a03bd2e538eb38ca81b43d7b889f04f7f26c95272c737d01b21a330bd"
+    },
+    {
+      "file": "server/src/avaliacoes/normalizers/carga-treino-normalizer.ts",
+      "sha256": "558fedb31d41c87a12280fe65049c4d86c714594afb6e1d739051250a67a1108"
+    },
+    {
+      "file": "server/src/avaliacoes/normalizers/plano-metas-normalizer.ts",
+      "sha256": "f2388050b51576fdf385c69923f5b6e28dff3564231c4a7a8d39718541a3a878"
+    },
+    {
+      "file": "server/src/avaliacoes/normalizers/triagem-reds-normalizer.ts",
+      "sha256": "0b5cef01263157ae7f3b5aa1aa3fb7a3f997e87024d7f768bee9f37c531757b5"
+    },
+    {
+      "file": "server/src/avaliacoes/perimetros-normalizer.ts",
+      "sha256": "ef76a1291c30a7d475d24b155f88157658b57ff72373ebfaee2c00c2e7fd2143"
+    },
+    {
+      "file": "server/src/avaliacoes/psicologia-normalizer.ts",
+      "sha256": "ba48283ab346d60a1354120025405bb66bd0ace328fb28fe9b27b0d298c88339"
+    },
+    {
+      "file": "server/src/avaliacoes/relatorio-clinico.service.ts",
+      "sha256": "91f88370e1f1b3641482143602f17014e2d0853df7d33711c76bc7a195cc34c6"
+    },
+    {
+      "file": "server/src/common/cookies.ts",
+      "sha256": "c43151d8939093b32f62050f4e06035ae76e7be33003af44fe34bf8a280950cf"
+    },
+    {
+      "file": "server/src/common/cpf.ts",
+      "sha256": "b53664b8d05bc788dc9c7695930fe6be9311cbd16c0aa8f8e32f301dd4ce0b8c"
+    },
+    {
+      "file": "server/src/common/domain/access.constants.ts",
+      "sha256": "9912bf0737cc9dd2046242412a8490af67b27a5855172384e5df0a19a4cc768a"
+    },
+    {
+      "file": "server/src/common/filters/http-exception.filter.ts",
+      "sha256": "0377845ecf933ec557f342a60455395ca29c63b0efc6c334d0c9a57de5e007cd"
+    },
+    {
+      "file": "server/src/common/pagination.ts",
+      "sha256": "580c080fe83b37ccafa8608a881818d4f48dd1251bc43dc798e2529e13756901"
+    },
+    {
+      "file": "server/src/common/request-ip.ts",
+      "sha256": "a2887c4c3981b1910beae3441daff11cae8ff8871af9ffb84a5ff0cbbf6bc5e0"
+    },
+    {
+      "file": "server/src/common/text-normalization.ts",
+      "sha256": "9bd45546829f67677dd224d4f2e9097985f4b6b154c8edd1d1d15f44e54625a4"
+    },
+    {
+      "file": "server/src/config/configuration.ts",
+      "sha256": "43c8838ddc7152ebca775b016b691ef52183aead6fc37667a8b6932a2d1ecea1"
+    },
+    {
+      "file": "server/src/conteudos/conteudo.entity.ts",
+      "sha256": "18ba684f232af8c49ee7097bb9d6f12cec19ea718047488b67c65f65b9090677"
+    },
+    {
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "sha256": "8c9f13b73fe5b42fe9d5a74662a583e16cd246843c7e7569d85dcba1cbb33cc4"
+    },
+    {
+      "file": "server/src/conteudos/conteudos.module.ts",
+      "sha256": "67e8ebcd71e0a208f91e66b512ebfcbf6ac481c5313ba953957c903a443ca409"
+    },
+    {
+      "file": "server/src/conteudos/conteudos.service.ts",
+      "sha256": "3d5134d54da9c10eef141a72437b225b87343dc335e8417263f20cea8d482e39"
+    },
+    {
+      "file": "server/src/conteudos/dto/atualizar-conteudo.dto.ts",
+      "sha256": "bc405e71dbc212e6acb580a2e114255a941f4b71c6d7f2343cfce129f029af92"
+    },
+    {
+      "file": "server/src/conteudos/dto/criar-conteudo.dto.ts",
+      "sha256": "d0eeb6d3f5a1a12a8f0f0ee36d13636bc226cbe3f460380e074e5fd4c2ba7bae"
+    },
+    {
+      "file": "server/src/database/migrations/1773066305318-BaselineInit.ts",
+      "sha256": "b4212fe23e368913181b340380b64ab8b27468bb8c73e0f7179a6ed383f82f0e"
+    },
+    {
+      "file": "server/src/database/migrations/1773103580343-Init.ts",
+      "sha256": "72d125c528907d40acc8fda06c20c09413a27e793fa4a1cdb461c99d39cd357d"
+    },
+    {
+      "file": "server/src/database/migrations/1773112200000-AddTempPasswordToUsers.ts",
+      "sha256": "21d083f158548a5e6de5a1a925ca810b797026232bed401a60081b1214fc8548"
+    },
+    {
+      "file": "server/src/database/migrations/1773119000000-AddAppointmentTypeToAgendamentos.ts",
+      "sha256": "4c8bf3d9cd54ead1053bad1f3d496942a83d5d06ea1f2e7c4108172e2ea5f5d7"
+    },
+    {
+      "file": "server/src/database/migrations/1773123000000-DropPlanosAlimentares.ts",
+      "sha256": "2d5a12d236caa345ad9fbd4288a26ec67bea1cdeced21b589663c45966e7e0c2"
+    },
+    {
+      "file": "server/src/database/migrations/1773132000000-AddPerformanceIndexes.ts",
+      "sha256": "ff71bfc46e871088e3907ed6b6ddf95f80d0b795a11d33b272424e8f141009a8"
+    },
+    {
+      "file": "server/src/database/migrations/1773138000000-AddAvaliacoesCreatedAtIndex.ts",
+      "sha256": "a2603b596265451c2b4f5ce3d7cb10e75dd7ed66beddd2eaf7104f20556afe45"
+    },
+    {
+      "file": "server/src/database/migrations/1773144000000-AddSessionVersionToUsers.ts",
+      "sha256": "3ac2751cae7f396f8ce9f0f1e9d02b685eba8b9d78420e145bc6270b10860cb4"
+    },
+    {
+      "file": "server/src/database/migrations/1773147000000-AddCoreForeignKeys.ts",
+      "sha256": "6302c31219c30d6fa1c05eee9588a644c1885db417b7ef578e5fc00b01a9251e"
+    },
+    {
+      "file": "server/src/database/migrations/1773153000000-AddRefreshTokensTable.ts",
+      "sha256": "80910cbbf5bfdbbef67e12df2643d2676fdaa1eed5bdcb084d3b44bfd5462524"
+    },
+    {
+      "file": "server/src/database/migrations/1773659400000-AddRefreshRotationCounter.ts",
+      "sha256": "e6303762a17c84906d6fb227529734d51969307b7d35f22c545bb044460eb827"
+    },
+    {
+      "file": "server/src/database/migrations/1773663600000-AddRefreshSessionVersion.ts",
+      "sha256": "d39409594b67bc74c225d7f59be9146a7ea8c1bdca77e47f87505fa8bf180b7d"
+    },
+    {
+      "file": "server/src/database/migrations/1773702000000-AddPacienteProntuario.ts",
+      "sha256": "a2bdf050414fdb8e1cd4a4f6ebde5d6bb5209a5519b0a99faa144faf3343f573"
+    },
+    {
+      "file": "server/src/database/migrations/1773900000000-AddAvaliacaoSessaoContainer.ts",
+      "sha256": "568498af01f9ac827857ea1aaa2c11b7c2a4492cc7fc4b94989ce3456df34ebd"
+    },
+    {
+      "file": "server/src/database/migrations/1773912000000-AddSolicitacaoApprovalTracking.ts",
+      "sha256": "74ad057f10f401d572745bfcc11bf15be74f43b2a5a577e61e796eb6fbc24193"
+    },
+    {
+      "file": "server/src/database/migrations/1773921000000-CreateSystemSettings.ts",
+      "sha256": "c61682628536ca38423ef70ba8ba18fed38a5c0890390ae1f0091c0166c82fb7"
+    },
+    {
+      "file": "server/src/database/migrations/1773927000000-SanitizeAndValidateForeignKeys.ts",
+      "sha256": "aa018bcd360c6f53afee8607a906e6416ac9f6037b8885be2e00d333bb36ea98"
+    },
+    {
+      "file": "server/src/database/migrations/1773933000000-SynchronizeDenormalizedReferenceNames.ts",
+      "sha256": "f8c5e84634cc010a37ad6178947cbb652a8feca592aff9da41b99a680770a67d"
+    },
+    {
+      "file": "server/src/database/migrations/1773939000000-AddAvaliacaoSoftDelete.ts",
+      "sha256": "7bfb728e43f47445aa023d0f76083387ee8d040961ff8d68dd9c40c320033fb2"
+    },
+    {
+      "file": "server/src/database/migrations/1775941493870-AddSoftDeleteAvaliacao.ts",
+      "sha256": "f387b5ab4316b4cbd10b060c8afbd2019f53662e06aab3613ed13958ae27d293"
+    },
+    {
+      "file": "server/src/database/migrations/1775953000000-CreateMetsCatalog.ts",
+      "sha256": "efe6a775f9d109b4394222804c1a3df2fa065f56c683f167e63ed9b1d9ca55a5"
+    },
+    {
+      "file": "server/src/database/migrations/1775967000000-CreateTacoCatalog.ts",
+      "sha256": "963e08d9049cff00abc1898f97a52eda8e67a5db7e0bf989f22a98021826b5a9"
+    },
+    {
+      "file": "server/src/database/migrations/1775979000000-CreatePlanosAlimentares.ts",
+      "sha256": "7209f5e2b087590ab6044e230d7f777c4a947b7419ad1d95e57019b94de7a423"
+    },
+    {
+      "file": "server/src/database/migrations/1775985000000-ExpandPlanosAlimentaresStatus.ts",
+      "sha256": "c1271fc3888e22ed1d5c50064be0ca1b68304be2f402e57d7e7419b265989872"
+    },
+    {
+      "file": "server/src/database/migrations/1775989000000-EnforceAvaliacaoSessaoTipoUnique.ts",
+      "sha256": "57db074d13a5ab26486a810585b16b69ecc0c0d1af60cc49aa1efea5cee5cf2f"
+    },
+    {
+      "file": "server/src/database/migrations/1775995000000-AddUsersPacientesSoftDelete.ts",
+      "sha256": "020cbb350fb1e910595fc10829d39befb3155b2b825bad7e1fe1056c0054116e"
+    },
+    {
+      "file": "server/src/database/migrations/1776000000000-CreateLoginAttempts.ts",
+      "sha256": "df2f2fd657b98ede9f36c5ebb2b510bbccf0ce44bfbbd5c9f3209fd40506eacb"
+    },
+    {
+      "file": "server/src/database/migrations/1777650000000-CreatePesquisaRepositorio.ts",
+      "sha256": "dfbe3a0f1c366f1711f51f70f36af92d68a9249cd107b906d2a713a161da1565"
+    },
+    {
+      "file": "server/src/database/migrations/1777740000000-AddUserPermissions.ts",
+      "sha256": "7c5279e1495748687f4328ffbff6f367616303610b70a9684b00e5c5a3a5d4f6"
+    },
+    {
+      "file": "server/src/database/migrations/1777746000000-AddUserProfissionalSupervisor.ts",
+      "sha256": "9445b4e54cc0a0de96a0452c2d30c17845e8c8f9c199badec67a7277cca1c1a7"
+    },
+    {
+      "file": "server/src/database/migrations/1777752000000-AddPacienteEquipeMulti.ts",
+      "sha256": "ed4d1e5effeca90f0c6469d6e105a2fff5605c0944094fbb251b2e0ea512b6f0"
+    },
+    {
+      "file": "server/src/database/migrations/1778000000000-AddConteudoArquivoColumns.ts",
+      "sha256": "127e4d24db4bbe91db094e7fa003e456eda0a2b6c04e0496f7d0f721021ae7a5"
+    },
+    {
+      "file": "server/src/database/migrations/1778060000000-AddAvaliacaoReviewColumns.ts",
+      "sha256": "c253bab3c8ae732624fe37a21a5acfc4a44f1a403378d2ab46a333615b59192e"
+    },
+    {
+      "file": "server/src/database/migrations/1782037200000-CreateAvaliacaoImagem.ts",
+      "sha256": "f0e9c7536fefabbc1ab32a60878c2aa238f3881ad55345da66cc5db78e9039b6"
+    },
+    {
+      "file": "server/src/database/migrations/1782100000000-AddAvaliacaoQueryIndexes.ts",
+      "sha256": "66e70f78475f63b98653614ea7d276d1bc02622a28e38d4d76d7b8d9abf40b1e"
+    },
+    {
+      "file": "server/src/database/migrations/1782200000000-AddPacienteSexoBiologico.ts",
+      "sha256": "b76a976222c38baf76834b18761d3cead580de526c296043345eb26b6e5b295d"
+    },
+    {
+      "file": "server/src/database/migrations/1782300000000-AddConteudoWorkflowColumns.ts",
+      "sha256": "c8fd4e6805e00065fb10359a73b2b99f03fb82f7a421c28646d825eb208d8fb4"
+    },
+    {
+      "file": "server/src/database/migrations/1782310000000-NormalizeDiretoriaEStatusPaciente.ts",
+      "sha256": "fd8b6547420aeddb8b811df6c959ae2579de183519cd1213bef3a24bd409d0fe"
+    },
+    {
+      "file": "server/src/database/migrations/1782400000000-AddTbcaCatalog.ts",
+      "sha256": "54f697d09fbfd2fba0bea136a5b73e3518e2a8e3dd628a011f218302191e3516"
+    },
+    {
+      "file": "server/src/database/migrations/1782500000000-BuscaAlimentoSemAcento.ts",
+      "sha256": "8b3da80cc0812a25f8f92cc3748998766f47b1625595a8ce027c103aff83c669"
+    },
+    {
+      "file": "server/src/database/migrations/1782600000000-AddProjetoIdeiaInteresses.ts",
+      "sha256": "83d2e5007558e7bb363645bc7cd68472ce0b837d8766ff2a12a547281bdbba48"
+    },
+    {
+      "file": "server/src/database/seeds/mets.seed.ts",
+      "sha256": "21b6a7f452a485dcf0fbaf2f34241c677ceee508f93e08e5f46135efb42cc5c4"
+    },
+    {
+      "file": "server/src/database/seeds/taco.seed.ts",
+      "sha256": "d573502fec58d01f865510a9a03b59ffdb056f0d9fa36fe33a34220ba500b0e0"
+    },
+    {
+      "file": "server/src/database/seeds/tbca.seed.ts",
+      "sha256": "3c14025a8e5e9df8c5696543957d5ec1aeb4745ebd5d62dff672486626429c37"
+    },
+    {
+      "file": "server/src/database/typeorm.config.ts",
+      "sha256": "144e3c206aa4057f35bcb60b8d4f7234fffb2175f9910f83065c0516125620b3"
+    },
+    {
+      "file": "server/src/mail/mail.module.ts",
+      "sha256": "b651ea8ba1a8470530d64934b4d0100ed23086400f2ab2ed0624e9631d466b35"
+    },
+    {
+      "file": "server/src/mail/mail.service.ts",
+      "sha256": "c1b09decc59925f091647aab379c686f87e165f69ed460aa084fbe8fdd443967"
+    },
+    {
+      "file": "server/src/main.ts",
+      "sha256": "19c5ffeb88c66167dd2691755638835e6861f34eddb30c4cd0add511be78d8df"
+    },
+    {
+      "file": "server/src/mets/mets.controller.ts",
+      "sha256": "e8b6ad6c532c8340f156631f2a8e21d4089e1a135bf614042cf16b2df7acaa80"
+    },
+    {
+      "file": "server/src/mets/mets.entity.ts",
+      "sha256": "e581b2226bab89dff349e9fa74d6a465f65dc3e9be9512ddcccbcf66f2e6c7ba"
+    },
+    {
+      "file": "server/src/mets/mets.module.ts",
+      "sha256": "e95b2e141247723f3bfe65351c5b012686307b41821c593c30d78fa6d742a251"
+    },
+    {
+      "file": "server/src/mets/mets.service.ts",
+      "sha256": "491601b24a25b2365501f87700d6bb86cc1360866ef45d2cb8e216d8d425c089"
+    },
+    {
+      "file": "server/src/notificacoes/dto/atualizar-notificacao.dto.ts",
+      "sha256": "1a414587f9433b76564877479f15deb0d5bed057776b40b4254be77c110b9633"
+    },
+    {
+      "file": "server/src/notificacoes/dto/criar-notificacao.dto.ts",
+      "sha256": "65fb2de9bea609e12803ebda3b5fcc58bdb3add22c2a59bddcf3200c2af90a68"
+    },
+    {
+      "file": "server/src/notificacoes/notificacao.entity.ts",
+      "sha256": "91b0b7921d7b0a7ceddc4e9ff39279888254cebf55699035bbc1e6d0bb1518a1"
+    },
+    {
+      "file": "server/src/notificacoes/notificacoes.controller.ts",
+      "sha256": "695867934a133552fdf9f6034368b1a0c0d69fc601cb1777e12192363ca76cda"
+    },
+    {
+      "file": "server/src/notificacoes/notificacoes.module.ts",
+      "sha256": "9107309af265220715b8bdf83e0d3a64dda3189a32253c36d2bf0d66b0e829e8"
+    },
+    {
+      "file": "server/src/notificacoes/notificacoes.service.ts",
+      "sha256": "913209c6f189a1137480261d89270cd9e5a1d158b7c06ec113ccfdc9c53b9283"
+    },
+    {
+      "file": "server/src/observability/observability.controller.ts",
+      "sha256": "87c9bc1e0a51f3b737cbcf540e1da2bd8d2e9fa49a7940c1d5763c6e6ffc3222"
+    },
+    {
+      "file": "server/src/observability/observability.module.ts",
+      "sha256": "d5ad460e1856085302d3029598c8b4c7325dfa47dc5f3e04814d5ccbfd570e6a"
+    },
+    {
+      "file": "server/src/observability/observability.service.ts",
+      "sha256": "7ffaef92d94a6b2a7e221f46d3b6c4dfab02f4ab98023ce9b6acf696dc0dfc44"
+    },
+    {
+      "file": "server/src/pacientes/athlete-cadastro.utils.ts",
+      "sha256": "b3d3d04593a79d960dc48ba393521aa67048f3ccff73c9366dad5ef2702b0c00"
+    },
+    {
+      "file": "server/src/pacientes/dto/adicionar-mensagem-professor.dto.ts",
+      "sha256": "2c3d395baf6574fe97690e17b36187579c3c9c23dc86581ae3ce6b11e8353b85"
+    },
+    {
+      "file": "server/src/pacientes/dto/atualizar-onboarding-atleta.dto.ts",
+      "sha256": "ff0e49f4a070938e514b1fd9e154b2e054afc7b69d07297898d7cd1ed9f2f28c"
+    },
+    {
+      "file": "server/src/pacientes/dto/atualizar-paciente.dto.ts",
+      "sha256": "32c764b37b8873406376bbdd4d1e41f1b211c7776247c1acc991c9f12af0d97c"
+    },
+    {
+      "file": "server/src/pacientes/dto/criar-paciente.dto.ts",
+      "sha256": "5602e28ba34f2bfbaea58644561eeaabaaefa74544659c907ad2e74c136810c8"
+    },
+    {
+      "file": "server/src/pacientes/paciente.entity.ts",
+      "sha256": "b899f8fec1c9d83905ac4e9b5abdde6d8876f8d169092bb4f4aa2270f7ab6f0b"
+    },
+    {
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "sha256": "bbbc33d8904b497c66ff4812e694322258bf45eca745a16008beccae23ccf7ae"
+    },
+    {
+      "file": "server/src/pacientes/pacientes.module.ts",
+      "sha256": "e89152026baf2aefdf713f0aaa61037b3fe40e08e8560d88a879deeb58c63282"
+    },
+    {
+      "file": "server/src/pacientes/pacientes.service.ts",
+      "sha256": "d300a01da99f1af993e8a4a4cbabfd7669ffda7d163af6571d8686297bdd6984"
+    },
+    {
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "sha256": "7e6faaafa727c47c0b20bf03da1d62fe9b1fb9befa2854e40e4ab521deb6af09"
+    },
+    {
+      "file": "server/src/planos-alimentares/plano-alimentar.entity.ts",
+      "sha256": "f84554010f9c5c9440cfffc8d9fa51d5b05e19933bb1009e113cb0ff9b7611a6"
+    },
+    {
+      "file": "server/src/planos-alimentares/plano-alimentar.service.ts",
+      "sha256": "be28355b64920ec43cc08b552813b1e40fc6e63b676daf7e6d6b35d0e2c41370"
+    },
+    {
+      "file": "server/src/planos-alimentares/planos-alimentares.module.ts",
+      "sha256": "a825796700e4c920a3c68bb68efb416b85ec4437bc99b1009053d09ca3c09ecf"
+    },
+    {
+      "file": "server/src/projetos/dto/atualizar-ideia-projeto.dto.ts",
+      "sha256": "08c3e03c83ff8e82c4164bc141a9f741658055e8c9462867170f69fe07eb7442"
+    },
+    {
+      "file": "server/src/projetos/dto/atualizar-producao-pesquisa.dto.ts",
+      "sha256": "b846ff96c9db1c6c5634cf44abb12740abc0691bbcf9c7cd2958ae5b5606635b"
+    },
+    {
+      "file": "server/src/projetos/dto/atualizar-projeto.dto.ts",
+      "sha256": "e87a7e22581d3896272a7bc80cfd1c1032f4f861a9021d98dd577356869bca0b"
+    },
+    {
+      "file": "server/src/projetos/dto/criar-ideia-projeto.dto.ts",
+      "sha256": "621b407a41c9af003c4a2cc2c92d50fdad186e7e95aa0b76c07fad73c834bfed"
+    },
+    {
+      "file": "server/src/projetos/dto/criar-producao-pesquisa.dto.ts",
+      "sha256": "06cecc470aa2b74220c5900d9b0e2d12d466c44370242fd6ae7d82944570a77a"
+    },
+    {
+      "file": "server/src/projetos/dto/criar-projeto.dto.ts",
+      "sha256": "7c128dcde56c1a4e1613208f9397e46d8b1e9e8017de8ce692a84ff5a2de480d"
+    },
+    {
+      "file": "server/src/projetos/projeto-ideia.entity.ts",
+      "sha256": "7360cfaacfc36f38414e187b45000f717e432c193a2505709ad1f1b1792f148c"
+    },
+    {
+      "file": "server/src/projetos/projeto-producao.entity.ts",
+      "sha256": "6a407f7486b3ef267ee6b10a9b814f4d35d04c19991578486068fef05fc6d677"
+    },
+    {
+      "file": "server/src/projetos/projeto.entity.ts",
+      "sha256": "e50e6c896765c75633f55044672083dcae8bf63e2d3938f284585209d0141dae"
+    },
+    {
+      "file": "server/src/projetos/projetos.controller.ts",
+      "sha256": "f0b7a30c8215e6512d6e1dd5968b40c095ad00ff338545855b37178885d8e5c6"
+    },
+    {
+      "file": "server/src/projetos/projetos.module.ts",
+      "sha256": "5357a2c4f6a88208306a4d431544987c9989ce47a173e02c344b05b258884431"
+    },
+    {
+      "file": "server/src/projetos/projetos.service.ts",
+      "sha256": "505a0931015a5e34e80ca5fc310488f62ba672ee2ace9ca6dd4339ed910e0022"
+    },
+    {
+      "file": "server/src/public/dto/inscricao-publica.dto.ts",
+      "sha256": "6063bb05288fe52ffe767c9658e883bee8761fde3f693c401ca45cb7a3c0f9fe"
+    },
+    {
+      "file": "server/src/public/public.controller.ts",
+      "sha256": "541862de930243d45cf3f103034c090413b85595062a702cdde13816fc2e3d65"
+    },
+    {
+      "file": "server/src/public/public.module.ts",
+      "sha256": "d32b1d0bd636ac506f4a07781e1cd3ecc71ed7b1a373974c34a095455a0b3128"
+    },
+    {
+      "file": "server/src/public/public.service.ts",
+      "sha256": "87c8616cdbb4ed98c84dfdff748abbc04b3224124676f5d11e7545aca50d9d1d"
+    },
+    {
+      "file": "server/src/realtime/realtime.gateway.ts",
+      "sha256": "c8fc3a48c37d736b7d106ddfb2a2e41bdf1733577ef3dc8ba77646ea577f324c"
+    },
+    {
+      "file": "server/src/realtime/realtime.module.ts",
+      "sha256": "8f36d2c48ee6ceee52b101796841047c4f01039ce2c104ed21e006d2d2358d2b"
+    },
+    {
+      "file": "server/src/settings/dto/update-admin-settings.dto.ts",
+      "sha256": "98205b3ffb4a7536503357418da09740a4ed64ec557dbce7b102e98aab8fea31"
+    },
+    {
+      "file": "server/src/settings/settings.constants.ts",
+      "sha256": "6c55ba10888fd21ab3d558fcb15752c769608d0c7b54c4fe95a4cf6b92d7b263"
+    },
+    {
+      "file": "server/src/settings/settings.controller.ts",
+      "sha256": "fc4bcf84496edb8924b3381ea6c3ac8c7271e7809ec68966a6396f42a3847031"
+    },
+    {
+      "file": "server/src/settings/settings.entity.ts",
+      "sha256": "41b2bb52d80cf4333908f045b99fe25efde747a8ab97467b68ac6353c2c64394"
+    },
+    {
+      "file": "server/src/settings/settings.module.ts",
+      "sha256": "8ae7e8d2d7e9a70f535b55340fca1e03086b895a922e06bef0bc0a9c23e94858"
+    },
+    {
+      "file": "server/src/settings/settings.service.ts",
+      "sha256": "f7f5ebf266065443585a7a2fb3db1399c8eda0d78f6fc04e8b9c5b1a91437762"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/dto/aprovar-solicitacao.dto.ts",
+      "sha256": "b47b04fbd57aab3f16b1ec8c0d18ee6ff39e19c440f38160a459ae420f7c6331"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/dto/atualizar-solicitacao.dto.ts",
+      "sha256": "d69ded0d01a9b74c1d03926569249224997f8551d6c4a1cd53fb63cfd6ea6477"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/dto/criar-solicitacao.dto.ts",
+      "sha256": "1c85d8a096abf53b0ebd33610a51bf734357d95e238a4d83152c9dcd25b08952"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/solicitacao-acesso.entity.ts",
+      "sha256": "2b0875cf3b06ab11e3eb52aa8bf03c0affda8ce883f4dea0639a6795fa1a6f2c"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "sha256": "cfa8f3e2af83e68836ee9969c71bf9ed862ab6558dd358a7cb52ce40cbda87cb"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/solicitacoes.module.ts",
+      "sha256": "5403974225189f74ba94644bd449af2f52b2c816460a16690a5590bf36240f63"
+    },
+    {
+      "file": "server/src/solicitacoes-acesso/solicitacoes.service.ts",
+      "sha256": "98d5cd2795d2bdbccc3c2c14201db7ba7fd958e42f640c53d3e697a826253e86"
+    },
+    {
+      "file": "server/src/taco/taco.controller.ts",
+      "sha256": "85f8587bf64f64e20a7a004fe88f188937432f7a54ab783633d3a33e09554c79"
+    },
+    {
+      "file": "server/src/taco/taco.entity.ts",
+      "sha256": "5168c72f060ea521935812bca1902a6dfaaaeaa9f79208295063077e6792b3c6"
+    },
+    {
+      "file": "server/src/taco/taco.module.ts",
+      "sha256": "d2175929b42bd343b249c54f84fc3c6722aaec0276a84c5484cd1abb017b8a89"
+    },
+    {
+      "file": "server/src/taco/taco.service.ts",
+      "sha256": "a1673fd84810198e37dddb837479f87fa12de79b4b8d85321b851da4f20cb490"
+    },
+    {
+      "file": "server/src/tarefas/dto/atualizar-tarefa.dto.ts",
+      "sha256": "a4b8ae36bab73c0f741f75c696da9721813af9b5e5354e4d596d36888644f189"
+    },
+    {
+      "file": "server/src/tarefas/dto/criar-tarefa.dto.ts",
+      "sha256": "521d930accdd9537a76cb36efab0dcd8d7fe2b1b00f67bfc321fd64106154ddd"
+    },
+    {
+      "file": "server/src/tarefas/tarefa.entity.ts",
+      "sha256": "7d56cc7fc3d9a3a37c228afe3842db2a8a1339f7999e4108cc95e02d749b69b4"
+    },
+    {
+      "file": "server/src/tarefas/tarefas.controller.ts",
+      "sha256": "933c193687d94f045720a036a8837449c5267ad56dd8df3a787ceae0025b1990"
+    },
+    {
+      "file": "server/src/tarefas/tarefas.module.ts",
+      "sha256": "99b6be08ac1a8932537f0f69f5eb4ad19f5c492a9ec140b3df71467b248f91e5"
+    },
+    {
+      "file": "server/src/tarefas/tarefas.service.ts",
+      "sha256": "b44a847749f959849dc1b1b6fdf4eae10e012194c165cb2fe402a0d6c4d45934"
+    },
+    {
+      "file": "server/src/users/dto/create-user.dto.ts",
+      "sha256": "c4dceb2a892147e228391a5699d2b09859e4db2d1411db47d2e2f5775113a25f"
+    },
+    {
+      "file": "server/src/users/dto/update-user.dto.ts",
+      "sha256": "44fc4e99fcbf7bf656ce9767f1046127b4c8ee6f6ba27a4ad635dff8eb77e96e"
+    },
+    {
+      "file": "server/src/users/user.entity.ts",
+      "sha256": "684cf9d069ac92ea33f9eed5bab5a7c9d74649ed011f4c478feaee89b1a7a855"
+    },
+    {
+      "file": "server/src/users/users.controller.ts",
+      "sha256": "b3dbb8b2346d1512a03b20ae5672041f75b5814a54eae50c4686d845ae916731"
+    },
+    {
+      "file": "server/src/users/users.module.ts",
+      "sha256": "37a80ad10ffa36f3df1b421896223bfe530f713df6bce1a23e03e4fb87dc0b1d"
+    },
+    {
+      "file": "server/src/users/users.service.ts",
+      "sha256": "ea5010da7fedc56a080e73ea087b162bca0e9b5cc7790f3ab22ee7023c7402b6"
+    },
+    {
+      "file": "src/App.css",
+      "sha256": "618ed2c17a8fcbdf1dde9f5c7bea41d5b103c39249534d4cf297067fcd0ea8c7"
+    },
+    {
+      "file": "src/App.jsx",
+      "sha256": "7cc98da239368dbed213bd01e6ccf43d6a01b907bffcb4fbe7d547af1238eb28"
+    },
+    {
+      "file": "src/components/AlimentoBuscador.css",
+      "sha256": "dd5a9282764d6c577ed59f7e81fa3da37d13a097690cea11942769bf86b921c2"
+    },
+    {
+      "file": "src/components/AlimentoBuscador.jsx",
+      "sha256": "b3235771fdad542aacd7e698b512bbfa9afc38d6610805a51895e3d2b6c915a9"
+    },
+    {
+      "file": "src/components/Atleta/AthleteOnboardingWizard.css",
+      "sha256": "ab36c7fa44f9e21016d8d36e8aa32931c648eb017a657c5198269fea1525218b"
+    },
+    {
+      "file": "src/components/Atleta/AthleteOnboardingWizard.jsx",
+      "sha256": "e011507e2c93e2fefcfab7f0b595bd68baebfedef6246f4744b42b9729ea1d01"
+    },
+    {
+      "file": "src/components/Auth/PasswordChangeModal.css",
+      "sha256": "2e6cb86ed7cb6f1a7c498398387e7be569614a371b51f1766fd9368a13adcb59"
+    },
+    {
+      "file": "src/components/Auth/PasswordChangeModal.jsx",
+      "sha256": "815b292ddad504ca099e497066f5f67b90c133b6d5903f5b325e2a08e2845597"
+    },
+    {
+      "file": "src/components/Auth/ProfileCompletionModal.css",
+      "sha256": "480f98c569ede9bac63aa7f3051ab32f5dbba6441c718a9c30cafc3c1292628e"
+    },
+    {
+      "file": "src/components/Auth/ProfileCompletionModal.jsx",
+      "sha256": "3898dea0eb439a362e744512566e2622fab97c63507a6d6bea76e3470d5b4444"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/BioimpedanciaForm.css",
+      "sha256": "118c72b1f1b80a74cbcb43889d57d50fb02a4ace2d65211a872d37f1d98811e6"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/BioimpedanciaForm.jsx",
+      "sha256": "fd0bcff1d43c5263a4a466b9ef11ed61f401a40a7f0c771a19c43e98bbdb8609"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/ComposicaoCorporalIntegradaForm.css",
+      "sha256": "d3980779b9aacc20d9c0b400f00452da018ebd1375d9e869f1f3e96135431246"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/ComposicaoCorporalIntegradaForm.jsx",
+      "sha256": "55fafafa5e7cd807bc50667638a4ce51b22b1e27a3618c1519fa3b366622afb6"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/DobrasCutaneasForm.css",
+      "sha256": "f23c6a334b185659ddb6d1faa86fb7e333a28a73b383b0cca4892fc102234df3"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/DobrasCutaneasForm.jsx",
+      "sha256": "f1f7f87e35929473e8b27cee5ae5693f2935c38caa26c3dea9d362c4fde40280"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/GastoEnergeticoTotalForm.css",
+      "sha256": "c5ee0c675f0f09a1d755550567e3c68ec6ee98cd3a391637056dd4cbd653cb2d"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/GastoEnergeticoTotalForm.jsx",
+      "sha256": "592bc8a26edcc1f0777afab6b528ce15536eae8d11571038eddc4f6188bffda4"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/PerimetrosCorporaisForm.css",
+      "sha256": "f01f241cc9cbc8cb3a1b972a04454d98b703f5afdc71c119fa80f4b3d1b1a5d8"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/PerimetrosCorporaisForm.jsx",
+      "sha256": "cf2eab9111728414e2384da6d3042b505ed9e599aefb9f6d796a6f02fca50782"
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/ResultadosAntropometricos.jsx",
+      "sha256": "a626fbcb21b1b7a1fc4b5b7c16686fec5a97dfa73a8ad6c22a1e90a6422afcd5"
+    },
+    {
+      "file": "src/components/Avaliacoes/anamnese/AnamneseInicialForm.css",
+      "sha256": "36456ec93321aa0bf47ea7e8b01ced4c02427c28f20f097c1d5aa248e4641250"
+    },
+    {
+      "file": "src/components/Avaliacoes/anamnese/AnamneseInicialForm.jsx",
+      "sha256": "0b14f5e0839d28f9e53ba26185c4dab8536b24898a469516399732dfcbdc40b4"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-alimentar/AvaliacaoAlimentarNOVA.css",
+      "sha256": "0d8576ef9827817bcc68d563493d74759b038817f4938fa105f6c56943319582"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-alimentar/AvaliacaoAlimentarNOVA.jsx",
+      "sha256": "a8248988cdfa7781d263038c4a1750b5f5ca7badb23c8e79fd60101c0b38a49e"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-evolucao-retorno/AvaliacaoEvolucaoRetorno.css",
+      "sha256": "7f2ae1436c515b4ddf719f726b3257c6dc62f9142e765449524f65c47ab7bb78"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-evolucao-retorno/AvaliacaoEvolucaoRetorno.jsx",
+      "sha256": "007977a0da6235873bc38ce0ba84e825ecf18d574a98f26026aad22632c2d694"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-exames-laboratoriais/AvaliacaoExamesLaboratoriais.css",
+      "sha256": "d0ffd875ebc07630281eb91b63b85c083760b062842147a3f7c321e55dc3390c"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-exames-laboratoriais/AvaliacaoExamesLaboratoriais.jsx",
+      "sha256": "05942755c3cdb2d7b9ada01c8ca899853df46e7e4a66b64cc5db67d83b66dec6"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-fisioterapia/AvaliacaoFisioterapia.css",
+      "sha256": "b135c6ab2613c96a9b892f9ac26aa0daf21d71fd1a61d1292d47faa00fceb5ac"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-fisioterapia/AvaliacaoFisioterapia.jsx",
+      "sha256": "78839546979c39b5c6f56b97b7a9d689dce9a33c74848be48fd6227cd6a80efd"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-hidratacao/AvaliacaoHidratacao.css",
+      "sha256": "277ceac31c1c12e521eb841f98dc6a936762f3d0e4d2695b0237ee641fd9901f"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-hidratacao/AvaliacaoHidratacao.jsx",
+      "sha256": "7fe1afb501e351413777f3878b4218a7ce5aa83b55d5bc4d39c7671cb17a8b0f"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-imagem/AvaliacaoImagem.css",
+      "sha256": "51727677b566b8668b13578b0c6e74cea58a9afbb89436640d99d10bc0f1b5e0"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-imagem/AvaliacaoImagem.jsx",
+      "sha256": "abda4983f19fc3a7d35cca168c0e7b589a010015e504eb3082bad18dfcac6508"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-imagem/Body3D.jsx",
+      "sha256": "90727f2de6830a32bf2d3b3aad5e5ab1509dee99329673804a609b805b65d947"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-psicologia/AvaliacaoPsicologia.css",
+      "sha256": "c3f5e9632185fa080e76d912f69ff8955a3427cde515e26b3f9caa21ef2c359b"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-psicologia/AvaliacaoPsicologia.jsx",
+      "sha256": "bf55e01773c57275677c2dad84446d62a00517a6490f735f86f3fd0ede17393c"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-socioeconomica/AvaliacaoSocioeconomica.css",
+      "sha256": "a94a841e6c47cc69d38e36349f98d3f040fbf982023b80a45464ea75c8931663"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-socioeconomica/AvaliacaoSocioeconomica.jsx",
+      "sha256": "6539d48ccb46290bffbfd17ede89c12c90c3f66f3c98e6c3f50d975a2e9bd29d"
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacoes.css",
+      "sha256": "1ae7712539b8fe38aeee766309171a0f08a7142110e7b7adb8dd84eb365b2e05"
+    },
+    {
+      "file": "src/components/Avaliacoes/clinica/AvaliacaoClinicaForm.css",
+      "sha256": "4dca4bc876c497acaae1d7c84662d6af00495ea474bb34950d69e7c7de15f9d2"
+    },
+    {
+      "file": "src/components/Avaliacoes/clinica/AvaliacaoClinicaForm.jsx",
+      "sha256": "7d74ead4791b327b6c01a114989cedcf87868cf21ebb6cc9dec38b800473dc12"
+    },
+    {
+      "file": "src/components/Avaliacoes/components/AvaliacaoTextual.jsx",
+      "sha256": "19df988e8c2ae153eb6f3c5bb0b6e3d0d57adc24ec22a77637d5a4341d2328dc"
+    },
+    {
+      "file": "src/components/Avaliacoes/components/EvaluationHeader.jsx",
+      "sha256": "af6d8f9e3aaaa73dcc5b47232a7ab9dc6248454b0ba5b233401ecc7f941a1c14"
+    },
+    {
+      "file": "src/components/Avaliacoes/components/EvaluationReadiness.jsx",
+      "sha256": "bbff49b50f19ce2769ab105e81fb23153f5f764b7816ed1c3cdc46e109d2419b"
+    },
+    {
+      "file": "src/components/Avaliacoes/components/ValorAnterior.jsx",
+      "sha256": "4fc329a6daec5e8b29f0bf188829fe014cdc6d9054984756b9dd4a15d1d51e39"
+    },
+    {
+      "file": "src/components/Avaliacoes/components/historicoDeCampo.js",
+      "sha256": "4e902312c18a895c8a0fc07fa97b71c3b1f0230e0173a999bd6a347a506f5f7d"
+    },
+    {
+      "file": "src/components/Avaliacoes/hooks/useModuleSnapshot.js",
+      "sha256": "7240d73bc1667c303ecac1404574c6ca9ee26232c824b94fe3403952a6760482"
+    },
+    {
+      "file": "src/components/Avaliacoes/hooks/useSaveStatus.js",
+      "sha256": "4314b13e697023c3189701eb48e7fe7e943356cd845b60b7cc99135dd3818648"
+    },
+    {
+      "file": "src/components/Avaliacoes/plano-metas/PlanoMetasForm.css",
+      "sha256": "92c94a9afd82a6cec322a8a9cf2f5b5a21260741aa63fc8db0d3022d1850907c"
+    },
+    {
+      "file": "src/components/Avaliacoes/plano-metas/PlanoMetasForm.jsx",
+      "sha256": "36f6fc072af325a2eeabe876a9086f55be9147a0980b54037fea518ab2e4c4c4"
+    },
+    {
+      "file": "src/components/Dashboard/ProximasAcoes.css",
+      "sha256": "26e8a0693561a0679306d02dfd1f8183ccc6fb3633ff6ccef4cea5a2fdabf3d4"
+    },
+    {
+      "file": "src/components/Dashboard/ProximasAcoes.jsx",
+      "sha256": "4b16527f0b7b0d80f2a7f35850a6d7927aeafb63cce0f2f4ca9dffc602eb220e"
+    },
+    {
+      "file": "src/components/Prescricao/AlimentoLinha.jsx",
+      "sha256": "218a182419ffa646303e1e79a3c391b28a3eabb207d1eb049e58c77022c0f004"
+    },
+    {
+      "file": "src/components/Prescricao/Analises.jsx",
+      "sha256": "356e78224ac64753df42a507b7ba362b657272479e5e3f974e4cf4d864ba42ad"
+    },
+    {
+      "file": "src/components/Prescricao/BuscaAlimento.jsx",
+      "sha256": "1666c7af1896accf693b74d875bd001ac648b839f5433c74842415df5e6153ef"
+    },
+    {
+      "file": "src/components/Prescricao/DeltasMacro.jsx",
+      "sha256": "f10ef6778122d40d01bd7f0d1e01836c5c8593c267d9e7afbef50169d87590c9"
+    },
+    {
+      "file": "src/components/Prescricao/Etiqueta.jsx",
+      "sha256": "4bb8105de2dd66ac5847f8fe47e7f3fca752f0318b4bdd8fefb57796a36b8743"
+    },
+    {
+      "file": "src/components/Prescricao/GrauProcessamento.jsx",
+      "sha256": "c98528a745927baae8a224ac0bb9d2efb7f74f62986f271201989215bc337014"
+    },
+    {
+      "file": "src/components/Prescricao/LinhaAdequacao.jsx",
+      "sha256": "37e2ac854f4279f753c3eedb226086cbeb8dcb7d1e581752470248e0ea6a43ba"
+    },
+    {
+      "file": "src/components/Prescricao/ListaCompras.jsx",
+      "sha256": "be4e63c73512ca0752071a599518478fe07d3b0be5a93a5930efb310f4145540"
+    },
+    {
+      "file": "src/components/Prescricao/MacroRosca.jsx",
+      "sha256": "1ca7ab7e3f099d06e40acb7eaee31b534ff0d82b35ed4836f3fb4d22e6a888b3"
+    },
+    {
+      "file": "src/components/Prescricao/PainelMacros.jsx",
+      "sha256": "158e9cda49dffc593da47d5579ec83e8a7e5bd188d86ee8a0b04d8b890edcc50"
+    },
+    {
+      "file": "src/components/Prescricao/PainelSubstitutos.jsx",
+      "sha256": "054f3f855b5a79108aa14dc2ac4ae7dec1dd754e03181ae68999b974cc153c17"
+    },
+    {
+      "file": "src/components/Prescricao/RefeicaoCard.jsx",
+      "sha256": "7229e9990ee294d5e536dea921e58d5633330e485d8912d380fd183b1563c9d3"
+    },
+    {
+      "file": "src/components/Prescricao/Selo.jsx",
+      "sha256": "52bccac4a7c0df9d7a1010e496fff3955ab58534e149d66a40fe8542c409fbfc"
+    },
+    {
+      "file": "src/components/Prescricao/SeloEquivalencia.jsx",
+      "sha256": "5e42551ddecb68573a7045fe91249ef29d3bd6bb3e200af1805b8ef153ef35b5"
+    },
+    {
+      "file": "src/components/Prescricao/TabelaAdequacao.jsx",
+      "sha256": "5089a1af9dccf5ad1cb0a353653b93ba6227638b897e5a78bdf1fcee6cc0adfe"
+    },
+    {
+      "file": "src/components/Prescricao/formato.js",
+      "sha256": "10221598b2f1b5ca13125f3a2c58f66a542fbe2d21b12db0ad9cff87ffc276d8"
+    },
+    {
+      "file": "src/components/Prontuario/AlertaBanner.jsx",
+      "sha256": "770e37243f59454b496c2d9bd33a28259acd43e9dcdd517d3b1c1ffa94dffd11"
+    },
+    {
+      "file": "src/components/Prontuario/DashboardAvaliacoes.jsx",
+      "sha256": "862a56403df112b6af42fe7ec92822d4b06170b11efd15d494aaf4960657e1b7"
+    },
+    {
+      "file": "src/components/Prontuario/EvolucaoAnalytics.css",
+      "sha256": "7c0c7e5862b7944255c6728abf64712bf1ff2b2a9e4653605d7224eda1d044ec"
+    },
+    {
+      "file": "src/components/Prontuario/EvolucaoAnalytics.jsx",
+      "sha256": "4abb0e95c1a175a96d70bba6afe8d7c4d4491a059219c054d5fe4d455ca14b32"
+    },
+    {
+      "file": "src/components/Prontuario/MacroEtapaSection.css",
+      "sha256": "f093011a382d702e566a3cd0f5d2a694a08abff7e823f9fdc56723233fc9732f"
+    },
+    {
+      "file": "src/components/Prontuario/MacroEtapaSection.jsx",
+      "sha256": "25434dd19efdb6c25090c5b36b42bc7db8cc157212f575b99f1833d2f55b005b"
+    },
+    {
+      "file": "src/components/Prontuario/ModuloCard.jsx",
+      "sha256": "8b6a884d161387c03a34767fa33b609d560854d11dfe475f1ce98d7626af52b8"
+    },
+    {
+      "file": "src/components/Prontuario/PainelAnexos.jsx",
+      "sha256": "41e3f0da39b187cf078ff5c110c2150e108f2bb55a1ba2046011c6baf03e89e9"
+    },
+    {
+      "file": "src/components/Prontuario/PainelDivergencias.jsx",
+      "sha256": "815fc3e81089aa568821ac1f27da8ad4c813be176d4983833b743228e670312e"
+    },
+    {
+      "file": "src/components/Prontuario/PainelMensagens.jsx",
+      "sha256": "b5a6c53b82783a4ed55a67b2b20f82448f02d0b0acedba341b8e8141da7e3f5a"
+    },
+    {
+      "file": "src/components/Prontuario/PainelRevisaoAtleta.jsx",
+      "sha256": "92aff78e00122d463cdff1813e1512e0bdc50c243510d22aa38ff989a9e03dd3"
+    },
+    {
+      "file": "src/components/Prontuario/PainelSituacaoClinica.jsx",
+      "sha256": "9bcf7bbbc8d898111f92524ea7a8b9b0ab136c56fbebc6d4689ec8b119371776"
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioHeader.css",
+      "sha256": "bdd7880a4523e3a5f245fd4b41980cdae040d0895df32e0b166998c3cbad7033"
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioHeader.jsx",
+      "sha256": "d05da8a6722aad5ba02ad4aac43464a4ecd1851fa0e98aaf44dbc2e0c2e429af"
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioPatch.css",
+      "sha256": "b8635460e00f8c140cac4df39ffcbd1aaf3ed5d0693ce05df81f38fc306ba15f"
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioPendencias.jsx",
+      "sha256": "7f3b167cf92ca46fe0eed40a481bc6d3349a3760d0de0cb444cc0c406cee929e"
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioTabs.jsx",
+      "sha256": "3debb208bc9e09202f5e1adfa42c5f0604c7d85c93daf12ebd16fb1d70be92d2"
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioTheme.css",
+      "sha256": "105d226d2861a39f63ccb81615e6b7d030c19a7faf4de61a1af37bda4148e5a3"
+    },
+    {
+      "file": "src/components/Prontuario/ProximasConsultas.jsx",
+      "sha256": "5d63f52ec7f6f8e292a9e00585dc67ba7a57cb2a0bb9d5849b69984212c96f49"
+    },
+    {
+      "file": "src/components/Prontuario/ResumoClinico.jsx",
+      "sha256": "56cd6c30e45232b5c0023c499ea55f05b73416b00fc736c6fa398c6870519a4c"
+    },
+    {
+      "file": "src/components/Prontuario/SparkLine.jsx",
+      "sha256": "5458eb6344afbb7c3dbee9532540d9f760f5d3ca9a4328abfe7f0a4eb19c59f9"
+    },
+    {
+      "file": "src/components/Prontuario/TimelineConsultas.jsx",
+      "sha256": "a29e7e17a66851cee0d603bc0410086abe62c1b68832b00d78e07f440b4b758d"
+    },
+    {
+      "file": "src/components/Prontuario/VisaoGeral.jsx",
+      "sha256": "0264769bf4b8f9df10e35aca5a892fcf4906000c6d36625d261b1255c4c6c616"
+    },
+    {
+      "file": "src/components/RefeicaoBuilder.css",
+      "sha256": "e6aa30c23e01a0bff24f9dac536ec21207015b5e6258d31e2bb1ba22a1a6b4e3"
+    },
+    {
+      "file": "src/components/RefeicaoBuilder.jsx",
+      "sha256": "89c3572c971ccab19ef5220d8e1c30e9c65b5283bf7fbc19c6d81c282d31264a"
+    },
+    {
+      "file": "src/components/SuplementoCard.css",
+      "sha256": "74f29755415748902b5bdd84c5d8b4575fc08c212c6fd125b5fe36b25d9d5dde"
+    },
+    {
+      "file": "src/components/SuplementoCard.jsx",
+      "sha256": "ab4e920b48dc1fc82989f0a9baf295d93d5a8f369870a7906212e0445596117f"
+    },
+    {
+      "file": "src/components/Triagem/EscalasVisuais.css",
+      "sha256": "3a05bbb41b92d14a14077d8985d07925f62c129a1e747d2cb5f81b2881fea708"
+    },
+    {
+      "file": "src/components/Triagem/EscalasVisuais.jsx",
+      "sha256": "e7e31adc37579c247c0ef8d88a6e50a3624676dc9663057a0693e8886b7de565"
+    },
+    {
+      "file": "src/components/shared/ClinicalEvaluationResultCard.css",
+      "sha256": "13c87d4fe228cfb11abbe55fcaece43dc5bc104c2d638a43b59fce5e6cc44204"
+    },
+    {
+      "file": "src/components/shared/ClinicalEvaluationResultCard.jsx",
+      "sha256": "3adb80c047bbffa69c6d6b5064e62129c525c7752006078b6d2aca0317ab5c27"
+    },
+    {
+      "file": "src/components/shared/ErrorBoundary.jsx",
+      "sha256": "1a54e27ef5f70f2c5484cae4ef80bf210e635ca5f2012bc0e2ae772e7d2a0e66"
+    },
+    {
+      "file": "src/components/shared/EvaluationSummaryStrip.css",
+      "sha256": "a26a697a6679bd018ff64267d8bbad0439704b46e075ff4f759b7041b9483b5a"
+    },
+    {
+      "file": "src/components/shared/EvaluationSummaryStrip.jsx",
+      "sha256": "ecaa2de22db49de8a045a420ff2845e5ea0a7396c48e26a041684ec9e162e557"
+    },
+    {
+      "file": "src/components/shared/MiniSparkline.jsx",
+      "sha256": "c9d449b86f7a003faa409a1b2c09775c113b70b9463e81019b80c89318d939e8"
+    },
+    {
+      "file": "src/components/shared/NotificationTaskCenter.jsx",
+      "sha256": "d84577b545d55f3a646a9c4ed4a433fd6c59e47c2de6ffc0c84283d4fe504e16"
+    },
+    {
+      "file": "src/components/shared/PrivateRoute.jsx",
+      "sha256": "3abe135e9b1f761c8bc1b2e92a739c30cce29dcd066a60de341bf48c35c42ef3"
+    },
+    {
+      "file": "src/components/shared/evaluationResultAdapter.js",
+      "sha256": "e40e2a2dd5b1363f6bba671da53b5fc02795e4a00a7296e42cfb71d5c9658c69"
+    },
+    {
+      "file": "src/components/shared/evaluationSummaryUtils.js",
+      "sha256": "42a59e84fd2d08bfc0da319a7da8c056144260865d79a6d43a16c7e6c5d36698"
+    },
+    {
+      "file": "src/components/ui/AttachmentThumbnail.jsx",
+      "sha256": "e1244f2c9b5f1aecfe0234832b7e385f0dfe8373b34e1c4c949bd52cf0a09fea"
+    },
+    {
+      "file": "src/components/ui/Button.jsx",
+      "sha256": "36223bc012e02a4c97487644df1ccc38afba1fb84018d942b57b657de3f69f58"
+    },
+    {
+      "file": "src/components/ui/Card.jsx",
+      "sha256": "c4fdb8a54489c0661b2174db0fdf90a8a1d6069b67f799a5f40be01e78e575e9"
+    },
+    {
+      "file": "src/components/ui/FeedbackState.jsx",
+      "sha256": "a3429e0843ec82e1c54f453c32927738a6e356f868d9680927ee898a0ed150c0"
+    },
+    {
+      "file": "src/components/ui/SectionHeader.jsx",
+      "sha256": "0b217df1afd251d99b15b745ca776817b725bae2caa98852fcad12934c4adc2a"
+    },
+    {
+      "file": "src/components/ui/Skeleton.jsx",
+      "sha256": "8d0f4d079ef736b3ed025ff7d1a892421298337abeecbe7fd3a996696b004a9b"
+    },
+    {
+      "file": "src/components/ui/StatCard.jsx",
+      "sha256": "14eb956cc91cca61084e285cbacbfd69a72708696c4cdb0dff7d19cacf74d02d"
+    },
+    {
+      "file": "src/components/ui/index.js",
+      "sha256": "77799f0afdaed797559a70eb79ec324740c0bf9058c1db21fafab229d3b8b1ce"
+    },
+    {
+      "file": "src/components/ui/ui.css",
+      "sha256": "135585b070242449447117eaa50d045683feff7f56d2c6bf65643dd422b3165f"
+    },
+    {
+      "file": "src/constants/academicNavigation.js",
+      "sha256": "c9eeb5c594124c870627995abeb68b2f334065ebc3bdd7ad659c9bf75652e9c0"
+    },
+    {
+      "file": "src/constants/adminTabs.js",
+      "sha256": "9318fe6129c57b8e0e433fa7805b707b438b29fb4888e38fe1dfda2849aa80b3"
+    },
+    {
+      "file": "src/constants/clinicalInstruments.js",
+      "sha256": "0c931ce8859af719750887a3ca8656da59366816e3bee8cca02a32b84eb23689"
+    },
+    {
+      "file": "src/constants/evaluationRegistry.js",
+      "sha256": "c910709d34ba9ce2bdceb7768abb1f03a4ae6af6595af376ef3a44bf84be9844"
+    },
+    {
+      "file": "src/constants/prescricao/seed.js",
+      "sha256": "ae3bed33bb41c48934a1ea6f33b14d3ad08ba4d68975458ca9c5f7a4e3a1a3ef"
+    },
+    {
+      "file": "src/constants/roles.js",
+      "sha256": "c0c4a16057bc131d9ef2769d03c3add287f8d8ba1823d27e9289bd44a7de5cdf"
+    },
+    {
+      "file": "src/contexts/AuthContext.jsx",
+      "sha256": "496452fc9807c43cb9710a59a6f845f19fefc7264ad5ce067b0c2a489b688bc7"
+    },
+    {
+      "file": "src/contexts/PacienteContext.jsx",
+      "sha256": "c6dd4606a4f9476406544a8861a8c7a4e205c5d9fa6af707e087f30b69c8eea9"
+    },
+    {
+      "file": "src/contexts/UiFeedbackContext.jsx",
+      "sha256": "2e5da924a62197e542dd95cd2106f3495b504756d033975bbb2cec46b320eb01"
+    },
+    {
+      "file": "src/contexts/paciente/PacienteAgendamentoContext.jsx",
+      "sha256": "9db7dab0725d5a9dff20c8ba6749b840924fd9be382b3aa7dcb206e92498dbc2"
+    },
+    {
+      "file": "src/contexts/paciente/PacienteAvaliacaoContext.jsx",
+      "sha256": "32811a093e9f71d136cd3ab5d984fa418d617b70aa0a7f8a9f9f33249c1c68b1"
+    },
+    {
+      "file": "src/contexts/paciente/PacienteCoreContext.jsx",
+      "sha256": "6c1dedaa7dfcf456dfea7a12418dc67862407e813eeac04fb5bcb3bce3ddd0fb"
+    },
+    {
+      "file": "src/contexts/paciente/pacienteUtils.js",
+      "sha256": "1b75e7a085714106bd3932355a0f61d927c12b0f2b4b4245575e1b1ef396d304"
+    },
+    {
+      "file": "src/core/prescricao/adequacao.js",
+      "sha256": "109aed6280bd0524daae617d2571d7dee749caac291b3a39283ac2f65c41ba4e"
+    },
+    {
+      "file": "src/core/prescricao/analises.js",
+      "sha256": "9f01d224726c2a7ff0b2c85f198af7537d0dedee655da507dbf43e3a4dbaf8eb"
+    },
+    {
+      "file": "src/core/prescricao/classificacao.js",
+      "sha256": "feaf0d9e6e1404daf07ee10cf6d1eaa84372c0e660e65d8fda9656d0ed16a58e"
+    },
+    {
+      "file": "src/core/prescricao/equivalencia.js",
+      "sha256": "710f548eef8dc376cc638e85141fbe397f2f33f8d8d87e4e39b528ad8ad4b62e"
+    },
+    {
+      "file": "src/core/prescricao/equivalentes.js",
+      "sha256": "69a217c9603843e922b37e73b98b8c27f76e18b892a2ab72d49aaca6160a0f43"
+    },
+    {
+      "file": "src/core/prescricao/horarios.js",
+      "sha256": "f930ffdd6a90b5f611ae4978529056ba559a54d46eba6fe1065135e48fff71e2"
+    },
+    {
+      "file": "src/core/prescricao/index.js",
+      "sha256": "0ce4394a3a11a33695c010ef97430b77f24ad043dc269fb6a001e9bddbc773b0"
+    },
+    {
+      "file": "src/core/prescricao/legado.js",
+      "sha256": "9daa0827fb0df559dcc1252d8e695455cca95d4dd86880f985a93e7bef021f07"
+    },
+    {
+      "file": "src/core/prescricao/nutrientes.js",
+      "sha256": "ca81b597fd04ca6295ded8e533fd637d1b8d994453de4667fd9eb95075dfe843"
+    },
+    {
+      "file": "src/core/prescricao/plano.js",
+      "sha256": "a34d4859207b0c1f6573f5754f92b662968ed72bedffab2efa056a9e2e6500cd"
+    },
+    {
+      "file": "src/core/prescricao/totais.js",
+      "sha256": "306693ad13e1ecfe6ab6eac68d8eafe2bb700d7ce9030b9b86a6290f47e0c096"
+    },
+    {
+      "file": "src/core/prontuario/estado.js",
+      "sha256": "426678bb74575e155ca08aca3fc937a826804cc5a4775739a0378b410e30406d"
+    },
+    {
+      "file": "src/hooks/useModalBodyLock.js",
+      "sha256": "bfbc34798e712c4c5afa824f650fb4bb15fb9fbb337652ad96e83bad51c42a49"
+    },
+    {
+      "file": "src/hooks/useModalFocusTrap.js",
+      "sha256": "74a6c12887262fd9ce7d6ef99955dc16b75e4ab71cd195554f515dac76943cf5"
+    },
+    {
+      "file": "src/hooks/usePlanoCalculado.js",
+      "sha256": "8e55dc18c67ee85dc13b396941d2fb118fdb9ab6172a7bdd59c586fbafb4bb3b"
+    },
+    {
+      "file": "src/hooks/usePrescricaoApi.js",
+      "sha256": "9330640e0f831757ede6fe4f7ab58d87a4d9f1db477b59e51262e23ca7376a7e"
+    },
+    {
+      "file": "src/hooks/useProntuario.js",
+      "sha256": "3ba85aa31dc572428153770cd437d00c8ee6dfe4f1595589cc9627463282ec4a"
+    },
+    {
+      "file": "src/index.css",
+      "sha256": "942af5c6063a60be936405e39db787e054d59542c1ae628e2c9c5d4951709c6f"
+    },
+    {
+      "file": "src/main.jsx",
+      "sha256": "710914dd91a1ba17cc52778ff8b205608a35400130797a8bda7c23a6432603d4"
+    },
+    {
+      "file": "src/pwa/registerServiceWorker.js",
+      "sha256": "87d741f184e0ea974d534f196e4839cde748989b0525296cd0039422ec5fc436"
+    },
+    {
+      "file": "src/services/api.js",
+      "sha256": "38e43c06567a7fdd54516dfad1e1aabb0f7be5852ef3e925b829b6913bc6f8be"
+    },
+    {
+      "file": "src/services/audit.js",
+      "sha256": "da142d827f7ec17abe1a0dce27ac49243a9aef878347b418352745df4398edac"
+    },
+    {
+      "file": "src/services/avaliacaoImagemService.js",
+      "sha256": "a022fbc9a8f7b6b45c57c1137e065b87603b4321e4f7a83dc1a44019efb3cf48"
+    },
+    {
+      "file": "src/services/calculationEngine.js",
+      "sha256": "f46a03cd8af533532231867fbcd7d84ccc6f78fcc9461526ac352ca0aba6822e"
+    },
+    {
+      "file": "src/services/classificacoes.js",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "src/services/clinicalReportService.js",
+      "sha256": "7100952740ee2ecb06b4f7a8b583d58e01cb1d27568a72defc01fe1e1760db07"
+    },
+    {
+      "file": "src/services/prescricaoCatalogo.js",
+      "sha256": "c3dfe4d510470e6303884163f5a2abf6bbe030c01f156136c03de806a453b167"
+    },
+    {
+      "file": "src/services/realtime.js",
+      "sha256": "c9b1a7d99e692eec0e0113396058f3fc2630ece00ab87ea373c7d2f6c6fd0ac1"
+    },
+    {
+      "file": "src/services/sessionToken.js",
+      "sha256": "5a5a63f3e9b95626342989556ba9cde992628e0d0e06dd1b8ffe53c87535efdf"
+    },
+    {
+      "file": "src/services/storage.js",
+      "sha256": "cf209367a5c49dfda95e2441fdcb18a594f256a7e54ea21ec1cfb30c5ee62aef"
+    },
+    {
+      "file": "src/styles/modalSystem.css",
+      "sha256": "3e0f9eef61ce8115a3048531c880f03df00d3f3c015d9d8ccb25bc6e6d9c9e6b"
+    },
+    {
+      "file": "src/styles/theme.css",
+      "sha256": "adc1eb653e5771959f3c73f37075a2866db0098a5f705c56f042fbbea2c8b3aa"
+    },
+    {
+      "file": "src/utils/actionFeedback.js",
+      "sha256": "19f2331cb045a6dbc133e2d7eba4e4374fa5f52368e5300dbb7e270343b7c83a"
+    },
+    {
+      "file": "src/utils/bioimpedance.js",
+      "sha256": "47260a84c97837d9477be5a62d761a3c4450bbcb661115f83dd67aa9226034e3"
+    },
+    {
+      "file": "src/utils/dateUtils.js",
+      "sha256": "d03f6a4037954d326796a448bab803434c86728c61e0cc2d62a5df21cd6c5f0f"
+    },
+    {
+      "file": "src/utils/formatters.js",
+      "sha256": "3504be94cb5e20baf574657e211dc98d44b702717f434a107f4eaf55ea1c39c6"
+    },
+    {
+      "file": "src/utils/institutionalEmail.js",
+      "sha256": "7c59a6bddcb6d250511585417d4ad4941778d46b1cfd4ce60845fe9ee50d1235"
+    },
+    {
+      "file": "src/utils/profileCompletion.js",
+      "sha256": "271b8555e3c683b48be9908844572d88bf5b448490695d105c8efb205461e01c"
+    },
+    {
+      "file": "src/utils/userAdapter.js",
+      "sha256": "b6b13d302d91d6a4ee7f59d92bd36a7b16a77e3c2b07a24d3912058e8cabca4b"
+    },
+    {
+      "file": "src/utils/validation.js",
+      "sha256": "f69de554045081fbf2c27b0747bc30d14e235cfeb76b62ebeb0f766ad49d88a0"
+    },
+    {
+      "file": "src/views/Athlete/AthleteEbiaModal.css",
+      "sha256": "dc8651f0831965ce79146d6e496d307d500de819a80b3614f284154643505b8e"
+    },
+    {
+      "file": "src/views/Athlete/AthleteEbiaModal.jsx",
+      "sha256": "8262eb9ab1cf4ccc13bf74ec994112fbb53217f748389ee04a086ac9409a9ae2"
+    },
+    {
+      "file": "src/views/Athlete/AthleteHeader.jsx",
+      "sha256": "a096053cc902d628edefd666de9daa7bab69130a8fb1a9bda0a0400c3d68a57a"
+    },
+    {
+      "file": "src/views/Athlete/AthleteOnboardingModal.css",
+      "sha256": "dcff513a37709ec0a400349b201741b5cfdba2591e74cf2d516a15406f268efb"
+    },
+    {
+      "file": "src/views/Athlete/AthleteOnboardingModal.jsx",
+      "sha256": "ae1c93723359d1c0128f8c59044791be2abf129ef8bbf4acf138afef29cc7e09"
+    },
+    {
+      "file": "src/views/Athlete/AthletePortal.css",
+      "sha256": "7032579988b4cc96f54c76e911af7a5defb429fa9444f4c178bb15101fd42c30"
+    },
+    {
+      "file": "src/views/Athlete/AthletePortal.jsx",
+      "sha256": "f7fc84b7f78ac985d29a41c077bc08456bd1aede31e235210c4033cdc986c739"
+    },
+    {
+      "file": "src/views/Athlete/AthleteSelfEvaluationModal.css",
+      "sha256": "70785095d52c3ef7b887338cfcdedf2a130c8b02ac6e8de15a5aab51753019e1"
+    },
+    {
+      "file": "src/views/Athlete/AthleteSelfEvaluationModal.jsx",
+      "sha256": "17f42756e763df6243c9ad8eb59b5d4dac0d9a0dff51f448c3c99dcc90053ace"
+    },
+    {
+      "file": "src/views/Athlete/AthleteSidebar.jsx",
+      "sha256": "a2e107056ed5dd6233e650eae96c51639fcba4eb1b48d2e9dbeef50aab11657c"
+    },
+    {
+      "file": "src/views/Athlete/AthleteTabAcompanhamento.jsx",
+      "sha256": "0af341dfab2e6f885b253ba3d8c3587ec8dc0eb166a1691ca6feb6b32a162c97"
+    },
+    {
+      "file": "src/views/Athlete/AthleteTabCadastro.jsx",
+      "sha256": "9182dee0eb8371576359c847507bf7d9b42ebc8271ef2c141b99a93814f9d968"
+    },
+    {
+      "file": "src/views/Athlete/AthleteTabPendencias.jsx",
+      "sha256": "9d97069aaf76a65bc2cf480e2c83620474530537328f821e5151b54210037498"
+    },
+    {
+      "file": "src/views/Athlete/AthleteView.css",
+      "sha256": "718f521de90003bcf2d5338324ab1dfedca31e66323deaf9e35879aa73da3a63"
+    },
+    {
+      "file": "src/views/Athlete/AthleteView.jsx",
+      "sha256": "b5e08a014c676afb87da57b6052d7a48423a5eccfb9cb06eb388f9e3c2598060"
+    },
+    {
+      "file": "src/views/Athlete/athleteSelfEvaluations.js",
+      "sha256": "b0afda299337885e91d8cf1a691ad771da066c83c915701c4f7e06f4d92d9eab"
+    },
+    {
+      "file": "src/views/AvaliacaoCompleta.css",
+      "sha256": "cceb6c9c671868b27d9f4784e7727cba25bd82b98d06a99fee52c7bc39adf299"
+    },
+    {
+      "file": "src/views/AvaliacaoCompleta.jsx",
+      "sha256": "dce90acf1d1218496220e1222bb1a1200e45d38d5a582cfae014277ae3ac5fa4"
+    },
+    {
+      "file": "src/views/LoginPage.css",
+      "sha256": "4a6f9a5019f270f12390a04a2bae5552e9221b6effe887f017d2e7f73d2becf0"
+    },
+    {
+      "file": "src/views/LoginPage.jsx",
+      "sha256": "ee2ae4d225f48876dfa464bea659acf1a7bf88e8c0e5059b2a7c06f9f6c3b79b"
+    },
+    {
+      "file": "src/views/NotFound.jsx",
+      "sha256": "35410fd3c066ec52c0cec8e8f8f97c2a5ebd26a3305994b6b356ce419610d7b7"
+    },
+    {
+      "file": "src/views/SidebarShell.css",
+      "sha256": "ad4f2c5344a6df7d59180074aee3337286d5929fedcd0199ce13badb2800a5c9"
+    },
+    {
+      "file": "src/views/Student/Patients/AppointmentModal.css",
+      "sha256": "1bb1b8bd408e859be3b2f0f23e0b11eba79d7691295c0e22a88c363b13e2e31f"
+    },
+    {
+      "file": "src/views/Student/Patients/AppointmentModal.jsx",
+      "sha256": "0fc05b2080440ad3edd8841efe7a9e91b69d7dc7d74363dd53e77dba0542d162"
+    },
+    {
+      "file": "src/views/Student/Patients/PatientProntuario.css",
+      "sha256": "35071e7eeec4ae9d4ae211f254b87baace2ab0049bbe9dab493fa75252515f0e"
+    },
+    {
+      "file": "src/views/Student/Patients/PatientProntuario.jsx",
+      "sha256": "910c29a832bdaa3e19c5d4ce6d6ff911c4bbb0b65336645701928658e12ad3c6"
+    },
+    {
+      "file": "src/views/Student/StudentAgenda/StudentAgenda.css",
+      "sha256": "cf570778e9dfa5ad8f3d6006fbfb7dc1b15d3ceac1b86f69ded50483877b5741"
+    },
+    {
+      "file": "src/views/Student/StudentAgenda/StudentAgenda.jsx",
+      "sha256": "3c92735789e7cdc4b16e37d7ce94e2b507ead4fcc21991226ac29b33e82ab36b"
+    },
+    {
+      "file": "src/views/Student/StudentDashboard/StudentDashboard.css",
+      "sha256": "5a6a77d9ebb094baae9373dced02a67d124da2891e8dddbc13a2db5bae1dfa1a"
+    },
+    {
+      "file": "src/views/Student/StudentDashboard/StudentDashboard.jsx",
+      "sha256": "4b841018c29eb61c0469d2f3f91710aada229ae3f01d7a572d2a5771a39a2840"
+    },
+    {
+      "file": "src/views/Student/StudentView/StudentHeader.jsx",
+      "sha256": "c842bc8fb0a42f6862c1f6c54483e501e7f7472b8f37da67b8fb01d1c9fe54c6"
+    },
+    {
+      "file": "src/views/Student/StudentView/StudentSideBar.jsx",
+      "sha256": "92823a67aa077cb530c4f03f75b053eba2e1236eed89f58e1ed84005eaaee1c1"
+    },
+    {
+      "file": "src/views/Student/StudentView/StudentView.css",
+      "sha256": "011790d2d43d12a5e76385b711b08cde712b4630b7e65da333ea31a125c9660d"
+    },
+    {
+      "file": "src/views/Student/StudentView/StudentView.jsx",
+      "sha256": "03ca08b7250483ce273355aafec0c9c41be8b2a198cab6b19f464e6f2f6a2075"
+    },
+    {
+      "file": "src/views/Team/TeamPortal.css",
+      "sha256": "15b8e8ee60846b60b72b62989811f6207ad4c717c784756ea49ae3fcb2f93b3a"
+    },
+    {
+      "file": "src/views/Team/TeamPortal.jsx",
+      "sha256": "2f77163cd7bb569a9fb7ebb0ba1b49123abdf4f7f801f7cb8f71515cda35e76a"
+    },
+    {
+      "file": "src/views/Team/TeamSidebar.jsx",
+      "sha256": "4df9995f525f10c31eaed719c7758797ca3768c45d441260138a94106a2b1bac"
+    },
+    {
+      "file": "src/views/admin/AdminView/AdminHeader.css",
+      "sha256": "c7220bcda9e3a9cbc135c727bad34885261fbcd5d87d2bb9d0618997f4b3ba97"
+    },
+    {
+      "file": "src/views/admin/AdminView/AdminHeader.jsx",
+      "sha256": "2b79871e78c349e991d9fe8185f13a77c50ba9ada68af0fb0affcbf64e4b2cc7"
+    },
+    {
+      "file": "src/views/admin/AdminView/AdminView.css",
+      "sha256": "daef40c22fc6337931dfd9ed29f274337aa511fc738982d2fa4a8413ce5e3571"
+    },
+    {
+      "file": "src/views/admin/AdminView/AdminView.jsx",
+      "sha256": "8b3070a1a8ca44d193ed6afb2baf6b8d3f57ff3f11afe285a007018824ceff35"
+    },
+    {
+      "file": "src/views/admin/AdminView/SettingsPage.css",
+      "sha256": "62649d5c005ff68dde13bd9c038b8ae18ab4bb253280440b0b2df5392c1e60fb"
+    },
+    {
+      "file": "src/views/admin/AdminView/SettingsPage.jsx",
+      "sha256": "06d98d39b83dda1bd4785572effe162db23575348c527d0042c8c432372cbee3"
+    },
+    {
+      "file": "src/views/admin/AdminView/settings/SettingsTabContent.jsx",
+      "sha256": "2d70c6b0bc21b4d4401d7f44d3c2d8d7ece1cc4d99a1355e794a95b168b41dbd"
+    },
+    {
+      "file": "src/views/admin/AdminView/settings/ToggleSetting.jsx",
+      "sha256": "da2ecb2c92d3a0f87c97878f162f9d6e9c9257c860b3ed12b89468f021d3ad29"
+    },
+    {
+      "file": "src/views/admin/AdminView/settings/settingsModel.js",
+      "sha256": "c761d527014492673737ddd8c50d5862bf7d70f54966cc10a6377ef61f00502e"
+    },
+    {
+      "file": "src/views/admin/Areas/Areas.css",
+      "sha256": "95bddb01c3d14d78bd4e0858f13801c77a2b04cd2642e61031654c549aa5a28b"
+    },
+    {
+      "file": "src/views/admin/Areas/Ensino.jsx",
+      "sha256": "9e4253edbfd3f36b5fce9828c0379759be50d9cb47d6351a8bfa1d0280bc0364"
+    },
+    {
+      "file": "src/views/admin/Areas/Extensao.jsx",
+      "sha256": "c044c0801d7c48cd4f319d86a562d3cf624fe29aec7adba1c1a202e0dbbc3daa"
+    },
+    {
+      "file": "src/views/admin/Areas/contentAreaUtils.js",
+      "sha256": "0402609e4db9037f091041d1c3ad807bf6c47f268eb2ab8c0b88e2fbe431f1eb"
+    },
+    {
+      "file": "src/views/admin/Dashboard/DashboardStats.css",
+      "sha256": "6db83774f2fceb330e86a37b439487ca0a49fe1ae6eb9c2655c2766b0491896b"
+    },
+    {
+      "file": "src/views/admin/Dashboard/DashboardStats.jsx",
+      "sha256": "5bdfbb5f8fd6545c587456b825255a9e1438cb9e4cbc23a3c13fcd24833a1fa3"
+    },
+    {
+      "file": "src/views/admin/Patients/LinkPatientModal.css",
+      "sha256": "f0e4a9a5c9d2d5420be62159997469c25db50bae08c5901e6f2345b9259f3aad"
+    },
+    {
+      "file": "src/views/admin/Patients/LinkPatientModal.jsx",
+      "sha256": "0f8af555b3809a3421d9c97ed5fb33a2b4f018e0edfa0b72f8c52fef54d63ef8"
+    },
+    {
+      "file": "src/views/admin/Registration/ManagementPages.css",
+      "sha256": "8b50fac363ec32b950fff0abf3d2add126dd2946cfce5d0e07eb070fe06c2b4b"
+    },
+    {
+      "file": "src/views/admin/Registration/PatientManagement.jsx",
+      "sha256": "12b1e647dd2efa4215c76abf4f70700d42e656aea46892af9aceaa5370c77986"
+    },
+    {
+      "file": "src/views/admin/Registration/PatientModal.css",
+      "sha256": "7e6c951919a53325e2903f6b3f74ee3b7eee27c2b57cab304cc8f7fbd4623650"
+    },
+    {
+      "file": "src/views/admin/Registration/PatientModal.jsx",
+      "sha256": "1c3ae1b353094b3617f116259aadc2e9f4dc6d7dc0299fffb1794e77757d1859"
+    },
+    {
+      "file": "src/views/admin/Registration/UserManagement.jsx",
+      "sha256": "0bd3bc6854a9a16ad9342d30cb651180eedb27f19fc955b4467e3b64e27097f9"
+    },
+    {
+      "file": "src/views/admin/Registration/UserModal.css",
+      "sha256": "5aa2e1724274382200e89ed172517bd6156f169e61aea571cb6553dd3cebf1f2"
+    },
+    {
+      "file": "src/views/admin/Registration/UserModal.jsx",
+      "sha256": "e11a8eb59ded0b03ad40759f1e1b26055fd1d5d0b8f1a600f0edf938d9a31de6"
+    },
+    {
+      "file": "src/views/admin/Registration/exportUtils.js",
+      "sha256": "b5a6b1fff9a24f1018f687f1ecadb36c432d03452be29a31c86802839baf5f7e"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/ReportsPage.css",
+      "sha256": "5e685db6d317e50b49f474eeffa6d9480e6e3e47edaba62ea36be09f281a382d"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/ReportsPage.jsx",
+      "sha256": "69b11538a2b5bdbeeaa0b70859c170ad8bf61ee3688e6ee0b333923ba67e7e20"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/CorrelationDrilldownPanel.jsx",
+      "sha256": "2b2f7deca99dd05420b9a61200025f0fc9c48860c8e85ca871318a3ba10af2eb"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/DriversPanel.jsx",
+      "sha256": "9e9fe090206f90bee73b873b0357d8842843c7625511e1874ba7186572e14c76"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/ExportPanel.jsx",
+      "sha256": "befe2881316cbbc85d49cef4bfcfc985539a6d4a8abd77983b6de1d073e69594"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/ProgressBar.jsx",
+      "sha256": "075f8193d7b53221d34e2ef0e6de9ee3671267e7de69eec6010e7a0017aea81e"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/QuarterlyPanel.jsx",
+      "sha256": "f4fec0c5163eb1930b28e5b6cabecb386c0aa4e43389a75c1fa3775c0edd6e47"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/ReportsFiltersPanel.jsx",
+      "sha256": "75c337194e11e5e7d6a7a59b78bed3a8aa4156de9918c222b4354403c73d8ed5"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/ReportsHeader.jsx",
+      "sha256": "b2e0c09ba6393e541298f909f65fe13229f1f0b5912a86ce40972f466776a161"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/ReportsInfoFooter.jsx",
+      "sha256": "1882dee07b204b800a0c8617cf0cd0932a2d7cd0337d723e9b390a3b55f72386"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/StatCard.jsx",
+      "sha256": "ef3863ebc00137eed787e22a7f13de5cfb689b41cda096a9b2f897b3b22f3664"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/components/UsagePanel.jsx",
+      "sha256": "047c1eec563cf8c98a2225671f78a9d9237e9280a62274d728d87b7817ada321"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/config/reportsConfig.js",
+      "sha256": "7e81264729cdbda3be0c489a3769ba49a44e104941aa54c8083fc387b0e997ea"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/hooks/useReportsOverview.js",
+      "sha256": "b34a664cafdb170fb41fec0e475f1eac594912e0586791b415d869ce919151b9"
+    },
+    {
+      "file": "src/views/admin/ReportsPage/utils/exportUtils.js",
+      "sha256": "4d13578b6608171451a5b11dcdc7a53e1e28520d69a79301ee690adb6b891142"
+    },
+    {
+      "file": "src/views/admin/Requests/AccessRequests.css",
+      "sha256": "1d97a9615bc6a3830590d1884b02ed5828bf1be8cdda496771c1b6e048eee7b9"
+    },
+    {
+      "file": "src/views/admin/Requests/AccessRequests.jsx",
+      "sha256": "553f11ee500d0f768a77c8a055722ab7c2c3c4c476c5381273dcfe89825723fa"
+    },
+    {
+      "file": "src/views/admin/Research/IdeaDetailModal.jsx",
+      "sha256": "58a333cfd115d6a41408ee5a6b398c8c8ddfa1461f1acd3349669b497f47fd30"
+    },
+    {
+      "file": "src/views/admin/Research/IdeaModal.jsx",
+      "sha256": "4a3d5e20c52dc68db94f4dce1b5ea8d0cad214ba5fc33a92f7761a562c83892b"
+    },
+    {
+      "file": "src/views/admin/Research/ProductionModal.jsx",
+      "sha256": "e4ed6757db5e3f22ecb1838a07b9a25f37b5e6ebae8411c87f1293e62610ab2e"
+    },
+    {
+      "file": "src/views/admin/Research/ResearchProjectModal.jsx",
+      "sha256": "be6e6ea56b1a065f53c6203b15b1ec3cf5e5cd27d56184ee465a88245a2a699e"
+    },
+    {
+      "file": "src/views/admin/Research/ResearchProjects.css",
+      "sha256": "79206fffa6e585480bf8a74c56119fe9b41dd50c0937e4b3a47c231bbe51a2cf"
+    },
+    {
+      "file": "src/views/admin/Research/ResearchProjects.jsx",
+      "sha256": "12870520da39ed0e3ecabe5823b4d7983f6586aa38cffdba80ee69d02a7fb30c"
+    },
+    {
+      "file": "src/views/admin/SideBar/Sidebar.jsx",
+      "sha256": "c2a5a18419d395e241eb38e70c7ccba27d69d94fa6f8ca0af02def43a5ff1719"
+    },
+    {
+      "file": "src/views/admin/common/Table.jsx",
+      "sha256": "35e8361625b9561a91677583b44e11fc8a3d47d47b7bf2ce53f57754e26855a1"
+    },
+    {
+      "file": "src/views/avaliacoes/AvaliacaoAlimentar.css",
+      "sha256": "f6a0ec2a65b313888897dee17898ca159e41d94a963f2c371a0daae56db114b1"
+    },
+    {
+      "file": "src/views/avaliacoes/AvaliacaoAlimentar.jsx",
+      "sha256": "c4f0c67d032f5996d46feb23a651ef0d3574d98fae2504251ceb34cdb0380f43"
+    },
+    {
+      "file": "src/views/avaliacoes/AvaliacaoCargaTreino.css",
+      "sha256": "8e2ad0ba15b24b58f72659edea4cf79a32725b5119325ee2d9703422b0fe2ffa"
+    },
+    {
+      "file": "src/views/avaliacoes/AvaliacaoCargaTreino.jsx",
+      "sha256": "f202b90a9471a13892a731284603b9f50bf1fb1a8d653f620e495b49e6208d8a"
+    },
+    {
+      "file": "src/views/avaliacoes/AvaliacaoTriagemREDS.css",
+      "sha256": "a16b8c58988c76ad3da0f87010cdfb9eb504d05a41ed8097e8ac2e5500921176"
+    },
+    {
+      "file": "src/views/avaliacoes/AvaliacaoTriagemREDS.jsx",
+      "sha256": "9ef54c1eb2c037cd3ab95ad7e9e43f2de4bcd3be39133d066325e1b11ae0c2aa"
+    },
+    {
+      "file": "src/views/planos/PrescricaoPlano.css",
+      "sha256": "378142d9fa7a5d78b8ade23534c6c018fd4553b4b6eae8ce6feffe6f1abedcfc"
+    },
+    {
+      "file": "src/views/planos/PrescricaoPlano.jsx",
+      "sha256": "8b76a73c4304f011d1bd9cfb3e8c697e39d3e28f8a2da975258ab44e7a5d9515"
+    },
+    {
+      "file": "src/views/planos/PrescricaoPlanoAlimentar.css",
+      "sha256": "e3ea54289aecaf87a639543917b13df9ddd17ca868db98f2f30fdd991d901079"
+    },
+    {
+      "file": "src/views/planos/PrescricaoPlanoAlimentar.jsx",
+      "sha256": "62d528ee1986886d709e12e9e8d5e49cdc7fd703f4fa92f9215a07e9a2dbedef"
+    },
+    {
+      "file": "src/views/professor/ProfessorAgenda.css",
+      "sha256": "8794e501bb5b8b1b3f27e8f218fc9c959202ce0b003ac7cbb4fdff9924f08d10"
+    },
+    {
+      "file": "src/views/professor/ProfessorAgenda.jsx",
+      "sha256": "a4cbd35b2342f2e5938fcbb7772c79c8ce79fa3d50a8e33d1c880fcfc003da57"
+    },
+    {
+      "file": "src/views/professor/ProfessorDashboard.jsx",
+      "sha256": "0c2f4dbcac4606814fc98743885200fbb5ea6b8f553b059635d21338284f4d66"
+    },
+    {
+      "file": "src/views/professor/ProfessorHeader.jsx",
+      "sha256": "7579661fd892a989547adce9f70f0a1728f902595f5ce50c4e2cdbc4db157a1b"
+    },
+    {
+      "file": "src/views/professor/ProfessorSidebar.jsx",
+      "sha256": "3f75f6af1691914670ff81f8e0d71fdf7d608871ed77aae3af7a55eb7a487ab5"
+    },
+    {
+      "file": "src/views/professor/ProfessorView.css",
+      "sha256": "bc52f607333fc90b8b08f1dde246a934bc002ae7a70987baffce05082f13ad7d"
+    },
+    {
+      "file": "src/views/professor/ProfessorView.jsx",
+      "sha256": "1bedc84bf0998577236c42cb3062e6f3db341e688f729703e03afb749da11a80"
+    },
+    {
+      "file": "src/views/professor/agenda/ProfessorAgendaDayAppointments.jsx",
+      "sha256": "beb96791f9486910fc2c850452b62806ae347c05918b06e66934af22010872da"
+    },
+    {
+      "file": "src/views/professor/agenda/agendaConstants.js",
+      "sha256": "30bc841c4b297157e822b189cdbb7cbc0f48a3fdd2c73065142e94bbcbe3ce5c"
+    },
+    {
+      "file": "src/views/public/InscricaoPublica.css",
+      "sha256": "69c7dabdd017453adb5459ca562cc31543baf515a3373c6851e164ad742b25d8"
+    },
+    {
+      "file": "src/views/public/InscricaoPublica.jsx",
+      "sha256": "66fe86f8e81669b0283dec5248c65872945f2dcdeac0238276e80ac2724e27cd"
+    },
+    {
+      "file": "src/views/shared/ProfileSwitcher.jsx",
+      "sha256": "fcb4446522275f7aea55bdac5b830ab7964eed6e087ffdbc34bdbdcc7a89803e"
+    },
+    {
+      "file": "src/views/shared/RouteSidebarLayout.jsx",
+      "sha256": "07e69a2fa4cb05eafeeb010d5171cda2bad71a1162c88fedc1fdd9e74a8495d4"
+    },
+    {
+      "file": "src/views/shared/SidebarFooter.jsx",
+      "sha256": "850d0484f406e3d97b6dadff7fccb54a8cc7145449e156123a27691fa6de6fe0"
+    },
+    {
+      "file": "src/views/shared/SidebarHeader.jsx",
+      "sha256": "6e6cb4a07a2a973296eda49f875f0121572c8173b8c4644f088fc08f9b2951a4"
+    },
+    {
+      "file": "src/views/shared/nomeExibicao.js",
+      "sha256": "0808a312caabfccbe0ec610ac6f4505d51116a6c2f81f60d9b952fe09834ac8e"
+    },
+    {
+      "file": "src/views/shared/sidebar-tokens.css",
+      "sha256": "351d62b4e8d413d6ebbefec2f42eac407b9c599369474a169d5d71f3f46725c2"
+    },
+    {
+      "file": "tests/browser/readiness.spec.js",
+      "sha256": "90992907ba4bba3175e28807019f4e79d9e7bed832b88901e28a4bd435409e0e"
+    },
+    {
+      "file": "tests/browser/realtime.spec.js",
+      "sha256": "fa7f152b8144965d9a5d2eef675e76ad214ff5a7baa95e024ad0d336d2c353ce"
+    },
+    {
+      "file": "tests/browser/tour-completo.spec.js",
+      "sha256": "6220a84bfc4dbd259ca5371ff171c11cc572b3ce3d27649fd40720c64cfe7689"
+    },
+    {
+      "file": "tests/browser/tour-manual.spec.js",
+      "sha256": "42955cd98a61c0664711c223363844e24c1968a3adca3e3b924ee6208bd8a9a0"
+    },
+    {
+      "file": "tests/core/date-utils.test.mjs",
+      "sha256": "1d200ebb3b0c004abe5e0da679e0a30548c65b5499e8a9b1a0dd14e12ececf81"
+    },
+    {
+      "file": "tests/core/request-ip.test.mjs",
+      "sha256": "1272dd386c0e72a0d6c2c2618b2411d88b8da44026138509cf58d058a50ca884"
+    },
+    {
+      "file": "tests/core/roles.test.mjs",
+      "sha256": "38e0399ca60f93492df35536ecadcc0568dce51b4d95f1c71229b198b0fedea0"
+    },
+    {
+      "file": "vite.config.js",
+      "sha256": "036075e57393474943e9634dd2ab45c1e0a326dc371b0833e77ffb835cf688b3"
+    }
+  ]
+}

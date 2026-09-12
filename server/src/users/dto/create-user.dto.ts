@@ -7,9 +7,13 @@ import {
   IsString,
   Matches,
   MinLength,
-  IsUUID
+  IsUUID,
+  IsArray,
+  ArrayMaxSize
 } from 'class-validator';
-import { USER_ROLES, USER_STATUS } from '../../common/domain/access.constants';
+import { PERMISSIONS, USER_ROLES, USER_STATUS } from '../../common/domain/access.constants';
+
+const VALID_PERMISSIONS = Object.values(PERMISSIONS);
 
 const emptyToUndefined = ({ value }: { value: unknown }) => {
   if (value === null || value === undefined) return undefined;
@@ -58,8 +62,19 @@ export class CreateUserDto {
   supervisorNome?: string;
 
   @IsOptional()
+  @IsUUID()
+  profissionalId?: string;
+
+  @IsOptional()
   @IsString()
   diretoria?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @IsIn(VALID_PERMISSIONS, { each: true })
+  permissions?: string[];
 
   @IsOptional()
   @IsString()

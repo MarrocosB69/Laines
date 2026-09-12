@@ -49,6 +49,8 @@ jobs:
 
       - name: Frontend build
         run: npm run build
+        env:
+          VITE_API_URL: http://127.0.0.1:4000
 
       - name: Core tests
         run: npm run test:core
@@ -173,7 +175,27 @@ jobs:
 
       - name: E2E role contracts per profile
         run: npm run test:e2e:roles
+
+      - name: Build frontend for smoke
+        run: npm run build
         env:
+          VITE_API_URL: http://127.0.0.1:4000
+
+      - name: Install browser for profile smoke
+        run: npx playwright install --with-deps chromium
+
+      - name: Start frontend preview
+        run: |
+          nohup npm run preview -- --port 4173 > e2e-artifacts/preview.out.log 2> e2e-artifacts/preview.err.log &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4173/ > /dev/null && break
+            sleep 2
+          done
+
+      - name: Smoke de perfis (todos os papeis alcancam uma tela utilizavel)
+        run: npm run test:smoke:perfis
+        env:
+          SMOKE_PERFIS_BASE_URL: http://localhost:4173
           E2E_API_BASE_URL: http://127.0.0.1:4000
 
       - name: E2E analytics and export

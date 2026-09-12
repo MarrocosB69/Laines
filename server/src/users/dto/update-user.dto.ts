@@ -1,6 +1,18 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, IsUUID } from 'class-validator';
-import { USER_ROLES, USER_STATUS } from '../../common/domain/access.constants';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches
+} from 'class-validator';
+import { PERMISSIONS, USER_ROLES, USER_STATUS } from '../../common/domain/access.constants';
+
+const VALID_PERMISSIONS = Object.values(PERMISSIONS);
 
 const emptyToUndefined = ({ value }: { value: unknown }) => {
   if (value === null || value === undefined) return undefined;
@@ -12,6 +24,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsEmail()
+  recoveryEmail?: string;
 
   @IsOptional()
   @IsString()
@@ -51,8 +67,19 @@ export class UpdateUserDto {
   supervisorNome?: string;
 
   @IsOptional()
+  @IsUUID()
+  profissionalId?: string;
+
+  @IsOptional()
   @IsString()
   diretoria?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @IsIn(VALID_PERMISSIONS, { each: true })
+  permissions?: string[];
 
   @IsOptional()
   @IsString()

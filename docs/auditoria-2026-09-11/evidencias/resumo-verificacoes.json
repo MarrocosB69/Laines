@@ -1,0 +1,1287 @@
+{
+  "timestamp": "2026-09-11T16:39:12.248Z",
+  "corePassed": 100,
+  "coreFailed": 0,
+  "audit": {
+    "frontend": {
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 1,
+          "high": 9,
+          "critical": 0,
+          "total": 10
+        },
+        "dependencies": {
+          "prod": 109,
+          "dev": 302,
+          "optional": 82,
+          "peer": 18,
+          "peerOptional": 0,
+          "total": 499
+        }
+      },
+      "packages": [
+        {
+          "name": "axios",
+          "severity": "high",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "Axios: Prototype pollution auth subfields can inject Basic auth",
+              "url": "https://github.com/advisories/GHSA-xj6q-8x83-jv6g",
+              "range": ">=1.15.2 <1.18.0"
+            },
+            {
+              "title": "Axios: Prototype pollution gadgets can alter axios request construction",
+              "url": "https://github.com/advisories/GHSA-mmx7-hfxf-jppx",
+              "range": ">=1.0.0 <1.18.0"
+            },
+            {
+              "title": "Axios: Deep formToJSON Key Recursion Can Cause Denial of Service",
+              "url": "https://github.com/advisories/GHSA-pmv8-rq9r-6j72",
+              "range": ">=1.0.0 <1.18.0"
+            },
+            {
+              "title": "Axios: HTTP/2 streamed uploads bypass `maxBodyLength`",
+              "url": "https://github.com/advisories/GHSA-mwf2-3pr3-8698",
+              "range": ">=1.13.0 <1.18.0"
+            },
+            {
+              "title": "Axios Node HTTP adapter can use an inherited proxy after interceptor config cloning",
+              "url": "https://github.com/advisories/GHSA-gcfj-64vw-6mp9",
+              "range": ">=1.15.2 <1.18.0"
+            },
+            {
+              "title": "Axios: Nested axios option objects can consume polluted prototype values",
+              "url": "https://github.com/advisories/GHSA-7q8q-rj6j-mhjq",
+              "range": ">=1.0.0 <1.18.0"
+            },
+            {
+              "title": "Axios: Fetch adapter `ReadableStream` uploads bypass `maxBodyLength`",
+              "url": "https://github.com/advisories/GHSA-jqh4-m9w3-8hp9",
+              "range": ">=1.7.0 <1.18.0"
+            },
+            {
+              "title": "Axios: NO_PROXY bypass for 0.0.0.0 local addresses in axios",
+              "url": "https://github.com/advisories/GHSA-f4gw-2p7v-4548",
+              "range": ">=1.15.0 <1.18.0"
+            },
+            {
+              "title": "Axios: Excessive recursion in formDataToJSON can cause denial of service",
+              "url": "https://github.com/advisories/GHSA-42h9-826w-cgv3",
+              "range": ">=1.0.0 <1.18.0"
+            },
+            {
+              "title": "Axios form serializer maxDepth bypass via {} metatoken",
+              "url": "https://github.com/advisories/GHSA-hcpx-6fm6-wx23",
+              "range": ">=1.15.1 <1.18.0"
+            }
+          ]
+        },
+        {
+          "name": "engine.io-client",
+          "severity": "moderate",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": []
+        },
+        {
+          "name": "form-data",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "form-data: CRLF injection in form-data via unescaped multipart field names and filenames",
+              "url": "https://github.com/advisories/GHSA-hmw2-7cc7-3qxx",
+              "range": ">=4.0.0 <4.0.6"
+            }
+          ]
+        },
+        {
+          "name": "nanoid",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "nanoid: non-secure generators can loop indefinitely with negative size",
+              "url": "https://github.com/advisories/GHSA-28wg-ghj8-5hjv",
+              "range": "<3.3.16"
+            },
+            {
+              "title": "nanoid: custom generators can loop indefinitely when size is zero",
+              "url": "https://github.com/advisories/GHSA-2v37-7h3g-55p8",
+              "range": "<3.3.18"
+            },
+            {
+              "title": "nanoid: Integer Overflow or Wraparound",
+              "url": "https://github.com/advisories/GHSA-xwg4-73v4-xw9w",
+              "range": "<3.3.12"
+            }
+          ]
+        },
+        {
+          "name": "postcss",
+          "severity": "high",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
+              "url": "https://github.com/advisories/GHSA-fxqj-rqcc-2cmp",
+              "range": "<=8.5.22"
+            },
+            {
+              "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+              "url": "https://github.com/advisories/GHSA-r28c-9q8g-f849",
+              "range": "<=8.5.17"
+            }
+          ]
+        },
+        {
+          "name": "react-router",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "React Router's vendored turbo-stream v2 allows arbitrary constructor invocation via TYPE_ERROR deserialization leading to Unauth RCE",
+              "url": "https://github.com/advisories/GHSA-49rj-9fvp-4h2h",
+              "range": ">=7.0.0 <=7.14.1"
+            },
+            {
+              "title": "React Router vulnerable to XSS in unstable RSC redirect handling via javascript: redirect targets",
+              "url": "https://github.com/advisories/GHSA-8646-j5j9-6r62",
+              "range": ">=7.7.0 <7.13.2"
+            },
+            {
+              "title": "React Router vulnerable to DoS via unbounded path expansion in __manifest endpoint",
+              "url": "https://github.com/advisories/GHSA-8x6r-g9mw-2r78",
+              "range": ">=7.0.0 <7.15.0"
+            },
+            {
+              "title": "React Router vulnerable to Denial of Service via reflected user input in single-fetch",
+              "url": "https://github.com/advisories/GHSA-rxv8-25v2-qmq8",
+              "range": ">=7.0.0 <7.14.0"
+            },
+            {
+              "title": "React Router: Potential CSRF via PUT/PATCH/DELETE document requests",
+              "url": "https://github.com/advisories/GHSA-84g9-w2xq-vcv6",
+              "range": ">=7.12.0 <7.15.1"
+            },
+            {
+              "title": "React Router: Open redirect via backslash in <Link> and useNavigate (CVE-2025-68470 bypass)",
+              "url": "https://github.com/advisories/GHSA-wrjc-x8rr-h8h6",
+              "range": ">=6.0.0 <7.18.0"
+            },
+            {
+              "title": "React Router: RSCErrorHandler Missing Protocol Validation (XSS)",
+              "url": "https://github.com/advisories/GHSA-h8fp-f39c-q6mh",
+              "range": ">=7.11.0 <7.18.0"
+            },
+            {
+              "title": "React Router: Arbitrary Constructor Injection via deserializeErrors() in React Router SSR Hydration",
+              "url": "https://github.com/advisories/GHSA-337j-9hxr-rhxg",
+              "range": ">=6.4.0 <7.18.0"
+            },
+            {
+              "title": "React Router: Unauthenticated Denial of Service via Inefficient Route Matching",
+              "url": "https://github.com/advisories/GHSA-chx6-hx7r-mcp5",
+              "range": ">=7.0.0 <7.18.0"
+            },
+            {
+              "title": "React Router's same-origin redirect with path starting // causes open redirect via protocol-relative URL reinterpretation",
+              "url": "https://github.com/advisories/GHSA-2j2x-hqr9-3h42",
+              "range": ">=7.0.0 <7.14.1"
+            },
+            {
+              "title": "React Router: RSC Mode CSRF Bypass Allows Action Execution Before 400 Response",
+              "url": "https://github.com/advisories/GHSA-qwww-vcr4-c8h2",
+              "range": ">=7.12.0 <7.18.2"
+            },
+            {
+              "title": "React Router has stored XSS via unescaped Location header in prerendered redirect HTML",
+              "url": "https://github.com/advisories/GHSA-f22v-gfqf-p8f3",
+              "range": ">=7.5.1 <7.13.2"
+            }
+          ]
+        },
+        {
+          "name": "react-router-dom",
+          "severity": "high",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": []
+        },
+        {
+          "name": "socket.io-parser",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "Socket.IO: Zero-attachment Memory Exhaustion",
+              "url": "https://github.com/advisories/GHSA-2m8v-j782-fhvr",
+              "range": ">=4.0.0 <4.2.7"
+            }
+          ]
+        },
+        {
+          "name": "vite",
+          "severity": "high",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+              "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3",
+              "range": ">=7.0.0 <=7.3.4"
+            },
+            {
+              "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+              "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff",
+              "range": ">=7.0.0 <=7.3.4"
+            }
+          ]
+        },
+        {
+          "name": "ws",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "ws: Uninitialized memory disclosure",
+              "url": "https://github.com/advisories/GHSA-58qx-3vcg-4xpx",
+              "range": ">=8.0.0 <8.20.1"
+            },
+            {
+              "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+              "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p",
+              "range": ">=8.0.0 <8.21.0"
+            }
+          ]
+        }
+      ]
+    },
+    "server": {
+      "metadata": {
+        "vulnerabilities": {
+          "info": 0,
+          "low": 1,
+          "moderate": 7,
+          "high": 8,
+          "critical": 0,
+          "total": 16
+        },
+        "dependencies": {
+          "prod": 288,
+          "dev": 274,
+          "optional": 4,
+          "peer": 22,
+          "peerOptional": 0,
+          "total": 579
+        }
+      },
+      "packages": [
+        {
+          "name": "@nestjs/platform-express",
+          "severity": "high",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": []
+        },
+        {
+          "name": "body-parser",
+          "severity": "low",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "body-parser vulnerable to denial of service when invalid limit value silently disables size enforcement",
+              "url": "https://github.com/advisories/GHSA-v422-hmwv-36x6",
+              "range": ">=2.0.0 <2.3.0"
+            }
+          ]
+        },
+        {
+          "name": "brace-expansion",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+              "url": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
+              "range": ">=2.0.0 <2.1.2"
+            },
+            {
+              "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+              "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+              "range": ">=2.0.0 <2.1.3"
+            },
+            {
+              "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+              "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+              "range": ">=2.0.0 <2.1.4"
+            }
+          ]
+        },
+        {
+          "name": "decode-uri-component",
+          "severity": "moderate",
+          "isDirect": false,
+          "fixAvailable": {
+            "name": "minio",
+            "version": "7.1.3",
+            "isSemVerMajor": true
+          },
+          "advisories": [
+            {
+              "title": "decode-uri-component: Denial of service via exponential decoding of malformed percent-encoded input",
+              "url": "https://github.com/advisories/GHSA-vcc3-ghjq-m6fr",
+              "range": "<=0.4.2"
+            }
+          ]
+        },
+        {
+          "name": "engine.io",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "Socket.IO: Engine.IO Polling Transport Connection Exhaustion",
+              "url": "https://github.com/advisories/GHSA-r635-g3xr-vw7x",
+              "range": ">=4.1.0 <6.6.7"
+            },
+            {
+              "title": "Socket.IO: Engine.IO WebTransport SID DoS",
+              "url": "https://github.com/advisories/GHSA-gr94-w7qr-f4j3",
+              "range": ">=6.5.0 <6.6.7"
+            }
+          ]
+        },
+        {
+          "name": "fast-xml-parser",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "fast-xml-parser: Repeated DOCTYPE declarations reset entity expansion limits",
+              "url": "https://github.com/advisories/GHSA-8r6m-32jq-jx6q",
+              "range": ">=5.9.3 <5.10.1"
+            }
+          ]
+        },
+        {
+          "name": "minio",
+          "severity": "moderate",
+          "isDirect": true,
+          "fixAvailable": {
+            "name": "minio",
+            "version": "7.1.3",
+            "isSemVerMajor": true
+          },
+          "advisories": []
+        },
+        {
+          "name": "multer",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "Multer vulnerable to Denial of Service via deeply nested field names",
+              "url": "https://github.com/advisories/GHSA-72gw-mp4g-v24j",
+              "range": ">=1.0.0 <2.2.0"
+            },
+            {
+              "title": "Multer vulnerable to Denial of Service via incomplete cleanup of aborted uploads",
+              "url": "https://github.com/advisories/GHSA-3p4h-7m6x-2hcm",
+              "range": ">=2.0.0-alpha.1 <2.2.0"
+            },
+            {
+              "title": "multer vulnerable to Denial of Service via crafted multipart field names",
+              "url": "https://github.com/advisories/GHSA-wc9g-mqfw-jrwm",
+              "range": "<2.3.0"
+            },
+            {
+              "title": "multer vulnerable to file size limit bypass via async fileFilter race condition",
+              "url": "https://github.com/advisories/GHSA-qvfw-j98x-7q72",
+              "range": "<2.3.0"
+            },
+            {
+              "title": "multer vulnerable to Denial of Service via oversized array index in field names",
+              "url": "https://github.com/advisories/GHSA-535w-7cp7-47q4",
+              "range": "<2.3.0"
+            }
+          ]
+        },
+        {
+          "name": "nodemailer",
+          "severity": "high",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "Nodemailer: Message-level raw option bypasses disableFileAccess/disableUrlAccess, enabling arbitrary file read and full-response SSRF in the delivered message",
+              "url": "https://github.com/advisories/GHSA-p6gq-j5cr-w38f",
+              "range": "<=9.0.0"
+            },
+            {
+              "title": "Nodemailer: resolveContent() on a MailMessage bypasses disableFileAccess/disableUrlAccess when called with the legacy signature",
+              "url": "https://github.com/advisories/GHSA-8m3c-c648-2xjj",
+              "range": "<=9.1.0"
+            },
+            {
+              "title": "Nodemailer: IDN/Punycode domain allow-list bypass leads to email delivery to an attacker-controlled domain",
+              "url": "https://github.com/advisories/GHSA-wmmp-3585-3rmp",
+              "range": "<9.1.0"
+            },
+            {
+              "title": "Nodemailer: Quadratic (O(n²)) time complexity in addressparser allows remote denial of service via a crafted address list",
+              "url": "https://github.com/advisories/GHSA-2x7j-588g-ccc2",
+              "range": "<9.1.0"
+            },
+            {
+              "title": "Nodemailer: Recipient-domain validation bypass via RFC 5322 comment mis-parsing leads to email delivery to an attacker-controlled domain",
+              "url": "https://github.com/advisories/GHSA-cc9r-2j5m-2m83",
+              "range": ">=6.9.16 <9.1.0"
+            }
+          ]
+        },
+        {
+          "name": "qs",
+          "severity": "moderate",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set",
+              "url": "https://github.com/advisories/GHSA-q8mj-m7cp-5q26",
+              "range": ">=6.11.1 <=6.15.1"
+            },
+            {
+              "title": "qs array-limit bypass via bracket-key comma parsing",
+              "url": "https://github.com/advisories/GHSA-x5fp-wj9c-mxmx",
+              "range": ">=6.14.2 <=6.15.3"
+            },
+            {
+              "title": "qs: Denial of Service via Attacker Controlled isBuffer",
+              "url": "https://github.com/advisories/GHSA-4mjr-xmp4-gh2g",
+              "range": ">=2.2.5 <6.16.0"
+            }
+          ]
+        },
+        {
+          "name": "query-string",
+          "severity": "moderate",
+          "isDirect": false,
+          "fixAvailable": {
+            "name": "minio",
+            "version": "7.1.3",
+            "isSemVerMajor": true
+          },
+          "advisories": []
+        },
+        {
+          "name": "socket.io-adapter",
+          "severity": "moderate",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": []
+        },
+        {
+          "name": "socket.io-parser",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "Socket.IO: Zero-attachment Memory Exhaustion",
+              "url": "https://github.com/advisories/GHSA-2m8v-j782-fhvr",
+              "range": ">=4.0.0 <4.2.7"
+            }
+          ]
+        },
+        {
+          "name": "stream-json",
+          "severity": "moderate",
+          "isDirect": false,
+          "fixAvailable": {
+            "name": "minio",
+            "version": "7.1.3",
+            "isSemVerMajor": true
+          },
+          "advisories": [
+            {
+              "title": "stream-json: pick/ignore/filter/replace filters are O(depth²) on nested input — small crafted JSON blocks the event loop for seconds→minutes (DoS)",
+              "url": "https://github.com/advisories/GHSA-528h-pc64-c93x",
+              "range": "<=3.4.0"
+            }
+          ]
+        },
+        {
+          "name": "typeorm",
+          "severity": "moderate",
+          "isDirect": true,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "TypeORM: SQL Injection in UpdateQueryBuilder/SoftDeleteQueryBuilder orderBy (MySQL/MariaDB)",
+              "url": "https://github.com/advisories/GHSA-9ggv-8w38-r7pm",
+              "range": ">=0.1.12 <=0.3.28"
+            },
+            {
+              "title": " TypeORM: migration:generate template-literal code injection",
+              "url": "https://github.com/advisories/GHSA-2rp8-mm9q-fp49",
+              "range": "<0.3.31"
+            }
+          ]
+        },
+        {
+          "name": "ws",
+          "severity": "high",
+          "isDirect": false,
+          "fixAvailable": true,
+          "advisories": [
+            {
+              "title": "ws: Uninitialized memory disclosure",
+              "url": "https://github.com/advisories/GHSA-58qx-3vcg-4xpx",
+              "range": ">=8.0.0 <8.20.1"
+            },
+            {
+              "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks",
+              "url": "https://github.com/advisories/GHSA-96hv-2xvq-fx4p",
+              "range": ">=8.0.0 <8.21.0"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "visual": [
+    {
+      "folder": "visual",
+      "captures": 37,
+      "navigationChecks": [
+        {
+          "role": "public",
+          "size": "desktop",
+          "error": "page.screenshot: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - taking page screenshot\u001b[22m\n\u001b[2m  - waiting for fonts to load...\u001b[22m\n\u001b[2m  - fonts loaded\u001b[22m\n"
+        },
+        {
+          "role": "aluno",
+          "size": "desktop",
+          "error": "page.goto: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:5173/aluno\", waiting until \"domcontentloaded\"\u001b[22m\n"
+        },
+        {
+          "role": "atleta",
+          "label": "Pendências2",
+          "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('aside .laines-sidebar__item').filter({ hasText: 'Pendências2' }).first()\u001b[22m\n\u001b[2"
+        },
+        {
+          "role": "atleta",
+          "label": "Cadastro",
+          "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('aside .laines-sidebar__item').filter({ hasText: 'Cadastro' }).first()\u001b[22m\n\u001b[2m  "
+        },
+        {
+          "role": "atleta",
+          "label": "Acompanhamento",
+          "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('aside .laines-sidebar__item').filter({ hasText: 'Acompanhamento' }).first()\u001b[22m\n"
+        }
+      ],
+      "screens": [
+        {
+          "key": "desktop-aluno-inicio",
+          "textLength": 621,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Visão Geral",
+          "textLength": 621,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Meus Atletas",
+          "textLength": 422,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Minha Agenda",
+          "textLength": 703,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Pesquisa",
+          "textLength": 960,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Ensino",
+          "textLength": 796,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Extensão",
+          "textLength": 891,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-Avaliação por imagem",
+          "textLength": 608,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-prescricao",
+          "textLength": 0,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-admin-inicio",
+          "textLength": 1345,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Início",
+          "textLength": 1345,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Membros",
+          "textLength": 1104,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Atletas",
+          "textLength": 725,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Pesquisa",
+          "textLength": 956,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Ensino",
+          "textLength": 717,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Extensão",
+          "textLength": 828,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Solicitações",
+          "textLength": 509,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Relatórios",
+          "textLength": 2653,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-admin-Configurações",
+          "textLength": 601,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-professor-inicio",
+          "textLength": 573,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-professor-Visão Geral",
+          "textLength": 573,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-professor-Alunos e Atletas",
+          "textLength": 447,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-professor-Agenda",
+          "textLength": 819,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-professor-Pesquisa",
+          "textLength": 1025,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-professor-Ensino",
+          "textLength": 780,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-professor-Extensão",
+          "textLength": 875,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-tecnico-inicio",
+          "textLength": 136,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-atleta-inicio",
+          "textLength": 795,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 1,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-public-inicio",
+          "textLength": 707,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 5,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-aluno-inicio",
+          "textLength": 605,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-prescricao",
+          "textLength": 0,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-admin-inicio",
+          "textLength": 1321,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-professor-inicio",
+          "textLength": 553,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-tecnico-inicio",
+          "textLength": 136,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-atleta-inicio",
+          "textLength": 778,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 1,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-diretoria_ensino",
+          "textLength": 973,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        },
+        {
+          "key": "desktop-aluno-diretoria_marketing",
+          "textLength": 973,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 1
+        }
+      ]
+    },
+    {
+      "folder": "visual-detalhes",
+      "captures": 9,
+      "navigationChecks": [
+        {
+          "role": "aluno",
+          "size": "mobile",
+          "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Atleta Demonstração', { exact: true }).first()\u001b[22m\n\u001b[2m    - locator resolved to <h4 class=\"patient-name\">Atleta Demonstração</h4>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not stable\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not stable\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  3 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <nav aria-label=\"Navegação principal\" class=\"laines-sidebar__nav custom-scrollbar\">…</nav> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m  13 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <span class=\"sb-header__sub\">Liga Acadêmica Interprofissional de Nutrição Espo…</span> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"laines-sidebar__brand\">…</div> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <nav aria-label=\"Navegação principal\" class=\"laines-sidebar__nav custom-scrollbar\">…</nav> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <nav aria-label=\"Navegação principal\" class=\"laines-sidebar__nav custom-scrollbar\">…</nav> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+        }
+      ],
+      "screens": [
+        {
+          "key": "desktop-public-inicio",
+          "textLength": 707,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 5,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-aluno-inicio",
+          "textLength": 621,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-prescricao",
+          "textLength": 1487,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 6,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-prontuario",
+          "textLength": 1775,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-atleta-inicio",
+          "textLength": 795,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 1,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-public-inicio",
+          "textLength": 707,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 5,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-aluno-inicio",
+          "textLength": 605,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-prescricao",
+          "textLength": 1471,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 6,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-atleta-inicio",
+          "textLength": 778,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 1,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        }
+      ]
+    },
+    {
+      "folder": "visual-atleta",
+      "captures": 5,
+      "navigationChecks": [],
+      "screens": [
+        {
+          "key": "desktop-atleta-inicio",
+          "textLength": 548,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-atleta-Pendências2",
+          "textLength": 548,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "desktop-atleta-Cadastro",
+          "textLength": 136,
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "scrollWidth": 1440,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-atleta-inicio",
+          "textLength": 531,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        },
+        {
+          "key": "mobile-atleta-menu-fechado",
+          "textLength": 370,
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "scrollWidth": 390,
+          "dialogs": 0,
+          "pageErrors": [],
+          "smallTargets": 0,
+          "unnamedButtons": 0
+        }
+      ]
+    }
+  ]
+}

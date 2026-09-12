@@ -8,9 +8,10 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { RolesGuard } from '../auth/roles.guard';
 import { ObservabilityModule } from '../observability/observability.module';
+import { CredentialsModule } from '../credentials/credentials.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Projeto, Paciente, Agendamento]), ObservabilityModule],
+  imports: [TypeOrmModule.forFeature([User, Projeto, Paciente, Agendamento]), ObservabilityModule, CredentialsModule],
   providers: [UsersService, RolesGuard],
   controllers: [UsersController],
   exports: [UsersService, TypeOrmModule]

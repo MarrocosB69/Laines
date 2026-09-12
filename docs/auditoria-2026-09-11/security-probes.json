@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-09-12T01:03:29.305Z",
+  "method": "real source services + synthetic doubles; upload isolated loopback Nest controller",
+  "databaseAccess": false,
+  "externalNetworkAccess": false,
+  "checks": [
+    {
+      "name": "SEC-01 recovery requires opaque token, no identifier/cpf/birthdate",
+      "result": "reproduced",
+      "evidence": {
+        "dtoFields": [],
+        "recoveryWithoutToken": "rejected",
+        "recoveryWithoutCredentials": "rejected"
+      }
+    },
+    {
+      "name": "SEC-02 delegated user read hides passwordHash and tempPassword",
+      "result": "reproduced",
+      "evidence": {
+        "passwordHashHidden": true,
+        "tempPasswordHidden": true,
+        "cpfStillPresent": true,
+        "dataNascimentoStillPresent": true
+      }
+    },
+    {
+      "name": "SEC-03 realtime never delivers clinical payload to sockets",
+      "result": "reproduced",
+      "evidence": {
+        "delivered": [
+          {
+            "event": "pacientes.updated",
+            "data": {
+              "invalidate": true
+            }
+          }
+        ],
+        "clinicalPayloadDelivered": false
+      }
+    },
+    {
+      "name": "SEC-04 realtime rejects temporary-password session at handshake",
+      "result": "reproduced",
+      "evidence": {
+        "rejected": true
+      }
+    },
+    {
+      "name": "SEC-05 public inscription does not overwrite existing triage by CPF",
+      "result": "reproduced",
+      "evidence": {
+        "saveCalled": 0,
+        "returnedMessage": true
+      }
+    },
+    {
+      "name": "SEC-06 non-admin export forces own scope and anonymization",
+      "result": "reproduced",
+      "evidence": {
+        "forcedProject": "12345678-1234-4234-8234-123456789012",
+        "forcedAnonymize": "true",
+        "noProjectRejected": true
+      }
+    },
+    {
+      "name": "SEC-07 CSV formula prefix is neutralized",
+      "result": "reproduced",
+      "evidence": {
+        "dangerous": "\"'=1+1\"",
+        "plain": "\"hello\""
+      }
+    },
+    {
+      "name": "SEC-08 upload rejects before persisting to disk",
+      "result": "reproduced",
+      "evidence": {
+        "written": [],
+        "storage": "memoryStorage",
+        "persistAfterReject": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,261 @@
+{
+  "recordedAt": "2026-09-11T16:23:41.213Z",
+  "byGroup": {
+    "src": {
+      "files": 285,
+      "lines": 120235,
+      "bytes": 3938470
+    },
+    "server/src": {
+      "files": 210,
+      "lines": 33085,
+      "bytes": 1139813
+    },
+    "scripts": {
+      "files": 34,
+      "lines": 12199,
+      "bytes": 509752
+    },
+    "tests": {
+      "files": 7,
+      "lines": 1732,
+      "bytes": 76687
+    },
+    "laines-image-processor": {
+      "files": 20,
+      "lines": 7105,
+      "bytes": 280513
+    }
+  },
+  "largestSource": [
+    {
+      "file": "src/views/AvaliacaoCompleta.css",
+      "bytes": 109025,
+      "lines": 3850
+    },
+    {
+      "file": "src/views/AvaliacaoCompleta.jsx",
+      "bytes": 145231,
+      "lines": 3608
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-imagem/AvaliacaoImagem.css",
+      "bytes": 68664,
+      "lines": 3268
+    },
+    {
+      "file": "src/services/calculationEngine.js",
+      "bytes": 115962,
+      "lines": 3211
+    },
+    {
+      "file": "scripts/run-core-tests.mjs",
+      "bytes": 112703,
+      "lines": 3031
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/PerimetrosCorporaisForm.jsx",
+      "bytes": 102905,
+      "lines": 2682
+    },
+    {
+      "file": "src/components/Prontuario/ProntuarioPatch.css",
+      "bytes": 62517,
+      "lines": 2404
+    },
+    {
+      "file": "server/src/analytics/analytics.service.ts",
+      "bytes": 83193,
+      "lines": 2361
+    },
+    {
+      "file": "src/components/Avaliacoes/avaliacao-imagem/AvaliacaoImagem.jsx",
+      "bytes": 86683,
+      "lines": 2303
+    },
+    {
+      "file": "src/views/Student/Patients/PatientProntuario.jsx",
+      "bytes": 95806,
+      "lines": 2274
+    },
+    {
+      "file": "server/src/avaliacoes/avaliacoes.service.ts",
+      "bytes": 86798,
+      "lines": 2255
+    },
+    {
+      "file": "server/src/pacientes/pacientes.service.ts",
+      "bytes": 75389,
+      "lines": 1917
+    },
+    {
+      "file": "src/views/admin/Research/ResearchProjects.jsx",
+      "bytes": 63581,
+      "lines": 1742
+    },
+    {
+      "file": "src/views/admin/ReportsPage/ReportsPage.css",
+      "bytes": 41937,
+      "lines": 1717
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/GastoEnergeticoTotalForm.jsx",
+      "bytes": 65616,
+      "lines": 1698
+    },
+    {
+      "file": "src/components/Avaliacoes/clinica/AvaliacaoClinicaForm.jsx",
+      "bytes": 59487,
+      "lines": 1664
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/BioimpedanciaForm.jsx",
+      "bytes": 64015,
+      "lines": 1621
+    },
+    {
+      "file": "src/views/Athlete/AthletePortal.css",
+      "bytes": 39859,
+      "lines": 1501
+    },
+    {
+      "file": "src/views/admin/Registration/PatientModal.jsx",
+      "bytes": 58254,
+      "lines": 1455
+    },
+    {
+      "file": "src/components/Avaliacoes/Antropometria/DobrasCutaneasForm.jsx",
+      "bytes": 57260,
+      "lines": 1438
+    },
+    {
+      "file": "src/views/admin/Research/ResearchProjects.css",
+      "bytes": 35446,
+      "lines": 1433
+    },
+    {
+      "file": "src/views/admin/Registration/ManagementPages.css",
+      "bytes": 31119,
+      "lines": 1381
+    },
+    {
+      "file": "scripts/generate-profile-manuals.mjs",
+      "bytes": 81083,
+      "lines": 1337
+    },
+    {
+      "file": "server/src/planos-alimentares/plano-alimentar.service.ts",
+      "bytes": 50588,
+      "lines": 1314
+    },
+    {
+      "file": "src/views/public/InscricaoPublica.jsx",
+      "bytes": 49589,
+      "lines": 1311
+    }
+  ],
+  "workflows": [
+    {
+      "file": "ci.yml",
+      "valid": false,
+      "reason": "duplicated mapping key",
+      "line": 192,
+      "column": 9
+    },
+    {
+      "file": "deploy.yml",
+      "valid": true
+    },
+    {
+      "file": "operational-drill.yml",
+      "valid": true
+    },
+    {
+      "file": "rollback.yml",
+      "valid": true
+    }
+  ],
+  "largestAssets": [
+    {
+      "file": "vendor-BbZ19v2k.js",
+      "bytes": 864272,
+      "gzipBytes": 244425
+    },
+    {
+      "file": "AvaliacaoCompleta-CcHMCRHa.js",
+      "bytes": 469367,
+      "gzipBytes": 119251
+    },
+    {
+      "file": "vendor-react-C9XXE4MT.js",
+      "bytes": 230387,
+      "gzipBytes": 73812
+    },
+    {
+      "file": "PatientProntuario-Cj907hV1.js",
+      "bytes": 216241,
+      "gzipBytes": 62146
+    },
+    {
+      "file": "vendor-charts-CK2EkRB9.js",
+      "bytes": 203623,
+      "gzipBytes": 54020
+    },
+    {
+      "file": "AdminView-BigoysIP.js",
+      "bytes": 161956,
+      "gzipBytes": 40506
+    },
+    {
+      "file": "AvaliacaoCompleta-D_vF-pv-.css",
+      "bytes": 160232,
+      "gzipBytes": 22585
+    },
+    {
+      "file": "PatientProntuario-jV3FriWM.css",
+      "bytes": 131011,
+      "gzipBytes": 22064
+    },
+    {
+      "file": "AdminView-CEg8wobf.css",
+      "bytes": 125021,
+      "gzipBytes": 20270
+    },
+    {
+      "file": "index-C8kYyCMr.js",
+      "bytes": 124553,
+      "gzipBytes": 37431
+    },
+    {
+      "file": "Extensao-TLkVHdIy.js",
+      "bytes": 94121,
+      "gzipBytes": 21160
+    },
+    {
+      "file": "AthleteView-NL_3k6nc.js",
+      "bytes": 93269,
+      "gzipBytes": 24177
+    },
+    {
+      "file": "municipios-CJCBYBi_.js",
+      "bytes": 85075,
+      "gzipBytes": 28867
+    },
+    {
+      "file": "vendor-framer-CXIBlDyt.js",
+      "bytes": 79927,
+      "gzipBytes": 25891
+    },
+    {
+      "file": "index-B_nO49XJ.css",
+      "bytes": 68568,
+      "gzipBytes": 14966
+    }
+  ],
+  "assetTotals": {
+    "files": 59,
+    "bytes": 3807896,
+    "gzipBytes": 991104
+  },
+  "migrationCount": 41
+}

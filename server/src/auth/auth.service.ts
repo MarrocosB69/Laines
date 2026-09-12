@@ -11,17 +11,20 @@ import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
+import { RecoveryRequestDto } from './dto/recovery-request.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { LoginAttemptsService } from './login-attempts.service';
 import { ObservabilityService } from '../observability/observability.service';
 import { RefreshTokensService } from './refresh-tokens.service';
 import { SettingsService } from '../settings/settings.service';
+import { CredentialsService } from '../credentials/credentials.service';
+import { getEffectivePermissions } from '../common/domain/access.constants';
 
 type AuthenticatedIdentity = {
   id: string;
@@ -29,6 +32,8 @@ type AuthenticatedIdentity = {
   role: string;
   name: string;
   status?: string;
+  diretoria?: string | null;
+  permissions?: string[];
   mustChangePassword?: boolean;
   sessionVersion?: number;
 };
@@ -51,6 +56,8 @@ type AuthResult = {
     email: string;
     role: string;
     name: string;
+    diretoria?: string | null;
+    permissions: string[];
     mustChangePassword: boolean;
   };
   authFlow: AuthFlowVersion;
@@ -117,7 +124,8 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly refreshTokens: RefreshTokensService,
     @Optional() private readonly settingsService?: SettingsService,
-    @Optional() private readonly observability?: ObservabilityService
+    @Optional() private readonly observability?: ObservabilityService,
+    @Optional() private readonly credentials?: CredentialsService
   ) {
     const configuredConcurrency = Number(this.config.get('auth.passwordCompareConcurrency') || 2);
     const compareConcurrency = Number.isFinite(configuredConcurrency)
@@ -332,14 +340,15 @@ export class AuthService {
     }
   }
 
-  private async signAccessToken(user: AuthenticatedIdentity, authFlow: AuthFlowVersion) {
+  private async signAccessToken(user: AuthenticatedIdentity, authFlow: AuthFlowVersion, sessionId: string) {
     const payload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       name: user.name,
       sv: Number(user.sessionVersion || 1),
-      typ: 'access'
+      typ: 'access',
+      sid: sessionId
     };
     const expiresIn = await this.resolveAccessTokenExpiresIn(authFlow);
     const tokenStartedAt = Date.now();
@@ -360,7 +369,17 @@ export class AuthService {
     if (authFlow === 'v1') {
       this.warnDeprecatedAuthFlowV1(user.email);
     }
-    const accessToken = await this.signAccessToken(user, authFlow);
+    const sessionId = input.existingRefreshTokenFamilyId || randomUUID();
+    const issued = input.existingRefreshToken && input.existingRefreshTokenExpiresAt
+      ? { refreshToken: input.existingRefreshToken, refreshTokenExpiresAt: input.existingRefreshTokenExpiresAt }
+      : await this.refreshTokens.issue({
+        userId: user.id,
+        sessionVersion: Number(user.sessionVersion || 1),
+        familyId: sessionId,
+        userAgent: input.userAgent,
+        ipAddress: input.clientIp
+      });
+    const accessToken = await this.signAccessToken(user, authFlow, sessionId);
     const result: AuthResult = {
       accessToken,
       authFlow,
@@ -369,25 +388,19 @@ export class AuthService {
         email: user.email,
         role: user.role,
         name: user.name,
+        diretoria: user.diretoria || null,
+        permissions: getEffectivePermissions({
+          role: user.role,
+          permissions: user.permissions,
+          diretoria: user.diretoria
+        }),
         mustChangePassword: user.mustChangePassword ?? false
       }
     };
 
     if (authFlow === 'v2') {
-      if (input.existingRefreshToken && input.existingRefreshTokenExpiresAt) {
-        result.refreshToken = input.existingRefreshToken;
-        result.refreshTokenExpiresAt = input.existingRefreshTokenExpiresAt.toISOString();
-      } else {
-        const issued = await this.refreshTokens.issue({
-          userId: user.id,
-          sessionVersion: Number(user.sessionVersion || 1),
-          familyId: input.existingRefreshTokenFamilyId,
-          userAgent: input.userAgent,
-          ipAddress: input.clientIp
-        });
-        result.refreshToken = issued.refreshToken;
-        result.refreshTokenExpiresAt = issued.refreshTokenExpiresAt.toISOString();
-      }
+      result.refreshToken = issued.refreshToken;
+      result.refreshTokenExpiresAt = issued.refreshTokenExpiresAt.toISOString();
     }
 
     return result;
@@ -532,8 +545,18 @@ export class AuthService {
     return response;
   }
 
-  async logout(rawRefreshToken?: string | null) {
+  async logout(rawRefreshToken?: string | null, authorization?: string) {
     await this.refreshTokens.revokeCurrent(rawRefreshToken);
+    const token = String(authorization || '').replace(/^Bearer\s+/i, '').trim();
+    if (token) {
+      let payload: { sub?: string; sid?: string; typ?: string } | undefined;
+      try {
+        payload = this.jwt.verify(token, { issuer: this.jwtIssuer, audience: this.jwtAudience });
+      } catch { /* Logout continua idempotente para credenciais expiradas. */ }
+      if (payload?.typ === 'access' && payload.sub && payload.sid) {
+        await this.refreshTokens.revokeFamilyForUser(payload.sub, payload.sid);
+      }
+    }
     return { success: true };
   }
 
@@ -567,65 +590,14 @@ export class AuthService {
     return { success: true };
   }
 
-  async recoverPassword(dto: RecoverPasswordDto) {
-    const normalizedIdentifier = this.normalizeRecoveryIdentifier(dto.identifier);
-    if (!normalizedIdentifier.raw) {
-      throw new BadRequestException('Identificador invalido.');
-    }
-
-    const attemptKey = `recover:${normalizedIdentifier.raw}`;
-    await this.loginAttempts.assertNotBlocked(attemptKey);
-
-    const user = await this.resolveRecoveryIdentityUser(normalizedIdentifier.raw);
-    if (!user) {
-      await this.loginAttempts.registerFailure(attemptKey);
-      throw new UnauthorizedException('Nao foi possivel validar os dados informados.');
-    }
-
-    if (String(user.status || '').toLowerCase() !== 'ativo') {
-      await this.loginAttempts.registerFailure(attemptKey);
-      throw new ForbiddenException('Conta inativa. Procure a administracao.');
-    }
-
-    const storedCpf = this.normalizeCpf(user.cpf);
-    const providedCpf = this.normalizeCpf(dto.cpf);
-    const storedBirthDate = this.normalizeBirthDate(user.dataNascimento);
-    const providedBirthDate = this.normalizeBirthDate(dto.dataNascimento);
-
-    if (!storedCpf || !storedBirthDate) {
-      throw new BadRequestException('Recuperacao indisponivel para esta conta. Procure a administracao.');
-    }
-
-    if (
-      !providedCpf
-      || !providedBirthDate
-      || storedCpf !== providedCpf
-      || storedBirthDate !== providedBirthDate
-    ) {
-      await this.loginAttempts.registerFailure(attemptKey);
-      throw new UnauthorizedException('Nao foi possivel validar os dados informados.');
-    }
-
-    const emailLocalPart = String(user.email || '').split('@')[0].toLowerCase();
-    if (emailLocalPart.length >= 4 && dto.newPassword.toLowerCase().includes(emailLocalPart)) {
-      throw new BadRequestException('A nova senha nao deve conter seu identificador de login.');
-    }
-
-    const currentMatches = await bcrypt.compare(dto.newPassword, user.passwordHash);
-    if (currentMatches) {
-      throw new BadRequestException('A nova senha deve ser diferente da senha atual.');
-    }
-
-    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
-    await this.users.updatePasswordAndRevokeSessions(user.id, {
-      passwordHash,
-      mustChangePassword: false,
-      tempPassword: null,
-      passwordUpdatedAt: new Date()
-    });
-    await this.refreshTokens.revokeAllForUser(user.id);
-    await this.loginAttempts.clear(attemptKey);
-
+  async recoverPassword(dto: RecoverPasswordDto, clientIp?: string) {
+    const attemptKey = `recover-token:${createHash('sha256').update(String(dto.token || '')).digest('hex')}`;
+    await this.loginAttempts.assertNotBlocked(attemptKey, clientIp);
+    await this.loginAttempts.registerFailure(attemptKey, clientIp);
+    if (!this.credentials) throw new BadRequestException('Recuperacao indisponivel.');
+    await this.credentials.consume(dto.token, dto.newPassword);
+    this.users.clearReadCaches();
+    await this.loginAttempts.clear(attemptKey, clientIp);
     return { success: true };
   }
 
@@ -645,5 +617,22 @@ export class AuthService {
 
   async listSupervisors() {
     return this.users.listActiveSupervisors();
+  }
+
+  async requestPasswordRecovery(dto: RecoveryRequestDto, clientIp?: string): Promise<{ success: true }> {
+    const identifier = String(dto.identifier || '').trim().toLowerCase();
+    const attemptKey = `recover-request:${createHash('sha256').update(identifier).digest('hex')}`;
+    await this.loginAttempts.assertNotBlocked(attemptKey, clientIp);
+    await this.loginAttempts.registerFailure(attemptKey, clientIp);
+    const user = await this.users.findByEmail(identifier);
+    if (user && user.status === 'ativo' && !user.deletedAt) {
+      try {
+        await this.credentials?.issue(user.id);
+      } catch {
+        this.logger.error('Falha no processamento da recuperacao de acesso.');
+      }
+    }
+    // Identical response for unknown, inactive and undeliverable accounts.
+    return { success: true };
   }
 }

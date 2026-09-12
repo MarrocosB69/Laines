@@ -1,0 +1,2080 @@
+{
+  "generatedAt": "2026-09-11T16:23:18.511Z",
+  "mode": "Frontend real em dev; API interceptada; dados sintéticos; sem teste de backend",
+  "captures": [
+    {
+      "key": "desktop-public-inicio",
+      "file": "desktop-public-inicio.png",
+      "url": "/",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 928,
+      "headings": [
+        "Laines App",
+        "Entrar na plataforma"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Slide anterior",
+          "title": "",
+          "width": 27,
+          "height": 27,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Próximo slide",
+          "title": "",
+          "width": 27,
+          "height": 27,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Ver tela 1",
+          "title": "",
+          "width": 18,
+          "height": 6,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Ver tela 2",
+          "title": "",
+          "width": 6,
+          "height": 6,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Ver tela 3",
+          "title": "",
+          "width": 6,
+          "height": 6,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Mostrar senha",
+          "title": "",
+          "width": 23,
+          "height": 23,
+          "disabled": false
+        },
+        {
+          "text": "ENTRAR AGORA",
+          "label": null,
+          "title": "",
+          "width": 482,
+          "height": 50,
+          "disabled": false
+        },
+        {
+          "text": "ESQUECI MINHA SENHA",
+          "label": null,
+          "title": "",
+          "width": 165,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "SOLICITAR ACESSO INSTITUCIONAL",
+          "label": null,
+          "title": "",
+          "width": 260,
+          "height": 33,
+          "disabled": false
+        }
+      ],
+      "text": "Laines App\nSistema de gestão clínico-educacional\nLIGA ACADÊMICA INTERPROFISSIONAL DE NUTRIÇÃO ESPORTIVA · UFRN\nLaines App\n\nSistema de gestão clínico-educacional\n\natletas ativos\navaliações\nmembros\nAvaliações clínicas\nGestão de atletas\nEquipe multiprofissional\nAvaliações clínicas completas\nProtocolo multiprofissional integrado por etapas\nSISTEMA OPERACIONAL\n\nACESSO AO SISTEMA\n\nEntrar na plataforma\nUse CPF (somente números) ou e-mail institucional.\nCPF OU E-MAIL\nSENHA\nENTRAR AGORA\nESQUECI MINHA SENHA\n\nNão possui acesso?\n\nSOLICITAR ACESSO INSTITUCIONAL\n\nÉ atleta?\n\nENTRAR NA LISTA DE ESPERA\nLaines App\nSistema de gestão clínico-educacional\n© 2026 LAINES · UFRN. Ambiente operacional para ensino e cuidado.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES",
+          "loaded": true
+        },
+        {
+          "alt": "Avaliações clínicas completas",
+          "loaded": true
+        },
+        {
+          "alt": "LAINES",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "desktop-aluno-inicio",
+      "file": "desktop-aluno-inicio.png",
+      "url": "/aluno",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "ACADÊMICO",
+        "AVALIAÇÕES",
+        "Visão geral",
+        "Olá, Pessoa",
+        "Meus Atletas",
+        "Agenda",
+        "Próximas ações"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Visão Geral",
+          "label": "Visão Geral",
+          "title": "Visão Geral",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Meus Atletas",
+          "label": "Meus Atletas",
+          "title": "Meus Atletas",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Minha Agenda",
+          "label": "Minha Agenda",
+          "title": "Minha Agenda",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Pesquisa",
+          "label": "Pesquisa",
+          "title": "Pesquisa",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Ensino",
+          "label": "Ensino",
+          "title": "Ensino",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Extensão",
+          "label": "Extensão",
+          "title": "Extensão",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Avaliação por imagem",
+          "label": "Avaliação por imagem",
+          "title": "Avaliação por imagem",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Cards",
+          "label": null,
+          "title": "",
+          "width": 77,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "Lista",
+          "label": null,
+          "title": "",
+          "width": 71,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "A\nAtleta Demonstração\n\nCorrida\n\nATIVO",
+          "label": null,
+          "title": "",
+          "width": 324,
+          "height": 200,
+          "disabled": false
+        },
+        {
+          "text": "Agendar",
+          "label": null,
+          "title": "",
+          "width": 84,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Mês anterior",
+          "title": "",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Próximo mês",
+          "title": "",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nEstudante\n\nESTUDANTE\n\nAluno da Liga\n\nACADÊMICO\nVisão Geral\nMeus Atletas\nMinha Agenda\nPesquisa\nEnsino\nExtensão\nAVALIAÇÕES\nAvaliação por imagem\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nLAINES · Área do aluno\n\nVisão geral\n\nÁrea do aluno\n\nPD\nOlá, Pessoa\n\nAqui estão seus atletas vinculados.\n\nCards\nLista\nSEMESTRE 2026.2\nMeus Atletas\nA\nAtleta Demonstração\n\nCorrida\n\nATIVO\nAgendar\nAgenda\nSetembro\n2026\nDOM\nSEG\nTER\nQUA\nQUI\nSEX\nSAB\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\nPróximas ações\nTudo em dia\nNenhuma pendência no momento.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "desktop-prescricao",
+      "file": "desktop-prescricao.png",
+      "url": "/prescricao-plano/22222222-2222-4222-8222-222222222222",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "ACADÊMICO",
+        "AVALIAÇÕES",
+        "Sistema LAINES",
+        "Atleta Demonstração"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Visão Geral",
+          "label": "Visão Geral",
+          "title": "Visão Geral",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Meus Atletas",
+          "label": "Meus Atletas",
+          "title": "Meus Atletas",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Minha Agenda",
+          "label": "Minha Agenda",
+          "title": "Minha Agenda",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Pesquisa",
+          "label": "Pesquisa",
+          "title": "Pesquisa",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Ensino",
+          "label": "Ensino",
+          "title": "Ensino",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Extensão",
+          "label": "Extensão",
+          "title": "Extensão",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Avaliação por imagem",
+          "label": "Avaliação por imagem",
+          "title": "Avaliação por imagem",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Voltar",
+          "title": "",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "Salvar plano",
+          "label": null,
+          "title": "",
+          "width": 119,
+          "height": 34,
+          "disabled": false
+        },
+        {
+          "text": "Gerar",
+          "label": null,
+          "title": "",
+          "width": 78,
+          "height": 34,
+          "disabled": false
+        },
+        {
+          "text": "PDF",
+          "label": null,
+          "title": "",
+          "width": 69,
+          "height": 34,
+          "disabled": true
+        },
+        {
+          "text": "Refeição 1",
+          "label": null,
+          "title": "",
+          "width": 88,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Editar Refeição 1",
+          "title": "",
+          "width": 14,
+          "height": 14,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Duplicar Refeição 1",
+          "title": "",
+          "width": 14,
+          "height": 14,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Fechar Refeição 1",
+          "title": "",
+          "width": 16,
+          "height": 16,
+          "disabled": false
+        },
+        {
+          "text": "Adicionar alimento",
+          "label": null,
+          "title": "",
+          "width": 139,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "Adicionar refeição",
+          "label": null,
+          "title": "",
+          "width": 134,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "Micronutrientes",
+          "label": null,
+          "title": "",
+          "width": 734,
+          "height": 29,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nEstudante\n\nESTUDANTE\n\nAluno da Liga\n\nACADÊMICO\nVisão Geral\nMeus Atletas\nMinha Agenda\nPesquisa\nEnsino\nExtensão\nAVALIAÇÕES\nAvaliação por imagem\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nLAINES · Área do aluno\n\nSistema LAINES\n\nÁrea do aluno\n\nPD\nAtleta Demonstração\n\nPlano alimentar\n·\nrascunho\n\nSalvar plano\nGerar\nPDF\nTreino\nInício do treino\n·\nDuração em minutos\nmin\nPeso\nkg\nMétodo\nPor alimentos\nPor equivalentes\nQualitativo\n— sem horário de treino, refeições ancoradas ficam sem hora\nRefeição 1\n0 kcal\n\nNenhum alimento nesta refeição\n\nBusque pelo nome — os totais, a adequação e as opções de substituição aparecem conforme você monta.\n\nAdicionar alimento\nOrientação de Refeição 1\nAdicionar refeição\nTotal do dia · 1 refeição\n0 kcal · carga glicêmica —\n\nAdequação nutricional\n\nDRI · homem 19–30 anos\nAdequação do plano frente às referências de ingestão\nNutriente\tPlano\tReferência\t\nProporção\n\tCobert.\nEnergia\t0,0 kcal\t—\t\n\t\nCarboidrato\t0,0 g\t—\t\n\t\nProteína\t0,0 g\t—\t\n\t\nLipídio\t0,0 g\t—\t\n\t\nFibra\t— g\t38AI\t\n\t\n\nMicronutrientes\n\nAnálises do plano\n\nVariedade\n\n0 alimentos\n\n0 grupos\n\nDensidade energética\n\n— kcal/g\n\nSódio / potássio\n\n—\n\nsem dado dos dois\n\nProteína por refeição · g/kg\n\nVerde a partir de 0,3 g/kg por refeição.\n\nGrau de processamento\n\nSem alimentos no plano.\n\nLista de compras\n\n0 itens\n\nSem alimentos no plano.\n\n0\nde — kcal\nsem meta definida\nCarboidrato\n0 / — g · 0,0 g/kg\nProteína\n0 / — g · 0,0 g/kg\nLipídio\n0 / — g · 0,0 g/kg",
+      "dialogs": 0,
+      "tables": [
+        {
+          "headers": [
+            "Nutriente",
+            "Plano",
+            "Referência",
+            "Proporção",
+            "Cobert.",
+            "Energia",
+            "Carboidrato",
+            "Proteína",
+            "Lipídio",
+            "Fibra"
+          ],
+          "caption": "Adequação do plano frente às referências de ingestão",
+          "width": 734
+        }
+      ],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "desktop-prontuario",
+      "file": "desktop-prontuario.png",
+      "url": "/aluno",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "ACADÊMICO",
+        "AVALIAÇÕES",
+        "Atletas",
+        "Atleta Demonstração",
+        "Fluxo avaliativo",
+        "Snapshot clínico",
+        "Próxima ação",
+        "Próximos passos",
+        "Notas da supervisão"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Visão Geral",
+          "label": "Visão Geral",
+          "title": "Visão Geral",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Meus Atletas",
+          "label": "Meus Atletas",
+          "title": "Meus Atletas",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Minha Agenda",
+          "label": "Minha Agenda",
+          "title": "Minha Agenda",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Pesquisa",
+          "label": "Pesquisa",
+          "title": "Pesquisa",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Ensino",
+          "label": "Ensino",
+          "title": "Ensino",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Extensão",
+          "label": "Extensão",
+          "title": "Extensão",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Avaliação por imagem",
+          "label": "Avaliação por imagem",
+          "title": "Avaliação por imagem",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Voltar para lista de atletas",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Nova avaliação",
+          "label": null,
+          "title": "",
+          "width": 143,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Agendar",
+          "label": null,
+          "title": "Agendar consulta",
+          "width": 99,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Histórico",
+          "label": null,
+          "title": "Ver histórico de consultas",
+          "width": 102,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Visão geral",
+          "label": null,
+          "title": "",
+          "width": 77,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Dados clínicos",
+          "label": null,
+          "title": "",
+          "width": 94,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Avaliações",
+          "label": null,
+          "title": "",
+          "width": 69,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Evoluções",
+          "label": null,
+          "title": "",
+          "width": 67,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Anexos",
+          "label": null,
+          "title": "",
+          "width": 48,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Pendências\n4",
+          "label": null,
+          "title": "",
+          "width": 105,
+          "height": 35,
+          "disabled": false
+        },
+        {
+          "text": "Anamnese inicial",
+          "label": null,
+          "title": "",
+          "width": 398,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "Avaliacao clinica",
+          "label": null,
+          "title": "",
+          "width": 398,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "EBIA",
+          "label": null,
+          "title": "",
+          "width": 398,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "Perimetros",
+          "label": null,
+          "title": "",
+          "width": 398,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "Nova avaliação",
+          "label": null,
+          "title": "",
+          "width": 132,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Agendar",
+          "label": null,
+          "title": "",
+          "width": 91,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Plano",
+          "label": null,
+          "title": "",
+          "width": 74,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Nova consulta",
+          "label": null,
+          "title": "",
+          "width": 135,
+          "height": 38,
+          "disabled": false
+        },
+        {
+          "text": "Abrir avaliações",
+          "label": null,
+          "title": "",
+          "width": 146,
+          "height": 38,
+          "disabled": false
+        },
+        {
+          "text": "Histórico",
+          "label": null,
+          "title": "",
+          "width": 100,
+          "height": 38,
+          "disabled": false
+        },
+        {
+          "text": "Exportar CSV",
+          "label": null,
+          "title": "",
+          "width": 132,
+          "height": 38,
+          "disabled": true
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nEstudante\n\nESTUDANTE\n\nAluno da Liga\n\nACADÊMICO\nVisão Geral\nMeus Atletas\nMinha Agenda\nPesquisa\nEnsino\nExtensão\nAVALIAÇÕES\nAvaliação por imagem\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nLAINES · Área do aluno\n\nAtletas\n\nÁrea do aluno\n\nPD\nAD\nAtleta Demonstração\nCorrida · 25 anos · Modificado 01/08/2026\nAUD-001\nProjeto Demonstração\nativo\natleta@example.invalid\nPerfil incompleto\nDISCENTE RESPONSÁVEL\nAluno Demonstração\nSUPERVISÃO\nProfessor Demonstração\nCONSENTIMENTO\nNão registrado\nNova avaliação\nAgendar\nHistórico\nVisão geral\nDados clínicos\nAvaliações\nEvoluções\nAnexos\nPendências\n4\nPendente\ncadastro inicial\nSem registros\núltima avaliação\n+7 indicadores em zero\nFluxo avaliativo\n0 aval. · 17 pendentes\nTRIAGEM\n0/3\nCOMPOSIÇÃO CORPORAL\n0/4\nDEMANDA E DESEMPENHO\n0/2\nROTINA ALIMENTAR\n0/2\nMULTIPROFISSIONAL\n0/2\nCONDUTA\n0/4\nSnapshot clínico\n\nNenhum dado clínico registrado ainda.\n\nPróxima ação\nPróxima consulta\nNenhuma agendada\n\n17 módulos pendentes\n\nAnamnese inicial\nAvaliacao clinica\nEBIA\nPerimetros\n+13 módulos\nNova avaliação\nAgendar\nPlano\n\nAntes de criar o plano alimentar, cadastre ou revise o GET do paciente. O rascunho pode ser montado, mas a ativacao sera bloqueada.\n\nPróximos passos\n\nItens de continuidade clínica para acompanhamento.\n\nSem próxima consulta agendada\n\nDefina o próximo atendimento para manter o acompanhamento ativo.\n\n17 módulos de avaliação pendentes\n\nAnamnese inicial • Avaliacao clinica • EBIA\n\nResumo clínico sem queixa principal\n\nRegistre a queixa principal para facilitar continuidade do cuidado.\n\nCadastro inicial do atleta pendente\n\nO atleta ainda não confirmou os dados no primeiro acesso.\n\nNova consulta\nAbrir avaliações\nHistórico\nExportar CSV\nNotas da supervisão\n\nNenhuma nota registrada.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "desktop-atleta-inicio",
+      "file": "desktop-atleta-inicio.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "scrollWidth": 1440,
+      "scrollHeight": 900,
+      "headings": [
+        "MEU ACOMPANHAMENTO",
+        "Minhas pendências",
+        "Bem-vindo, Atleta!"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Pendências\n2",
+          "label": "Pendências",
+          "title": "Pendências",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Cadastro",
+          "label": "Cadastro",
+          "title": "Cadastro",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Acompanhamento",
+          "label": "Acompanhamento",
+          "title": "Acompanhamento",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Continuar",
+          "label": null,
+          "title": "",
+          "width": 104,
+          "height": 40,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nAtleta\nMEU ACOMPANHAMENTO\nPendências\n2\nCadastro\nAcompanhamento\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nMinhas pendências\n\nArea do atleta\n\nPD\nPRÓXIMA CONSULTA\n\nSem consultas agendadas.\n\nFORMULÁRIOS DISPONÍVEIS\n\nNenhum formulário foi liberado ou solicitado em consulta pela equipe até o momento.\n\nO QUE FAZER AGORA\nConsentimento de pesquisa pendente\nA assinatura do termo ainda não foi registrada.\nSem próxima consulta agendada\nSolicite um novo horário para manter o acompanhamento em dia.\n\nCADASTRO CLÍNICO — LAINES\n\nBem-vindo, Atleta!\nPasso 1 de 4\nDados pessoais\nData de nascimento\nSexo biológico *\nSelecione\nMasculino\nFeminino\nIdentidade de gênero\nTelefone\nCidade\nEstado (UF)\nPreenchimento necessário para liberar o sistema\nContinuar",
+      "dialogs": 1,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "mobile-public-inicio",
+      "file": "mobile-public-inicio.png",
+      "url": "/",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "scrollHeight": 1416,
+      "headings": [
+        "Laines App",
+        "Entrar na plataforma"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Slide anterior",
+          "title": "",
+          "width": 27,
+          "height": 27,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Próximo slide",
+          "title": "",
+          "width": 27,
+          "height": 27,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Ver tela 1",
+          "title": "",
+          "width": 18,
+          "height": 6,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Ver tela 2",
+          "title": "",
+          "width": 6,
+          "height": 6,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Ver tela 3",
+          "title": "",
+          "width": 6,
+          "height": 6,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Mostrar senha",
+          "title": "",
+          "width": 23,
+          "height": 23,
+          "disabled": false
+        },
+        {
+          "text": "ENTRAR AGORA",
+          "label": null,
+          "title": "",
+          "width": 316,
+          "height": 50,
+          "disabled": false
+        },
+        {
+          "text": "ESQUECI MINHA SENHA",
+          "label": null,
+          "title": "",
+          "width": 165,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "SOLICITAR ACESSO INSTITUCIONAL",
+          "label": null,
+          "title": "",
+          "width": 260,
+          "height": 33,
+          "disabled": false
+        }
+      ],
+      "text": "Laines App\nSistema de gestão clínico-educacional\nLIGA ACADÊMICA INTERPROFISSIONAL DE NUTRIÇÃO ESPORTIVA · UFRN\nLaines App\n\nSistema de gestão clínico-educacional\n\natletas ativos\navaliações\nmembros\nAvaliações clínicas\nGestão de atletas\nEquipe multiprofissional\nAvaliações clínicas completas\nProtocolo multiprofissional integrado por etapas\nSISTEMA OPERACIONAL\n\nACESSO AO SISTEMA\n\nEntrar na plataforma\nUse CPF (somente números) ou e-mail institucional.\nCPF OU E-MAIL\nSENHA\nENTRAR AGORA\nESQUECI MINHA SENHA\n\nNão possui acesso?\n\nSOLICITAR ACESSO INSTITUCIONAL\n\nÉ atleta?\n\nENTRAR NA LISTA DE ESPERA\nLaines App\nSistema de gestão clínico-educacional\n© 2026 LAINES · UFRN. Ambiente operacional para ensino e cuidado.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES",
+          "loaded": true
+        },
+        {
+          "alt": "Avaliações clínicas completas",
+          "loaded": true
+        },
+        {
+          "alt": "LAINES",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "mobile-aluno-inicio",
+      "file": "mobile-aluno-inicio.png",
+      "url": "/aluno",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "headings": [
+        "ACADÊMICO",
+        "AVALIAÇÕES",
+        "Visão geral",
+        "Olá, Pessoa",
+        "Meus Atletas",
+        "Agenda",
+        "Próximas ações"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Visão Geral",
+          "label": "Visão Geral",
+          "title": "Visão Geral",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Meus Atletas",
+          "label": "Meus Atletas",
+          "title": "Meus Atletas",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Minha Agenda",
+          "label": "Minha Agenda",
+          "title": "Minha Agenda",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Pesquisa",
+          "label": "Pesquisa",
+          "title": "Pesquisa",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Ensino",
+          "label": "Ensino",
+          "title": "Ensino",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Extensão",
+          "label": "Extensão",
+          "title": "Extensão",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Avaliação por imagem",
+          "label": "Avaliação por imagem",
+          "title": "Avaliação por imagem",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Fechar menu",
+          "title": "",
+          "width": 390,
+          "height": 844,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Cards",
+          "label": null,
+          "title": "",
+          "width": 77,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "Lista",
+          "label": null,
+          "title": "",
+          "width": 71,
+          "height": 31,
+          "disabled": false
+        },
+        {
+          "text": "A\nAtleta Demonstração\n\nCorrida\n\nATIVO",
+          "label": null,
+          "title": "",
+          "width": 320,
+          "height": 200,
+          "disabled": false
+        },
+        {
+          "text": "Agendar",
+          "label": null,
+          "title": "",
+          "width": 84,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Mês anterior",
+          "title": "",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Próximo mês",
+          "title": "",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nEstudante\n\nESTUDANTE\n\nAluno da Liga\n\nACADÊMICO\nVisão Geral\nMeus Atletas\nMinha Agenda\nPesquisa\nEnsino\nExtensão\nAVALIAÇÕES\nAvaliação por imagem\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nLAINES · Área do aluno\n\nVisão geral\nPD\nOlá, Pessoa\n\nAqui estão seus atletas vinculados.\n\nCards\nLista\nSEMESTRE 2026.2\nMeus Atletas\nA\nAtleta Demonstração\n\nCorrida\n\nATIVO\nAgendar\nAgenda\nSetembro\n2026\nDOM\nSEG\nTER\nQUA\nQUI\nSEX\nSAB\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\nPróximas ações\nTudo em dia\nNenhuma pendência no momento.",
+      "dialogs": 0,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "mobile-prescricao",
+      "file": "mobile-prescricao.png",
+      "url": "/prescricao-plano/22222222-2222-4222-8222-222222222222",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "headings": [
+        "ACADÊMICO",
+        "AVALIAÇÕES",
+        "Sistema LAINES",
+        "Atleta Demonstração"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Fechar menu",
+          "title": "Fechar menu",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Visão Geral",
+          "label": "Visão Geral",
+          "title": "Visão Geral",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Meus Atletas",
+          "label": "Meus Atletas",
+          "title": "Meus Atletas",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Minha Agenda",
+          "label": "Minha Agenda",
+          "title": "Minha Agenda",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Pesquisa",
+          "label": "Pesquisa",
+          "title": "Pesquisa",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Ensino",
+          "label": "Ensino",
+          "title": "Ensino",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Extensão",
+          "label": "Extensão",
+          "title": "Extensão",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Avaliação por imagem",
+          "label": "Avaliação por imagem",
+          "title": "Avaliação por imagem",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Abrir menu",
+          "title": "",
+          "width": 44,
+          "height": 44,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Voltar",
+          "title": "",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "Salvar plano",
+          "label": null,
+          "title": "",
+          "width": 119,
+          "height": 34,
+          "disabled": false
+        },
+        {
+          "text": "Gerar",
+          "label": null,
+          "title": "",
+          "width": 78,
+          "height": 34,
+          "disabled": false
+        },
+        {
+          "text": "PDF",
+          "label": null,
+          "title": "",
+          "width": 69,
+          "height": 34,
+          "disabled": true
+        },
+        {
+          "text": "Refeição 1",
+          "label": null,
+          "title": "",
+          "width": 88,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Editar Refeição 1",
+          "title": "",
+          "width": 14,
+          "height": 14,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Duplicar Refeição 1",
+          "title": "",
+          "width": 14,
+          "height": 14,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Fechar Refeição 1",
+          "title": "",
+          "width": 16,
+          "height": 16,
+          "disabled": false
+        },
+        {
+          "text": "Adicionar alimento",
+          "label": null,
+          "title": "",
+          "width": 139,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "Adicionar refeição",
+          "label": null,
+          "title": "",
+          "width": 134,
+          "height": 20,
+          "disabled": false
+        },
+        {
+          "text": "Micronutrientes",
+          "label": null,
+          "title": "",
+          "width": 328,
+          "height": 29,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nEstudante\n\nESTUDANTE\n\nAluno da Liga\n\nACADÊMICO\nVisão Geral\nMeus Atletas\nMinha Agenda\nPesquisa\nEnsino\nExtensão\nAVALIAÇÕES\nAvaliação por imagem\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nLAINES · Área do aluno\n\nSistema LAINES\nPD\nAtleta Demonstração\n\nPlano alimentar\n·\nrascunho\n\nSalvar plano\nGerar\nPDF\nTreino\nInício do treino\n·\nDuração em minutos\nmin\nPeso\nkg\nMétodo\nPor alimentos\nPor equivalentes\nQualitativo\n— sem horário de treino, refeições ancoradas ficam sem hora\nRefeição 1\n0 kcal\n\nNenhum alimento nesta refeição\n\nBusque pelo nome — os totais, a adequação e as opções de substituição aparecem conforme você monta.\n\nAdicionar alimento\nOrientação de Refeição 1\nAdicionar refeição\nTotal do dia · 1 refeição\n0 kcal · carga glicêmica —\n\nAdequação nutricional\n\nDRI · homem 19–30 anos\nAdequação do plano frente às referências de ingestão\nNutriente\tPlano\tReferência\t\nProporção\n\tCobert.\nEnergia\t0,0 kcal\t—\t\n\t\nCarboidrato\t0,0 g\t—\t\n\t\nProteína\t0,0 g\t—\t\n\t\nLipídio\t0,0 g\t—\t\n\t\nFibra\t— g\t38AI\t\n\t\n\nMicronutrientes\n\nAnálises do plano\n\nVariedade\n\n0 alimentos\n\n0 grupos\n\nDensidade energética\n\n— kcal/g\n\nSódio / potássio\n\n—\n\nsem dado dos dois\n\nProteína por refeição · g/kg\n\nVerde a partir de 0,3 g/kg por refeição.\n\nGrau de processamento\n\nSem alimentos no plano.\n\nLista de compras\n\n0 itens\n\nSem alimentos no plano.\n\n0\nde — kcal\nsem meta definida\nCarboidrato\n0 / — g · 0,0 g/kg\nProteína\n0 / — g · 0,0 g/kg\nLipídio\n0 / — g · 0,0 g/kg",
+      "dialogs": 0,
+      "tables": [
+        {
+          "headers": [
+            "Nutriente",
+            "Plano",
+            "Referência",
+            "Proporção",
+            "Cobert.",
+            "Energia",
+            "Carboidrato",
+            "Proteína",
+            "Lipídio",
+            "Fibra"
+          ],
+          "caption": "Adequação do plano frente às referências de ingestão",
+          "width": 328
+        }
+      ],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    },
+    {
+      "key": "mobile-atleta-inicio",
+      "file": "mobile-atleta-inicio.png",
+      "url": "/atleta",
+      "title": "LAINES - Sistema de Gestao Clinica",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "scrollWidth": 390,
+      "scrollHeight": 844,
+      "headings": [
+        "MEU ACOMPANHAMENTO",
+        "Minhas pendências",
+        "Bem-vindo, Atleta!"
+      ],
+      "buttons": [
+        {
+          "text": "",
+          "label": "Recolher barra lateral",
+          "title": "Recolher barra lateral",
+          "width": 30,
+          "height": 30,
+          "disabled": false
+        },
+        {
+          "text": "Pendências\n2",
+          "label": "Pendências",
+          "title": "Pendências",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Cadastro",
+          "label": "Cadastro",
+          "title": "Cadastro",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "Acompanhamento",
+          "label": "Acompanhamento",
+          "title": "Acompanhamento",
+          "width": 247,
+          "height": 37,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Encerrar sessão",
+          "title": "Encerrar sessão",
+          "width": 28,
+          "height": 28,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Fechar menu",
+          "title": "",
+          "width": 390,
+          "height": 844,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Alternar tema",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Tarefas pendentes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "",
+          "label": "Notificacoes",
+          "title": "",
+          "width": 32,
+          "height": 32,
+          "disabled": false
+        },
+        {
+          "text": "Continuar",
+          "label": null,
+          "title": "",
+          "width": 326,
+          "height": 40,
+          "disabled": false
+        }
+      ],
+      "text": "LAINES\nLiga Acadêmica Interprofissional de Nutrição Esportiva\nAtleta\nMEU ACOMPANHAMENTO\nPendências\n2\nCadastro\nAcompanhamento\nPD\n\nPessoa Demonstração\n\nSessão ativa\n\nMinhas pendências\nPD\nPRÓXIMA CONSULTA\n\nSem consultas agendadas.\n\nFORMULÁRIOS DISPONÍVEIS\n\nNenhum formulário foi liberado ou solicitado em consulta pela equipe até o momento.\n\nO QUE FAZER AGORA\nConsentimento de pesquisa pendente\nA assinatura do termo ainda não foi registrada.\nSem próxima consulta agendada\nSolicite um novo horário para manter o acompanhamento em dia.\n\nCADASTRO CLÍNICO — LAINES\n\nBem-vindo, Atleta!\nPasso 1 de 4\nDados pessoais\nData de nascimento\nSexo biológico *\nSelecione\nMasculino\nFeminino\nIdentidade de gênero\nTelefone\nCidade\nEstado (UF)\nPreenchimento necessário para liberar o sistema\nContinuar",
+      "dialogs": 1,
+      "tables": [],
+      "images": [
+        {
+          "alt": "LAINES Logo",
+          "loaded": true
+        }
+      ],
+      "overflow": [],
+      "pageErrors": []
+    }
+  ],
+  "requests": [
+    {
+      "role": "public",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/auth/refresh",
+      "method": "POST"
+    },
+    {
+      "role": "public",
+      "path": "/public/stats",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/public/stats",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/projetos/public",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares/paciente/22222222-2222-4222-8222-222222222222/contexto",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares/paciente/22222222-2222-4222-8222-222222222222/contexto",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/avaliacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/avaliacoes/pendencias/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/avaliacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/avaliacoes/pendencias/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/avaliacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/auth/refresh",
+      "method": "POST"
+    },
+    {
+      "role": "public",
+      "path": "/public/stats",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/public/stats",
+      "method": "GET"
+    },
+    {
+      "role": "public",
+      "path": "/projetos/public",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares/paciente/22222222-2222-4222-8222-222222222222/contexto",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes/22222222-2222-4222-8222-222222222222",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares/paciente/22222222-2222-4222-8222-222222222222/contexto",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/planos-alimentares",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "aluno",
+      "path": "/agendamentos",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/auth/me",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/notificacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/tarefas",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/pacientes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/avaliacoes",
+      "method": "GET"
+    },
+    {
+      "role": "atleta",
+      "path": "/agendamentos",
+      "method": "GET"
+    }
+  ],
+  "navigationChecks": [
+    {
+      "role": "aluno",
+      "size": "mobile",
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Atleta Demonstração', { exact: true }).first()\u001b[22m\n\u001b[2m    - locator resolved to <h4 class=\"patient-name\">Atleta Demonstração</h4>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not stable\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not stable\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  3 × retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m      - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <nav aria-label=\"Navegação principal\" class=\"laines-sidebar__nav custom-scrollbar\">…</nav> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m  13 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <span class=\"sb-header__sub\">Liga Acadêmica Interprofissional de Nutrição Espo…</span> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <div class=\"laines-sidebar__brand\">…</div> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <nav aria-label=\"Navegação principal\" class=\"laines-sidebar__nav custom-scrollbar\">…</nav> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <nav aria-label=\"Navegação principal\" class=\"laines-sidebar__nav custom-scrollbar\">…</nav> from <aside class=\"laines-sidebar laines-sidebar--admin laines-sidebar--accent-green \">…</aside> subtree intercepts pointer events\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n"
+    }
+  ]
+}

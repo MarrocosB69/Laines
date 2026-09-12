@@ -29,7 +29,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     @Optional() private readonly usersService?: UsersService
   ) {
     super();
-    this.tokenCacheEnabled = this.config.get('auth.guardTokenCacheEnabled') !== false;
+    // A autorizacao deve observar logout, expiracao e retirada de vinculo em cada chamada.
+    this.tokenCacheEnabled = false;
     const configuredTtlMs = Number(this.config.get('auth.guardTokenCacheTtlMs') || 800);
     this.tokenCacheTtlMs = Number.isFinite(configuredTtlMs)
       ? Math.max(100, Math.floor(configuredTtlMs))

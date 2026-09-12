@@ -17,6 +17,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { RecoverPasswordDto } from './dto/recover-password.dto';
+import { RecoveryRequestDto } from './dto/recovery-request.dto';
 import { UsersService } from '../users/users.service';
 import { extractClientIp } from '../common/request-ip';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -138,14 +139,20 @@ export class AuthController {
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = this.readRefreshTokenFromRequest(req);
-    await this.authService.logout(refreshToken);
+    await this.authService.logout(refreshToken, req.headers.authorization);
     this.clearRefreshCookie(res);
     return { success: true };
   }
 
   @Post('recover-password')
-  recoverPassword(@Body() dto: RecoverPasswordDto) {
-    return this.authService.recoverPassword(dto);
+  recoverPassword(@Req() req: Request, @Body() dto: RecoverPasswordDto) {
+    return this.authService.recoverPassword(dto, extractClientIp(req));
+  }
+
+  @Post('recovery-request')
+  recoveryRequest(@Req() req: Request, @Body() dto: RecoveryRequestDto) {
+    const clientIp = extractClientIp(req);
+    return this.authService.requestPasswordRecovery(dto, clientIp);
   }
 
   @UseGuards(JwtAuthGuard)

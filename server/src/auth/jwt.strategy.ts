@@ -3,12 +3,15 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
+import { getEffectivePermissions } from '../common/domain/access.constants';
+import { RefreshTokensService } from './refresh-tokens.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     config: ConfigService,
-    private readonly usersService: UsersService
+    private readonly usersService: UsersService,
+    private readonly refreshTokens: RefreshTokensService
   ) {
     const jwtSecret = String(config.get('jwt.secret') || '').trim();
     if (!jwtSecret) {
@@ -30,11 +33,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string; name: string; sv?: number; typ?: string }) {
-    if (payload?.typ && payload.typ !== 'access') {
+  async validate(payload: { sub: string; email: string; role: string; name: string; sv?: number; typ?: string; sid?: string }) {
+    if (payload?.typ !== 'access') {
       throw new UnauthorizedException('Credencial invalida para esta operacao.');
     }
-    const user = await this.usersService.findByIdCached(payload.sub);
+    if (!payload?.sub) {
+      throw new UnauthorizedException('Sessao invalida.');
+    }
+    const user = await this.usersService.findById(payload.sub);
     if (!user || (user.status || '').toLowerCase() !== 'ativo') {
       throw new UnauthorizedException('Sessao invalida.');
     }
@@ -42,6 +48,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const currentSessionVersion = Number(user.sessionVersion || 1);
     if (!Number.isFinite(tokenSessionVersion) || tokenSessionVersion !== currentSessionVersion) {
       throw new UnauthorizedException('Sessao revogada. Faca login novamente.');
+    }
+    if (!payload.sid || !(await this.refreshTokens.isFamilyActive(user.id, payload.sid))) {
+      throw new UnauthorizedException('Sessao encerrada. Faca login novamente.');
     }
 
     return {
@@ -56,6 +65,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       periodo: user.periodo || null,
       supervisorId: user.supervisorId || null,
       supervisorNome: user.supervisorNome || null,
+      profissionalId: user.profissionalId || null,
+      profissionalNome: user.profissionalNome || null,
       diretoria: user.diretoria || null,
       curso: user.curso || null,
       projetoId: user.projetoId || null,
@@ -67,7 +78,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       departamento: user.departamento || null,
       nivelAcesso: user.nivelAcesso || null,
       coordAtendimento: Boolean(user.coordAtendimento),
-      mustChangePassword: Boolean(user.mustChangePassword)
+      mustChangePassword: Boolean(user.mustChangePassword),
+      permissions: getEffectivePermissions(user)
     };
   }
 }

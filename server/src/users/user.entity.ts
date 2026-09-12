@@ -21,6 +21,9 @@ export class User {
   @Column({ length: 190 })
   email!: string;
 
+  @Column({ name: 'recovery_email', type: 'varchar', length: 190, nullable: true })
+  recoveryEmail?: string | null;
+
   @Column({ name: 'password_hash' })
   passwordHash!: string;
 
@@ -49,8 +52,17 @@ export class User {
   @Column({ name: 'supervisor_nome', length: 120, nullable: true })
   supervisorNome?: string;
 
-  @Column({ length: 80, nullable: true })
-  diretoria?: string;
+  @Column({ name: 'profissional_id', type: 'uuid', nullable: true })
+  profissionalId?: string | null;
+
+  @Column({ name: 'profissional_nome', type: 'varchar', length: 120, nullable: true })
+  profissionalNome?: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  diretoria?: string | null;
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  permissions!: string[];
 
   @Column({ length: 80, nullable: true })
   curso?: string;

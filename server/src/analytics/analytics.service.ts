@@ -8,6 +8,9 @@ import { Paciente } from '../pacientes/paciente.entity';
 import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 import { Agendamento } from '../agendamentos/agendamento.entity';
 import { Projeto } from '../projetos/projeto.entity';
+import { ProjetoIdeia } from '../projetos/projeto-ideia.entity';
+import { ProjetoProducao } from '../projetos/projeto-producao.entity';
+import { Tarefa } from '../tarefas/tarefa.entity';
 import {
   AVALIACAO_ANALYTICS_COLORS,
   AVALIACAO_ANALYTICS_LABELS,
@@ -15,6 +18,8 @@ import {
 } from '../avaliacoes/evaluation-registry';
 import { isStudentMemberRole } from '../common/domain/access.constants';
 import { ObservabilityService } from '../observability/observability.service';
+import { AuthenticatedUser } from '../auth/access-control';
+import { analyticsProjectScope, assertAnalyticsExport, canReadDetailedAnalytics } from './analytics-access';
 
 type RangeFilter = 'week' | 'month' | 'quarter' | 'year';
 type ExportFormat = 'csv' | 'json';
@@ -44,6 +49,36 @@ type ExportResult = {
   stream: Readable;
 };
 
+type BoardAction = {
+  label: string;
+  method?: 'patch' | 'post' | 'delete';
+  url?: string;
+  payload?: Record<string, unknown>;
+  confirmTitle?: string;
+  confirmMessage?: string;
+  successMessage?: string;
+  openOnly?: boolean;
+};
+
+type BoardCard = {
+  id: string;
+  source: string;
+  sourceLabel: string;
+  title: string;
+  subtitle?: string;
+  meta?: string;
+  tags?: string[];
+  statusLabel: string;
+  time: string;
+  column: string;
+  targetTab?: string;
+  action?: BoardAction | null;
+  task?: { id: string; status: string };
+  taskStatusIndex?: number;
+  priority: number;
+  dateMs: number;
+};
+
 type CachedPayload = {
   payload: Record<string, unknown>;
   expiresAt: number;
@@ -69,6 +104,23 @@ const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   falta: 'Falta registrada',
   realizada: 'Consulta realizada'
 };
+
+const TASK_STATUS_FLOW = ['pendente', 'em_andamento', 'concluida'];
+
+const TASK_STATUS_LABELS: Record<string, string> = {
+  pendente: 'Pendente',
+  em_andamento: 'Em andamento',
+  concluida: 'Concluida',
+  bloqueada: 'Bloqueada'
+};
+
+const OPERATIONAL_BOARD_COLUMNS = [
+  { id: 'entrada', title: 'Entrada', subtitle: 'triagens, ideias e tarefas novas', tone: 'warning' },
+  { id: 'planejamento', title: 'Planejamento', subtitle: 'vinculos, equipe e preparacao', tone: 'info' },
+  { id: 'andamento', title: 'Em andamento', subtitle: 'execucao clinica e institucional', tone: 'primary' },
+  { id: 'revisao', title: 'Revisao', subtitle: 'itens esperando decisao', tone: 'danger' },
+  { id: 'concluido', title: 'Concluido', subtitle: 'fechamentos recentes', tone: 'success' }
+] as const;
 
 const METRIC_DEFINITIONS = {
   totalAlunos: {
@@ -128,6 +180,9 @@ export class AnalyticsService {
     @InjectRepository(Avaliacao) private readonly avaliacoesRepo: Repository<Avaliacao>,
     @InjectRepository(Agendamento) private readonly agendamentosRepo: Repository<Agendamento>,
     @InjectRepository(Projeto) private readonly projetosRepo: Repository<Projeto>,
+    @InjectRepository(ProjetoProducao) private readonly producoesRepo: Repository<ProjetoProducao>,
+    @InjectRepository(ProjetoIdeia) private readonly ideiasRepo: Repository<ProjetoIdeia>,
+    @InjectRepository(Tarefa) private readonly tarefasRepo: Repository<Tarefa>,
     @Optional() private readonly observability?: ObservabilityService
   ) {}
 
@@ -298,6 +353,85 @@ export class AnalyticsService {
       .toLowerCase()
       .replace(/[_-]+/g, ' ')
       .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  private normalizeBoardKey(value?: unknown) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_');
+  }
+
+  private getPatientStatusLabel(status?: string | null) {
+    const key = this.normalizeBoardKey(status);
+    const labels: Record<string, string> = {
+      triagem: 'Triagem',
+      pendente: 'Pendente',
+      espera: 'Lista de espera',
+      lista_de_espera: 'Lista de espera',
+      ativo: 'Ativo',
+      alta: 'Alta',
+      concluido: 'Concluido',
+      concluida: 'Concluido'
+    };
+    return labels[key] || this.formatCategoryLabel(status, 'Sem status');
+  }
+
+  private getProjectStatusLabel(status?: string | null) {
+    const key = this.normalizeBoardKey(status);
+    const labels: Record<string, string> = {
+      planejamento: 'Planejamento',
+      em_andamento: 'Em andamento',
+      pausado: 'Pausado',
+      concluido: 'Concluido'
+    };
+    return labels[key] || this.formatCategoryLabel(status, 'Planejamento');
+  }
+
+  private getProductionStatusLabel(status?: string | null) {
+    const key = this.normalizeBoardKey(status);
+    const labels: Record<string, string> = {
+      rascunho: 'Rascunho',
+      em_revisao: 'Em revisao',
+      publicado: 'Publicado'
+    };
+    return labels[key] || this.formatCategoryLabel(status, 'Em revisao');
+  }
+
+  private getIdeaStatusLabel(status?: string | null) {
+    const key = this.normalizeBoardKey(status);
+    const labels: Record<string, string> = {
+      ideia: 'Ideia',
+      em_discussao: 'Em discussao',
+      prioridade: 'Prioridade',
+      arquivada: 'Arquivada'
+    };
+    return labels[key] || this.formatCategoryLabel(status, 'Ideia');
+  }
+
+  private getBoardDate(item: {
+    updatedAt?: Date | string | null;
+    createdAt?: Date | string | null;
+    dataCadastro?: Date | string | null;
+    data?: Date | string | null;
+  }) {
+    return this.toDate(item.updatedAt || item.createdAt || item.dataCadastro || item.data);
+  }
+
+  private buildOperationalBoardColumns(cards: BoardCard[]) {
+    return OPERATIONAL_BOARD_COLUMNS.map((column) => {
+      const columnCards = cards
+        .filter((card) => card.column === column.id)
+        .sort((left, right) => (left.priority - right.priority) || ((right.dateMs || 0) - (left.dateMs || 0)));
+
+      return {
+        ...column,
+        total: columnCards.length,
+        cards: columnCards.slice(0, 12).map(({ priority, dateMs, ...card }) => card)
+      };
+    });
   }
 
   private getAppointmentTurn(item: Pick<Agendamento, 'time' | 'scheduledAt' | 'date'>) {
@@ -570,7 +704,13 @@ export class AnalyticsService {
 
   private escapeCsvValue(value: unknown) {
     if (value === null || value === undefined) return '""';
-    const normalized = String(value).replace(/"/g, '""');
+    let text = String(value);
+    // Quoting CSV fields does not stop spreadsheet formula interpretation.
+    // Preserve real numeric cells while forcing dangerous text to stay text.
+    if (typeof value === 'string' && (/^[\u0000-\u001f\u007f]/.test(text) || /^[\s\uFEFF]*[=+@-]/u.test(text))) {
+      text = `'${text}`;
+    }
+    const normalized = text.replace(/"/g, '""');
     return `"${normalized}"`;
   }
 
@@ -1180,6 +1320,347 @@ export class AnalyticsService {
     return response;
   }
 
+  async getDashboardOperationalBoard(query: DashboardQuery) {
+    const projectFilter = this.normalizeProjectFilter(query.projectId);
+    const cacheKey = this.getCacheKey('dashboard', 'operational-board', projectFilter);
+    if (!query.forceRefresh) {
+      const cached = this.getCache(cacheKey);
+      if (cached) {
+        return {
+          ...cached,
+          cache: {
+            hit: true,
+            ttlSeconds: Math.floor(DASHBOARD_CACHE_TTL_MS / 1000)
+          }
+        };
+      }
+    }
+
+    const scopedWhere = this.buildProjectWhere(projectFilter);
+    const projectsPromise = projectFilter === 'sem'
+      ? Promise.resolve([] as Projeto[])
+      : this.projetosRepo.find({
+        where: projectFilter === 'all' ? undefined : { id: projectFilter },
+        select: {
+          id: true,
+          nome: true,
+          area: true,
+          status: true,
+          coordenador: true,
+          createdAt: true,
+          updatedAt: true
+        },
+        order: { updatedAt: 'DESC' },
+        take: 200
+      });
+
+    const [tasks, patients, projects, productions, ideas] = await this.measureOperation(
+      'analytics.dashboard.operational_board.find',
+      () => Promise.all([
+        this.tarefasRepo.find({
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            assignedRole: true,
+            createdByName: true,
+            createdAt: true,
+            updatedAt: true
+          },
+          order: { updatedAt: 'DESC' },
+          take: 200
+        }),
+        this.pacientesRepo.find({
+          where: scopedWhere,
+          select: {
+            id: true,
+            nome: true,
+            status: true,
+            modalidadePrincipal: true,
+            cidade: true,
+            projetoId: true,
+            projetoNome: true,
+            alunoResponsavelId: true,
+            professorSupervisorId: true,
+            dataCadastro: true,
+            createdAt: true,
+            updatedAt: true
+          },
+          order: { updatedAt: 'DESC' },
+          take: 200
+        }),
+        projectsPromise,
+        this.producoesRepo.find({
+          where: scopedWhere,
+          select: {
+            id: true,
+            projetoId: true,
+            projetoNome: true,
+            titulo: true,
+            tipo: true,
+            area: true,
+            status: true,
+            criadoPorNome: true,
+            createdAt: true,
+            updatedAt: true
+          },
+          order: { updatedAt: 'DESC' },
+          take: 200
+        }),
+        this.ideiasRepo.find({
+          select: {
+            id: true,
+            titulo: true,
+            area: true,
+            palavrasChave: true,
+            status: true,
+            responsavelNome: true,
+            criadoPorNome: true,
+            createdAt: true,
+            updatedAt: true
+          },
+          order: { updatedAt: 'DESC' },
+          take: 200
+        })
+      ]),
+      'GET /analytics/dashboard/operational-board'
+    );
+
+    const waitlistStatuses = new Set(['lista_de_espera', 'espera', 'triagem', 'pendente']);
+    const cards: BoardCard[] = [];
+
+    tasks.forEach((task) => {
+      const normalizedStatus = this.normalizeBoardKey(task.status || 'pendente');
+      const taskStatus = TASK_STATUS_LABELS[normalizedStatus] ? normalizedStatus : 'pendente';
+      const statusIndex = TASK_STATUS_FLOW.indexOf(taskStatus);
+      const column = taskStatus === 'pendente'
+        ? 'entrada'
+        : taskStatus === 'em_andamento'
+          ? 'andamento'
+          : taskStatus === 'concluida'
+            ? 'concluido'
+            : 'revisao';
+      const date = this.getBoardDate(task);
+
+      cards.push({
+        id: `task-${task.id}`,
+        source: 'task',
+        sourceLabel: 'Tarefa',
+        title: task.title || 'Tarefa sem titulo',
+        subtitle: task.createdByName || 'Equipe',
+        meta: task.assignedRole || 'todos',
+        statusLabel: TASK_STATUS_LABELS[taskStatus] || this.formatCategoryLabel(taskStatus),
+        time: this.formatRelativeTime(date),
+        column,
+        task: { id: task.id, status: taskStatus },
+        taskStatusIndex: statusIndex,
+        priority: taskStatus === 'pendente' ? 8 : taskStatus === 'bloqueada' ? 5 : 30,
+        dateMs: date?.getTime() || 0
+      });
+    });
+
+    patients.forEach((patient) => {
+      const statusKey = this.normalizeBoardKey(patient.status);
+      const missing: string[] = [];
+      if (!patient.projetoId) missing.push('sem projeto');
+      if (!patient.alunoResponsavelId) missing.push('sem discente');
+      if (!patient.professorSupervisorId) missing.push('sem supervisor');
+
+      let column = '';
+      if (waitlistStatuses.has(statusKey)) {
+        column = 'entrada';
+      } else if (statusKey === 'ativo' && missing.length > 0) {
+        column = 'planejamento';
+      } else if (statusKey === 'ativo') {
+        column = 'andamento';
+      } else if (['alta', 'concluido', 'concluida'].includes(statusKey)) {
+        column = 'concluido';
+      }
+      if (!column) return;
+
+      let action: BoardAction | null = null;
+      if (statusKey === 'triagem' || statusKey === 'pendente') {
+        action = {
+          label: 'Aprovar para fila',
+          method: 'patch',
+          url: `/pacientes/${patient.id}`,
+          payload: { status: 'Lista de Espera' },
+          confirmTitle: 'Aprovar triagem',
+          confirmMessage: `Mover "${patient.nome || 'atleta'}" para a lista de espera?`,
+          successMessage: 'Atleta movido para a lista de espera.'
+        };
+      } else if ((statusKey === 'lista_de_espera' || statusKey === 'espera') && missing.length === 0) {
+        action = {
+          label: 'Ativar atendimento',
+          method: 'patch',
+          url: `/pacientes/${patient.id}`,
+          payload: { status: 'Ativo' },
+          confirmTitle: 'Ativar atendimento',
+          confirmMessage: `Ativar o acompanhamento de "${patient.nome || 'atleta'}"?`,
+          successMessage: 'Atendimento ativado.'
+        };
+      } else if ((statusKey === 'lista_de_espera' || statusKey === 'espera' || statusKey === 'ativo') && missing.length > 0) {
+        action = {
+          label: 'Completar vinculos',
+          openOnly: true
+        };
+      }
+
+      const date = this.getBoardDate(patient);
+      cards.push({
+        id: `patient-${patient.id}`,
+        source: 'patient',
+        sourceLabel: 'Atleta',
+        title: patient.nome || 'Atleta sem nome',
+        subtitle: patient.modalidadePrincipal || patient.cidade || '',
+        meta: patient.projetoNome || 'sem projeto',
+        tags: missing,
+        statusLabel: this.getPatientStatusLabel(patient.status),
+        time: this.formatRelativeTime(date),
+        column,
+        targetTab: 'patients',
+        action,
+        priority: waitlistStatuses.has(statusKey) ? 2 : missing.length ? 6 : 22,
+        dateMs: date?.getTime() || 0
+      });
+    });
+
+    projects.forEach((project) => {
+      const statusKey = this.normalizeBoardKey(project.status || 'planejamento');
+      const column = statusKey === 'concluido'
+        ? 'concluido'
+        : statusKey === 'em_andamento'
+          ? 'andamento'
+          : statusKey === 'pausado'
+            ? 'revisao'
+            : 'planejamento';
+      const projectNextStatus = statusKey === 'planejamento'
+        ? { label: 'Iniciar', status: 'em_andamento', message: 'Projeto marcado como em andamento.' }
+        : statusKey === 'em_andamento'
+          ? { label: 'Concluir', status: 'concluido', message: 'Projeto marcado como concluido.' }
+          : statusKey === 'pausado'
+            ? { label: 'Retomar', status: 'em_andamento', message: 'Projeto retomado.' }
+            : null;
+      const date = this.getBoardDate(project);
+
+      cards.push({
+        id: `project-${project.id}`,
+        source: 'project',
+        sourceLabel: 'Pesquisa',
+        title: project.nome || 'Projeto sem nome',
+        subtitle: project.area || project.coordenador || '',
+        meta: project.coordenador || 'coordenacao nao informada',
+        statusLabel: this.getProjectStatusLabel(project.status),
+        time: this.formatRelativeTime(date),
+        column,
+        targetTab: 'research',
+        action: projectNextStatus ? {
+          label: projectNextStatus.label,
+          method: 'patch',
+          url: `/projetos/${project.id}`,
+          payload: { status: projectNextStatus.status },
+          confirmTitle: 'Atualizar pesquisa',
+          confirmMessage: `Alterar o status de "${project.nome || 'projeto'}"?`,
+          successMessage: projectNextStatus.message
+        } : null,
+        priority: column === 'planejamento' ? 12 : 24,
+        dateMs: date?.getTime() || 0
+      });
+    });
+
+    productions.forEach((item) => {
+      const statusKey = this.normalizeBoardKey(item.status || 'em_revisao');
+      if (statusKey === 'publicado') return;
+      const column = statusKey === 'rascunho' ? 'planejamento' : 'revisao';
+      const date = this.getBoardDate(item);
+
+      cards.push({
+        id: `production-${item.id}`,
+        source: 'production',
+        sourceLabel: 'Repositorio',
+        title: item.titulo || 'Producao sem titulo',
+        subtitle: item.projetoNome || 'Sem pesquisa vinculada',
+        meta: item.tipo || item.area || 'producao',
+        statusLabel: this.getProductionStatusLabel(item.status),
+        time: this.formatRelativeTime(date),
+        column,
+        targetTab: 'research',
+        action: {
+          label: 'Publicar',
+          method: 'patch',
+          url: `/projetos/producoes/${item.id}`,
+          payload: { status: 'publicado' },
+          confirmTitle: 'Publicar producao',
+          confirmMessage: `Publicar "${item.titulo || 'producao'}" no repositorio?`,
+          successMessage: 'Producao publicada no repositorio.'
+        },
+        priority: column === 'revisao' ? 4 : 16,
+        dateMs: date?.getTime() || 0
+      });
+    });
+
+    ideas.forEach((item) => {
+      const statusKey = this.normalizeBoardKey(item.status || 'ideia');
+      if (statusKey === 'arquivada') return;
+      const column = statusKey === 'prioridade'
+        ? 'planejamento'
+        : statusKey === 'em_discussao'
+          ? 'revisao'
+          : 'entrada';
+      const ideaNextStatus = statusKey === 'ideia'
+        ? { label: 'Discutir', status: 'em_discussao', message: 'Ideia enviada para discussao.' }
+        : statusKey === 'em_discussao'
+          ? { label: 'Priorizar', status: 'prioridade', message: 'Ideia marcada como prioridade.' }
+          : statusKey === 'prioridade'
+            ? { label: 'Arquivar', status: 'arquivada', message: 'Ideia arquivada.' }
+            : null;
+      const date = this.getBoardDate(item);
+      const keywords = Array.isArray(item.palavrasChave) ? item.palavrasChave.slice(0, 3).join(', ') : '';
+
+      cards.push({
+        id: `idea-${item.id}`,
+        source: 'idea',
+        sourceLabel: 'Ideia',
+        title: item.titulo || 'Ideia sem titulo',
+        subtitle: item.area || keywords,
+        meta: item.criadoPorNome || item.responsavelNome || 'discente',
+        statusLabel: this.getIdeaStatusLabel(item.status),
+        time: this.formatRelativeTime(date),
+        column,
+        targetTab: 'research',
+        action: ideaNextStatus ? {
+          label: ideaNextStatus.label,
+          method: 'patch',
+          url: `/projetos/ideias/${item.id}`,
+          payload: { status: ideaNextStatus.status },
+          confirmTitle: 'Atualizar ideia',
+          confirmMessage: `Alterar o status de "${item.titulo || 'ideia'}"?`,
+          successMessage: ideaNextStatus.message
+        } : null,
+        priority: column === 'entrada' ? 10 : 14,
+        dateMs: date?.getTime() || 0
+      });
+    });
+
+    const columns = this.buildOperationalBoardColumns(cards);
+    const response = {
+      generatedAt: new Date().toISOString(),
+      filters: { projectId: projectFilter },
+      totals: {
+        cards: cards.length,
+        visible: columns.reduce((sum, column) => sum + column.cards.length, 0)
+      },
+      columns,
+      cache: {
+        hit: false,
+        ttlSeconds: Math.floor(DASHBOARD_CACHE_TTL_MS / 1000)
+      }
+    };
+
+    this.setCache(cacheKey, response, DASHBOARD_CACHE_TTL_MS);
+    return response;
+  }
+
   async getDashboardSummary(query: DashboardQuery) {
     const projectFilter = this.normalizeProjectFilter(query.projectId);
     const cacheKey = this.getCacheKey('dashboard', 'summary', projectFilter);
@@ -1196,45 +1677,6 @@ export class AnalyticsService {
       }
     }
 
-    const [users, pacientes, avaliacoes] = await Promise.all([
-      this.measureOperation('analytics.dashboard.users.find', () => this.usersRepo.find({
-        select: {
-          id: true,
-          role: true,
-          name: true,
-          email: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      })),
-      this.measureOperation('analytics.dashboard.pacientes.find', () => this.getScopedPacientes(projectFilter)),
-      this.measureOperation('analytics.dashboard.avaliacoes.find', () => this.getScopedAvaliacoes(projectFilter))
-    ]);
-    const agendamentos = await this.measureOperation(
-      'analytics.dashboard.agendamentos.find',
-      () => this.getScopedAgendamentos(
-        projectFilter,
-        pacientes.map((item) => item.id)
-      )
-    );
-
-    const professors = projectFilter === 'all'
-      ? users.filter((item) => {
-        const role = this.normalizeStatus(item.role);
-        return role === 'professor' || role === 'profissional';
-      }).length
-      : new Set(
-        pacientes
-          .map((item) => item.professorSupervisorId)
-          .filter((id): id is string => !!id)
-      ).size;
-
-    const activePatients = pacientes.filter((item) => this.normalizeStatus(item.status) === 'ativo').length;
-    const waitingList = pacientes.filter((item) => {
-      const status = this.normalizeStatus(item.status);
-      return status === 'triagem' || status === 'espera' || status === 'lista de espera';
-    }).length;
-
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -1242,86 +1684,151 @@ export class AnalyticsService {
     weekEnd.setDate(weekEnd.getDate() + 7);
     const last30Start = new Date(todayStart);
     last30Start.setDate(last30Start.getDate() - 30);
+    const calWindowStart = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const calWindowEnd = new Date(now.getFullYear(), now.getMonth() + 3, 0);
 
-    const normalizedAppointments = agendamentos
-      .map((item) => {
-        const dateObj = this.toDate(item.scheduledAt || item.date);
-        return {
-          id: item.id,
-          pacienteId: item.pacienteId || null,
-          pacienteNome: item.pacienteNome || 'Paciente',
-          alunoId: item.alunoId || null,
-          alunoNome: item.alunoNome || null,
-          status: item.status || 'agendada',
-          appointmentType: item.appointmentType || null,
-          scheduledAt: item.scheduledAt || item.date || null,
-          date: item.date || null,
-          time: item.time || null,
-          createdAt: item.createdAt || null,
-          updatedAt: item.updatedAt || null,
-          dateObj
-        };
+    const projectWhere = projectFilter === 'all'
+      ? {}
+      : projectFilter === 'sem'
+        ? { projetoId: IsNull() }
+        : { projetoId: projectFilter };
+
+    // Aggregate COUNT queries — avoids loading entire tables into Node memory
+    const [totalPatients, activePatients, semResponsavel, todayCount, weekCount] = await Promise.all([
+      this.measureOperation('analytics.dashboard.patients.count', () =>
+        this.pacientesRepo.count({ where: projectWhere })
+      ),
+      this.measureOperation('analytics.dashboard.active.count', () =>
+        this.pacientesRepo.count({ where: { ...projectWhere, status: 'ativo' } })
+      ),
+      this.measureOperation('analytics.dashboard.sem_responsavel.count', () =>
+        this.pacientesRepo.count({ where: { ...projectWhere, status: 'ativo', alunoResponsavelId: IsNull() } })
+      ),
+      this.measureOperation('analytics.dashboard.today.count', () =>
+        this.agendamentosRepo.createQueryBuilder('a')
+          .where('a.scheduledAt >= :start AND a.scheduledAt < :end', { start: todayStart, end: todayEnd })
+          .getCount()
+      ),
+      this.measureOperation('analytics.dashboard.week.count', () =>
+        this.agendamentosRepo.createQueryBuilder('a')
+          .where('a.scheduledAt >= :start AND a.scheduledAt < :end', { start: todayStart, end: weekEnd })
+          .getCount()
+      )
+    ]);
+
+    const waitingList = await this.pacientesRepo.count({
+      where: [
+        { ...projectWhere, status: 'triagem' },
+        { ...projectWhere, status: 'espera' }
+      ]
+    });
+
+    const professors = await this.measureOperation('analytics.dashboard.professors.count', async () => {
+      if (projectFilter === 'all') {
+        return this.usersRepo.createQueryBuilder('u')
+          .where("LOWER(TRIM(u.role)) IN (:...roles)", { roles: ['professor', 'profissional'] })
+          .getCount();
+      }
+      const qb = this.pacientesRepo.createQueryBuilder('p')
+        .select('COUNT(DISTINCT p.professorSupervisorId)', 'cnt')
+        .where('p.professorSupervisorId IS NOT NULL');
+      if (projectFilter === 'sem') {
+        qb.andWhere('p.projetoId IS NULL');
+      } else {
+        qb.andWhere('p.projetoId = :pid', { pid: projectFilter });
+      }
+      const raw = await qb.getRawOne<{ cnt: string }>();
+      return Number(raw?.cnt || 0);
+    });
+
+    // Status breakdown for last 30 days — GROUP BY instead of full scan + JS filter
+    const last30Raw = await this.measureOperation('analytics.dashboard.last30.status', () =>
+      this.agendamentosRepo.createQueryBuilder('a')
+        .select('LOWER(TRIM(a.status))', 'status')
+        .addSelect('COUNT(a.id)', 'cnt')
+        .where('a.scheduledAt >= :start AND a.scheduledAt <= :end', { start: last30Start, end: todayEnd })
+        .groupBy('LOWER(TRIM(a.status))')
+        .getRawMany<{ status: string; cnt: string }>()
+    );
+    const statusMap: Record<string, number> = Object.fromEntries(
+      last30Raw.map((row) => [row.status, Number(row.cnt)])
+    );
+    const totalLast30 = Math.max(last30Raw.reduce((sum, row) => sum + Number(row.cnt), 0), 1);
+
+    // Calendar items: bounded 5-month window instead of full table
+    const calWindowStartStr = `${calWindowStart.getFullYear()}-${String(calWindowStart.getMonth() + 1).padStart(2, '0')}-01`;
+    const calWindowEndStr = `${calWindowEnd.getFullYear()}-${String(calWindowEnd.getMonth() + 1).padStart(2, '0')}-${String(calWindowEnd.getDate()).padStart(2, '0')}`;
+    const calendarItems = await this.measureOperation('analytics.dashboard.calendar.find', () =>
+      this.agendamentosRepo.createQueryBuilder('a')
+        .where(
+          '(a.scheduledAt >= :calStart AND a.scheduledAt <= :calEnd) OR (a.date >= :calStartStr AND a.date <= :calEndStr)',
+          { calStart: calWindowStart, calEnd: calWindowEnd, calStartStr: calWindowStartStr, calEndStr: calWindowEndStr }
+        )
+        .orderBy('a.scheduledAt', 'DESC')
+        .take(500)
+        .getMany()
+    );
+
+    // Activity feeds: LIMIT per source — no full table scan
+    const [recentUsersData, recentPacientesData, recentAvaliacoesData, recentAgendamentosData] = await Promise.all([
+      this.usersRepo.find({
+        select: { id: true, name: true, email: true, createdAt: true },
+        order: { createdAt: 'DESC' },
+        take: 6
+      }),
+      this.pacientesRepo.find({
+        select: { id: true, nome: true, createdAt: true, dataCadastro: true },
+        order: { createdAt: 'DESC' },
+        take: 6
+      }),
+      this.avaliacoesRepo.find({
+        select: { id: true, tipo: true, createdAt: true, data: true },
+        order: { createdAt: 'DESC' },
+        take: 6
+      }),
+      this.agendamentosRepo.find({
+        select: { id: true, pacienteNome: true, status: true, scheduledAt: true, date: true, createdAt: true, updatedAt: true },
+        order: { updatedAt: 'DESC' },
+        take: 10
       })
-      .sort((a, b) => (b.dateObj?.getTime() || 0) - (a.dateObj?.getTime() || 0));
+    ]);
 
-    const todayList = normalizedAppointments.filter((item) => item.dateObj && item.dateObj >= todayStart && item.dateObj < todayEnd);
-    const weekList = normalizedAppointments.filter((item) => item.dateObj && item.dateObj >= todayStart && item.dateObj < weekEnd);
-    const last30List = normalizedAppointments.filter((item) => item.dateObj && item.dateObj >= last30Start && item.dateObj <= todayEnd);
+    const activityUsers = recentUsersData.map((item) => ({
+      id: `user-${item.id}`,
+      action: 'Novo usuario',
+      label: item.name || item.email || 'Usuario',
+      type: 'user',
+      occurredAt: this.toDate(item.createdAt)
+    }));
 
-    const totalLast30 = Math.max(last30List.length, 1);
-    const appointmentStatusCount = last30List.reduce<Record<string, number>>((acc, item) => {
-      const status = this.normalizeStatus(item.status) || 'agendada';
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {});
+    const activityPacientes = recentPacientesData.map((item) => ({
+      id: `patient-${item.id}`,
+      action: 'Novo paciente',
+      label: item.nome || 'Paciente',
+      type: 'link',
+      occurredAt: this.toDate(item.createdAt || item.dataCadastro)
+    }));
 
-    const recentUsers = users
-      .map((item) => ({
-        id: `user-${item.id}`,
-        action: 'Novo usuario',
-        label: item.name || item.email || 'Usuario',
-        type: 'user',
-        occurredAt: this.toDate(item.createdAt || item.updatedAt)
-      }))
-      .sort((a, b) => (b.occurredAt?.getTime() || 0) - (a.occurredAt?.getTime() || 0))
-      .slice(0, 6);
+    const activityAvaliacoes = recentAvaliacoesData.map((item) => ({
+      id: `evaluation-${item.id}`,
+      action: 'Nova avaliacao',
+      label: item.tipo || 'Avaliacao',
+      type: 'report',
+      occurredAt: this.toDate(item.createdAt || item.data)
+    }));
 
-    const recentPacientes = pacientes
-      .map((item) => ({
-        id: `patient-${item.id}`,
-        action: 'Novo paciente',
-        label: item.nome || 'Paciente',
-        type: 'link',
-        occurredAt: this.toDate(item.createdAt || item.updatedAt || item.dataCadastro)
-      }))
-      .sort((a, b) => (b.occurredAt?.getTime() || 0) - (a.occurredAt?.getTime() || 0))
-      .slice(0, 6);
+    const activityAgendamentos = recentAgendamentosData.map((item) => {
+      const normalizedStatus = this.normalizeStatus(item.status) || 'agendada';
+      return {
+        id: `appointment-${item.id}`,
+        action: APPOINTMENT_STATUS_LABELS[normalizedStatus] || APPOINTMENT_STATUS_LABELS.agendada,
+        label: item.pacienteNome || 'Paciente',
+        type: normalizedStatus === 'agendada' ? 'consulta' : normalizedStatus,
+        occurredAt: this.toDate(item.updatedAt || item.createdAt || item.scheduledAt)
+      };
+    });
 
-    const recentAvaliacoes = avaliacoes
-      .map((item) => ({
-        id: `evaluation-${item.id}`,
-        action: 'Nova avaliacao',
-        label: item.tipo || 'Avaliacao',
-        type: 'report',
-        occurredAt: this.toDate(item.createdAt || item.data)
-      }))
-      .sort((a, b) => (b.occurredAt?.getTime() || 0) - (a.occurredAt?.getTime() || 0))
-      .slice(0, 6);
-
-    const appointmentActivities = normalizedAppointments
-      .slice(0, 12)
-      .map((item) => {
-        const normalizedStatus = this.normalizeStatus(item.status) || 'agendada';
-        return {
-          id: `appointment-${item.id}`,
-          action: APPOINTMENT_STATUS_LABELS[normalizedStatus] || APPOINTMENT_STATUS_LABELS.agendada,
-          label: item.pacienteNome || 'Paciente',
-          type: normalizedStatus === 'agendada' ? 'consulta' : normalizedStatus,
-          occurredAt: this.toDate(item.updatedAt || item.createdAt || item.scheduledAt)
-        };
-      });
-
-    const recentActivities = [...recentUsers, ...recentPacientes, ...recentAvaliacoes, ...appointmentActivities]
+    const recentActivities = [...activityUsers, ...activityPacientes, ...activityAvaliacoes, ...activityAgendamentos]
       .sort((a, b) => (b.occurredAt?.getTime() || 0) - (a.occurredAt?.getTime() || 0))
       .slice(0, 10)
       .map((item) => ({
@@ -1335,24 +1842,23 @@ export class AnalyticsService {
 
     const response = {
       generatedAt: new Date().toISOString(),
-      filters: {
-        projectId: projectFilter
-      },
+      filters: { projectId: projectFilter },
       metrics: {
-        totalPatients: pacientes.length,
+        totalPatients,
         professors,
         activePatients,
-        waitingList
+        waitingList,
+        semResponsavel
       },
       appointments: {
         summary: {
-          todayCount: todayList.length,
-          weekCount: weekList.length,
-          noShowRate: Math.round(((appointmentStatusCount.falta || 0) / totalLast30) * 100),
-          rescheduleRate: Math.round(((appointmentStatusCount.remarcada || 0) / totalLast30) * 100),
-          completionRate: Math.round(((appointmentStatusCount.realizada || 0) / totalLast30) * 100)
+          todayCount,
+          weekCount,
+          noShowRate: Math.round(((statusMap.falta || 0) / totalLast30) * 100),
+          rescheduleRate: Math.round(((statusMap.remarcada || 0) / totalLast30) * 100),
+          completionRate: Math.round(((statusMap.realizada || 0) / totalLast30) * 100)
         },
-        items: normalizedAppointments.map((item) => ({
+        items: calendarItems.map((item) => ({
           id: item.id,
           pacienteId: item.pacienteId,
           pacienteNome: item.pacienteNome,
@@ -1368,10 +1874,7 @@ export class AnalyticsService {
         }))
       },
       recentActivities,
-      cache: {
-        hit: false,
-        ttlSeconds: Math.floor(DASHBOARD_CACHE_TTL_MS / 1000)
-      }
+      cache: { hit: false, ttlSeconds: Math.floor(DASHBOARD_CACHE_TTL_MS / 1000) }
     };
 
     this.setCache(cacheKey, response, DASHBOARD_CACHE_TTL_MS);
@@ -1610,10 +2113,12 @@ export class AnalyticsService {
     return response;
   }
 
-  async exportReports(query: ExportQuery): Promise<ExportResult> {
+  async exportReports(query: ExportQuery, user: AuthenticatedUser): Promise<ExportResult> {
+    assertAnalyticsExport(user);
     const range = this.normalizeRange(query.range);
-    const projectFilter = this.normalizeProjectFilter(query.projectId);
-    const anonymize = this.normalizeBoolean(query.anonymize, true);
+    const projectFilter = analyticsProjectScope(user, query.projectId);
+    const detailed = canReadDetailedAnalytics(user);
+    const anonymize = detailed ? this.normalizeBoolean(query.anonymize, true) : true;
     const format = this.normalizeExportFormat(query.format);
 
     const overview = await this.getReportsOverview({
@@ -1631,6 +2136,27 @@ export class AnalyticsService {
       : projectFilter === 'sem'
         ? 'sem-projeto'
         : (projects.find((item) => item.id === projectFilter)?.nome || 'projeto');
+
+    if (!detailed) {
+      // Pseudonymous rows are still individual health data. Communication and
+      // delegated research access receive an explicitly aggregate projection.
+      const summary = overview as Extract<Awaited<ReturnType<AnalyticsService['getReportsOverview']>>, { metrics: unknown }>;
+      const aggregate = {
+        generatedAt: summary.generatedAt,
+        filters: { range, projectId: projectFilter, anonymize: true, projection: 'aggregate' },
+        metrics: summary.metrics,
+        usageByType: summary.usageByType,
+        quarterly: summary.quarterly
+      };
+      if (format === 'json') {
+        return { filename: `relatorio_${projectLabel}.json`, mimeType: 'application/json', stream: Readable.from([JSON.stringify(aggregate, null, 2)]) };
+      }
+      const rows = Object.entries(aggregate.metrics || {}).map(([metric, value]) => this.toCsvLine(['indicador', 'valor'], { indicador: metric, valor: value }));
+      return {
+        filename: `relatorio_${projectLabel}.csv`, mimeType: 'text/csv; charset=utf-8',
+        stream: Readable.from(['\uFEFFindicador,valor\r\n', rows.join('\r\n'), '\r\n'])
+      };
+    }
 
     if (format === 'json') {
       const [scopedPacientes, scopedAvaliacoes] = await Promise.all([

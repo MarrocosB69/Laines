@@ -1,0 +1,2565 @@
+{
+  "generatedAt": "2026-09-11T16:38:20.398Z",
+  "method": "AST TypeScript: apenas decoradores declarados; não resolve autorização interna de serviços",
+  "routeCount": 139,
+  "duplicates": [],
+  "routes": [
+    {
+      "method": "GET",
+      "route": "/agendamentos",
+      "handler": "findAll",
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "line": 37,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/agendamentos",
+      "handler": "create",
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "line": 71,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/agendamentos/:id",
+      "handler": "remove",
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "line": 100,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/agendamentos/:id",
+      "handler": "findOne",
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "line": 61,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/agendamentos/:id",
+      "handler": "update",
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "line": 89,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_ATUALIZACAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/agendamentos/:id/remarcar",
+      "handler": "reschedule",
+      "file": "server/src/agendamentos/agendamentos.controller.ts",
+      "line": 78,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_REAGENDAMENTO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/correlations",
+      "handler": "correlations",
+      "file": "server/src/analytics/analytics.controller.ts",
+      "line": 128,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/dashboard/operational-board",
+      "handler": "operationalBoard",
+      "file": "server/src/analytics/analytics.controller.ts",
+      "line": 114,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/dashboard/summary",
+      "handler": "dashboardSummary",
+      "file": "server/src/analytics/analytics.controller.ts",
+      "line": 100,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/reports/export",
+      "handler": "exportReports",
+      "file": "server/src/analytics/analytics.controller.ts",
+      "line": 144,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/analytics/reports/overview",
+      "handler": "overview",
+      "file": "server/src/analytics/analytics.controller.ts",
+      "line": 84,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/auditoria",
+      "handler": "findAll",
+      "file": "server/src/auditoria/auditoria.controller.ts",
+      "line": 117,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/auditoria",
+      "handler": "create",
+      "file": "server/src/auditoria/auditoria.controller.ts",
+      "line": 80,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/auditoria/:id",
+      "handler": "remove",
+      "file": "server/src/auditoria/auditoria.controller.ts",
+      "line": 146,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/auditoria/:id",
+      "handler": "findOne",
+      "file": "server/src/auditoria/auditoria.controller.ts",
+      "line": 135,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/auth/change-password",
+      "handler": "changePassword",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 164,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/auth/login",
+      "handler": "login",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 107,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/auth/logout",
+      "handler": "logout",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 139,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/auth/logout-all",
+      "handler": "logoutAll",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 173,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/auth/me",
+      "handler": "me",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 158,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/auth/profile",
+      "handler": "updateProfile",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 179,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/auth/recover-password",
+      "handler": "recoverPassword",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 147,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/auth/recovery-request",
+      "handler": "recoveryRequest",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 152,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/auth/refresh",
+      "handler": "refresh",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 124,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/auth/register",
+      "handler": "register",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 96,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/auth/supervisors",
+      "handler": "listSupervisors",
+      "file": "server/src/auth/auth.controller.ts",
+      "line": 188,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/avaliacoes",
+      "handler": "findAll",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 50,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/avaliacoes",
+      "handler": "create",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 105,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_CRIACAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/avaliacoes-imagem",
+      "handler": "create",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 44,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/avaliacoes-imagem/:id",
+      "handler": "remove",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 100,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        },
+        {
+          "name": "HttpCode",
+          "args": [
+            "200"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/avaliacoes-imagem/:id/capturas/:captureId/concluir-upload",
+      "handler": "concludeUpload",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 62,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/avaliacoes-imagem/:id/reprocessar",
+      "handler": "reprocess",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 73,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/avaliacoes-imagem/:id/resultados",
+      "handler": "results",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 91,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/avaliacoes-imagem/:id/status",
+      "handler": "status",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 82,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/avaliacoes-imagem/:id/upload-urls",
+      "handler": "uploadUrls",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 53,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "route": "/avaliacoes-imagem/uploads/local/:token",
+      "handler": "uploadLocal",
+      "file": "server/src/avaliacao-imagem/avaliacao-imagem.controller.ts",
+      "line": 30,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "DELETE",
+      "route": "/avaliacoes/:id",
+      "handler": "remove",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 134,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/avaliacoes/:id",
+      "handler": "findOne",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 95,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/avaliacoes/:id",
+      "handler": "update",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 123,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/avaliacoes/:id/revisar",
+      "handler": "revisar",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 112,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_REVISAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/avaliacoes/paciente/:pacienteId/relatorio-clinico",
+      "handler": "relatorioClinicoPdf",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 82,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/avaliacoes/pendencias/:pacienteId",
+      "handler": "getPendencias",
+      "file": "server/src/avaliacoes/avaliacoes.controller.ts",
+      "line": 73,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/conteudos",
+      "handler": "findAll",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 48,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/conteudos",
+      "handler": "create",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 58,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/conteudos/:id",
+      "handler": "remove",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 74,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/conteudos/:id",
+      "handler": "update",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 64,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/conteudos/:id/arquivo",
+      "handler": "removeArquivo",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 138,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/conteudos/:id/arquivo",
+      "handler": "downloadArquivo",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 122,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/conteudos/:id/arquivo",
+      "handler": "uploadArquivo",
+      "file": "server/src/conteudos/conteudos.controller.ts",
+      "line": 80,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        },
+        {
+          "name": "UseInterceptors",
+          "args": [
+            "FileInterceptor('file', {\n    storage: diskStorage({\n      destination: (req, _file, cb) => {\n        const id = String((req as any).params?.id || 'geral');\n        cb(null, buildConteudoUploadDir(id));\n      },\n      filename: (_req, file, cb) => {\n        const ext = extname(file.originalname || '').toLowerCase();\n        const safeBase = (file.originalname || 'arquivo')\n          .replace(/\\.[^.]+$/, '')\n          .normalize('NFD')\n          .replace(/[̀-ͯ]/g, '')\n          .replace(/[^\\w.-]/g, '_')\n          .slice(0, 90);\n        cb(null, `${Date.now()}-${safeBase}${ext}`);\n      }\n    }),\n    fileFilter: (_req, file, cb) => {\n      const ext = extname(file.originalname || '').toLowerCase();\n      if (!ALLOWED_EXT.has(ext)) {\n        cb(new HttpException('Formato de arquivo nao permitido. Use PDF, DOC, DOCX, PNG ou JPG.', HttpStatus.BAD_REQUEST), false);\n        return;\n      }\n      cb(null, true);\n    },\n    limits: { fileSize: MAX_SIZE_BYTES }\n  })"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/csp-report",
+      "handler": "cspReport",
+      "file": "server/src/app.controller.ts",
+      "line": 23,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "HttpCode",
+          "args": [
+            "204"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/health",
+      "handler": "health",
+      "file": "server/src/app.controller.ts",
+      "line": 13,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/mets",
+      "handler": "list",
+      "file": "server/src/mets/mets.controller.ts",
+      "line": 118,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/mets",
+      "handler": "create",
+      "file": "server/src/mets/mets.controller.ts",
+      "line": 133,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/mets/:id",
+      "handler": "remove",
+      "file": "server/src/mets/mets.controller.ts",
+      "line": 147,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/mets/:id",
+      "handler": "findOne",
+      "file": "server/src/mets/mets.controller.ts",
+      "line": 128,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "PATCH",
+      "route": "/mets/:id",
+      "handler": "update",
+      "file": "server/src/mets/mets.controller.ts",
+      "line": 140,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/mets/calcular",
+      "handler": "calcular",
+      "file": "server/src/mets/mets.controller.ts",
+      "line": 123,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/notificacoes",
+      "handler": "findAll",
+      "file": "server/src/notificacoes/notificacoes.controller.ts",
+      "line": 27,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/notificacoes",
+      "handler": "create",
+      "file": "server/src/notificacoes/notificacoes.controller.ts",
+      "line": 42,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/notificacoes/:id",
+      "handler": "remove",
+      "file": "server/src/notificacoes/notificacoes.controller.ts",
+      "line": 61,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/notificacoes/:id",
+      "handler": "update",
+      "file": "server/src/notificacoes/notificacoes.controller.ts",
+      "line": 54,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/notificacoes/:id/resolver",
+      "handler": "resolve",
+      "file": "server/src/notificacoes/notificacoes.controller.ts",
+      "line": 48,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/observability/alerts",
+      "handler": "alerts",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 28,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/observability/drill",
+      "handler": "drill",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 47,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/observability/errors",
+      "handler": "errors",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 33,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/observability/events",
+      "handler": "events",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 38,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/observability/metrics",
+      "handler": "metrics",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 18,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/observability/reset",
+      "handler": "reset",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 60,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/observability/slo",
+      "handler": "slo",
+      "file": "server/src/observability/observability.controller.ts",
+      "line": 23,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/pacientes",
+      "handler": "findAll",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 83,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/pacientes",
+      "handler": "create",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 130,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_CRIACAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/pacientes/:id",
+      "handler": "remove",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 241,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/pacientes/:id",
+      "handler": "findOne",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 117,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/pacientes/:id",
+      "handler": "update",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 137,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/pacientes/:id/anexos",
+      "handler": "uploadAnexo",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 169,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        },
+        {
+          "name": "UseInterceptors",
+          "args": [
+            "FileInterceptor('file', {\n    storage: diskStorage({\n      destination: (req, _file, cb) => {\n        const pacienteId = String(req.params?.id || '');\n        if (!UUID_V4_REGEX.test(pacienteId)) {\n          cb(new HttpException('Identificador de paciente invalido.', HttpStatus.BAD_REQUEST), '');\n          return;\n        }\n        cb(null, PacientesController.buildUploadDir(pacienteId));\n      },\n      filename: (_req, file, cb) => {\n        const ext = extname(file.originalname || '').toLowerCase();\n        const safeBase = PacientesController.sanitizeBaseName(file.originalname || 'arquivo');\n        cb(null, `${Date.now()}-${safeBase}${ext}`);\n      }\n    }),\n    fileFilter: (_req, file, cb) => {\n      const ext = extname(file.originalname || '').toLowerCase();\n      const isValidMime = ALLOWED_UPLOAD_MIME.has(file.mimetype);\n      const isValidExt = ALLOWED_UPLOAD_EXT.has(ext);\n      if (!isValidMime || !isValidExt) {\n        cb(new HttpException('Formato de arquivo nao permitido.', HttpStatus.BAD_REQUEST), false);\n        return;\n      }\n      cb(null, true);\n    },\n    limits: {\n      fileSize: MAX_UPLOAD_SIZE_BYTES\n    }\n  })"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/pacientes/:id/anexos/:filename",
+      "handler": "removeAnexo",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 230,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/pacientes/:id/anexos/:filename",
+      "handler": "downloadAnexo",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 213,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/pacientes/:id/mensagens-professor",
+      "handler": "addProfessorMessage",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 148,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/pacientes/:id/onboarding",
+      "handler": "updateOnboarding",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 158,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "atleta"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/pacientes/:id/onboarding-status",
+      "handler": "onboardingStatus",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 108,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/pacientes/triagem-publica",
+      "handler": "findPublicTriage",
+      "file": "server/src/pacientes/pacientes.controller.ts",
+      "line": 102,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/planos-alimentares",
+      "handler": "list",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 143,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/planos-alimentares",
+      "handler": "create",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 164,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/planos-alimentares/:id",
+      "handler": "remove",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 202,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/planos-alimentares/:id",
+      "handler": "findOne",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 158,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/planos-alimentares/:id",
+      "handler": "update",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 171,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/planos-alimentares/:id/ativar",
+      "handler": "ativar",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 182,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/planos-alimentares/:id/pdf",
+      "handler": "exportPdf",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 189,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/planos-alimentares/paciente/:pacienteId/contexto",
+      "handler": "getPacienteContext",
+      "file": "server/src/planos-alimentares/plano-alimentar.controller.ts",
+      "line": 149,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/projetos",
+      "handler": "findAll",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 78,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/projetos",
+      "handler": "create",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 225,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/projetos/:id",
+      "handler": "remove",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 241,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/projetos/:id",
+      "handler": "findOne",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 212,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/projetos/:id",
+      "handler": "update",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 231,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/projetos/ideias",
+      "handler": "findIdeias",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 160,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/projetos/ideias",
+      "handler": "createIdeia",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 166,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/projetos/ideias/:id",
+      "handler": "removeIdeia",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 203,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/projetos/ideias/:id",
+      "handler": "updateIdeia",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 193,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/projetos/ideias/:id/interesse",
+      "handler": "removerInteresseIdeia",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 184,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/projetos/ideias/:id/interesse",
+      "handler": "demonstrarInteresseIdeia",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 175,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/projetos/producoes",
+      "handler": "findProducoes",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 84,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/projetos/producoes",
+      "handler": "createProducao",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 90,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        },
+        {
+          "name": "UseInterceptors",
+          "args": [
+            "FileInterceptor('file', {\n    storage: diskStorage({\n      destination: (req, _file, cb) => {\n        const projetoId = String(req.body?.projetoId || '');\n        cb(null, ProjetosController.buildProductionUploadDir(projetoId));\n      },\n      filename: (_req, file, cb) => {\n        const ext = extname(file.originalname || '').toLowerCase();\n        const safeBase = ProjetosController.sanitizeBaseName(file.originalname || 'arquivo');\n        cb(null, `${Date.now()}-${safeBase}${ext}`);\n      }\n    }),\n    fileFilter: (_req, file, cb) => {\n      const ext = extname(file.originalname || '').toLowerCase();\n      if (!ALLOWED_RESEARCH_UPLOAD_EXT.has(ext)) {\n        cb(new HttpException('Formato de arquivo nao permitido.', HttpStatus.BAD_REQUEST), false);\n        return;\n      }\n      cb(null, true);\n    },\n    limits: {\n      fileSize: MAX_RESEARCH_UPLOAD_SIZE_BYTES\n    }\n  })"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/projetos/producoes/:id",
+      "handler": "removeProducao",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 151,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/projetos/producoes/:id",
+      "handler": "updateProducao",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 124,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/projetos/producoes/:id/arquivo/:filename",
+      "handler": "downloadProducaoArquivo",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 134,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/projetos/public",
+      "handler": "findPublic",
+      "file": "server/src/projetos/projetos.controller.ts",
+      "line": 73,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/public/inscricao",
+      "handler": "criarInscricao",
+      "file": "server/src/public/public.controller.ts",
+      "line": 16,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/public/stats",
+      "handler": "getStats",
+      "file": "server/src/public/public.controller.ts",
+      "line": 11,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/ready",
+      "handler": "readiness",
+      "file": "server/src/app.controller.ts",
+      "line": 18,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/settings/admin-console",
+      "handler": "getAdminConsoleSettings",
+      "file": "server/src/settings/settings.controller.ts",
+      "line": 13,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_AREA_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/settings/admin-console",
+      "handler": "updateAdminConsoleSettings",
+      "file": "server/src/settings/settings.controller.ts",
+      "line": 20,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/solicitacoes-acesso",
+      "handler": "findAll",
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "line": 45,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/solicitacoes-acesso",
+      "handler": "create",
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "line": 36,
+      "classDecorators": [],
+      "methodDecorators": []
+    },
+    {
+      "method": "DELETE",
+      "route": "/solicitacoes-acesso/:id",
+      "handler": "remove",
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "line": 85,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/solicitacoes-acesso/:id",
+      "handler": "findOne",
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "line": 57,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/solicitacoes-acesso/:id",
+      "handler": "update",
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "line": 68,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/solicitacoes-acesso/:id/approve",
+      "handler": "approve",
+      "file": "server/src/solicitacoes-acesso/solicitacoes.controller.ts",
+      "line": 75,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/taco",
+      "handler": "create",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 175,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/taco/:id",
+      "handler": "remove",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 189,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/taco/:id",
+      "handler": "buscarPorId",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 170,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "PATCH",
+      "route": "/taco/:id",
+      "handler": "update",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 182,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/taco/buscar",
+      "handler": "buscar",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 148,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/taco/calcular",
+      "handler": "calcular",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 157,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "POST",
+      "route": "/taco/calcular-lote",
+      "handler": "calcularLote",
+      "file": "server/src/taco/taco.controller.ts",
+      "line": 165,
+      "classDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ],
+      "methodDecorators": []
+    },
+    {
+      "method": "GET",
+      "route": "/tarefas",
+      "handler": "findAll",
+      "file": "server/src/tarefas/tarefas.controller.ts",
+      "line": 31,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/tarefas",
+      "handler": "create",
+      "file": "server/src/tarefas/tarefas.controller.ts",
+      "line": 41,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/tarefas/:id",
+      "handler": "remove",
+      "file": "server/src/tarefas/tarefas.controller.ts",
+      "line": 61,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/tarefas/:id",
+      "handler": "update",
+      "file": "server/src/tarefas/tarefas.controller.ts",
+      "line": 54,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ROLES_EDICAO"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/tarefas/:id/resolver",
+      "handler": "resolve",
+      "file": "server/src/tarefas/tarefas.controller.ts",
+      "line": 48,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/users",
+      "handler": "findAll",
+      "file": "server/src/users/users.controller.ts",
+      "line": 88,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "route": "/users",
+      "handler": "create",
+      "file": "server/src/users/users.controller.ts",
+      "line": 141,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "DELETE",
+      "route": "/users/:id",
+      "handler": "remove",
+      "file": "server/src/users/users.controller.ts",
+      "line": 171,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/users/:id",
+      "handler": "findOne",
+      "file": "server/src/users/users.controller.ts",
+      "line": 127,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/users/:id",
+      "handler": "update",
+      "file": "server/src/users/users.controller.ts",
+      "line": 164,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/users/:id/permissions",
+      "handler": "setPermissions",
+      "file": "server/src/users/users.controller.ts",
+      "line": 148,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "route": "/users/:id/reset-password",
+      "handler": "resetPassword",
+      "file": "server/src/users/users.controller.ts",
+      "line": 181,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/users/equipe-atendimento",
+      "handler": "listEquipeAtendimento",
+      "file": "server/src/users/users.controller.ts",
+      "line": 113,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/users/meus-supervisionados",
+      "handler": "getMeusSupervisionados",
+      "file": "server/src/users/users.controller.ts",
+      "line": 107,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "route": "/users/supervisores",
+      "handler": "listActiveSupervisors",
+      "file": "server/src/users/users.controller.ts",
+      "line": 120,
+      "classDecorators": [],
+      "methodDecorators": [
+        {
+          "name": "UseGuards",
+          "args": [
+            "JwtAuthGuard",
+            "RolesGuard"
+          ]
+        },
+        {
+          "name": "Roles",
+          "args": [
+            "...ADMIN_ROLES"
+          ]
+        }
+      ]
+    }
+  ]
+}

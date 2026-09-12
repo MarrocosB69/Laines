@@ -1,5 +1,5 @@
 import { IsArray, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
-import { CATEGORIAS_CONTEUDO } from './criar-conteudo.dto';
+import { CATEGORIAS_CONTEUDO, STATUS_CONTEUDO } from './criar-conteudo.dto';
 
 export class AtualizarConteudoDto {
   @IsOptional()
@@ -11,6 +11,11 @@ export class AtualizarConteudoDto {
   @IsString()
   @MinLength(2)
   titulo?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(STATUS_CONTEUDO)
+  status?: string;
 
   @IsOptional()
   @IsString()
@@ -35,4 +40,20 @@ export class AtualizarConteudoDto {
   @IsOptional()
   @IsArray()
   cursos?: string[];
+
+  @IsOptional()
+  @IsArray()
+  autores?: string[];
+
+  @IsOptional()
+  @IsString()
+  profissionalNome?: string;
+
+  @IsOptional()
+  @IsString()
+  profissionalCredencial?: string;
+
+  @IsOptional()
+  @IsArray()
+  equipeOrganizacao?: string[];
 }

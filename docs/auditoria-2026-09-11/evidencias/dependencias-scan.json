@@ -1,0 +1,31 @@
+{
+  "gerado_em": "2026-09-11",
+  "pacotes": [
+    {"nome": "@eslint/js", "atual": "9.39.2", "sugerida": "9.39.5", "ultima": "10.0.1", "risco": "major"},
+    {"nome": "@fortawesome/fontawesome-free", "atual": "7.1.0", "sugerida": "7.3.1", "ultima": "7.3.1", "risco": "minor"},
+    {"nome": "@playwright/test", "atual": "1.59.1", "sugerida": "1.63.0", "ultima": "1.63.0", "risco": "minor"},
+    {"nome": "@tailwindcss/vite", "atual": "4.1.18", "sugerida": "4.3.3", "ultima": "4.3.3", "risco": "minor"},
+    {"nome": "@types/react", "atual": "19.2.7", "sugerida": "19.3.0", "ultima": "19.3.0", "risco": "minor"},
+    {"nome": "@types/react-dom", "atual": "19.2.3", "sugerida": "19.3.0", "ultima": "19.3.0", "risco": "minor"},
+    {"nome": "@vitejs/plugin-react", "atual": "5.1.2", "sugerida": "5.2.0", "ultima": "6.1.1", "risco": "major"},
+    {"nome": "autoprefixer", "atual": "10.4.23", "sugerida": "10.5.6", "ultima": "10.5.6", "risco": "minor"},
+    {"nome": "axios", "atual": "1.16.0", "sugerida": "1.20.0", "ultima": "1.20.0", "risco": "minor"},
+    {"nome": "date-fns", "atual": "4.1.0", "sugerida": "4.4.0", "ultima": "4.4.0", "risco": "minor"},
+    {"nome": "eslint", "atual": "9.39.2", "sugerida": "9.39.5", "ultima": "10.10.0", "risco": "major"},
+    {"nome": "eslint-plugin-react-hooks", "atual": "7.0.1", "sugerida": "7.1.1", "ultima": "7.1.1", "risco": "minor"},
+    {"nome": "eslint-plugin-react-refresh", "atual": "0.4.26", "sugerida": "0.4.26", "ultima": "0.5.6", "risco": "major"},
+    {"nome": "framer-motion", "atual": "12.25.0", "sugerida": "12.43.0", "ultima": "13.2.0", "risco": "major"},
+    {"nome": "globals", "atual": "16.5.0", "sugerida": "16.5.0", "ultima": "17.12.0", "risco": "major"},
+    {"nome": "lucide-react", "atual": "0.562.0", "sugerida": "0.562.0", "ultima": "1.45.0", "risco": "major"},
+    {"nome": "playwright", "atual": "1.59.1", "sugerida": "1.63.0", "ultima": "1.63.0", "risco": "minor"},
+    {"nome": "postcss", "atual": "8.5.14", "sugerida": "8.5.28", "ultima": "8.5.28", "risco": "minor"},
+    {"nome": "react", "atual": "19.2.3", "sugerida": "19.3.0", "ultima": "19.3.0", "risco": "minor"},
+    {"nome": "react-dom", "atual": "19.2.3", "sugerida": "19.3.0", "ultima": "19.3.0", "risco": "minor"},
+    {"nome": "react-router-dom", "atual": "7.13.1", "sugerida": "7.18.3", "ultima": "7.18.3", "risco": "minor"},
+    {"nome": "recharts", "atual": "3.6.0", "sugerida": "3.10.1", "ultima": "3.10.1", "risco": "minor"},
+    {"nome": "stylelint", "atual": "17.6.0", "sugerida": "17.15.0", "ultima": "17.15.0", "risco": "minor"},
+    {"nome": "tailwindcss", "atual": "4.1.18", "sugerida": "4.3.3", "ultima": "4.3.3", "risco": "minor"},
+    {"nome": "three", "atual": "0.184.0", "sugerida": "0.184.0", "ultima": "0.186.0", "risco": "minor"},
+    {"nome": "vite", "atual": "7.3.3", "sugerida": "7.3.6", "ultima": "8.3.0", "risco": "major"}
+  ]
+}

@@ -1,0 +1,342 @@
+{
+  "versao": "2026-09-11",
+  "nota": "Proposta de implementação, não representa correções já aplicadas. Esforço relativo: M médio; G grande. Sem promessa de prazo.",
+  "itens": [
+    {
+      "id": "UPD-01",
+      "prioridade": "P0",
+      "frente": "Segurança",
+      "titulo": "Recuperação e credenciais",
+      "entrega": "Trocar recuperação por desafio de uso único; retirar senhas temporárias de listagem/armazenamento reversível.",
+      "aceite": "Dados cadastrais não redefinem senha; desafio expira e não pode ser reutilizado; nenhuma resposta entrega senha.",
+      "dependencias": [],
+      "esforco": "M",
+      "evidencias": "SEC-01, SEC-02",
+      "status": "concluido",
+      "notas": "cpf e dataNascimento ainda expostos em toPublic. Avaliar sob UPD-12."
+    },
+    {
+      "id": "UPD-02",
+      "prioridade": "P0",
+      "frente": "Segurança",
+      "titulo": "Eventos clínicos e sessão",
+      "entrega": "Segmentar eventos pelo vínculo e desconectar sessões revogadas/expiradas.",
+      "aceite": "Duas equipes do mesmo papel não recebem eventos clínicos uma da outra; logout e retirada de vínculo interrompem entrega.",
+      "dependencias": [],
+      "esforco": "G",
+      "evidencias": "SEC-03, SEC-04",
+      "status": "concluido"
+    },
+    {
+      "id": "UPD-03",
+      "prioridade": "P0",
+      "frente": "Segurança",
+      "titulo": "Relatórios e exportações",
+      "entrega": "Impor escopo e projeção no servidor; neutralizar fórmulas em texto de CSV.",
+      "aceite": "Query string não amplia escopo nem remove anonimização obrigatória; CSV não executa conteúdo textual.",
+      "dependencias": [],
+      "esforco": "M",
+      "evidencias": "SEC-06, SEC-07",
+      "status": "concluido"
+    },
+    {
+      "id": "UPD-04",
+      "prioridade": "P0",
+      "frente": "Segurança",
+      "titulo": "Upload de conteúdo",
+      "entrega": "Validar ID/vínculo antes de gravar; conter caminhos e limpar falhas.",
+      "aceite": "Solicitação negada ou ID malformado grava zero arquivos; travessia codificada bloqueada.",
+      "dependencias": [],
+      "esforco": "M",
+      "evidencias": "SEC-08",
+      "status": "concluido"
+    },
+    {
+      "id": "UPD-05",
+      "prioridade": "P0",
+      "frente": "Segurança",
+      "titulo": "Inscrição duplicada",
+      "entrega": "Tornar inscrição pública idempotente e proteger alteração de triagem existente.",
+      "aceite": "CPF alheio não permite alterar nome, contato, histórico ou revelar inscrição existente.",
+      "dependencias": [],
+      "esforco": "M",
+      "evidencias": "SEC-05",
+      "status": "concluido"
+    },
+    {
+      "id": "UPD-06",
+      "prioridade": "P0",
+      "frente": "Clínica",
+      "titulo": "Contrato e migração da prescrição",
+      "entrega": "Unificar schema versionado, cálculo e migração sem perda entre itens e alimentos.",
+      "aceite": "Mesmo plano salva/reabre/calcula/imprime com alimentos, orientações, alternativas e totais preservados.",
+      "dependencias": [],
+      "esforco": "G",
+      "evidencias": "CLI-01, CLI-02, CLI-08",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-07",
+      "prioridade": "P0",
+      "frente": "Clínica",
+      "titulo": "Revisão e autoria",
+      "entrega": "Fixar autor/data/versão no servidor e autorizar transições de revisão.",
+      "aceite": "Cliente não forja signatário; aluno não publica como profissional; alteração posterior invalida aprovação.",
+      "dependencias": [
+        "UPD-06"
+      ],
+      "esforco": "G",
+      "evidencias": "SEC-09, CLI-04",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-08",
+      "prioridade": "P0",
+      "frente": "Engenharia",
+      "titulo": "Pipeline de publicação",
+      "entrega": "Corrigir YAML duplicado e erros de lint relevantes; validar workflows.",
+      "aceite": "Workflow válido e execução completa em revisão imutável com credenciais/cenários obrigatórios.",
+      "dependencias": [],
+      "esforco": "M",
+      "evidencias": "ENG-01",
+      "status": "concluido"
+    },
+    {
+      "id": "UPD-09",
+      "prioridade": "P1",
+      "frente": "Engenharia",
+      "titulo": "Dependências",
+      "entrega": "Atualizar conjuntos compatíveis e analisar alcance de cada advisory.",
+      "aceite": "Relatório npm atualizado; avisos restantes têm análise de aplicabilidade; contratos críticos sem regressão.",
+      "dependencias": [
+        "UPD-08"
+      ],
+      "esforco": "M",
+      "evidencias": "ENG-03",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-10",
+      "prioridade": "P1",
+      "frente": "Clínica",
+      "titulo": "Emitir e entregar plano",
+      "entrega": "Ligar PDF, revisão, ativação e plano vigente ao portal do atleta; resolver botão Gerar.",
+      "aceite": "Plano revisado chega ao atleta e PDF da mesma versão; nenhuma ação habilitada fica sem efeito.",
+      "dependencias": [
+        "UPD-06",
+        "UPD-07"
+      ],
+      "esforco": "G",
+      "evidencias": "CLI-03",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-11",
+      "prioridade": "P1",
+      "frente": "Clínica",
+      "titulo": "Referências e restrições",
+      "entrega": "Reutilizar anamnese e referência elegível; distinguir ausente/zero/meta/limite.",
+      "aceite": "Restrição existente afeta sugestão; DRI não é fixa por seed; rascunho não vira referência definitiva.",
+      "dependencias": [
+        "UPD-06"
+      ],
+      "esforco": "G",
+      "evidencias": "CLI-05, CLI-06, CLI-07, CLI-09",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-12",
+      "prioridade": "P1",
+      "frente": "Produto",
+      "titulo": "Contrato de autorização",
+      "entrega": "Consolidar papel, diretoria, capacidade e equipe assistencial por objeto/campo/canal.",
+      "aceite": "Leitura de outras diretorias funciona; rascunhos e orquestração internos não vazam; clínica só por vínculo.",
+      "dependencias": [
+        "UPD-02",
+        "UPD-03"
+      ],
+      "esforco": "G",
+      "evidencias": "SEC-03, SEC-06, UX-04",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-13",
+      "prioridade": "P1",
+      "frente": "Produto",
+      "titulo": "Navegação da liga",
+      "entrega": "Organizar Liga, Atendimento e Gestão com visão das quatro diretorias e área local de gestão.",
+      "aceite": "Aluno com/sem diretoria mantém rotina estável e conhece atividades publicadas de todas as diretorias.",
+      "dependencias": [
+        "UPD-12"
+      ],
+      "esforco": "M",
+      "evidencias": "UX-04, UX-05",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-14",
+      "prioridade": "P1",
+      "frente": "Usabilidade",
+      "titulo": "Prontuário e pendências",
+      "entrega": "Consolidar alertas e próxima ação; separar obrigatório, solicitado, opcional e não aplicável.",
+      "aceite": "Paciente novo não recebe indiscriminadamente 17 atrasos; identidade e ação principal ficam claras no topo.",
+      "dependencias": [
+        "UPD-12"
+      ],
+      "esforco": "G",
+      "evidencias": "UX-02, CLI prontuário",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-15",
+      "prioridade": "P1",
+      "frente": "Clínica",
+      "titulo": "Gráficos e tabelas",
+      "entrega": "Uniformizar datas, unidades, origem, cobertura, nulos e semântica das cores.",
+      "aceite": "Intervalos temporais reais; zero e desconhecido distintos; detalhes disponíveis por teclado/toque.",
+      "dependencias": [
+        "UPD-11"
+      ],
+      "esforco": "M",
+      "evidencias": "CLI-06, CLI-07, UX-08",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-16",
+      "prioridade": "P1",
+      "frente": "Usabilidade",
+      "titulo": "Mobile e acessibilidade",
+      "entrega": "Corrigir drawer e sobreposição; revisar hierarquia, foco, contraste e alvos.",
+      "aceite": "Conteúdo utilizável em 320/390/768 px; menu fechado não cobre dados; jornadas essenciais por teclado.",
+      "dependencias": [],
+      "esforco": "G",
+      "evidencias": "UX-01, UX-03, UX-08",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-17",
+      "prioridade": "P1",
+      "frente": "Clínica",
+      "titulo": "Supervisão por jornada",
+      "entrega": "Dar ao responsável fila de revisão com retorno ao registro e pendências contextualizadas.",
+      "aceite": "Revisor abre item, devolve ou aprova, e aluno enxerga o estado e a orientação no mesmo fluxo.",
+      "dependencias": [
+        "UPD-07",
+        "UPD-14"
+      ],
+      "esforco": "M",
+      "evidencias": "UX-06, CLI revisão",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-18",
+      "prioridade": "P1",
+      "frente": "Usabilidade",
+      "titulo": "Contexto e preenchimento",
+      "entrega": "Persistir área/filtro/aba na navegação; reaproveitar dados existentes e proteger edição não salva.",
+      "aceite": "F5/voltar preservam contexto; perda de sessão não descarta silenciosamente edição; sem recadastro redundante.",
+      "dependencias": [
+        "UPD-13"
+      ],
+      "esforco": "M",
+      "evidencias": "UX-07, CLI cadastro",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-19",
+      "prioridade": "P1",
+      "frente": "Engenharia",
+      "titulo": "Documentação e organização",
+      "entrega": "Atualizar matriz, manual, contrato e inventário de release; destinar temporários e capturas.",
+      "aceite": "Uma fonte canônica por tema; release corresponde aos arquivos revisados; artefatos separados sem apagar evidência.",
+      "dependencias": [
+        "UPD-12"
+      ],
+      "esforco": "M",
+      "evidencias": "ENG-08",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-20",
+      "prioridade": "P1",
+      "frente": "Qualidade",
+      "titulo": "Testes de jornadas",
+      "entrega": "Adicionar round-trip de plano, API por objetos, arquivos e WebSocket entre duas equipes.",
+      "aceite": "Testes falham para os defeitos reproduzidos nesta auditoria e passam após a correção, sem skips obrigatórios.",
+      "dependencias": [
+        "UPD-01",
+        "UPD-02",
+        "UPD-03",
+        "UPD-04",
+        "UPD-05",
+        "UPD-06",
+        "UPD-07",
+        "UPD-10"
+      ],
+      "esforco": "G",
+      "evidencias": "ENG-02",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-21",
+      "prioridade": "P1",
+      "frente": "Operação",
+      "titulo": "Homologação e restauração",
+      "entrega": "Validar implantação conjunta, migrations, TLS, storage e backup/restore em ambiente equivalente.",
+      "aceite": "Restaurar banco e arquivos e executar jornadas após rollback; registrar versões, resultado e limitações.",
+      "dependencias": [
+        "UPD-08",
+        "UPD-09",
+        "UPD-20"
+      ],
+      "esforco": "G",
+      "evidencias": "ENG-06",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-22",
+      "prioridade": "P1",
+      "frente": "Clínica",
+      "titulo": "Imagem experimental",
+      "entrega": "Verificar captura-processamento-retomada e explicitar qualidade/limite do resultado.",
+      "aceite": "Estimativa não se confunde com medida validada; imagens só por vínculo; falhas e retomadas têm estado consistente.",
+      "dependencias": [
+        "UPD-12"
+      ],
+      "esforco": "G",
+      "evidencias": "CLI imagem",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-23",
+      "prioridade": "P2",
+      "frente": "Engenharia",
+      "titulo": "PWA e desempenho",
+      "entrega": "Medir build por jornada e testar atualização/cache durante atendimento.",
+      "aceite": "Sem cache clínico em configurações suportadas; atualização não perde trabalho; orçamento de rede medido.",
+      "dependencias": [
+        "UPD-18"
+      ],
+      "esforco": "M",
+      "evidencias": "ENG-05, ENG-07",
+      "status": "proposto"
+    },
+    {
+      "id": "UPD-24",
+      "prioridade": "P2",
+      "frente": "Usabilidade",
+      "titulo": "Consistência e dívida de UI",
+      "entrega": "Reduzir CSS acumulado e componentes grandes por área; simplificar dashboards/relatórios.",
+      "aceite": "Mesmos controles de lista/estado/ação; menos duplicação e leitura orientada à decisão, com comparação visual.",
+      "dependencias": [
+        "UPD-13",
+        "UPD-14",
+        "UPD-15",
+        "UPD-16"
+      ],
+      "esforco": "G",
+      "evidencias": "ENG-04, UX-05, UX-06, UX-09",
+      "status": "proposto"
+    }
+  ]
+}

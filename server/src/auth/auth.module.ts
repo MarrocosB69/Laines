@@ -12,10 +12,12 @@ import { LoginAttempt } from './login-attempt.entity';
 import { RefreshTokensService } from './refresh-tokens.service';
 import { RefreshToken } from './refresh-token.entity';
 import { SettingsModule } from '../settings/settings.module';
+import { CredentialsModule } from '../credentials/credentials.module';
 
 @Module({
   imports: [
     UsersModule,
+    CredentialsModule,
     SettingsModule,
     ObservabilityModule,
     TypeOrmModule.forFeature([RefreshToken, LoginAttempt]),
@@ -33,6 +35,6 @@ import { SettingsModule } from '../settings/settings.module';
   ],
   providers: [AuthService, JwtStrategy, LoginAttemptsService, RefreshTokensService],
   controllers: [AuthController],
-  exports: [AuthService]
+  exports: [AuthService, RefreshTokensService]
 })
 export class AuthModule {}

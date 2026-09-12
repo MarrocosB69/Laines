@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import { createHash, randomBytes, randomUUID } from 'crypto';
-import { Repository } from 'typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 import { RefreshToken } from './refresh-token.entity';
 
 type RefreshTokenPayload = {
@@ -491,16 +491,8 @@ export class RefreshTokensService {
 
     if (this.isOpaqueToken(token)) {
       const tokenHash = this.hashToken(token);
-      await this.refreshTokenRepository
-        .createQueryBuilder()
-        .update(RefreshToken)
-        .set({
-          revokedAt: () => 'NOW()'
-        } as unknown as Partial<RefreshToken>)
-        .where('token_hash = :tokenHash', { tokenHash })
-        .andWhere('revoked_at IS NULL')
-        .andWhere('used_at IS NULL')
-        .execute();
+      const current = await this.refreshTokenRepository.findOne({ where: { tokenHash } });
+      if (current) await this.revokeFamilyForUser(current.userId, current.familyId);
       return;
     }
 
@@ -518,10 +510,14 @@ export class RefreshTokensService {
     if (!currentToken) return;
     if (Number(currentToken.rotationCounter || 1) !== Number(payload.rc || 0)) return;
     if (currentToken.tokenHash !== tokenHash) return;
-    if (currentToken.revokedAt) return;
+    await this.revokeFamilyForUser(currentToken.userId, currentToken.familyId);
+  }
 
-    currentToken.revokedAt = new Date();
-    await this.refreshTokenRepository.save(currentToken);
+  async isFamilyActive(userId: string, familyId: string): Promise<boolean> {
+    if (!userId || !familyId) return false;
+    return this.refreshTokenRepository.exists({
+      where: { userId, familyId, revokedAt: IsNull(), usedAt: IsNull(), expiresAt: MoreThan(new Date()) }
+    });
   }
 
   async revokeFamilyForUser(userId: string, familyId: string) {

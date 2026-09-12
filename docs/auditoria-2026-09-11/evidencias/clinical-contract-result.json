@@ -1,0 +1,54 @@
+{
+  "scope": "Synthetic data, current source via ts-node, no API/DB writes or reads",
+  "newContract": {
+    "frontendTotals": {
+      "kcal": 200,
+      "cho": 30,
+      "ptn": 10,
+      "lip": 4,
+      "cargaGlicemica": null
+    },
+    "backendTotals": {
+      "calorias": 0,
+      "cho": 0,
+      "ptn": 0,
+      "lip": 0,
+      "fibra": 0
+    },
+    "activationAllowed": false,
+    "blockers": [
+      "Cadastre ao menos uma refeicao com alimento antes de ativar.",
+      "Nao foi possivel calcular totais nutricionais validos."
+    ]
+  },
+  "legacyContract": {
+    "normalizedLegacyItemCount": 0,
+    "normalizedLegacyFoodCount": 1,
+    "frontendAfterNormalizedLegacyItemCount": 0,
+    "rawLegacyMigrationPreservesGuidance": false,
+    "rawLegacyMigrationPreservesUnlinkedSubstitutes": true,
+    "backendPreservesUnlinkedSubstitutes": false
+  },
+  "clientSuppliedReview": {
+    "confirmada": true,
+    "confirmadoEm": "2001-01-01T00:00:00.000Z",
+    "confirmadoPorId": "other_professional",
+    "confirmadoPorNome": "Identidade declarada no payload"
+  },
+  "draftGetUsedAsReference": {
+    "fixtureStatus": "rascunho",
+    "returnedEvaluationId": "synthetic_get"
+  },
+  "frontendVsBackendAdequacy": {
+    "frontendFor200Percent": "ok",
+    "backendFor200Percent": 0
+  },
+  "legacyNullToZero": 0,
+  "clientSuppliedLegacyNutrients": {
+    "calorias": 99999,
+    "cho": 88888,
+    "ptn": 0,
+    "lip": 0,
+    "fibra": 0
+  }
+}
