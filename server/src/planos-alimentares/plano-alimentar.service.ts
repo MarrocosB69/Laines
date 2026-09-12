@@ -421,7 +421,13 @@ export class PlanoAlimentarService {
   }
 
   private normalizeDados(input: unknown): any {
-    return normalizePrescription(input);
+    const normalized = normalizePrescription(input);
+    Object.defineProperty(normalized.refeicoes, '__catalogo', {
+      value: normalized.catalogo,
+      enumerable: false,
+      configurable: true
+    });
+    return normalized;
   }
 
   private computeComparativo(meta: number | null, prescrito: number): ValidacaoComparativoItem {
@@ -443,7 +449,17 @@ export class PlanoAlimentarService {
   }
 
   async calcularTotais(refeicoes: PlanoRefeicao[], catalogo: JsonRecord = {}): Promise<NutrientesTotais> {
-    return prescriptionTotals(this.normalizeDados({ refeicoes, catalogo }));
+    const resolvedCatalogo = Object.keys(catalogo).length
+      ? catalogo
+      : (refeicoes as PlanoRefeicao[] & { __catalogo?: JsonRecord }).__catalogo || {};
+    const trustedMeals = refeicoes.map((meal) => {
+      const { alimentos: _alimentos, substitutos: _substitutos, ...safeMeal } = meal;
+      return {
+        ...safeMeal,
+        itens: (meal.itens || []).filter((item) => Boolean(resolvedCatalogo[item.alimentoId || '']))
+      };
+    });
+    return prescriptionTotals(this.normalizeDados({ refeicoes: trustedMeals, catalogo: resolvedCatalogo }));
   }
 
   async validarAdequacao(plano: { pacienteId: string; dados?: JsonRecord | null }): Promise<ValidacaoResult> {

@@ -12,7 +12,7 @@
       "dependencias": [],
       "esforco": "M",
       "evidencias": "SEC-01, SEC-02",
-      "status": "concluido",
+      "status": "concluido"
       "notas": "cpf e dataNascimento ainda expostos em toPublic. Avaliar sob UPD-12."
     },
     {
@@ -73,7 +73,7 @@
       "dependencias": [],
       "esforco": "G",
       "evidencias": "CLI-01, CLI-02, CLI-08",
-      "status": "proposto"
+      "status": "concluido"
     },
     {
       "id": "UPD-07",
