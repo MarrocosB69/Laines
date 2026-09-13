@@ -113,7 +113,8 @@
       ],
       "esforco": "M",
       "evidencias": "ENG-03",
-      "status": "proposto"
+      "status": "concluido_com_ressalva",
+      "notas": "3 de 4 patches aplicados. eslint@9.39.5 adiado para UPD-24 (transitiva minor de ajv/js-yaml)."
     },
     {
       "id": "UPD-10",
@@ -336,7 +337,8 @@
       ],
       "esforco": "G",
       "evidencias": "ENG-04, UX-05, UX-06, UX-09",
-      "status": "proposto"
+      "status": "proposto",
+      "notas": "eslint@9.39.5 + ajv + js-yaml minors pendentes."
     }
   ]
 }
