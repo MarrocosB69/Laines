@@ -1,0 +1,412 @@
+<!doctype html>
+<!--
+  LAINES, landing v2, direção B: o percurso.
+  Mockup estático de direção de arte (docs/design/landing-v2/plano.md).
+  Não é código de produção. Os números da frase de estatística são VALORES DE
+  EXEMPLO; na página real vêm de GET /public/stats. O texto das seis etapas é
+  uma síntese a partir do sistema e precisa ser validado pela coordenação.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAINES: entrar (direção B, o percurso)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Atkinson Hyperlegible Next 400–800, um arquivo variável (33,2 KB, subconjunto latino). -->
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta (contraste em contraste.cjs) */
+    --tinta:   #262947; /* 14,09:1 sobre folha, 12,97:1 sobre ficha */
+    --apoio:   #555c78; /*  6,59:1 sobre folha,  6,06:1 sobre ficha */
+    --ficha:   #f2f7ef; /*  fundo do percurso, papel verde frio */
+    --gramado: #3d8c2a; /*  linha do percurso, só gráfico (3,88:1 sobre ficha) */
+    --verde:   #2d7a1a; /*  botão, marcadores, "quem faz" (4,94:1 sobre ficha; 5,37:1 com branco) */
+    --azul:    #2560a8; /*  links e foco (6,33:1 sobre folha) */
+    --folha:   #ffffff;
+    --borda:   #7a8098; /*  3,91:1 sobre folha, limite de componente */
+    --fio:     #e1e5dd; /*  divisória, não carrega informação sozinha */
+    --erro-texto: #b91c1c;
+    --erro-fundo: #fef2f2;
+
+    --letra: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+    /* Escala de terça maior (~1,25) */
+    --t-14: 0.875rem;
+    --t-17: 1.0625rem;
+    --t-18: 1.125rem;
+    --t-21: 1.3125rem;
+    --t-27: 1.6875rem;
+    --t-34: 2.125rem;
+
+    --margem: clamp(1rem, 4.5vw, 4rem);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--folha);
+    color: var(--tinta);
+    font-family: var(--letra);
+    font-size: var(--t-17);
+    line-height: 1.5;
+  }
+
+  /* ── Grade ────────────────────────────────────────────────────────────
+     A ordem do DOM é a ordem visual nas duas larguras: timbre, acesso,
+     percurso. No desktop o acesso fica à esquerda, na posição de leitura,
+     porque entrar é o trabalho da página. */
+  .pagina {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "timbre"
+      "acesso"
+      "percurso"
+      "rodape";
+  }
+  .timbre   { grid-area: timbre; }
+  .acesso   { grid-area: acesso; }
+  .percurso { grid-area: percurso; }
+  .rodape   { grid-area: rodape; }
+
+  /* ── Timbre: o cabeçalho dos documentos da liga ─────────────────────── */
+  .timbre {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 1rem var(--margem);
+    border-bottom: 1.5px solid var(--fio);
+  }
+  .timbre img { flex: none; width: 56px; height: 56px; }
+  .timbre h1 {
+    margin: 0;
+    text-wrap: balance;
+    font-size: var(--t-18);
+    line-height: 1.25;
+    font-weight: 700;
+  }
+  .timbre p {
+    margin: 0.125rem 0 0;
+    color: var(--apoio);
+    font-size: var(--t-14);
+    text-wrap: balance;
+  }
+
+  /* ── Acesso ───────────────────────────────────────────────────────── */
+  .acesso { padding: 1.75rem var(--margem) 2rem; }
+  .acesso h2 {
+    margin: 0;
+    font-size: var(--t-27);
+    line-height: 1.15;
+    font-weight: 700;
+  }
+  .inteiro { white-space: nowrap; }
+  .acesso__dica {
+    margin: 0.375rem 0 1.25rem;
+    color: var(--apoio);
+  }
+
+  .campo { margin-bottom: 1rem; }
+  .campo label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 700;
+  }
+  .campo input {
+    display: block;
+    width: 100%;
+    height: 52px;
+    padding: 0 0.875rem;
+    border: 1.5px solid var(--borda);
+    border-radius: 8px;
+    background: var(--folha);
+    color: var(--tinta);
+    font: inherit;
+    font-size: var(--t-18);
+    letter-spacing: 0.01em;
+  }
+  .campo__senha { position: relative; }
+  .campo__senha input { padding-right: 6.5rem; }
+  .campo__mostrar {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--azul);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .botao-entrar {
+    display: block;
+    width: 100%;
+    height: 54px;
+    margin-top: 1.5rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--verde);
+    color: var(--folha);
+    font: inherit;
+    font-size: var(--t-18);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .botao-entrar:hover { background: #256816; } /* 6,77:1 com branco */
+
+  .erro {
+    margin: 1rem 0 0;
+    padding: 0.625rem 0.875rem;
+    border-radius: 8px;
+    background: var(--erro-fundo);
+    color: var(--erro-texto);
+    font-weight: 700;
+  }
+
+  .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--azul);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .link:hover { text-decoration-thickness: 3px; }
+  .esqueci {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 0.25rem;
+  }
+
+  .portas {
+    margin: 1.5rem 0 0;
+    padding: 1.25rem 0 0;
+    border-top: 1.5px solid var(--fio);
+  }
+  .portas p { margin: 0 0 0.875rem; color: var(--apoio); }
+  .portas p:last-child { margin-bottom: 0; }
+
+  /* ── Percurso: o elemento memorável ──────────────────────────────────
+     Número porque é sequência; linha contínua porque é caminho; "quem faz"
+     porque as três pessoas que chegam à página são as das etapas. O número
+     visual sai do contador com texto alternativo vazio: a lista ordenada já
+     anuncia a posição, e o leitor de tela não ouve o número duas vezes. */
+  .percurso {
+    background: var(--ficha);
+    padding: 2rem var(--margem) 2.5rem;
+  }
+  .percurso h2 {
+    margin: 0 0 1.25rem;
+    max-width: 46ch;
+    text-wrap: balance;
+    font-size: var(--t-21);
+    line-height: 1.35;
+    font-weight: 400;
+  }
+  .etapas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: etapa;
+  }
+  .etapa {
+    position: relative;
+    counter-increment: etapa;
+    padding: 0 0 1.125rem 3.25rem;
+  }
+  .etapa::before {
+    content: counter(etapa);
+    content: counter(etapa) / "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2.125rem;
+    height: 2.125rem;
+    border-radius: 50%;
+    background: var(--verde);
+    color: var(--folha);
+    font-weight: 800;
+    font-size: var(--t-17);
+    line-height: 2.125rem;
+    text-align: center;
+  }
+  .etapa:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: calc(1.0625rem - 2px);
+    top: 2.125rem;
+    bottom: 0;
+    width: 4px;
+    background: var(--gramado);
+  }
+  .etapa h3 {
+    margin: 0;
+    font-size: var(--t-27);
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .etapa p {
+    margin: 0.125rem 0 0;
+    max-width: 58ch;
+    color: var(--apoio);
+  }
+  .etapa__quem { color: var(--verde); font-weight: 700; }
+
+  .percurso__numeros {
+    margin: 0.75rem 0 0;
+    max-width: 58ch;
+    color: var(--apoio);
+  }
+  .percurso__numeros strong { color: var(--tinta); font-weight: 700; }
+  /* Estado dos números: carregando = espaço reservado e vazio; erro = a
+     frase some inteira. Nunca zero no lugar de ausência. */
+  .percurso__numeros[data-estado="carregando"] { visibility: hidden; }
+  .percurso__numeros[data-estado="indisponivel"] { display: none; }
+
+  .rodape {
+    padding: 1.25rem var(--margem);
+    color: var(--apoio);
+    font-size: var(--t-14);
+  }
+  .rodape p { margin: 0; text-wrap: balance; }
+
+  /* ── Foco ────────────────────────────────────────────────────────── */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 3px solid var(--azul);
+    outline-offset: 2px;
+  }
+  .campo input:focus-visible { border-color: var(--azul); }
+
+  /* ── Desktop ───────────────────────────────────────────────────────── */
+  @media (min-width: 60rem) {
+    .pagina {
+      grid-template-columns: minmax(24rem, 5fr) minmax(0, 7fr);
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas:
+        "timbre timbre"
+        "acesso percurso"
+        "rodape percurso";
+    }
+    .timbre { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+    .acesso {
+      padding: 2.5rem clamp(2rem, 4vw, 3.5rem) 0 var(--margem);
+      max-width: 33rem;
+    }
+    .rodape { padding: 1.25rem clamp(2rem, 4vw, 3.5rem) 1.5rem var(--margem); align-self: end; }
+    .percurso { padding: 2.25rem var(--margem) 1.75rem clamp(2rem, 4vw, 3.5rem); }
+    .etapa { padding-bottom: 0.875rem; }
+    .etapa h3 { font-size: var(--t-34); line-height: 1.1; }
+    .etapa::before { top: 0.1875rem; }
+    .etapa:not(:last-child)::after { top: 2.3125rem; }
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <header class="timbre">
+    <img src="../../../src/assets/LogoLaines.webp" alt="Emblema da LAINES" width="512" height="512">
+    <div>
+      <h1>Liga Acadêmica Interprofissional de Nutrição Esportiva</h1>
+      <p>FACISA, Universidade Federal do Rio Grande do Norte</p>
+    </div>
+  </header>
+
+  <main class="acesso" aria-labelledby="titulo-entrar">
+    <h2 id="titulo-entrar">Entrar</h2>
+    <p class="acesso__dica" id="dica-login">Use seu CPF, só os números, ou seu <span class="inteiro">e-mail</span> de acesso.</p>
+
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="login-id">CPF ou e-mail</label>
+        <input id="login-id" name="login" type="text" autocomplete="username" required aria-describedby="dica-login">
+      </div>
+      <div class="campo">
+        <label for="login-senha">Senha</label>
+        <div class="campo__senha">
+          <input id="login-senha" name="senha" type="password" autocomplete="current-password" required>
+          <button type="button" class="campo__mostrar" aria-controls="login-senha" aria-pressed="false">Mostrar</button>
+        </div>
+      </div>
+
+      <button type="submit" class="botao-entrar">Entrar</button>
+      <p class="erro" id="erro-login" role="alert" hidden>CPF, e-mail ou senha incorretos. Confira e tente de novo.</p>
+
+      <button type="button" class="link esqueci">Esqueci minha senha</button>
+    </form>
+
+    <div class="portas">
+      <p>É atleta e quer ser atendido pela liga? <a class="link" href="/inscricao">Entrar na lista de espera</a></p>
+      <p>Professor ou profissional de saúde sem conta? <button type="button" class="link">Solicitar acesso</button></p>
+    </div>
+  </main>
+
+  <section class="percurso" aria-labelledby="titulo-percurso">
+    <h2 id="titulo-percurso">Da inscrição ao plano revisado, o atendimento de cada atleta passa por seis etapas.</h2>
+    <ol class="etapas">
+      <li class="etapa">
+        <h3>Inscrição</h3>
+        <p><span class="etapa__quem">Atleta:</span> preenche o formulário público e entra na lista de espera.</p>
+      </li>
+      <li class="etapa">
+        <h3>Triagem</h3>
+        <p><span class="etapa__quem">Aluno:</span> anamnese, avaliação clínica e socioeconômica.</p>
+      </li>
+      <li class="etapa">
+        <h3>Avaliação</h3>
+        <p><span class="etapa__quem">Aluno:</span> composição corporal, rotina alimentar, gasto energético, treino, psicologia e fisioterapia.</p>
+      </li>
+      <li class="etapa">
+        <h3>Plano alimentar</h3>
+        <p><span class="etapa__quem">Aluno:</span> monta o plano a partir da avaliação.</p>
+      </li>
+      <li class="etapa">
+        <h3>Revisão</h3>
+        <p><span class="etapa__quem">Profissional responsável:</span> revisa e aprova o plano.</p>
+      </li>
+      <li class="etapa">
+        <h3>Entrega</h3>
+        <p><span class="etapa__quem">Atleta:</span> recebe o plano aprovado no portal, com o PDF da mesma versão.</p>
+      </li>
+    </ol>
+    <!-- VALORES DE EXEMPLO. Na página real: atletas = pacientes ativos,
+         avaliações = finalizadas, membros = usuários ativos (/public/stats). -->
+    <p class="percurso__numeros" data-estado="ok">Hoje são <strong>48</strong> atletas ativos, <strong>312</strong> avaliações finalizadas e <strong>37</strong> membros ativos.</p>
+  </section>
+
+  <footer class="rodape">
+    <p>© 2026 LAINES, Universidade Federal do Rio Grande do Norte</p>
+  </footer>
+
+</div>
+<script>
+  // Só para o mockup: alternar a senha e não enviar o formulário.
+  const botao = document.querySelector('.campo__mostrar');
+  const senha = document.getElementById('login-senha');
+  botao.addEventListener('click', () => {
+    const mostrar = senha.type === 'password';
+    senha.type = mostrar ? 'text' : 'password';
+    botao.setAttribute('aria-pressed', String(mostrar));
+    botao.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+  });
+  document.getElementById('form-login').addEventListener('submit', (e) => e.preventDefault());
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+- generic [ref=e129]:
+  - complementary [ref=e130]:
+    - generic [ref=e131]:
+      - generic [ref=e132]:
+        - generic [ref=e133]:
+          - img "LAINES Logo" [ref=e135]
+          - generic [ref=e136]:
+            - generic [ref=e137]: LAINES
+            - generic [ref=e138]: Liga Acadêmica Interprofissional de Nutrição Esportiva
+        - 'generic "Perfil: Administração" [ref=e139]': Administração
+      - button "Recolher barra lateral" [ref=e141] [cursor=pointer]
+    - navigation "Navegação principal" [ref=e144]:
+      - region "Visão Geral" [ref=e145]:
+        - heading "Visão Geral" [level=3] [ref=e146]
+        - button "Início" [ref=e148] [cursor=pointer]
+      - region "Áreas" [ref=e157]:
+        - heading "Áreas" [level=3] [ref=e158]
+        - generic [ref=e159]:
+          - button "Pesquisa" [expanded] [active] [ref=e160] [cursor=pointer]
+          - 'group "Pesquisa: subsecoes" [ref=e478]':
+            - button "Painel" [ref=e479] [cursor=pointer]
+            - button "Repositório" [ref=e482] [cursor=pointer]
+            - button "Projetos" [ref=e485] [cursor=pointer]
+            - button "Ideias" [ref=e488] [cursor=pointer]
+          - button "Ensino" [ref=e165] [cursor=pointer]
+          - button "Extensão" [ref=e170] [cursor=pointer]
+      - button "Ir para Área do Aluno" [ref=e177] [cursor=pointer]
+    - generic [ref=e186]:
+      - generic [ref=e187]: JC
+      - generic [ref=e188]:
+        - paragraph [ref=e189]: Juliana Costa
+        - paragraph [ref=e190]: Sessão ativa
+      - button "Encerrar sessão" [ref=e192] [cursor=pointer]
+  - main [ref=e196]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - heading "Painel" [level=1] [ref=e493]
+        - paragraph [ref=e204]: Painel administrativo
+      - generic [ref=e205]:
+        - button "Tarefas pendentes" [ref=e206] [cursor=pointer]
+        - button "Notificacoes" [ref=e210] [cursor=pointer]
+        - button [ref=e214] [cursor=pointer]
+        - generic [ref=e218]: JC
+    - generic [ref=e495]:
+      - generic [ref=e496]:
+        - generic [ref=e497]:
+          - generic [ref=e498]: PESQUISA
+          - heading "Pesquisa" [level=1] [ref=e501]
+          - paragraph [ref=e502]: Projetos, ideias e produções científicas da liga em um só lugar.
+        - generic [ref=e503]:
+          - button "Nova ideia" [ref=e504] [cursor=pointer]
+          - button "Novo projeto" [ref=e507] [cursor=pointer]
+      - generic [ref=e509]:
+        - generic [ref=e510]:
+          - generic [ref=e511]: Projetos ativos
+          - generic [ref=e512]: "6"
+        - generic [ref=e513]:
+          - generic [ref=e514]: Ideias abertas
+          - generic [ref=e515]: "2"
+        - generic [ref=e516]:
+          - generic [ref=e517]: Interesses
+          - generic [ref=e518]: "1"
+        - generic [ref=e519]:
+          - generic [ref=e520]: Em revisão
+          - generic [ref=e521]: "0"
+      - generic [ref=e522]:
+        - generic [ref=e523]:
+          - generic [ref=e525]:
+            - heading "Fluxo da pesquisa" [level=3] [ref=e526]
+            - paragraph [ref=e527]: Status geral dos projetos, ideias e produções.
+          - generic [ref=e528]:
+            - button "Ideias 3" [ref=e529] [cursor=pointer]:
+              - generic [ref=e533]: Ideias
+              - strong [ref=e534]: "3"
+            - button "Planejamento 1" [ref=e535] [cursor=pointer]:
+              - generic [ref=e540]: Planejamento
+              - strong [ref=e541]: "1"
+            - button "Em andamento 6" [ref=e542] [cursor=pointer]:
+              - generic [ref=e546]: Em andamento
+              - strong [ref=e547]: "6"
+            - button "Em revisão 0" [ref=e548] [cursor=pointer]:
+              - generic [ref=e552]: Em revisão
+              - strong [ref=e553]: "0"
+            - button "Concluídos 0" [ref=e554] [cursor=pointer]:
+              - generic [ref=e559]: Concluídos
+              - strong [ref=e560]: "0"
+        - generic [ref=e561]:
+          - generic [ref=e562]:
+            - generic [ref=e563]:
+              - generic [ref=e564]:
+                - heading "Ideias recentes" [level=3] [ref=e565]
+                - paragraph [ref=e566]: Propostas abertas para consulta e interesse dos discentes.
+              - button "Ver ideias" [ref=e567] [cursor=pointer]
+            - generic [ref=e568]:
+              - article [ref=e569]:
+                - generic [ref=e574]:
+                  - generic [ref=e575]: Psicologia
+                  - heading "mhj" [level=3] [ref=e576]
+                - 'generic "Status: Ideia" [ref=e577]':
+                  - generic "Ideia" [ref=e578]
+                  - generic "Em discussão" [ref=e580]
+                  - generic "Prioridade" [ref=e582]
+                  - generic [ref=e583]: Ideia
+                - generic [ref=e584]:
+                  - generic [ref=e585]: 1 interessado
+                  - generic [ref=e591]:
+                    - button "Abrir" [ref=e592] [cursor=pointer]
+                    - button "Tenho interesse" [ref=e596] [cursor=pointer]
+              - article [ref=e599]:
+                - generic [ref=e604]:
+                  - generic [ref=e605]: Multidisciplinar
+                  - heading "sds" [level=3] [ref=e606]
+                - 'generic "Status: Prioridade" [ref=e607]':
+                  - generic "Ideia" [ref=e608]
+                  - generic "Em discussão" [ref=e610]
+                  - generic "Prioridade" [ref=e612]
+                  - generic [ref=e613]: Prioridade
+                - generic [ref=e614]:
+                  - generic [ref=e615]: 0 interessados
+                  - generic [ref=e621]:
+                    - button "Abrir" [ref=e622] [cursor=pointer]
+                    - button "Tenho interesse" [ref=e626] [cursor=pointer]
+              - article [ref=e629]:
+                - generic [ref=e634]:
+                  - generic [ref=e635]: Multidisciplinar
+                  - heading "212" [level=3] [ref=e636]
+                - 'generic "Status: Ideia" [ref=e637]':
+                  - generic "Ideia" [ref=e638]
+                  - generic "Em discussão" [ref=e640]
+                  - generic "Prioridade" [ref=e642]
+                  - generic [ref=e643]: Ideia
+                - generic [ref=e644]:
+                  - generic [ref=e645]: 0 interessados
+                  - generic [ref=e651]:
+                    - button "Abrir" [ref=e652] [cursor=pointer]
+                    - button "Tenho interesse" [ref=e656] [cursor=pointer]
+          - generic [ref=e659]:
+            - generic [ref=e660]:
+              - generic [ref=e661]:
+                - heading "Projetos ativos" [level=3] [ref=e662]
+                - paragraph [ref=e663]: Pesquisas em execução pela liga.
+              - button "Ver projetos" [ref=e664] [cursor=pointer]
+            - generic [ref=e665]:
+              - button "Projeto E2E LAINES Professor E2E" [ref=e666] [cursor=pointer]:
+                - generic [ref=e667]: Projeto E2E LAINES
+                - generic [ref=e668]: Professor E2E
+              - button "Projeto CI Analytics Coordenação não informada" [ref=e669] [cursor=pointer]:
+                - generic [ref=e670]: Projeto CI Analytics
+                - generic [ref=e671]: Coordenação não informada
+              - button "Print LAINES Anderson Vieira Melo" [ref=e672] [cursor=pointer]:
+                - generic [ref=e673]: Print LAINES
+                - generic [ref=e674]: Anderson Vieira Melo
+              - button "Projeto Demonstra??o LAINES Professor E2E" [ref=e675] [cursor=pointer]:
+                - generic [ref=e676]: Projeto Demonstra??o LAINES
+                - generic [ref=e677]: Professor E2E
+              - button "Projeto Auditoria UX Professor E2E" [ref=e678] [cursor=pointer]:
+                - generic [ref=e679]: Projeto Auditoria UX
+                - generic [ref=e680]: Professor E2E
+          - generic [ref=e681]:
+            - generic [ref=e682]:
+              - generic [ref=e683]:
+                - heading "Produções em revisão" [level=3] [ref=e684]
+                - paragraph [ref=e685]: Itens aguardando validação para o repositório.
+              - button "Ver repositório" [ref=e686] [cursor=pointer]
+            - generic [ref=e687]: Nenhuma produção em revisão.

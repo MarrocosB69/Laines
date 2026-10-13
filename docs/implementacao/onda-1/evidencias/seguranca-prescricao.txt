@@ -1,0 +1,60 @@
+
+> laines-app@0.0.0 test:security
+> node scripts/test-security-credentials.cjs && node scripts/test-security-realtime.cjs && node scripts/test-security-access.cjs && node scripts/test-prescription-contract.cjs
+
+OK desafio usa 256 bits, somente hash persistido, destinatario registrado
+OK consumo altera hash, revoga sessoes e bloqueia reutilizacao
+OK dados cadastrais e token adulterado nao redefinem senha
+OK desafio expirado rejeitado
+OK desafio inativo rejeitado
+OK desafio versao revogada rejeitado
+OK desafio excluido rejeitado
+OK reenvio invalida link anterior
+OK duas tentativas concorrentes tem um vencedor (double transacional)
+OK falha na revogacao reverte senha e consumo (double transacional)
+OK entrega indisponivel nao retorna segredo e remove desafio
+OK API publica tem resposta generica e limitacao por IP sem dados em logs
+OK listagem e detalhe nunca serializam hash ou senha legada
+OK edicao administrativa preserva cadastro; delegado recebe apenas projecao minima
+OK criacao administrativa e reenvio retornam estado de entrega sem senha
+OK email usa fragmento, escapa HTML e recusa APP_URL insegura
+16 verificacoes de credenciais aprovadas. Nenhum banco externo ou email real utilizado.
+✔ equipes distintas: invalidacao minima somente para vinculado; remocao interrompe entrega (61.1253ms)
+✔ revogacao, senha pendente, inativacao, versao e expiracao impedem evento e desconectam (18.6188ms)
+✔ handshake valida tipo, origem, assinatura, familia e senha pendente (154.7362ms)
+✔ notificacao privada e tarefa de outra diretoria nao chegam a terceiros; evento desconhecido fechado (13.4565ms)
+✔ atleta recebe agenda propria mas nao evento de avaliacao (6.9504ms)
+✔ HTTP consulta revogacao da mesma familia e rejeita access antigo sem sid (25.1479ms)
+✔ logout com refresh ja rotacionado revoga toda familia, preservando outras (10.8964ms)
+✔ alerta clinico usa somente destinatarios vinculados e nao persiste identificacao (6.4986ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 466.2543
+PASS SEC-06 non-admin exports cannot select another project or request individual rows
+PASS SEC-06 detailed exports remain available to global administration
+PASS SEC-06 delegated dashboard and correlations omit identities even from shared cache payloads
+PASS SEC-07 CSV treats formula prefixes and controls as text and preserves numbers
+PASS SEC-05 duplicate public CPF cannot overwrite triage, active or deleted records
+PASS SEC-05 fresh, duplicate and conflicting-email submissions have the same acknowledgement
+PASS SEC-05 transaction locks serialize concurrent public submissions
+PASS SEC-08 invalid UUID, encoded traversal, missing content and forbidden upload create zero paths
+PASS SEC-08 disguised MIME/content and oversized body create no uploaded files
+PASS SEC-08 failed persistence cleans new upload and preserves existing attachment
+PASS SEC-08 read/write paths reject paths outside content root
+11 access security regressions passed. No database or external network used.
+PASS schema 2 has the same front/server/PDF totals; no total from client
+PASS legacy migration preserves empty-items anomaly, guidance, alternatives, metadata and null
+PASS unknown schema and physically impossible nutrient values are rejected
+PASS substitutes print against the correct item and never increase daily totals
+PASS save/reopen roundtrip uses controlled source composition and preserves all existing data
+PASS review metadata cannot be forged and student cannot approve or activate
+PASS reviewer publishes exact version; subsequent edit creates draft and preserves published history
+PASS manual/legacy composition requires explicit professional validation
+PASS missing/stale version and simultaneous writes cannot overwrite another change
+PASS PDF is generated from current schema with real PDFKit and saved totals
+10 prescription regression checks passed.

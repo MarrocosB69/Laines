@@ -19,9 +19,10 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, resolve } from 'path';
-import { createReadStream, existsSync, mkdirSync } from 'fs';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
+import { createReadStream } from 'fs';
+import { randomUUID } from 'crypto';
 import type { Response } from 'express';
 import { PacientesService } from './pacientes.service';
 import { CriarPacienteDto } from './dto/criar-paciente.dto';
@@ -37,11 +38,18 @@ import { ADMIN_ROLES, STUDENT_MEMBER_ROLES } from '../common/domain/access.const
 
 const ROLES_EDICAO = [
   ...ADMIN_ROLES,
-  'coord_atendimento',
-  'diretoria_extensao',
   'professor',
   'profissional',
   ...STUDENT_MEMBER_ROLES
+];
+const ROLES_CADASTRO = [...ROLES_EDICAO, 'coord_atendimento'];
+const ROLES_CRIACAO = [
+  ...ADMIN_ROLES,
+  'coord_atendimento',
+  'professor',
+  'profissional',
+  'presidente',
+  'vice'
 ];
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_UPLOAD_MIME = new Set([
@@ -56,15 +64,6 @@ const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{
 @Controller('pacientes')
 export class PacientesController {
   constructor(private readonly pacientesService: PacientesService) {}
-
-  private static buildUploadDir(pacienteId: string) {
-    const uploadsRoot = process.env.UPLOAD_DIR || 'uploads';
-    const dir = resolve(process.cwd(), uploadsRoot, 'pacientes', pacienteId, 'anexos');
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-    return dir;
-  }
 
   private static sanitizeBaseName(filename: string) {
     return filename
@@ -85,13 +84,33 @@ export class PacientesController {
     const { limit: parsedLimit, offset: parsedOffset } = parsePagination({
       limit,
       offset,
-      defaultLimit: 200
+      defaultLimit: 50
     });
     return this.pacientesService.findAll(
       req.user,
       parsedLimit,
       parsedOffset
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('triagem-publica')
+  findPublicTriage(@Req() req: { user: AuthenticatedUser }) {
+    return this.pacientesService.findPublicTriage(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('triagem-publica/relatorio.pdf')
+  async exportPublicTriagePdf(
+    @Req() req: { user: AuthenticatedUser },
+    @Res() res: Response
+  ) {
+    const pdf = await this.pacientesService.gerarRelatorioTriagemPublicaPdf(req.user);
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=fila-triagem-publica.pdf');
+    res.send(pdf);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -117,14 +136,14 @@ export class PacientesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(...ROLES_EDICAO)
+  @Roles(...ROLES_CRIACAO)
   @Post()
   create(@Req() req: { user: AuthenticatedUser }, @Body() dto: CriarPacienteDto) {
     return this.pacientesService.create(dto, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(...ROLES_EDICAO)
+  @Roles(...ROLES_CADASTRO)
   @Patch(':id')
   update(
     @Req() req: { user: AuthenticatedUser },
@@ -159,22 +178,12 @@ export class PacientesController {
   @Roles(...ROLES_EDICAO)
   @Post(':id/anexos')
   @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: (req, _file, cb) => {
-        const pacienteId = String(req.params?.id || '');
-        if (!UUID_V4_REGEX.test(pacienteId)) {
-          cb(new HttpException('Identificador de paciente invalido.', HttpStatus.BAD_REQUEST), '');
-          return;
-        }
-        cb(null, PacientesController.buildUploadDir(pacienteId));
-      },
-      filename: (_req, file, cb) => {
-        const ext = extname(file.originalname || '').toLowerCase();
-        const safeBase = PacientesController.sanitizeBaseName(file.originalname || 'arquivo');
-        cb(null, `${Date.now()}-${safeBase}${ext}`);
+    storage: memoryStorage(),
+    fileFilter: (req, file, cb) => {
+      if (!UUID_V4_REGEX.test(String(req.params?.id || ''))) {
+        cb(new HttpException('Identificador de paciente invalido.', HttpStatus.BAD_REQUEST), false);
+        return;
       }
-    }),
-    fileFilter: (_req, file, cb) => {
       const ext = extname(file.originalname || '').toLowerCase();
       const isValidMime = ALLOWED_UPLOAD_MIME.has(file.mimetype);
       const isValidExt = ALLOWED_UPLOAD_EXT.has(ext);
@@ -191,12 +200,15 @@ export class PacientesController {
   async uploadAnexo(
     @Req() req: { user: AuthenticatedUser },
     @Param('id', new ParseUUIDPipe()) id: string,
-    @UploadedFile() file: { filename: string; originalname: string; mimetype: string; size: number } | undefined
+    @UploadedFile() file: { buffer: Buffer; originalname: string; mimetype: string; size: number } | undefined
   ) {
     if (!file) {
       throw new HttpException('Arquivo obrigatorio.', HttpStatus.BAD_REQUEST);
     }
-    return this.pacientesService.addAttachment(id, file, req.user);
+    const ext = extname(file.originalname || '').toLowerCase();
+    const safeBase = PacientesController.sanitizeBaseName(file.originalname || 'arquivo');
+    const filename = `${Date.now()}-${randomUUID()}-${safeBase}${ext}`;
+    return this.pacientesService.addAttachment(id, { ...file, filename }, req.user);
   }
 
   @UseGuards(JwtAuthGuard)

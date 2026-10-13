@@ -8,8 +8,10 @@ import {
   setAccessToken,
   subscribeAuthSync
 } from '../services/sessionToken';
-import { ADMIN_ROLES, PROFESSOR_AREA_ROLES, isStudentMemberRole, normalizeRole } from '../constants/roles';
+import { ADMIN_ROLES, ADMIN_AREA_ROLES, PROFESSOR_AREA_ROLES, isStudentMemberRole, normalizeRole } from '../constants/roles';
+import { hasAdminPanelPermission } from '../constants/adminTabs';
 import { normalizeUserRecord } from '../utils/userAdapter';
+import { normalizeCapabilities, resolveAdminAccess } from '../constants/capabilities';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext({});
@@ -23,9 +25,19 @@ export function AuthProvider({ children }) {
     const normalized = normalizeUserRecord(data);
     if (!normalized) return null;
     const role = normalizeRole(normalized.role);
+    const permissions = Array.isArray(normalized.permissions) ? normalized.permissions : [];
+    const baseAdmin = ADMIN_AREA_ROLES.includes(role) || hasAdminPanelPermission(permissions, role, normalized.diretoria);
+    // Capacidades vêm do servidor (UPD-12); a reserva local só cobre sessão antiga.
+    const capabilities = normalizeCapabilities(normalized.capabilities, { ...normalized, role, permissions, canAccessAdmin: baseAdmin });
+    // O gate de /admin considera também a gestão que o servidor projetou
+    // (ex.: coordenação de atendimento gere atletas sem ser admin).
+    const canAccessAdmin = resolveAdminAccess({ role, permissions, diretoria: normalized.diretoria, capabilities });
     return {
       ...normalized,
       role,
+      permissions,
+      canAccessAdmin,
+      capabilities,
       mustChangePassword: !!normalized.mustChangePassword,
       isAdmin: ADMIN_ROLES.includes(role),
       isProfessor: PROFESSOR_AREA_ROLES.includes(role),
@@ -137,7 +149,10 @@ export function AuthProvider({ children }) {
         return fallbackUser;
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      const loginErrStatus = Number(error?.response?.status || 0);
+      if (loginErrStatus !== 401 && loginErrStatus !== 423 && loginErrStatus !== 429) {
+        console.warn('Erro no login:', error);
+      }
       const apiMessage = getApiErrorMessage(error, 'E-mail ou senha inválidos. Verifique e tente novamente.');
       notify({
         type: 'error',
@@ -198,6 +213,10 @@ export function AuthProvider({ children }) {
     return Array.isArray(data) ? data : [];
   }, []);
 
+  const hasPermission = useCallback((permission) => {
+    return user?.permissions?.includes(permission) ?? false;
+  }, [user]);
+
   const value = {
     user,
     signed: !!user,
@@ -208,11 +227,15 @@ export function AuthProvider({ children }) {
     updateProfile,
     listSupervisors,
     refreshUser,
+    hasPermission,
     isAdmin: user?.isAdmin || false,
     isProfessor: user?.isProfessor || false,
     isAluno: user?.isAluno || false,
     isTecnico: user?.isTecnico || false,
     isAtleta: user?.isAtleta || false,
+    canAccessAdmin: user?.canAccessAdmin || false,
+    permissions: user?.permissions || [],
+    capabilities: user?.capabilities || normalizeCapabilities(null, null),
     mustChangePassword: user?.mustChangePassword || false
   };
 

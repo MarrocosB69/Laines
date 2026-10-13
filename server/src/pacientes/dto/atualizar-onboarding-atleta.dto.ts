@@ -160,6 +160,10 @@ export class AtualizarOnboardingAtletaDto {
 
   @IsOptional()
   @IsString()
+  sexoBiologico?: string;
+
+  @IsOptional()
+  @IsString()
   identidadeGenero?: string;
 
   @IsOptional()
@@ -245,10 +249,11 @@ export class AtualizarOnboardingAtletaDto {
   @IsString()
   cicloMenstrualContraceptivo?: string;
 
+  // Estruturado por parentesco: { pai: string[], mae: string[] }.
+  // Aceita o formato legado string[] para nao quebrar rascunhos salvos.
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  comorbidadesFamiliares?: string[];
+  @IsObject()
+  comorbidadesFamiliares?: Record<string, unknown> | string[];
 
   @IsOptional()
   @ValidateNested()

@@ -7,8 +7,10 @@ import {
   IsString,
   IsUUID
 } from 'class-validator';
+import { AVALIACAO_REGISTRY_BY_TIPO } from '../evaluation-registry';
 
 const AVALIACAO_STATUS = ['rascunho', 'finalizada'] as const;
+const VALID_TIPOS = Object.keys(AVALIACAO_REGISTRY_BY_TIPO);
 
 export class CriarAvaliacaoDto {
   @IsOptional()
@@ -16,6 +18,7 @@ export class CriarAvaliacaoDto {
   sessaoId?: string;
 
   @IsString()
+  @IsIn(VALID_TIPOS, { message: 'Tipo de avaliacao invalido.' })
   tipo!: string;
 
   @IsString()

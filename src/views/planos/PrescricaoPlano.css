@@ -1,407 +1,1977 @@
 /**
- * Escopo da tela de prescrição.
+ * Página do plano alimentar (/prescricao-plano/:pacienteId) na direção
+ * "Energia e velocidade" da landing (docs/design/landing-guia-visual.md,
+ * seção "Direção vigente"; docs/implementacao/plano-v2/change-intent.md).
+ * Serve também aos componentes de src/components/Prescricao, que só esta
+ * página usa.
  *
- * A tela é uma tabela clínica densa, montada com utilitários. O CSS global do
- * app estiliza `table`, `thead th`, `tbody td` e `input` para tabelas
- * administrativas — cabeçalho em caixa alta com fundo, células com 13px 16px
- * de padding e campos com altura mínima de controle.
+ * Mesmo desenho das peças da Visão geral (src/components/painel/painel.css) e
+ * das Áreas (src/views/admin/Areas/Areas.css): cartões brancos com
+ * --lt-radius-card, títulos em Sofia 700, alvos de 44 px, campos de 48 px e
+ * foco com --lt-focus-ring. Todo texto fica sobre superfície própria
+ * (cartão, faixa ou botão), então o contraste não depende do fundo do shell.
  *
- * Somados, esses padrões consomem cerca de 290px por linha só em espaçamento
- * lateral (nove colunas × 32px), o que esmaga a coluna do nome do alimento e
- * empurra a medida caseira para o corte. Aqui esses padrões são desligados
- * dentro da tela; fora dela nada muda.
+ * Tudo escopado em `.prescricao-plano`. Armadilhas globais de src/index.css e
+ * src/styles/theme.css redeclaradas aqui: `* { margin: 0; padding: 0 }`,
+ * h1…h6 em Poppins e com cor, `p` com entrelinha 1,6, `label` a 13 px com
+ * margem, `button { white-space: nowrap; display: inline-flex }`,
+ * `*:focus-visible` com contorno verde, as regras de tabela administrativa
+ * (`thead th`, `tbody td`, zebra e hover) e
+ * `input:not([type=checkbox]):not([type=radio])` com especificidade 0,2,1 —
+ * por isso os campos abaixo usam `input.pp-controle:not([type=checkbox])`
+ * (0,3,1), que vence em qualquer ordem de carregamento.
+ *
+ * Contraste pela fórmula WCAG 2.2 de scripts/test-landing-tokens.cjs. Só
+ * tokens --lt-* e o par de "atenção" já medido em painel.css e Areas.css.
+ * Pares novos desta página, medidos com a mesma fórmula:
+ * --lt-color-text-subtle sobre --lt-color-track-tint 4,92:1;
+ * --lt-color-text-muted sobre --pp-atencao-fundo 6,20:1;
+ * --lt-color-danger-text sobre branco 6,47:1 e sobre track-tint 5,69:1;
+ * --lt-color-success-text sobre branco 7,13:1.
  */
 
-:where(.prescricao-plano) table {
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.prescricao-plano {
+  --pp-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --pp-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --pp-atencao-fundo */
+  --pp-atencao-fundo: #fff7ed;
+  --pp-atencao-traco: #c2410c; /* gráfico, não texto: 5,18:1 sobre branco */
+  /* --lt-color-brand-blue a 30%: só gráfico (barra "sem dado", fatia não
+     classificada). Claro de propósito: contra o verde das barras adequadas
+     a diferença é de luminância (2,66:1), não só de matiz. */
+  --pp-raia: rgba(37, 96, 168, 0.3);
+  --pp-campo: 48px;
+  --pp-respiro: clamp(var(--lt-space-4), 3vw, var(--lt-space-5));
+
+  /* O painel da rosca muda de forma pela largura da página, não da janela:
+     com a barra lateral aberta, 1280 px de janela deixam ~990 px úteis. */
+  container: pp-pagina / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
   width: 100%;
-  border-collapse: collapse;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-:where(.prescricao-plano) thead th {
+/* Reset dos globais de título, parágrafo, rótulo e lista; cada peça abaixo
+   dá o resto. */
+.prescricao-plano :is(h2, h3, h4) {
+  margin: 0;
   background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: var(--lt-leading-tight);
+}
+
+.prescricao-plano p { margin: 0; line-height: var(--lt-leading-normal); }
+
+.prescricao-plano label {
+  margin: 0;
   color: inherit;
   font-size: inherit;
   font-weight: inherit;
-  letter-spacing: normal;
+}
+
+.prescricao-plano :is(ul, ol) { margin: 0; padding: 0; list-style: none; }
+
+.prescricao-plano fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+
+.prescricao-plano legend { padding: 0; }
+
+.prescricao-plano .pp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.prescricao-plano .pp-icone { flex: none; width: 1.125rem; height: 1.125rem; }
+
+/* Foco: halo branco e anel azul, sobre qualquer fundo. Os campos de texto
+   recebem o anel já no :focus (regra dos campos, mais abaixo). */
+.prescricao-plano :is(button, summary, a, input[type="checkbox"]):focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Estado de carregamento ──────────────────────────────────────────── */
+.prescricao-plano .pp-estado {
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Botões ───────────────────────────────────────────────────────────
+   Base comum: 44 px de alvo, rótulo que quebra linha em vez de vazar
+   (o `button { white-space: nowrap }` global faria "Salvar nova versão"
+   passar da borda a 320 px). */
+.prescricao-plano .pp-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
   text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+.prescricao-plano .pp-botao:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Primário: o degradê de largada, único sólido da região. Branco a 4,82:1
+   no topo e 6,20:1 na base. */
+.prescricao-plano .pp-botao--primario {
+  border: 0;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+/* Secundário: contorno de campo e texto azul (6,33:1). */
+.prescricao-plano .pp-botao--secundario {
+  border-color: var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+/* Discreto: sem contorno, para a ação de menor peso ao lado de outra. */
+.prescricao-plano .pp-botao--discreto { background: var(--lt-color-surface); color: var(--lt-color-text-muted); }
+
+/* Destrutiva: vermelho escrito, fundo claro só ao passar/focar. */
+.prescricao-plano .pp-botao--perigo {
+  border-color: var(--lt-color-danger-text);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-danger-text); /* 6,47:1 */
+}
+
+/* Link: ações do painel de substituição, sem contorno. */
+.prescricao-plano .pp-botao--link {
+  padding: 0 var(--lt-space-2);
+  font-size: var(--lt-text-sm);
+}
+
+/* Dobra (Micronutrientes): linha inteira clicável, alinhada à esquerda. */
+.prescricao-plano .pp-botao--dobra {
+  justify-content: flex-start;
+  width: 100%;
+  padding: 0 var(--lt-space-2);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+}
+
+/* Adicionar refeição: o convite ao próximo passo, em contorno tracejado. */
+.prescricao-plano .pp-botao--acrescentar {
+  align-self: stretch;
+  min-height: var(--pp-campo);
+  border: 1.5px dashed var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+@media (hover: hover) {
+  .prescricao-plano .pp-botao--primario:hover:not(:disabled) { box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
+  .prescricao-plano :is(.pp-botao--secundario, .pp-botao--acrescentar, .pp-botao--link, .pp-botao--dobra, .pp-botao--discreto):hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+  .prescricao-plano .pp-botao--link:hover:not(:disabled),
+  .prescricao-plano .pp-botao--dobra:hover:not(:disabled) { border-color: transparent; }
+  .prescricao-plano .pp-botao--perigo:hover:not(:disabled) { background: var(--lt-color-danger-bg); }
+}
+
+/* Botão só de ícone: 44 × 44, o nome vem do aria-label. */
+.prescricao-plano .pp-icone-botao {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: 0;
   padding: 0;
-  border-bottom: 0;
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 160ms, background-color 160ms, border-color 160ms;
 }
 
-:where(.prescricao-plano) tbody td,
-:where(.prescricao-plano) tbody th {
-  padding: 0;
-  border-bottom: 0;
-  background: none;
+.prescricao-plano .pp-icone-botao--contorno { border-color: var(--lt-color-border-field); background: var(--lt-color-surface); color: var(--lt-color-brand-blue); }
+
+/* Substituição aberta: o estado também se vê, além do aria-expanded. */
+.prescricao-plano .pp-icone-botao--ativo {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
-/* Zebra e hover de tabela administrativa atrapalham a leitura por linha de
-   alimento, que já tem fio próprio. */
-:where(.prescricao-plano) tbody tr:nth-child(even) td,
-:where(.prescricao-plano) tbody tr:hover td {
-  background: none;
+.prescricao-plano .pp-icone-botao--adicionar { color: var(--lt-color-brand-blue); }
+
+@media (hover: hover) {
+  .prescricao-plano .pp-icone-botao:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
+
+  /* Remoção só ganha vermelho no hover/foco: vermelho permanente numa lista
+     de alimentos vira ruído e compete com o alerta clínico de verdade. */
+  .prescricao-plano .pp-icone-botao--perigo:hover {
+    border-color: var(--lt-color-danger-text);
+    background: var(--lt-color-danger-bg);
+    color: var(--lt-color-danger-text);
+  }
 }
 
-/* O campo de quantidade é uma célula de planilha, não um controle de
-   formulário: altura mínima de 40px empilharia a tabela inteira. */
-.prescricao-plano input[type='number'] {
-  min-height: 0;
-  height: auto;
-  border-radius: 4px;
+.prescricao-plano .pp-icone-botao--perigo:focus-visible { color: var(--lt-color-danger-text); }
+
+/* ── Campos: 48 px, borda de campo e texto a 16 px ───────────────────
+   O mesmo campo da inscrição e das Áreas. 16 px evita o zoom do iOS no
+   foco. `:not([type="checkbox"])` dá 0,3,1 e vence o seletor global. */
+.prescricao-plano .pp-campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
 }
 
-.prescricao-plano input[type='number']:focus {
+.prescricao-plano .pp-rotulo {
+  display: block;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.prescricao-plano .pp-rotulo--sub { color: var(--lt-color-text-muted); font-weight: 600; }
+
+.prescricao-plano input.pp-controle:not([type="checkbox"]),
+.prescricao-plano select.pp-controle,
+.prescricao-plano textarea.pp-controle {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--pp-campo);
+  min-height: var(--pp-campo);
+  margin: 0;
+  padding: 0 0.75rem;
+  border: 1.5px solid var(--lt-color-border-field); /* 3,91:1, WCAG 1.4.11 */
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
   box-shadow: none;
-  border-color: #78716c;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  transition: border-color 160ms, box-shadow 160ms;
 }
 
-/* Some com os spinners: a quantidade se edita digitando ou pela seta do
-   teclado, e os botões roubam largura de uma coluna estreita. */
-.prescricao-plano input[type='number']::-webkit-outer-spin-button,
-.prescricao-plano input[type='number']::-webkit-inner-spin-button {
+.prescricao-plano input.pp-controle:not([type="checkbox"]):focus,
+.prescricao-plano select.pp-controle:focus,
+.prescricao-plano textarea.pp-controle:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.prescricao-plano .pp-controle::placeholder {
+  color: var(--lt-color-text-subtle); /* 5,60:1 */
+  opacity: 1;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o hex fica igual ao de Areas.css. */
+.prescricao-plano select.pp-controle {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+
+/* Quantidade: número curto, alinhado à direita, sem as setas que roubam
+   largura (a quantidade se edita digitando ou pelas setas do teclado). */
+.prescricao-plano input.pp-controle.pp-controle--num:not([type="checkbox"]) {
+  width: 5.5rem;
+  padding: 0 0.625rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.prescricao-plano input.pp-controle--num::-webkit-outer-spin-button,
+.prescricao-plano input.pp-controle--num::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.prescricao-plano input[type='number'] {
-  -moz-appearance: textfield;
-  appearance: textfield;
+.prescricao-plano input.pp-controle.pp-controle--hora:not([type="checkbox"]) { width: 8.5rem; }
+
+.prescricao-plano textarea.pp-controle.pp-controle--area {
+  height: auto;
+  min-height: 5.5rem;
+  padding: 0.625rem 0.75rem;
+  resize: vertical;
 }
 
-/**
- * Devolve as utilidades de espaçamento do Tailwind dentro desta tela.
- *
- * `src/index.css` traz `* { margin: 0; padding: 0 }` fora de qualquer camada,
- * e o Tailwind v4 emite tudo em `@layer utilities`. Regra sem camada vence
- * regra em camada, independente de especificidade — então `p-4`, `ml-6`,
- * `py-1.5` e afins são descartados no app inteiro (medido: `ml-6` computa
- * 0px). `gap`, cor e raio não passam por isso e funcionam.
- *
- * `revert-layer` desfaz o reset e deixa o valor da camada anterior valer, que
- * é justamente a utilidade. O seletor é mais específico que `*` e também não
- * tem camada, então ganha dele sem tocar no resto do sistema.
- */
-.prescricao-plano *,
-.prescricao-plano *::before,
-.prescricao-plano *::after {
-  margin: revert-layer;
-  padding: revert-layer;
+/* Campo com unidade escrita ao lado (min, kg). */
+.prescricao-plano .pp-unidade {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
 }
 
-/* ------------------------------------------------------------------ *
- * Identidade visual
- *
- * A tela nasceu com a paleta stone-* do Tailwind (cinza quente) e o resto
- * do app e navy frio com acento azul. Lado a lado parecia outro produto.
- *
- * Em vez de reescrever cada utilitario no JSX, os utilitarios de cor sao
- * remapeados aqui dentro da tela: como o Tailwind emite suas classes dentro
- * de @layer e este arquivo esta fora de camada, estas regras vencem sem
- * precisar de especificidade artificial. Fora da tela nada muda.
- * ------------------------------------------------------------------ */
-
-.prescricao-plano {
-  --pp-navy: var(--pn-navy, #1D3350);
-  --pp-texto-medio: rgba(29, 51, 80, 0.62);
-  --pp-texto-fraco: rgba(29, 51, 80, 0.42);
-  --pp-borda: rgba(29, 51, 80, 0.11);
-  --pp-borda-forte: rgba(29, 51, 80, 0.18);
-  --pp-fundo: #f5f7fa;
-  --pp-faixa: rgba(29, 51, 80, 0.045);
-  --pp-acento: var(--pn-accent, #56ADDB);
-
-  /* O shell ja rola; 100vh criava barra dupla e deixava faixa escura embaixo. */
-  min-height: 100%;
-  background: var(--pp-fundo);
-  color: var(--pp-navy);
+/* Caixa de seleção com o rótulo inteiro como alvo (44 px ou mais). */
+.prescricao-plano .pp-checagem,
+.prescricao-plano .pp-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  cursor: pointer;
 }
 
-.prescricao-plano .bg-stone-50  { background-color: var(--pp-fundo); }
-.prescricao-plano .bg-stone-100 { background-color: var(--pp-faixa); }
-.prescricao-plano .bg-white     { background-color: #fff; }
-
-.prescricao-plano .text-stone-900 { color: var(--pp-navy); }
-.prescricao-plano .text-stone-700,
-.prescricao-plano .text-stone-600,
-.prescricao-plano .text-stone-500 { color: var(--pp-texto-medio); }
-.prescricao-plano .text-stone-400,
-.prescricao-plano .text-stone-300 { color: var(--pp-texto-fraco); }
-
-.prescricao-plano .border-stone-200 { border-color: var(--pp-borda); }
-.prescricao-plano .border-stone-300 { border-color: var(--pp-borda-forte); }
-
-.prescricao-plano .hover\:bg-stone-100:hover { background-color: var(--pp-faixa); }
-.prescricao-plano .hover\:text-stone-800:hover { color: var(--pp-navy); }
-
-/* Cartoes ganham profundidade discreta em vez de so contorno. */
-.prescricao-plano .rounded-xl.border {
-  box-shadow: 0 1px 2px rgba(29, 51, 80, 0.04);
+.prescricao-plano .pp-checagem input[type="checkbox"],
+.prescricao-plano .pp-chip input[type="checkbox"] {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: pointer;
 }
 
-/* Foco visivel — a tela e operada muito por teclado durante o atendimento. */
-.prescricao-plano :is(button, input, select):focus-visible {
-  outline: 2px solid var(--pp-acento);
-  outline-offset: 2px;
-  border-radius: 4px;
+/* Conferência de quem revisa: pede decisão, então vai num fundo aceso. */
+.prescricao-plano .pp-checagem--destaque {
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--pp-raia);
+  font-weight: 600;
 }
 
-/* Estado vazio da refeicao. */
+.prescricao-plano .pp-chips { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-chip {
+  gap: var(--lt-space-2);
+  padding: 0 var(--lt-space-3);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+.prescricao-plano .pp-chip:has(input:checked) {
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-brand-blue);
+}
+
+/* ── Avisos: informativo, atenção e perigo ───────────────────────────
+   Texto na cor de tinta sobre fundo do tom, ícone e raia no tom. O texto é
+   o de sempre; o tom só acompanha. */
+.prescricao-plano .pp-aviso {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* A raia inclinada à esquerda, a mesma de .area-readonly-note. */
+.prescricao-plano .pp-aviso::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--pp-aviso-tom, var(--lt-color-brand-blue));
+  transform: skewX(-12deg);
+}
+
+.prescricao-plano .pp-aviso__icone {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.0625rem;
+  color: var(--pp-aviso-tom, var(--lt-color-brand-blue));
+}
+
+.prescricao-plano .pp-aviso__texto { flex: 1 1 16rem; min-width: 0; }
+
+.prescricao-plano .pp-aviso__acoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-aviso--com-acoes { align-items: center; }
+
+/* Atenção: tinta sobre --pp-atencao-fundo (13,27:1); ícone e raia no
+   laranja escuro, que também é o texto do selo (6,88:1). */
+.prescricao-plano .pp-aviso--atencao {
+  --pp-aviso-tom: var(--pp-atencao-texto);
+  background: var(--pp-atencao-fundo);
+  box-shadow: inset 0 0 0 1px rgba(194, 65, 12, 0.35);
+}
+
+/* Perigo: tinta sobre --lt-color-danger-bg (12,88:1), ícone e raia no
+   vermelho (5,91:1). */
+.prescricao-plano .pp-aviso--perigo {
+  --pp-aviso-tom: var(--lt-color-danger-text);
+  background: var(--lt-color-danger-bg);
+  box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.35);
+}
+
+/* Notas de apoio: texto secundário em corpo menor. */
+.prescricao-plano .pp-notas { display: flex; flex-direction: column; gap: var(--lt-space-1); }
+
+.prescricao-plano .pp-nota {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.prescricao-plano .pp-nota--forte { color: var(--lt-color-text); font-weight: 600; }
+
+/* Nota que pede ação: vira um aviso de atenção compacto. */
+.prescricao-plano .pp-nota--atencao {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-left: 3px solid var(--pp-atencao-traco);
+  border-radius: 0 var(--lt-radius-control) var(--lt-radius-control) 0;
+  background: var(--pp-atencao-fundo);
+  color: var(--lt-color-text);
+  font-weight: 600;
+}
+
+/* ── Cabeçalho: paciente, estado do plano e ações ────────────────────── */
+.prescricao-plano .pp-cabecalho {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  padding: var(--pp-respiro) var(--pp-respiro) calc(var(--pp-respiro) + 3px);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+}
+
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.prescricao-plano .pp-cabecalho::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.prescricao-plano .pp-cabecalho__identidade {
+  display: flex;
+  flex: 1 1 20rem;
+  align-items: center;
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.prescricao-plano .pp-cabecalho__texto { min-width: 0; }
+
+/* O nome do paciente na voz de campanha, menor que o título da Visão
+   geral: é identificação de contexto, não manchete. */
+.prescricao-plano .pp-cabecalho__titulo {
+  position: relative;
+  padding: 0 0.1em 0 0.32em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.75rem, 3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o gesto de .painel-cabecalho__titulo::before. */
+.prescricao-plano .pp-cabecalho__titulo::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.06em;
+  bottom: 0.06em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.prescricao-plano .pp-cabecalho__apoio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-2);
+  margin-top: var(--lt-space-1);
+  padding-left: 0.6rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+/* Estado do plano: sempre escrito (o valor vem do servidor como está); a
+   cor só acompanha. Padrão: azul sobre --lt-color-track-tint, 5,57:1. */
+.prescricao-plano .pp-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* Aguardando quem revisa: o par de atenção, 6,88:1. */
+.prescricao-plano .pp-status--em_revisao { background: var(--pp-atencao-fundo); color: var(--pp-atencao-texto); }
+
+/* Publicado ao atleta: 6,81:1. */
+.prescricao-plano .pp-status--ativo { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+
+.prescricao-plano .pp-status--arquivado {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+}
+
+.prescricao-plano .pp-cabecalho__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Versão salva ou alterações pendentes: escrito, com o tom de apoio. */
+.prescricao-plano .pp-salvo {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+.prescricao-plano .pp-salvo--pendente {
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--pp-atencao-fundo);
+  color: var(--pp-atencao-texto);
+}
+
+.prescricao-plano .pp-conferencia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  padding: var(--pp-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+}
+
+.prescricao-plano .pp-conferencia__cabeca,
+.prescricao-plano .pp-conferencia__refeicao-topo,
+.prescricao-plano .pp-conferencia__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+}
+
+.prescricao-plano .pp-conferencia__cabeca h3 { font-size: var(--lt-text-title); }
+.prescricao-plano .pp-conferencia__cabeca p,
+.prescricao-plano .pp-conferencia__acoes span { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+.prescricao-plano .pp-conferencia__pendencia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--pp-atencao-fundo);
+  color: var(--pp-atencao-texto);
+  font-weight: 600;
+}
+
+.prescricao-plano .pp-conferencia__refeicoes { display: grid; gap: var(--lt-space-2); }
+.prescricao-plano .pp-conferencia__refeicao { min-width: 0; padding: var(--lt-space-3); border: 1px solid var(--lt-color-border); border-radius: var(--lt-radius-control); }
+.prescricao-plano .pp-conferencia__refeicao-topo { padding-bottom: var(--lt-space-2); border-bottom: 1px solid var(--lt-color-border); }
+.prescricao-plano .pp-conferencia__refeicao-topo strong { overflow-wrap: anywhere; }
+.prescricao-plano .pp-conferencia__refeicao-topo span { font-weight: 700; font-variant-numeric: tabular-nums; }
+.prescricao-plano .pp-conferencia__refeicao ul { display: grid; gap: var(--lt-space-1); padding-top: var(--lt-space-2); }
+.prescricao-plano .pp-conferencia__refeicao li { display: grid; gap: var(--lt-space-1); overflow-wrap: anywhere; }
+.prescricao-plano .pp-conferencia__refeicao li + li { padding-top: var(--lt-space-1); border-top: 1px solid var(--lt-color-border); }
+.prescricao-plano .pp-conferencia__refeicao small { padding-left: var(--lt-space-3); color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+.prescricao-plano .pp-conferencia__acoes { padding-top: var(--lt-space-2); border-top: 1px solid var(--lt-color-border); }
+
+/* ── Grade da página ─────────────────────────────────────────────────
+   Coluna única por padrão: a principal primeiro e o resumo da rosca no fim
+   (UX-03). Com 60rem ou mais de página, o resumo vai para uma lateral
+   e fica fixo ao rolar, sem cobrir nada (tem a coluna só para ele). */
+.prescricao-plano .pp-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+.prescricao-plano .pp-principal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.prescricao-plano .pp-lateral {
+  container: pp-lateral / inline-size;
+  min-width: 0;
+}
+
+@container pp-pagina (min-width: 60rem) {
+  .prescricao-plano .pp-layout {
+    grid-template-columns: minmax(0, 1fr) 17.5rem;
+    align-items: start;
+    gap: var(--lt-space-5);
+  }
+
+  .prescricao-plano .pp-lateral { align-self: stretch; }
+
+  .prescricao-plano .pp-lateral__fixo { position: sticky; top: var(--lt-space-4); }
+}
+
+/* ── Parâmetros do plano: treino, peso e método ──────────────────────── */
+.prescricao-plano .pp-parametros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-3) var(--lt-space-5);
+  min-width: 0;
+  padding: var(--lt-space-4) var(--pp-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+}
+
+.prescricao-plano .pp-parametros__treino {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-2) var(--lt-space-3);
+}
+
+/* A legenda "Treino" ocupa a própria linha, acima dos dois campos. */
+.prescricao-plano .pp-parametros__treino > legend { float: left; width: 100%; margin-bottom: var(--lt-space-1); }
+
+.prescricao-plano .pp-parametros select.pp-controle { width: auto; min-width: 12rem; }
+
+.prescricao-plano .pp-parametros__nota {
+  flex: 1 1 100%;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+/* ── Refeições ───────────────────────────────────────────────────────── */
+.prescricao-plano .pp-refeicoes { display: flex; flex-direction: column; gap: var(--lt-space-3); min-width: 0; }
+
+.prescricao-plano .pp-refeicao-bloco { display: flex; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
+
+.prescricao-plano .pp-alvo-navegacao { scroll-margin-top: var(--lt-space-5); outline: none; }
+.prescricao-plano .pp-alvo-navegacao:focus { outline: 2px solid var(--lt-color-brand-blue); outline-offset: 3px; }
+
+.prescricao-plano .pp-mapa {
+  min-width: 0;
+  padding: var(--lt-space-4) var(--pp-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+}
+
+.prescricao-plano .pp-mapa__cabeca,
+.prescricao-plano .pp-mapa__linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-2);
+}
+
+.prescricao-plano .pp-mapa__titulo { font-size: var(--lt-text-title); }
+
+.prescricao-plano .pp-mapa__apoio,
+.prescricao-plano .pp-mapa__linha--dados { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+.prescricao-plano .pp-mapa__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin-top: var(--lt-space-3);
+}
+
+.prescricao-plano .pp-mapa__item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 4.5rem;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.prescricao-plano .pp-mapa__item--aberto { border-color: var(--lt-color-brand-green); background: var(--lt-color-track-tint); }
+.prescricao-plano .pp-mapa__item strong { overflow-wrap: anywhere; }
+.prescricao-plano .pp-mapa__linha--dados span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Cada refeição é um cartão branco e um contêiner: abaixo de 40rem de
+   largura as linhas de alimento viram blocos (ver o fim deste arquivo). */
+.prescricao-plano .pp-refeicao {
+  container: pp-refeicao / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-3) var(--pp-respiro) var(--pp-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+}
+
+.prescricao-plano .pp-refeicao__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  min-width: 0;
+}
+
+.prescricao-plano .pp-refeicao__titulo { flex: 1 1 16rem; min-width: 0; font-size: inherit; }
+
+/* O nome da refeição é o botão de abrir/fechar: a linha toda é alvo. */
+.prescricao-plano .pp-refeicao__alternar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-1) var(--lt-space-2) var(--lt-space-1) 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.prescricao-plano .pp-refeicao__alca { color: var(--lt-color-text-subtle); }
+
+.prescricao-plano .pp-refeicao__nome {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-title);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.prescricao-plano .pp-refeicao__hora {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.prescricao-plano .pp-refeicao__ancora { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; }
+
+@media (hover: hover) {
+  .prescricao-plano .pp-refeicao__alternar:hover .pp-refeicao__nome { color: var(--lt-color-brand-blue); }
+}
+
+.prescricao-plano .pp-refeicao__resumo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-1) var(--lt-space-2);
+  margin-left: auto;
+}
+
+.prescricao-plano .pp-refeicao__kcal {
+  margin-right: var(--lt-space-1);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-refeicao__indices {
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Edição do nome, da ancoragem e do horário: formulário curto em linha. */
+.prescricao-plano .pp-refeicao__edicao {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.prescricao-plano .pp-campo--nome { flex: 1 1 14rem; }
+
+.prescricao-plano .pp-refeicao__edicao select.pp-controle { width: auto; min-width: 12rem; }
+
+.prescricao-plano .pp-refeicao__edicao-acoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+/* Refeição sem alimento: o próximo passo, não uma tabela vazia. */
 .prescricao-plano .pp-vazio {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  padding: 1.35rem 1rem;
-  margin-top: 0.5rem;
-  border: 1px dashed var(--pp-borda-forte);
-  border-radius: 0.6rem;
-  background: rgba(29, 51, 80, 0.02);
+  gap: var(--lt-space-1);
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 1.5px dashed var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
   text-align: center;
 }
 
-.prescricao-plano .pp-vazio__titulo {
-  font-size: 0.8125rem;
-  color: var(--pp-texto-medio);
-}
+.prescricao-plano .pp-vazio__titulo { color: var(--lt-color-text); font-size: var(--lt-text-base); font-weight: 700; }
 
-.prescricao-plano .pp-vazio__dica {
-  font-size: 0.75rem;
-  color: var(--pp-texto-fraco);
-  max-width: 34ch;
-}
+.prescricao-plano .pp-vazio__dica { max-width: 38ch; color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
 
-/* O app estiliza `h1` globalmente com tamanho de display; dentro da tela o
-   nome do paciente e identificacao de contexto, nao manchete. */
-.prescricao-plano h1 {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  margin: 0;
-  color: var(--pp-navy);
-}
-
-/* O container da rota nao propaga altura, entao `min-height: 100%` nao tinha
-   contra o que resolver e sobrava faixa clara sob o conteudo. */
-.prescricao-plano {
-  min-height: calc(100vh - 4.5rem);
-}
-
-/* Barra de adequacao: com percentual muito baixo sobrava um ponto vermelho
-   solto, que lia como defeito em vez de medida. Um minimo visivel resolve. */
-.prescricao-plano .adequacao-barra {
-  min-width: 3px;
-  border-radius: 999px;
-}
-
-/* O estilo global de controle ainda impunha padding e fonte proprios ao
-   campo de quantidade, que aparecia como uma caixa larga desproporcional
-   ao dado que carrega (dois ou tres digitos). */
-.prescricao-plano input[type='number'],
-.prescricao-plano input[type='text'] {
-  padding: 0.15rem 0.35rem;
-  font-size: 0.75rem;
-  line-height: 1.35;
-  border-color: var(--pp-borda);
-  background: #fff;
-  color: var(--pp-navy);
-}
-
-.prescricao-plano input[type='number']:focus {
-  border-color: var(--pp-acento);
-}
-
-/* A tela e um documento clinico: no papel o fundo desaparece e so o
-   conteudo importa. */
-@media print {
-  .prescricao-plano { background: #fff; min-height: 0; }
-  .prescricao-plano .sticky { position: static; }
-}
-
-/* ------------------------------------------------------------------ *
- * Busca de alimento
- *
- * Antes era uma fileira flex com dois inputs. O estilo global de controle
- * impunha largura propria, o campo de texto colapsava para poucos pixels e
- * o de quantidade escapava para fora do painel.
- *
- * Aqui a grade e explicita e as colunas tem largura declarada, entao nenhum
- * estilo herdado consegue redistribui-las.
- * ------------------------------------------------------------------ */
-
-.prescricao-plano .pp-busca {
-  margin-top: 0.5rem;
-  border: 1px solid var(--pp-borda-forte);
-  border-radius: 0.6rem;
-  background: #fff;
-  padding: 0.5rem;
-}
-
-.prescricao-plano .pp-busca__topo {
+.prescricao-plano .pp-refeicao__rodape {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
 }
 
-.prescricao-plano .pp-busca__campo {
-  flex: 1 1 auto;
+.prescricao-plano .pp-refeicao__etiquetas { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-refeicao__orientacao { padding-top: var(--lt-space-3); border-top: 1px solid var(--lt-color-border); }
+
+/* ── Tabela de alimentos da refeição ─────────────────────────────────
+   Desliga o desenho de tabela administrativa de theme.css (cabeçalho em
+   caixa alta com fundo, células com 13px 16px, zebra e hover): aqui cada
+   linha é um alimento com fio próprio. A largura vem de cada célula; só o
+   nome quebra linha. */
+.prescricao-plano .pp-tabela { width: 100%; border-collapse: collapse; }
+
+.prescricao-plano .pp-tabela thead th {
+  padding: 0 var(--lt-space-2) var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: none;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-tabela thead th:first-child { padding-left: 0; }
+.prescricao-plano .pp-tabela thead th:last-child { padding-right: 0; }
+.prescricao-plano .pp-tabela thead th.pp-tabela__num { text-align: right; }
+.prescricao-plano .pp-tabela thead .pp-tabela__alca { width: 1.25rem; }
+.prescricao-plano .pp-tabela thead .pp-tabela__acoes { width: 5.75rem; }
+
+.prescricao-plano .pp-tabela tbody tr,
+.prescricao-plano .pp-tabela tbody tr:hover { background: none; }
+
+.prescricao-plano .pp-item > td {
+  padding: var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: none;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  vertical-align: middle;
+}
+
+.prescricao-plano .pp-item > td:first-child { padding-left: 0; }
+.prescricao-plano .pp-item > td:last-child { padding-right: 0; }
+
+.prescricao-plano .pp-item__alca { color: var(--lt-color-text-subtle); }
+
+.prescricao-plano .pp-item__nome { min-width: 8rem; overflow-wrap: anywhere; }
+
+.prescricao-plano .pp-item__alimento { font-weight: 600; }
+
+.prescricao-plano .pp-item__opcoes {
+  margin-left: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  white-space: nowrap;
+}
+
+/* A medida caseira nunca é cortada: "colher de servir · 50 g" é o que o
+   profissional usa para prescrever. */
+.prescricao-plano .pp-item__medida {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-item__num {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-item__num--kcal { color: var(--lt-color-text); font-size: var(--lt-text-base); font-weight: 700; }
+
+.prescricao-plano .pp-item__equivalencia { color: var(--lt-color-text); text-align: right; }
+
+.prescricao-plano .pp-item__apagado { color: var(--lt-color-text-muted); }
+
+.prescricao-plano .pp-item__botoes { display: flex; align-items: center; justify-content: flex-end; gap: var(--lt-space-1); }
+
+.prescricao-plano .pp-item-substitutos > td { padding: 0 0 var(--lt-space-3); border-bottom: 1px solid var(--lt-color-border); background: none; }
+
+/* ── Selos e etiquetas: sempre com o texto do estado ─────────────────── */
+/* Fonte da composição (TACO, TBCA…): apoio sobre --lt-color-track-tint. */
+.prescricao-plano .pp-selo {
+  display: inline-block;
+  margin-left: var(--lt-space-2);
+  padding: 0 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text-muted); /* 5,79:1 */
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: 1.5;
+  vertical-align: 0.0625rem;
+  white-space: nowrap;
+}
+
+/* Item em conflito com a restrição confirmada: escrito ("restrição ·
+   justificar"), com contorno e fundo do tom. Sem justificativa, perigo;
+   justificado, atenção. */
+.prescricao-plano .pp-restricao {
+  display: inline-block;
+  margin-left: var(--lt-space-2);
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-restricao--pendente {
+  background: var(--lt-color-danger-bg);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-danger-text);
+  color: var(--lt-color-danger-text); /* 5,91:1 */
+}
+
+.prescricao-plano .pp-restricao--justificada {
+  background: var(--pp-atencao-fundo);
+  box-shadow: inset 0 0 0 1px var(--pp-atencao-traco);
+  color: var(--pp-atencao-texto); /* 6,88:1 */
+}
+
+.prescricao-plano .pp-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-etiqueta--neutro { background: var(--lt-color-surface-field); color: var(--lt-color-text-muted); }
+.prescricao-plano .pp-etiqueta--ok { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.prescricao-plano .pp-etiqueta--atencao { background: var(--pp-atencao-fundo); color: var(--pp-atencao-texto); }
+
+/* ── Substituições: alternativas à linha, nunca somam ao dia ─────────
+   Recuadas sob o item, no fundo de campo, com o "ou" à esquerda. */
+.prescricao-plano .pp-substitutos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
   min-width: 0;
-  width: auto;
-  border: 1px solid var(--pp-borda);
-  border-radius: 4px;
+  margin-left: 1.25rem;
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
 }
 
-.prescricao-plano .pp-busca__fechar {
-  flex: 0 0 auto;
-  font-size: 0.75rem;
-  color: var(--pp-texto-medio);
+.prescricao-plano .pp-substitutos__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
 }
 
-.prescricao-plano .pp-busca__fechar:hover { color: var(--pp-navy); }
+.prescricao-plano .pp-substitutos__titulo { color: var(--lt-color-text); font-size: var(--lt-text-sm); font-weight: 700; }
 
-.prescricao-plano .pp-busca__aviso {
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--pp-texto-fraco);
+.prescricao-plano .pp-substitutos__acoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-1); }
+
+.prescricao-plano .pp-substitutos__vazio,
+.prescricao-plano .pp-substitutos__motivo {
+  padding: var(--lt-space-1) 0;
+  color: var(--lt-color-text-muted); /* 6,17:1 sobre o fundo de campo */
+  font-size: var(--lt-text-sm);
 }
 
-.prescricao-plano .pp-busca__aviso--erro { color: var(--pn-danger, #dc2626); }
+.prescricao-plano .pp-substitutos__motivo { margin-top: var(--lt-space-2); font-weight: 600; }
 
-.prescricao-plano .pp-busca__lista {
-  margin-top: 0.4rem;
-  max-height: 15rem;
-  overflow-y: auto;
+/* Linha de opção: quebra em vez de alargar a tabela da refeição. */
+.prescricao-plano .pp-opcao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-1) 0;
+  border-top: 1px solid var(--lt-color-border);
+  font-size: var(--lt-text-sm);
 }
+
+.prescricao-plano .pp-opcao__ou { flex: none; width: 1.25rem; color: var(--lt-color-text-muted); font-weight: 700; }
+
+.prescricao-plano .pp-opcao__nome {
+  flex: 1 1 11rem;
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.prescricao-plano .pp-opcao--sugestao .pp-opcao__nome { font-weight: 400; }
+
+.prescricao-plano .pp-opcao__qtd {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-opcao__gramas,
+.prescricao-plano .pp-opcao__medida { color: var(--lt-color-text-muted); white-space: nowrap; }
+
+.prescricao-plano .pp-opcao__deltas { flex: none; white-space: nowrap; }
+
+.prescricao-plano .pp-deltas { color: var(--lt-color-text-muted); font-variant-numeric: tabular-nums; }
+
+/* Alinha a sugestão com a opção de cima, que tem o botão de remover. */
+.prescricao-plano .pp-opcao__espaco { flex: none; width: var(--lt-target-min); }
+
+/* Selo de equivalência: o percentual (ou "sem equivalência") é o dado; o
+   tom só reforça a distância do alimento original. */
+.prescricao-plano .pp-selo-equiv {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.prescricao-plano .pp-selo-equiv--exata { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.prescricao-plano .pp-selo-equiv--boa { background: var(--lt-color-surface); box-shadow: inset 0 0 0 1px var(--lt-color-border); color: var(--lt-color-text); }
+.prescricao-plano .pp-selo-equiv--limite { background: var(--pp-atencao-fundo); color: var(--pp-atencao-texto); }
+.prescricao-plano .pp-selo-equiv--sem { background: var(--lt-color-surface); box-shadow: inset 0 0 0 1px var(--lt-color-border); color: var(--lt-color-text-muted); }
+
+/* "prescrita" é um botão (volta ao cálculo automático): alvo de 44 px e
+   contorno de ação secundária, para não passar por selo inerte. */
+.prescricao-plano .pp-selo-equiv--botao {
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .prescricao-plano .pp-selo-equiv--botao:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+/* ── Busca de alimento ───────────────────────────────────────────────
+   Grade explícita: nenhum estilo herdado redistribui as colunas. */
+.prescricao-plano .pp-busca {
+  container: pp-busca / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1.5px var(--lt-color-brand-blue), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+}
+
+.prescricao-plano .pp-substitutos .pp-busca { border-radius: var(--lt-radius-control); }
+
+.prescricao-plano .pp-busca__topo { display: flex; align-items: center; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-busca__topo input.pp-controle:not([type="checkbox"]) { flex: 1 1 auto; }
+
+.prescricao-plano .pp-busca__fechar { flex: none; }
+
+.prescricao-plano .pp-busca__aviso { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; }
+
+.prescricao-plano .pp-busca__aviso--erro { color: var(--lt-color-danger-text); }
+
+.prescricao-plano .pp-busca__contexto {
+  margin-bottom: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.prescricao-plano .pp-busca__escolha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+}
+
+.prescricao-plano .pp-busca__escolha-titulo {
+  flex: 1 1 100%;
+  color: var(--lt-color-text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.prescricao-plano .pp-busca__escolha .pp-campo { flex: 1 1 10rem; }
+.prescricao-plano .pp-busca__escolha input.pp-controle,
+.prescricao-plano .pp-busca__escolha select.pp-controle { width: 100%; min-width: 0; }
+.prescricao-plano .pp-busca__medida-fixa,
+.prescricao-plano .pp-busca__gramas { flex: 1 1 100%; color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+.prescricao-plano .pp-busca__gramas { font-weight: 700; }
+.prescricao-plano .pp-busca__escolha-acoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); width: 100%; }
+
+@container pp-busca (max-width: 24rem) {
+  .prescricao-plano .pp-busca__topo { flex-wrap: wrap; }
+  .prescricao-plano .pp-busca__fechar,
+  .prescricao-plano .pp-busca__escolha-acoes > .pp-botao { flex: 1 1 100%; }
+}
+
+/* O respiro de 4 px deixa o anel de foco das linhas caber na rolagem. */
+.prescricao-plano .pp-busca__lista { max-height: 18rem; padding: 4px; overflow-y: auto; }
 
 .prescricao-plano .pp-busca__cabecalho,
 .prescricao-plano .pp-busca__linha {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
   width: 100%;
-  font-size: 0.75rem;
+  font-size: var(--lt-text-sm);
   text-align: left;
 }
 
 .prescricao-plano .pp-busca__cabecalho {
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid var(--pp-borda);
-  color: var(--pp-texto-fraco);
+  padding: 0 var(--lt-space-2) var(--lt-space-1);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
 }
 
+/* Cada resultado é um botão de 44 px; o nome cede, medida e números não. */
 .prescricao-plano .pp-busca__linha {
-  padding: 0.3rem 0;
-  border-top: 1px solid var(--pp-borda);
-  color: var(--pp-texto-medio);
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-1) var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  white-space: normal;
+  cursor: pointer;
 }
 
-.prescricao-plano .pp-busca__linha:hover { background: var(--pp-faixa); }
+.prescricao-plano .pp-busca__linha + .pp-busca__linha { box-shadow: 0 -1px 0 var(--lt-color-border); }
 
-/* O nome cede espaco; medida e numeros nunca — sao o que decide a escolha. */
+@media (hover: hover) {
+  .prescricao-plano .pp-busca__linha:hover { background: var(--lt-color-track-tint); }
+}
+
+.prescricao-plano .pp-busca__linha:focus-visible { box-shadow: var(--lt-focus-ring); }
+
 .prescricao-plano .pp-busca__col-nome {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--pp-navy);
+  overflow-wrap: anywhere;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  white-space: normal;
 }
 
-.prescricao-plano .pp-busca__cabecalho .pp-busca__col-nome { color: inherit; }
-
-.prescricao-plano .pp-busca__col-medida {
-  flex: 0 0 6.5rem;
-  white-space: nowrap;
+.prescricao-plano .pp-busca__codigo {
+  margin-left: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
 }
+
+.prescricao-plano .pp-busca__cabecalho .pp-busca__col-nome { color: inherit; font-size: inherit; font-weight: inherit; }
+
+.prescricao-plano .pp-busca__col-medida { flex: 0 0 8rem; white-space: nowrap; }
 
 .prescricao-plano .pp-busca__col-num {
-  flex: 0 0 2.5rem;
+  flex: 0 0 2.75rem;
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
-.prescricao-plano .pp-busca__col-num--forte { color: var(--pp-navy); }
+.prescricao-plano .pp-busca__col-num--forte { color: var(--lt-color-text); font-weight: 700; }
 
-/* Acao destrutiva so ganha cor no hover/foco: vermelho permanente numa lista
-   de alimentos vira ruido e compete com o alerta clinico de verdade. */
-.prescricao-plano .pp-excluir:hover,
-.prescricao-plano .pp-excluir:focus-visible { color: var(--pn-danger, #dc2626); }
-
-/* Campo de orientacao: parece texto ate receber o cursor. */
-.prescricao-plano .pp-orientacao {
-  border: 0;
-  border-top: 1px solid var(--pp-borda);
-  border-radius: 0;
-  padding: 0.5rem 0 0;
-  background: transparent;
-  color: var(--pp-texto-medio);
+/* ── Total do dia: a soma das refeições, logo abaixo delas ──────────── */
+.prescricao-plano .pp-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  padding: var(--lt-space-3) var(--pp-respiro);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--pp-raia);
 }
 
-.prescricao-plano .pp-orientacao::placeholder { color: var(--pp-texto-fraco); }
+.prescricao-plano .pp-total__rotulo { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 700; }
 
-.prescricao-plano input[type='time'],
-.prescricao-plano select {
-  padding: 0.15rem 0.35rem;
-  font-size: 0.75rem;
-  min-height: 0;
-  height: auto;
-  border-color: var(--pp-borda);
-  background: #fff;
-  color: var(--pp-navy);
-}
-
-/* O estilo global de formulario da largura total a todo controle — util num
-   formulario empilhado, destrutivo numa barra horizontal: hora, duracao e
-   ancoragem viravam tres linhas com os rotulos soltos entre elas.
-   Aqui a largura volta a ser a do proprio controle, e quem precisa de largura
-   declara a sua. */
-/* Larguras dos controles.
- *
- * O seletor global e `input:not([type="checkbox"]):not([type="radio"])` com
- * `width: 100%`. Como `:not()` carrega a especificidade do argumento, ele vale
- * (0,2,1) — mais que uma classe dentro de escopo. Cada regra abaixo qualifica
- * o elemento para empatar em (0,2,1) e vencer por ordem, ja que o CSS deste
- * chunk e injetado depois do tema.
- *
- * Um reset generico aqui seria pior: com os dois `:not()` ele chegaria a
- * (0,3,1) e passaria a vencer as proprias regras especificas abaixo. */
-.prescricao-plano input.pp-largura-num { width: 4rem; flex: 0 0 auto; }
-.prescricao-plano input.pp-largura-nome { width: 11rem; flex: 0 0 auto; }
-.prescricao-plano input[type='time'] { width: 6.5rem; flex: 0 0 auto; }
-.prescricao-plano input.pp-busca__campo { width: 100%; flex: 1 1 auto; min-width: 0; }
-.prescricao-plano input.pp-orientacao { width: 100%; flex: 1 1 auto; }
-
-/* `select` nao entra no seletor global com `:not()`, entao uma classe basta. */
-.prescricao-plano select { width: auto; flex: 0 0 auto; }
-
-/* Selo de equivalência: mesmo desenho do selo da fonte (TACO/TBCA), porque
-   os dois respondem a "de onde vem este número e quanto ele vale". */
-.prescricao-plano .pp-selo-equiv {
-  flex: 0 0 auto;
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  font-size: 0.75rem;
+.prescricao-plano .pp-total__valor {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.prescricao-plano .pp-acoes-finais {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-3) var(--pp-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+}
+
+.prescricao-plano .pp-acoes-finais > span { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; }
+.prescricao-plano .pp-acoes-finais__botoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+@container pp-pagina (max-width: 30rem) {
+  .prescricao-plano .pp-acoes-finais__botoes { width: 100%; }
+  .prescricao-plano .pp-acoes-finais__botoes > .pp-botao { flex: 1 1 100%; }
+}
+
+/* ── Painéis de apoio: adequação, análises, processamento e compras ─── */
+.prescricao-plano .pp-apoio { display: flex; flex-direction: column; gap: var(--lt-space-3); min-width: 0; margin-top: var(--lt-space-2); }
+
+.prescricao-plano .pp-apoio__par {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.prescricao-plano .pp-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--pp-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pp-sombra);
+  color: var(--lt-color-text);
+}
+
+.prescricao-plano .pp-cartao__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
+}
+
+.prescricao-plano .pp-cartao__titulo { font-size: var(--lt-text-title); overflow-wrap: anywhere; }
+
+.prescricao-plano .pp-cartao__contagem,
+.prescricao-plano .pp-cartao__vazio { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; }
+
+/* Análises detalhadas: recolhidas por padrão (UX-03). O resumo é um alvo
+   de 44 px com a seta desenhada, que gira ao abrir. */
+.prescricao-plano .pp-detalhes { min-width: 0; }
+
+.prescricao-plano .pp-detalhes__resumo {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-border-field);
+  color: var(--lt-color-brand-blue);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.prescricao-plano .pp-detalhes__resumo::-webkit-details-marker { display: none; }
+
+.prescricao-plano .pp-detalhes__resumo::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(-45deg);
+}
+
+.prescricao-plano .pp-detalhes[open] > .pp-detalhes__resumo::before { transform: rotate(45deg); }
+
+.prescricao-plano .pp-detalhes[open] > .pp-detalhes__resumo { margin-bottom: var(--lt-space-3); }
+
+@media (hover: hover) {
+  .prescricao-plano .pp-detalhes__resumo:hover { background: var(--lt-color-track-tint); }
+}
+
+/* ── Restrições alimentares (UPD-11) ─────────────────────────────────── */
+.prescricao-plano .pp-restricoes { gap: var(--lt-space-2); padding-top: var(--lt-space-2); padding-bottom: var(--lt-space-2); }
+
+.prescricao-plano .pp-restricoes__titulo { font-size: inherit; }
+
+.prescricao-plano .pp-restricoes__alternar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-1) 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  font-family: var(--lt-font-family);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.prescricao-plano .pp-restricoes__nome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-title);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+}
+
+.prescricao-plano .pp-restricoes__nome .pp-icone { color: var(--lt-color-brand-blue); }
+
+.prescricao-plano .pp-restricoes__situacao {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+/* Pendente ou com item a justificar: selo de atenção com o triângulo
+   desenhado (#9a3412 no data URI = --pp-atencao-texto). */
+.prescricao-plano .pp-restricoes__situacao--atencao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--pp-atencao-fundo);
+  color: var(--pp-atencao-texto);
+  font-weight: 700;
+}
+
+.prescricao-plano .pp-restricoes__situacao--atencao::before {
+  content: '';
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a3412' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.prescricao-plano .pp-restricoes__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  padding: var(--lt-space-2) 0 var(--lt-space-2);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.prescricao-plano .pp-restricoes__anamnese { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); overflow-wrap: anywhere; }
+
+.prescricao-plano .pp-restricoes__citacao { color: var(--lt-color-text); font-weight: 600; }
+
+.prescricao-plano .pp-restricoes__grupos { display: flex; flex-direction: column; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-restricoes__grupos:disabled { opacity: 0.55; }
+
+.prescricao-plano .pp-restricoes__grupos:disabled .pp-chip { cursor: not-allowed; }
+
+/* Conflito com a restrição confirmada: bloco de atenção com contorno,
+   mais visível que a lista cinza de antes. Cada item pede justificativa. */
+.prescricao-plano .pp-conflitos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-left: 4px solid var(--pp-atencao-traco);
+  border-radius: 0 var(--lt-radius-control) var(--lt-radius-control) 0;
+  background: var(--pp-atencao-fundo);
+}
+
+.prescricao-plano .pp-conflitos__titulo { color: var(--pp-atencao-texto); font-size: var(--lt-text-sm); font-weight: 700; }
+
+.prescricao-plano .pp-conflitos__lista { display: flex; flex-direction: column; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-conflito { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-1) var(--lt-space-3); }
+
+.prescricao-plano .pp-conflito__nome { color: var(--lt-color-text); font-weight: 700; }
+
+.prescricao-plano .pp-conflito__motivo { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; } /* 6,20:1 */
+
+.prescricao-plano input.pp-controle.pp-conflito__justificativa:not([type="checkbox"]) { flex: 1 1 14rem; width: auto; }
+
+/* ── Adequação nutricional ───────────────────────────────────────────── */
+.prescricao-plano .pp-adequacao { container: pp-adequacao / inline-size; }
+
+.prescricao-plano .pp-selo-dri {
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.prescricao-plano .pp-adequacao__tabela { width: 100%; border-collapse: collapse; }
+
+.prescricao-plano .pp-adequacao__tabela thead th {
+  padding: 0 var(--lt-space-2) var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: none;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: left;
+  text-transform: none;
   white-space: nowrap;
 }
 
-.prescricao-plano .pp-selo-equiv--exata {
-  background: rgba(92, 145, 80, 0.14);
-  color: #3F6837;
+.prescricao-plano .pp-adequacao__tabela thead th:first-child { padding-left: 0; }
+.prescricao-plano .pp-adequacao__tabela thead th.pp-adequacao__cab--num { text-align: right; }
+
+.prescricao-plano .pp-adequacao__tabela tbody tr,
+.prescricao-plano .pp-adequacao__tabela tbody tr:hover { background: none; }
+
+.prescricao-plano .pp-adequacao__linha > :is(th, td) {
+  padding: var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: none;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  vertical-align: middle;
 }
 
-.prescricao-plano .pp-selo-equiv--boa {
-  background: rgba(29, 51, 80, 0.06);
-  color: var(--pp-texto-medio);
+.prescricao-plano .pp-adequacao__linha > th { padding-left: 0; text-align: left; }
+
+.prescricao-plano .pp-adequacao__nutriente { font-weight: 700; overflow-wrap: anywhere; }
+
+.prescricao-plano .pp-adequacao__limite { margin-left: var(--lt-space-1); color: var(--lt-color-text-muted); font-weight: 600; }
+
+.prescricao-plano .pp-adequacao__valor { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+.prescricao-plano .pp-adequacao__referencia { color: var(--lt-color-text-muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+.prescricao-plano .pp-adequacao__tipo { margin-left: var(--lt-space-1); font-weight: 700; }
+
+.prescricao-plano .pp-adequacao__proporcao { width: 5.5rem; }
+
+.prescricao-plano .pp-adequacao__trilho {
+  display: block;
+  height: 0.375rem;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
 }
 
-.prescricao-plano .pp-selo-equiv--limite {
-  background: rgba(176, 131, 72, 0.16);
-  color: #7A5A2E;
+/* Barra de adequação: com percentual muito baixo sobrava um ponto solto,
+   que lia como defeito em vez de medida. Um mínimo visível resolve. */
+.prescricao-plano .pp-adequacao__barra { display: block; height: 100%; min-width: 3px; border-radius: var(--lt-radius-pill); }
+
+.prescricao-plano .pp-adequacao__pct { display: block; margin-top: 0.125rem; color: var(--lt-color-text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.prescricao-plano .pp-adequacao__cobertura { color: var(--lt-color-text-muted); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+.prescricao-plano .pp-adequacao__dobra > td { padding: var(--lt-space-1) 0 0; border: 0; background: none; }
+
+/* Situação da linha, escrita: meta atingida (verde), ajuste e referência
+   abaixo (atenção), meta não atingida ou limite passado (perigo) e
+   referência populacional atingida (azul, porque não é meta individual). */
+.prescricao-plano .pp-situacao {
+  display: table;
+  margin-top: var(--lt-space-1);
+  padding: 0 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: 1.6;
 }
 
-.prescricao-plano .pp-selo-equiv--sem {
-  background: rgba(29, 51, 80, 0.05);
-  color: var(--pp-texto-fraco);
+.prescricao-plano .pp-situacao:empty { display: none; }
+
+.prescricao-plano .pp-situacao--ok { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.prescricao-plano :is(.pp-situacao--atencao, .pp-situacao--referencia-abaixo) { background: var(--pp-atencao-fundo); color: var(--pp-atencao-texto); }
+.prescricao-plano :is(.pp-situacao--insuficiente, .pp-situacao--excedido) { background: var(--lt-color-danger-bg); color: var(--lt-color-danger-text); }
+.prescricao-plano .pp-situacao--referencia-atingida { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+
+/* ── Análises do plano ───────────────────────────────────────────────── */
+.prescricao-plano .pp-analises__cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-2);
+}
+
+.prescricao-plano .pp-analises__cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.prescricao-plano .pp-analises__rotulo { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 700; }
+
+.prescricao-plano .pp-analises__valor { color: var(--lt-color-text); font-size: var(--lt-text-md); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.prescricao-plano .pp-analises__unidade { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; }
+
+.prescricao-plano .pp-analises__nota { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+.prescricao-plano .pp-analises__nota--bom { color: var(--lt-color-brand-green-text); font-weight: 700; } /* 5,03:1 sobre o fundo de campo */
+
+.prescricao-plano .pp-analises__proteina { display: flex; flex-direction: column; gap: var(--lt-space-2); }
+
+.prescricao-plano .pp-analises__subtitulo { color: var(--lt-color-text); font-size: var(--lt-text-sm); font-weight: 700; }
+
+.prescricao-plano .pp-analises__barras {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--lt-space-1);
+  padding-bottom: 1px;
+  border-bottom: 1px solid var(--lt-color-border-field);
+}
+
+.prescricao-plano .pp-analises__barra { position: relative; flex: 1 1 0; border-radius: 4px 4px 0 0; }
+
+.prescricao-plano .pp-analises__legenda { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+/* ── Grau de processamento (NOVA) ────────────────────────────────────── */
+.prescricao-plano .pp-nova__barra { display: flex; height: 1.25rem; overflow: hidden; border-radius: var(--lt-radius-control); }
+
+.prescricao-plano .pp-nova__legenda { display: flex; flex-direction: column; }
+
+.prescricao-plano .pp-nova__item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-1) 0;
+  font-size: var(--lt-text-sm);
+}
+
+.prescricao-plano .pp-nova__item + .pp-nova__item { border-top: 1px solid var(--lt-color-border); }
+
+.prescricao-plano .pp-nova__cor { flex: none; width: 0.75rem; height: 0.75rem; border-radius: 3px; }
+
+.prescricao-plano .pp-nova__rotulo { flex: 1 1 auto; min-width: 0; color: var(--lt-color-text); font-weight: 600; overflow-wrap: anywhere; }
+
+.prescricao-plano .pp-nova__valor { flex: none; color: var(--lt-color-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ── Lista de compras ────────────────────────────────────────────────── */
+.prescricao-plano .pp-compras__categoria { display: flex; flex-direction: column; gap: var(--lt-space-1); }
+
+.prescricao-plano .pp-compras__titulo { color: var(--lt-color-text-muted); font-size: var(--lt-text-xs); font-weight: 700; }
+
+.prescricao-plano .pp-compras__item { padding: var(--lt-space-1) 0; border-top: 1px solid var(--lt-color-border); color: var(--lt-color-text); font-size: var(--lt-text-sm); }
+
+.prescricao-plano .pp-compras__item--opcao { color: var(--lt-color-text-muted); }
+
+.prescricao-plano .pp-compras__marca {
+  margin-left: var(--lt-space-2);
+  padding: 0 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+}
+
+/* ── Resumo do dia: rosca e macronutrientes ──────────────────────────
+   Cada macro com rótulo e valor escritos ("x / meta g · g/kg"); a cor do
+   quadrado só liga a linha ao arco da rosca. */
+.prescricao-plano .pp-macros { align-items: stretch; gap: var(--lt-space-3); }
+
+.prescricao-plano .pp-macros__rosca { display: flex; justify-content: center; }
+
+.prescricao-plano .pp-rosca { flex: none; width: 11rem; height: 11rem; }
+
+.prescricao-plano .pp-rosca__trilho { stroke: var(--lt-color-track-tint); }
+
+.prescricao-plano .pp-rosca__valor { fill: var(--lt-color-text); font-family: var(--lt-font-family); font-weight: 700; }
+
+.prescricao-plano .pp-rosca__apoio { fill: var(--lt-color-text-muted); font-family: var(--lt-font-family); font-weight: 600; }
+
+.prescricao-plano .pp-macros__linhas { display: flex; flex-direction: column; min-width: 0; }
+
+.prescricao-plano .pp-macros__linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.125rem var(--lt-space-2);
+  padding: var(--lt-space-2) 0;
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.prescricao-plano .pp-macros__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.prescricao-plano .pp-macros__cor { flex: none; width: 0.75rem; height: 0.75rem; border-radius: 3px; }
+
+.prescricao-plano .pp-macros__valor { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Na coluna única, com espaço, a rosca vai à esquerda das linhas. */
+@container pp-lateral (min-width: 30rem) {
+  .prescricao-plano .pp-macros { flex-direction: row; align-items: center; gap: var(--lt-space-5); }
+  .prescricao-plano .pp-macros__linhas { flex: 1 1 auto; }
+  .prescricao-plano .pp-rosca { width: 8.5rem; height: 8.5rem; }
+}
+
+/* ── Refeição estreita: cada alimento vira um bloco ──────────────────
+   Abaixo de 40rem a tabela de nove colunas não cabe sem rolar de lado.
+   As linhas passam a grade: nome e ações, quantidade e medida, e os quatro
+   números com o próprio rótulo (data-rotulo, só visual: o cabeçalho
+   continua no DOM para o leitor de tela, fora da vista). */
+@container pp-refeicao (max-width: 40rem) {
+  .prescricao-plano .pp-opcao__qtd {
+    flex-wrap: wrap;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .prescricao-plano .pp-opcao__qtd > span {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .prescricao-plano .pp-tabela,
+  .prescricao-plano .pp-tabela > tbody { display: block; width: 100%; }
+
+  .prescricao-plano .pp-tabela > thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .prescricao-plano .pp-item {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(5.75rem, auto);
+    grid-template-areas:
+      "nome nome nome acoes"
+      "qtd medida medida medida"
+      "kcal cho ptn lip";
+    align-items: center;
+    gap: var(--lt-space-1) var(--lt-space-2);
+    padding: var(--lt-space-2) 0;
+    border-bottom: 1px solid var(--lt-color-border);
+  }
+
+  .prescricao-plano .pp-item > td { padding: 0; border: 0; }
+  .prescricao-plano .pp-item > .pp-item__alca { display: none; }
+  .prescricao-plano .pp-item > .pp-item__nome { grid-area: nome; min-width: 0; }
+  .prescricao-plano .pp-item > .pp-item__acoes { grid-area: acoes; }
+  .prescricao-plano .pp-item > .pp-item__qtd { grid-area: qtd; }
+  .prescricao-plano .pp-item > .pp-item__medida { grid-area: medida; white-space: normal; }
+  .prescricao-plano .pp-item > .pp-item__num--kcal { grid-area: kcal; }
+  .prescricao-plano .pp-item > .pp-item__num--cho { grid-area: cho; }
+  .prescricao-plano .pp-item > .pp-item__num--ptn { grid-area: ptn; }
+  .prescricao-plano .pp-item > .pp-item__num--lip { grid-area: lip; }
+  .prescricao-plano .pp-item > .pp-item__equivalencia { grid-column: 1 / -1; text-align: left; }
+  .prescricao-plano .pp-item > .pp-item__num { text-align: left; }
+
+  /* "attr() / ''": o rótulo aparece, mas o leitor de tela não o repete. */
+  .prescricao-plano .pp-item > .pp-item__num::before {
+    content: attr(data-rotulo);
+    content: attr(data-rotulo) / '';
+    display: block;
+    color: var(--lt-color-text-muted);
+    font-size: var(--lt-text-xs);
+    font-weight: 700;
+  }
+
+  .prescricao-plano .pp-item-substitutos,
+  .prescricao-plano .pp-item-substitutos > td { display: block; }
+
+  .prescricao-plano .pp-substitutos { margin-left: 0; }
+}
+
+/* Adequação estreita: nutriente e situação em cima, números embaixo. */
+@container pp-adequacao (max-width: 32rem) {
+  .prescricao-plano .pp-adequacao__tabela,
+  .prescricao-plano .pp-adequacao__tabela > tbody { display: block; width: 100%; }
+
+  .prescricao-plano .pp-adequacao__tabela > thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .prescricao-plano .pp-adequacao__linha {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: var(--lt-space-1) var(--lt-space-2);
+    padding: var(--lt-space-2) 0;
+    border-bottom: 1px solid var(--lt-color-border);
+  }
+
+  .prescricao-plano .pp-adequacao__linha > :is(th, td) { padding: 0; border: 0; text-align: left; }
+  .prescricao-plano .pp-adequacao__linha > th { grid-column: 1 / -1; }
+  .prescricao-plano .pp-adequacao__proporcao { width: auto; }
+  .prescricao-plano .pp-adequacao__cobertura:empty { display: none; }
+
+  .prescricao-plano .pp-adequacao__linha > td[data-rotulo]::before {
+    content: attr(data-rotulo);
+    content: attr(data-rotulo) / '';
+    display: block;
+    color: var(--lt-color-text-muted);
+    font-size: var(--lt-text-xs);
+    font-weight: 700;
+  }
+
+  .prescricao-plano .pp-adequacao__dobra,
+  .prescricao-plano .pp-adequacao__dobra > td { display: block; }
+}
+
+/* Busca estreita: o nome ocupa a linha e os números mostram o rótulo. */
+@container pp-busca (max-width: 30rem) {
+  .prescricao-plano .pp-busca__cabecalho { display: none; }
+  .prescricao-plano .pp-busca__linha { flex-wrap: wrap; padding-top: var(--lt-space-2); padding-bottom: var(--lt-space-2); }
+  .prescricao-plano .pp-busca__col-nome { flex-basis: 100%; white-space: normal; overflow-wrap: anywhere; }
+  .prescricao-plano .pp-busca__col-medida { flex: 1 1 100%; }
+  .prescricao-plano .pp-busca__col-num { flex: 1 1 0; text-align: left; }
+
+  .prescricao-plano .pp-busca__col-num::before {
+    content: attr(data-rotulo);
+    content: attr(data-rotulo) / '';
+    display: block;
+    color: var(--lt-color-text-muted);
+    font-size: var(--lt-text-xs);
+    font-weight: 700;
+  }
+}
+
+/* ── Celular ─────────────────────────────────────────────────────────── */
+@container pp-pagina (max-width: 30rem) {
+  /* As ações do cabeçalho viram uma coluna de alvos largos. */
+  .prescricao-plano .pp-cabecalho__acoes { justify-content: stretch; width: 100%; }
+  .prescricao-plano .pp-cabecalho__acoes > .pp-botao { flex: 1 1 100%; }
+  .prescricao-plano .pp-cabecalho__acoes > .pp-salvo { flex: 1 1 100%; }
+
+  .prescricao-plano .pp-parametros { align-items: stretch; }
+  .prescricao-plano .pp-parametros > .pp-campo { flex: 1 1 100%; }
+  .prescricao-plano .pp-parametros select.pp-controle { width: 100%; min-width: 0; }
+  .prescricao-plano .pp-refeicao__edicao select.pp-controle { width: 100%; min-width: 0; }
+  .prescricao-plano .pp-refeicao__edicao > .pp-campo { flex: 1 1 100%; }
+
+  .prescricao-plano .pp-aviso__acoes { width: 100%; }
+  .prescricao-plano .pp-aviso__acoes > .pp-botao { flex: 1 1 auto; }
+
+  .prescricao-plano .pp-refeicao__rodape > .pp-botao { flex: 1 1 100%; }
+}
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com `prefers-reduced-motion: no-preference`, só transform/opacity,
+   sem `will-change` e sem laço: a marca de largada do título se desenha
+   uma vez, e os painéis que abrem (substituição, busca) assentam. Com
+   movimento reduzido, tudo nasce no estado final. */
+@media (prefers-reduced-motion: no-preference) {
+  .prescricao-plano .pp-cabecalho__titulo::before { animation: pp-largada 420ms var(--lt-ease-out) 120ms backwards; }
+
+  .prescricao-plano .pp-substitutos,
+  .prescricao-plano .pp-busca { animation: pp-assentar 220ms var(--lt-ease-out) backwards; }
+
+  .prescricao-plano .pp-detalhes__resumo::before { transition: transform 160ms var(--lt-ease-out); }
+
+  @keyframes pp-largada { from { transform: skewX(-12deg) scaleY(0); } }
+  @keyframes pp-assentar { from { opacity: 0; transform: translateY(-4px); } }
+}
+
+/* ── Impressão: documento clínico, só o conteúdo ─────────────────────── */
+@media print {
+  .prescricao-plano .pp-lateral__fixo { position: static; }
+  .prescricao-plano :is(.pp-cabecalho, .pp-refeicao, .pp-cartao, .pp-parametros, .pp-estado) { box-shadow: none; border: 1px solid var(--lt-color-border); }
 }

@@ -1,0 +1,108 @@
+- generic [ref=e4]:
+  - generic [ref=e10]:
+    - banner [ref=e11]:
+      - link "LAINES Laines App Sistema de gestão clínico-educacional" [ref=e13] [cursor=pointer]:
+        - /url: "#inicio"
+        - img "LAINES" [ref=e14]
+        - generic [ref=e15]:
+          - strong [ref=e16]: Laines App
+          - generic [ref=e17]: Sistema de gestão clínico-educacional
+    - main [ref=e18]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Liga Acadêmica Interprofissional de Nutrição Esportiva · UFRN
+          - heading "Laines App" [level=1] [ref=e23]
+          - paragraph [ref=e24]: Sistema de gestão clínico-educacional
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - generic [ref=e163]:
+                - img "Painel de gestão" [ref=e164]
+                - generic [ref=e165]:
+                  - strong [ref=e166]: Painel de gestão
+                  - generic [ref=e167]: Administração de pacientes, usuários e projetos
+              - button "Slide anterior" [ref=e32] [cursor=pointer]:
+                - img [ref=e33]
+              - button "Próximo slide" [ref=e35] [cursor=pointer]:
+                - img [ref=e36]
+            - generic [ref=e38]:
+              - button "Ver tela 1" [ref=e39] [cursor=pointer]
+              - button "Ver tela 2" [ref=e40] [cursor=pointer]
+              - button "Ver tela 3" [ref=e41] [cursor=pointer]
+        - complementary [ref=e42]:
+          - generic [ref=e43]:
+            - paragraph [ref=e44]: Acesso ao sistema
+            - heading "Entrar na plataforma" [level=2] [ref=e45]
+            - generic [ref=e46]: Use CPF (somente números) ou e-mail institucional.
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - generic [ref=e49]: CPF ou e-mail
+              - generic [ref=e50]:
+                - img [ref=e51]
+                - textbox "CPF ou e-mail" [ref=e54]:
+                  - /placeholder: usuario@laines.ufrn.br
+            - generic [ref=e55]:
+              - generic [ref=e56]: Senha
+              - generic [ref=e57]:
+                - img [ref=e58]
+                - textbox "Senha Mostrar senha" [ref=e61]:
+                  - /placeholder: Sua senha
+                - button "Mostrar senha" [ref=e62] [cursor=pointer]:
+                  - img [ref=e63]
+            - button "Entrar agora" [ref=e66] [cursor=pointer]:
+              - img [ref=e67]
+              - text: Entrar agora
+            - button "Esqueci minha senha" [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+              - text: Esqueci minha senha
+            - generic [ref=e75]:
+              - paragraph [ref=e76]: Não possui acesso?
+              - button "Solicitar acesso institucional" [ref=e77] [cursor=pointer]:
+                - text: Solicitar acesso institucional
+                - img [ref=e78]
+    - contentinfo [ref=e80]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - img "LAINES" [ref=e83]
+          - generic [ref=e84]:
+            - strong [ref=e85]: Laines App
+            - generic [ref=e86]: Sistema de gestão clínico-educacional
+        - generic [ref=e87]: © 2026 LAINES · UFRN. Ambiente operacional para ensino e cuidado.
+  - dialog "Recuperar senha" [ref=e168]:
+    - generic [ref=e169]:
+      - generic [ref=e170]:
+        - heading "Recuperar senha" [level=3] [ref=e171]
+        - paragraph [ref=e172]: Informe seus dados para redefinir a senha de acesso.
+      - button "Fechar" [active] [ref=e173] [cursor=pointer]:
+        - img [ref=e174]
+    - generic [ref=e177]:
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - generic [ref=e180]: CPF ou e-mail cadastrado
+          - textbox "CPF ou e-mail cadastrado" [ref=e181]:
+            - /placeholder: usuario@laines.ufrn.br ou 00000000000
+        - generic [ref=e182]:
+          - generic [ref=e183]: CPF
+          - textbox "CPF" [ref=e184]:
+            - /placeholder: 000.000.000-00
+        - generic [ref=e185]:
+          - generic [ref=e186]: Data de nascimento
+          - textbox "Data de nascimento" [ref=e187]
+        - generic [ref=e188]:
+          - generic [ref=e189]: Nova senha
+          - generic [ref=e190]:
+            - img [ref=e191]
+            - textbox "Nova senha Mostrar senha" [ref=e194]:
+              - /placeholder: Nova senha
+            - button "Mostrar senha" [ref=e195] [cursor=pointer]:
+              - img [ref=e196]
+        - generic [ref=e199]:
+          - generic [ref=e200]: Confirmar nova senha
+          - generic [ref=e201]:
+            - img [ref=e202]
+            - textbox "Confirmar nova senha Mostrar senha" [ref=e205]:
+              - /placeholder: Repita a nova senha
+            - button "Mostrar senha" [ref=e206] [cursor=pointer]:
+              - img [ref=e207]
+      - generic [ref=e210]:
+        - button "Cancelar" [ref=e211] [cursor=pointer]
+        - button "Redefinir senha" [ref=e212] [cursor=pointer]

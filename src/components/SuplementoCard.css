@@ -4,20 +4,21 @@
   grid-template-areas:
     "nome dose horario status remover"
     "marca lote badge badge badge"
+    "justificativa justificativa justificativa justificativa justificativa"
     "aviso aviso aviso aviso aviso";
   gap: 8px 10px;
   align-items: end;
   padding: 12px 14px;
   border: 1px solid rgba(29, 51, 80, 0.10);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--pn-surface);
   box-shadow: 0 1px 4px rgba(29, 51, 80, 0.06);
   transition: box-shadow 0.2s, border-color 0.18s;
 }
 
-.suplemento-item[data-wada="aprovado"] { border-top: 3px solid #16a34a; }
-.suplemento-item[data-wada="risco"]    { border-top: 3px solid #d97706; }
-.suplemento-item[data-wada="proibido"] { border-top: 3px solid #dc2626; }
+.suplemento-item[data-wada="aprovado"] { border-top: 3px solid var(--pn-ok); }
+.suplemento-item[data-wada="risco"]    { border-top: 3px solid var(--pn-warn); }
+.suplemento-item[data-wada="proibido"] { border-top: 3px solid var(--pn-danger); }
 
 .suplemento-item:hover {
   box-shadow: 0 3px 12px rgba(29, 51, 80, 0.10), 0 1px 4px rgba(29, 51, 80, 0.06);
@@ -36,28 +37,38 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #64748b;
+  color: var(--pn-text-3);
 }
 
 .suplemento-card__field input,
-.suplemento-card__field select {
+.suplemento-card__field select,
+.suplemento-card__field textarea {
   height: 33px;
   padding: 0 9px;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 7px;
   font-size: 0.78rem;
   background: #f3f8fb;
-  color: #1e293b;
+  color: var(--pn-text-1);
   font-family: inherit;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .suplemento-card__field input:focus,
-.suplemento-card__field select:focus {
+.suplemento-card__field select:focus,
+.suplemento-card__field textarea:focus {
   outline: none;
-  border-color: #56ADDB;
-  background: #ffffff;
+  border-color: var(--pn-accent);
+  background: var(--pn-surface);
   box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.14);
+}
+
+.suplemento-card__field textarea {
+  height: auto;
+  min-height: 58px;
+  padding: 8px 9px;
+  resize: vertical;
+  line-height: 1.4;
 }
 
 .suplemento-card__field--nome    { grid-area: nome; }
@@ -66,6 +77,7 @@
 .suplemento-card__field--status  { grid-area: status; }
 .suplemento-card__field--marca   { grid-area: marca; }
 .suplemento-card__field--lote    { grid-area: lote; }
+.suplemento-card__field--justificativa { grid-area: justificativa; }
 
 /* ─── WADA badge ─────────────────────────────────────────── */
 .wada-badge {
@@ -84,19 +96,19 @@
 
 .wada-ok {
   background: #f0fdf4;
-  color: #16a34a;
+  color: var(--pn-ok);
   border-color: rgba(22, 163, 74, 0.22);
 }
 
 .wada-verificar {
   background: #fffbeb;
-  color: #d97706;
+  color: var(--pn-warn);
   border-color: rgba(217, 119, 6, 0.22);
 }
 
 .wada-proibido {
   background: #fff1f2;
-  color: #dc2626;
+  color: var(--pn-danger);
   border-color: rgba(220, 38, 38, 0.20);
 }
 
@@ -110,8 +122,8 @@
   padding: 0;
   border: 1px solid rgba(29, 51, 80, 0.14);
   border-radius: 7px;
-  background: #ffffff;
-  color: #94a3b8;
+  background: var(--pn-surface);
+  color: var(--pn-text-4);
   font-size: 0;
   display: inline-flex;
   align-items: center;
@@ -122,7 +134,7 @@
 
 .btn-remover-suplemento:hover {
   background: #fff1f2;
-  color: #dc2626;
+  color: var(--pn-danger);
   border-color: rgba(220, 38, 38, 0.28);
 }
 
@@ -137,14 +149,14 @@
   border: 1px solid rgba(29, 51, 80, 0.08);
   border-radius: 8px;
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--pn-text-3);
   line-height: 1.5;
 }
 
 .wada-aviso svg {
   flex-shrink: 0;
   margin-top: 1px;
-  color: #56ADDB;
+  color: var(--pn-accent);
 }
 
 /* ─── Responsivo ─────────────────────────────────────────── */
@@ -155,6 +167,7 @@
       "nome dose"
       "horario status"
       "marca lote"
+      "justificativa justificativa"
       "badge remover"
       "aviso aviso";
   }
@@ -174,6 +187,7 @@
       "status"
       "marca"
       "lote"
+      "justificativa"
       "badge"
       "remover"
       "aviso";

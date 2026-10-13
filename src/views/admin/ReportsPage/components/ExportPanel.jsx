@@ -2,12 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, Database, Download, ShieldCheck } from 'lucide-react';
 
+// O rodapé dizia "trilha de exportação alinhada ao uso institucional", mas
+// nenhuma exportação é registrada (docs/implementacao/relatorios-v2/
+// analise.md, seção 4). Agora ele diz só o que o servidor faz.
 const ExportPanel = ({
   exportOptions,
   isExporting,
   onExport,
   isCollapsed = false,
-  onToggleCollapse
+  onToggleCollapse,
+  canChooseAnonymize = false,
+  periodText = ''
 }) => (
   <div className={`export-panel ${isCollapsed ? 'collapsed' : ''}`}>
     <div className="export-panel-background" />
@@ -25,13 +30,14 @@ const ExportPanel = ({
           className={`export-collapse-btn ${isCollapsed ? 'collapsed' : ''}`}
           onClick={onToggleCollapse}
           aria-label={isCollapsed ? 'Expandir painel de exportação' : 'Recolher painel de exportação'}
+          aria-expanded={!isCollapsed}
         >
           <ChevronDown size={16} />
         </button>
       </div>
 
       <p className="export-description">
-        Exporte os dados do recorte atual para uso interno e análise externa.
+        {`Exporte o recorte atual: o período escolhido${periodText ? ` (${periodText})` : ''} e o projeto do filtro.`}
       </p>
 
       {!isCollapsed && (
@@ -63,7 +69,11 @@ const ExportPanel = ({
     <div className="export-footer">
       <div className="export-footer-content">
         <ShieldCheck size={14} />
-        <p>Anonimização opcional e trilha de exportação alinhada ao uso institucional.</p>
+        <p>
+          {canChooseAnonymize
+            ? 'A anonimização segue o interruptor do filtro e vem ligada.'
+            : 'Seu perfil exporta só números agregados, anônimos.'}
+        </p>
       </div>
     </div>
   </div>

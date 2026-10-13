@@ -1,11 +1,31 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertTriangle, Save } from 'lucide-react';
+import { Activity, Save } from 'lucide-react';
 import { Button } from '../../components/ui';
 import EvaluationReadiness from '../../components/Avaliacoes/components/EvaluationReadiness';
 import api from '../../services/api';
 import { toLocalDateInputValue } from '../../utils/dateUtils';
 import '../../components/Avaliacoes/avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../../components/Avaliacoes/base';
 import './AvaliacaoCargaTreino.css';
+
+// Só exibição: o tom da síntese (acwrSynthesis.tone) vira o tipo do aviso.
+const TIPO_AVISO_SINTESE = { risk: 'perigo', warn: 'atencao', ok: 'sucesso', neutral: 'info' };
+
+const INDICE_CARGA = [
+  { id: 'carga-contexto', titulo: 'Contexto esportivo da sessão' },
+  { id: 'carga-periodizacao', titulo: 'Periodização' },
+  { id: 'carga-sessoes', titulo: 'Sessoes da semana' },
+  { id: 'carga-resultados', titulo: 'Resultados' },
+  { id: 'carga-historico', titulo: 'Historico das ultimas 4 semanas' }
+];
 
 const DIAS_SEMANA = [
   { key: 'segunda', label: 'Segunda' },
@@ -27,10 +47,13 @@ const FASE_OPTIONS = [
 ];
 
 const ESTRATEGIA_OPTIONS = [
-  { value: 'train_high', label: 'train_high' },
-  { value: 'train_low', label: 'train_low' },
-  { value: 'periodizacao_linear', label: 'periodizacao_linear' },
-  { value: 'ondulante', label: 'ondulante' }
+  { value: 'carga_regular', label: 'Carga Regular' },
+  { value: 'condicionante_crescente', label: 'Condicionante Crescente' },
+  { value: 'condicionante_decrescente', label: 'Condicionante Decrescente' },
+  { value: 'condicionante_crescente_decrescente', label: 'Condicionante Crescente e Decrescente' },
+  { value: 'condicionante_decrescente_crescente', label: 'Condicionante Decrescente e Crescente' },
+  { value: 'intermediario_regular_decrescente', label: 'Intermediário Regular Decrescente' },
+  { value: 'intermediario_regular_crescente', label: 'Intermediário Regular Crescente' }
 ];
 
 const createSessaoRow = (dia) => ({
@@ -80,8 +103,6 @@ const classifyAcwr = (acwr) => {
   return 'zona_risco';
 };
 
-const normalizeType = (value) => String(value || '').trim().toLowerCase().replace(/-/g, '_');
-
 const toText = (value) => String(value || '').trim();
 
 const normalizeDateValue = (value) => {
@@ -96,31 +117,6 @@ const resolveTimestamp = (value) => {
   const date = value?.toDate ? value.toDate() : new Date(value);
   const ts = date.getTime();
   return Number.isFinite(ts) ? ts : 0;
-};
-
-const findLatestEvaluationByType = (history, tipo, sessaoId) => {
-  const normalizedTipo = normalizeType(tipo);
-  if (!Array.isArray(history)) return null;
-  const normalizedSession = toText(sessaoId);
-  const byType = history.filter((item) => normalizeType(item?.tipo) === normalizedTipo);
-  if (!byType.length) return null;
-  if (!normalizedSession) return byType[0];
-  return byType.find((item) => toText(item?.sessaoId) === normalizedSession) || byType[0];
-};
-
-const resolveRedsClassificacao = (snapshot) => {
-  if (!snapshot || typeof snapshot !== 'object') return '';
-  const sources = [
-    snapshot?.resultados?.classificacaoDE,
-    snapshot?.resultados?.calculated?.classificacaoDE,
-    snapshot?.dados?.classificacaoDE,
-    snapshot?.classificacao
-  ];
-  for (const value of sources) {
-    const token = toText(value).toLowerCase();
-    if (token) return token;
-  }
-  return '';
 };
 
 const humanizeStatusToken = (value) => (
@@ -182,13 +178,12 @@ const AvaliacaoCargaTreino = ({
   readOnly = false,
   moduleSnapshot,
   currentSessionId,
-  onboardingContext,
-  allEvaluationHistory = []
+  onboardingContext
 }) => {
   const [dataAvaliacao, setDataAvaliacao] = useState(() => toLocalDateInputValue(new Date()));
   const [faseAtual, setFaseAtual] = useState('preparacao_geral');
   const [semanasAteCompeticao, setSemanasAteCompeticao] = useState('');
-  const [estrategiaTreinamento, setEstrategiaTreinamento] = useState('periodizacao_linear');
+  const [estrategiaTreinamento, setEstrategiaTreinamento] = useState('carga_regular');
   const [sessoesSemana, setSessoesSemana] = useState(() => buildSessaoSemanaPadrao());
   const [metCatalog, setMetCatalog] = useState([]);
   const [metError, setMetError] = useState('');
@@ -218,45 +213,6 @@ const AvaliacaoCargaTreino = ({
     onboardingContext?.frequenciaSemanal,
     onboardingContext?.modalidadePrincipal
   ]);
-
-  const latestGetSnapshot = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'gasto_energetico_total', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const latestRedsSnapshot = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'triagem_reds', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const redsClassificacao = useMemo(
-    () => resolveRedsClassificacao(latestRedsSnapshot),
-    [latestRedsSnapshot]
-  );
-
-  const integrationSummary = useMemo(() => {
-    const getReady = Boolean(latestGetSnapshot?.id);
-    const redsReady = Boolean(latestRedsSnapshot?.id);
-    const completed = [getReady, redsReady].filter(Boolean).length;
-
-    if (completed === 2) {
-      return {
-        tone: 'ok',
-        title: 'Integrações completas da etapa',
-        message: 'Carga, GET e triagem RED-S estão disponíveis para tomada de decisão clínica.'
-      };
-    }
-    if (completed === 1) {
-      return {
-        tone: 'warn',
-        title: 'Integração parcial da etapa',
-        message: 'Finalize o módulo faltante para fechar o raciocínio entre demanda, gasto e risco energético.'
-      };
-    }
-    return {
-      tone: 'risk',
-      title: 'Integrações pendentes da etapa',
-      message: 'Sem GET e sem triagem RED-S na sessão. O risco funcional pode ser subestimado.'
-    };
-  }, [latestGetSnapshot?.id, latestRedsSnapshot?.id]);
 
   useEffect(() => () => {
     clearTimeout(autoSaveRef.current);
@@ -334,7 +290,7 @@ const AvaliacaoCargaTreino = ({
         ? String(toNumber(dados?.semanasAteCompeticao))
         : ''
     );
-    setEstrategiaTreinamento(String(dados?.estrategiaTreinamento || 'periodizacao_linear'));
+    setEstrategiaTreinamento(String(dados?.estrategiaTreinamento || 'carga_regular'));
     setSessoesSemana((prev) => mergeSessaoRows(prev, sourceRows, metByTipo));
 
     loadedSnapshotIdRef.current = snapshotId;
@@ -462,27 +418,13 @@ const AvaliacaoCargaTreino = ({
       label: 'Historico ACWR',
       status: Number.isFinite(acwr) ? 'ok' : historico4Semanas.length > 0 ? 'warning' : 'pending',
       value: Number.isFinite(acwr) ? formatNumber(acwr, 2) : `${historico4Semanas.length}/4 semanas`
-    },
-    {
-      key: 'reds',
-      label: 'RED-S na sessao',
-      status: latestRedsSnapshot?.id
-        ? redsClassificacao === 'reds_estabelecido'
-          ? 'danger'
-          : redsClassificacao === 'risco_relativo'
-            ? 'warning'
-            : 'ok'
-        : 'pending',
-      value: latestRedsSnapshot?.id ? (humanizeStatusToken(redsClassificacao) || 'preenchido') : 'pendente'
     }
   ]), [
     acwr,
     cargaSemanaAtual,
     hasSessaoValida,
     hasSessionInput,
-    historico4Semanas.length,
-    latestRedsSnapshot?.id,
-    redsClassificacao
+    historico4Semanas.length
   ]);
 
   const payload = useMemo(() => ({
@@ -627,22 +569,19 @@ const AvaliacaoCargaTreino = ({
     }));
   };
 
+  // Os cartões antigos viraram seções com título; o cartão de parâmetros e
+  // o de resultados, que não tinham título, ganharam "Periodização" e
+  // "Resultados". A ordem continua a mesma.
   return (
-    <div className={`carga-treino${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-card carga-treino__header-card">
-        <div className="eval-header">
-          <div className="eval-icon">
-            <Activity size={22} />
-          </div>
-          <div>
-            <h3 className="eval-title">Carga de Treino e Periodizacao</h3>
-            <p className="eval-subtitle">ACWR, monotonia e strain semanal</p>
-          </div>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`carga-treino${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Carga de Treino e Periodizacao"
+      descricao="ACWR, monotonia e strain semanal"
+      icone={<Activity size={22} />}
+    >
+      <AvaliacaoIndice itens={INDICE_CARGA} />
 
-      <div className="eval-card carga-treino__context-card">
-        <h4>Contexto esportivo da sessão</h4>
+      <AvaliacaoSecao id="carga-contexto" titulo="Contexto esportivo da sessão">
         <div className="carga-treino__context-grid">
           <div>
             <span>Modalidade</span>
@@ -657,23 +596,13 @@ const AvaliacaoCargaTreino = ({
             <strong>{Number.isFinite(onboardingEsportivo.duracaoSessao) ? `${onboardingEsportivo.duracaoSessao} min` : 'Nao informada'}</strong>
           </div>
         </div>
-        <div className={`carga-treino__integration carga-treino__integration--${integrationSummary.tone}`}>
-          <strong>{integrationSummary.title}</strong>
-          <span>{integrationSummary.message}</span>
-          <small>
-            GET: {latestGetSnapshot?.id ? 'ok' : 'pendente'}
-            {' | '}
-            RED-S: {latestRedsSnapshot?.id ? (humanizeStatusToken(redsClassificacao) || 'preenchido') : 'pendente'}
-          </small>
-        </div>
-      </div>
+      </AvaliacaoSecao>
 
       <EvaluationReadiness items={readinessItems} />
 
-      <div className="eval-card carga-treino__params-card">
-        <div className="carga-treino__params-grid">
-          <label className="eval-label">
-            Data da semana
+      <AvaliacaoSecao id="carga-periodizacao" titulo="Periodização">
+        <div className="av-grade">
+          <Campo rotulo="Data da semana">
             <input
               type="date"
               className="eval-input"
@@ -681,9 +610,8 @@ const AvaliacaoCargaTreino = ({
               onChange={(event) => setDataAvaliacao(event.target.value)}
               disabled={readOnly}
             />
-          </label>
-          <label className="eval-label">
-            Fase atual
+          </Campo>
+          <Campo rotulo="Fase atual">
             <select
               className="eval-input"
               value={faseAtual}
@@ -694,9 +622,8 @@ const AvaliacaoCargaTreino = ({
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </select>
-          </label>
-          <label className="eval-label">
-            Semanas ate proxima competicao
+          </Campo>
+          <Campo rotulo="Semanas ate proxima competicao">
             <input
               type="number"
               min="0"
@@ -707,9 +634,8 @@ const AvaliacaoCargaTreino = ({
               disabled={readOnly}
               placeholder="Ex.: 6"
             />
-          </label>
-          <label className="eval-label">
-            Estrategia
+          </Campo>
+          <Campo rotulo="Período de Microciclo">
             <select
               className="eval-input"
               value={estrategiaTreinamento}
@@ -720,13 +646,12 @@ const AvaliacaoCargaTreino = ({
                 <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </select>
-          </label>
+          </Campo>
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-card carga-treino__sessions-card">
-        <h4>Sessoes da semana</h4>
-        {metError && <p className="carga-treino__warning">{metError}</p>}
+      <AvaliacaoSecao id="carga-sessoes" titulo="Sessoes da semana">
+        {metError && <AvisoAvaliacao tipo="atencao" className="carga-treino__warning">{metError}</AvisoAvaliacao>}
         <details className="carga-treino__pse-guide">
           <summary>Escala de Borg modificada — PSE (0-10)</summary>
           <ul className="carga-treino__pse-scale">
@@ -741,57 +666,72 @@ const AvaliacaoCargaTreino = ({
             <li><span>10</span> Máximo — esforço absoluto</li>
           </ul>
         </details>
-        <div className="carga-treino__table-wrap">
-          <table className="carga-treino__table">
+        {/* Tabela semântica: cabeçalhos de coluna e o dia como cabeçalho de
+            linha. Cada campo tem rótulo oculto "linha, coluna" com os textos
+            da própria tabela. Em tela estreita a tabela rola dentro do
+            invólucro, que recebe foco pelo teclado e o nome da seção. */}
+        <div
+          className="carga-treino__table-wrap"
+          role="region"
+          aria-labelledby="carga-sessoes-titulo"
+          tabIndex={0}
+        >
+          <table className="carga-treino__table" aria-labelledby="carga-sessoes-titulo">
             <thead>
               <tr>
-                <th>Dia</th>
-                <th>Tipo</th>
-                <th>Duracao (min)</th>
-                <th>PSE (0-10)</th>
-                <th>MET (auto)</th>
-                <th>Carga sessao</th>
+                <th scope="col">Dia</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Duracao (min)</th>
+                <th scope="col">PSE (0-10)</th>
+                <th scope="col">MET (auto)</th>
+                <th scope="col">Carga sessao</th>
               </tr>
             </thead>
             <tbody>
               {sessoesNormalizadas.map((row) => (
                 <tr key={row.dia}>
-                  <td>{findDiaLabel(row.dia)}</td>
+                  <th scope="row">{findDiaLabel(row.dia)}</th>
                   <td>
-                    <select
-                      className="eval-select"
-                      value={row.tipo || ''}
-                      onChange={(event) => updateSessaoField(row.dia, 'tipo', event.target.value)}
-                      disabled={readOnly}
-                    >
-                      <option value="">Selecione</option>
-                      {tipoOptions.map((tipo) => (
-                        <option key={tipo} value={tipo}>{tipo}</option>
-                      ))}
-                    </select>
+                    <Campo rotulo={`${findDiaLabel(row.dia)}, Tipo`} rotuloOculto>
+                      <select
+                        className="eval-select"
+                        value={row.tipo || ''}
+                        onChange={(event) => updateSessaoField(row.dia, 'tipo', event.target.value)}
+                        disabled={readOnly}
+                      >
+                        <option value="">Selecione</option>
+                        {tipoOptions.map((tipo) => (
+                          <option key={tipo} value={tipo}>{tipo}</option>
+                        ))}
+                      </select>
+                    </Campo>
                   </td>
                   <td>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      className="eval-input"
-                      value={row.duracaoMin ?? ''}
-                      onChange={(event) => updateSessaoField(row.dia, 'duracaoMin', event.target.value)}
-                      disabled={readOnly}
-                    />
+                    <Campo rotulo={`${findDiaLabel(row.dia)}, Duracao (min)`} rotuloOculto>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        className="eval-input"
+                        value={row.duracaoMin ?? ''}
+                        onChange={(event) => updateSessaoField(row.dia, 'duracaoMin', event.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
                   </td>
                   <td>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="10"
-                      className="eval-input"
-                      value={row.pse ?? ''}
-                      onChange={(event) => updateSessaoField(row.dia, 'pse', event.target.value)}
-                      disabled={readOnly}
-                    />
+                    <Campo rotulo={`${findDiaLabel(row.dia)}, PSE (0-10)`} rotuloOculto>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="10"
+                        className="eval-input"
+                        value={row.pse ?? ''}
+                        onChange={(event) => updateSessaoField(row.dia, 'pse', event.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
                   </td>
                   <td>{Number.isFinite(row.metValue) ? formatNumber(row.metValue, 1) : '--'}</td>
                   <td>{Number.isFinite(row.cargaSessao) ? formatNumber(row.cargaSessao, 1) : '--'}</td>
@@ -800,37 +740,51 @@ const AvaliacaoCargaTreino = ({
             </tbody>
           </table>
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-card carga-treino__results-card">
-        <div className="carga-treino__results-grid">
-          <MetricCard label="Carga semana atual" value={cargaSemanaAtual} />
-          <MetricCard label="Media ultimas 4 semanas" value={mediaCarga4Semanas} />
-          <MetricCard label="ACWR" value={acwr} />
-          <MetricCard label="Monotonia" value={monotonia} />
-          <MetricCard label="Strain" value={strain} />
-          <MetricCard label="Classificacao ACWR" value={classificacaoAcwr || '--'} textual />
+      {/* Mesmas casas de antes (formatNumber); "—" quando o valor não existe,
+          no lugar do "--". A carga da semana mostra "—" enquanto nenhuma
+          sessão foi preenchida (o cálculo e o payload continuam com 0). A
+          classificação do ACWR vai escrita no resultado; o tom é o da síntese. */}
+      <AvaliacaoSecao id="carga-resultados" titulo="Resultados">
+        <div className="av-resultados">
+          <ResultadoCalculado
+            rotulo="Carga semana atual"
+            valor={hasSessionInput && Number.isFinite(cargaSemanaAtual) ? formatNumber(cargaSemanaAtual, 2) : null}
+          />
+          <ResultadoCalculado
+            rotulo="Media ultimas 4 semanas"
+            valor={Number.isFinite(mediaCarga4Semanas) ? formatNumber(mediaCarga4Semanas, 2) : null}
+          />
+          <ResultadoCalculado
+            rotulo="ACWR"
+            valor={Number.isFinite(acwr) ? formatNumber(acwr, 2) : null}
+            classificacao={classificacaoAcwr ? humanizeStatusToken(classificacaoAcwr) : null}
+            tom={acwrSynthesis.tone}
+          />
+          <ResultadoCalculado rotulo="Monotonia" valor={Number.isFinite(monotonia) ? formatNumber(monotonia, 2) : null} />
+          <ResultadoCalculado rotulo="Strain" valor={Number.isFinite(strain) ? formatNumber(strain, 2) : null} />
+          <ResultadoCalculado className="carga-treino__resultado--texto" rotulo="Classificacao ACWR" valor={classificacaoAcwr || null} />
         </div>
         {classificacaoAcwr === 'zona_risco' && (
-          <div className="carga-treino__alert">
-            <AlertTriangle size={16} />
-            <span>ACWR em zona de risco (&gt; 1.5). Ajuste progressao de carga e recuperacao.</span>
-          </div>
+          <AvisoAvaliacao tipo="perigo" className="carga-treino__alert">
+            ACWR em zona de risco (&gt; 1.5). Ajuste progressao de carga e recuperacao.
+          </AvisoAvaliacao>
         )}
-        <div className={`carga-treino__synthesis carga-treino__synthesis--${acwrSynthesis.tone}`}>
-          <strong>Sintese operacional</strong>
+        <AvisoAvaliacao
+          tipo={TIPO_AVISO_SINTESE[acwrSynthesis.tone] || 'info'}
+          titulo="Sintese operacional"
+          className={`carga-treino__synthesis carga-treino__synthesis--${acwrSynthesis.tone}`}
+        >
           <p>{acwrSynthesis.message}</p>
           <small>
             Classificacao atual: {classificacaoAcwr ? humanizeStatusToken(classificacaoAcwr) : 'nao classificada'}
-            {' | '}
-            Proximo passo: {latestRedsSnapshot?.id ? 'usar RED-S para conduta' : 'preencher triagem RED-S'}
           </small>
-        </div>
-      </div>
+        </AvisoAvaliacao>
+      </AvaliacaoSecao>
 
-      <div className="eval-card carga-treino__history-card">
-        <h4>Historico das ultimas 4 semanas</h4>
-        {histError && <p className="carga-treino__warning">{histError}</p>}
+      <AvaliacaoSecao id="carga-historico" titulo="Historico das ultimas 4 semanas">
+        {histError && <AvisoAvaliacao tipo="atencao" className="carga-treino__warning">{histError}</AvisoAvaliacao>}
         {!historico4Semanas.length ? (
           <p className="carga-treino__empty">ACWR indisponivel: historico semanal insuficiente. Sera calculado automaticamente apos novas semanas registradas.</p>
         ) : (
@@ -839,6 +793,7 @@ const AvaliacaoCargaTreino = ({
               <div key={item.id || index} className="carga-treino__bar-item">
                 <div
                   className="carga-treino__bar"
+                  aria-hidden="true"
                   style={{
                     height: `${Math.max(8, calculateBarHeight(item.cargaSemanaAtual, historico4Semanas))}%`
                   }}
@@ -849,11 +804,15 @@ const AvaliacaoCargaTreino = ({
             ))}
           </div>
         )}
-      </div>
+      </AvaliacaoSecao>
 
-      {error && <p className="carga-treino__error">{error}</p>}
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="carga-treino__error">{error}</AvisoAvaliacao>}
 
-      <div className="carga-treino__actions">
+      <BarraAcoesAvaliacao
+        className="carga-treino__actions"
+        status={saveStatus}
+        textosStatus={{ saved: 'Salvo com sucesso.', error: 'Falha ao salvar.' }}
+      >
         <Button
           type="button"
           variant="primary"
@@ -863,11 +822,8 @@ const AvaliacaoCargaTreino = ({
           <Save size={16} />
           Salvar carga de treino
         </Button>
-        {saveStatus === 'saving' && <span>Salvando...</span>}
-        {saveStatus === 'saved' && <span>Salvo com sucesso.</span>}
-        {saveStatus === 'error' && <span>Falha ao salvar.</span>}
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+    </AvaliacaoModulo>
   );
 };
 
@@ -930,13 +886,4 @@ function calculateBarHeight(value, rows) {
   const numeric = toNumber(value);
   if (!Number.isFinite(numeric)) return 8;
   return Math.min(100, Math.max(8, (numeric / max) * 100));
-}
-
-function MetricCard({ label, value, textual = false }) {
-  return (
-    <article className="carga-treino__metric-card">
-      <span>{label}</span>
-      <strong>{textual ? value : formatNumber(value, 2)}</strong>
-    </article>
-  );
 }

@@ -108,7 +108,7 @@ export class UsersController {
       parsedLimit,
       parsedOffset
     );
-    return members.map((member) => this.projectMember(member as unknown as Record<string, unknown>, req.user));
+    return members.map((member) => this.projectMember({ ...member }, req.user));
   }
 
   @UseGuards(JwtAuthGuard)
@@ -142,7 +142,7 @@ export class UsersController {
     if (!user) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
-    return this.projectMember(user as unknown as Record<string, unknown>, req.user);
+    return this.projectMember({ ...user }, req.user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

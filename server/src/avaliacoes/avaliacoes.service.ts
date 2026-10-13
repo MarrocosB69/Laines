@@ -8,7 +8,7 @@ import {
   UnprocessableEntityException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, IsNull, Repository, SelectQueryBuilder } from 'typeorm';
 import { Avaliacao } from './avaliacao.entity';
 import { AvaliacaoSessao } from './avaliacao-sessao.entity';
 import { CriarAvaliacaoDto } from './dto/criar-avaliacao.dto';
@@ -16,6 +16,7 @@ import { AtualizarAvaliacaoDto } from './dto/atualizar-avaliacao.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { ObservabilityService } from '../observability/observability.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { Paciente } from '../pacientes/paciente.entity';
 import { User } from '../users/user.entity';
 import {
@@ -25,6 +26,15 @@ import {
   isStudentMemberRole,
   normalizeRole
 } from '../auth/access-control';
+import {
+  areasRequeridasPorTipo,
+  auditManagementAccess,
+  clinicalScopeCondition,
+  normalizeAreaToken,
+  resolveCaseAreas,
+  resolveClinicalLink,
+  studentLookupFromRepository
+} from '../auth/authorization';
 import { normalizeAvaliacaoPayload } from './avaliacao-normalizer';
 import { AVALIACAO_REGISTRY_BY_TIPO, normalizeAvaliacaoTipo } from './evaluation-registry';
 import { ClinicalAlertsService } from './clinical-alerts.service';
@@ -47,6 +57,7 @@ const AVALIACAO_STATUS_TRANSITIONS: Record<AvaliacaoStatus, readonly AvaliacaoSt
 };
 
 const PENDENCIAS_OBRIGATORIAS = ['anamnese_inicial', 'perimetros', 'avaliacao_clinica'] as const;
+const PENDENCIAS_OBRIGATORIAS_SET = new Set<string>(PENDENCIAS_OBRIGATORIAS);
 const MIN_COMPLETUDE_TO_FINALIZE = 80;
 const ATHLETE_SELF_REPORT_TYPES = new Set([
   'alimentar',
@@ -63,6 +74,17 @@ const ATHLETE_SENSITIVE_RESULT_TYPES = new Set([
   'triagem_reds',
   'psicologia',
   'exames_laboratoriais'
+]);
+const REVIEW_ALLOWED_ROLES = new Set([
+  'professor',
+  'profissional',
+  'pesquisador',
+  'colaborador',
+  'aluno',
+  'admin',
+  'coordenacao',
+  'presidente',
+  'vice'
 ]);
 const COMPLETUDE_FIELD_ALIASES: Record<string, string[]> = {
   sexobiologico: ['sexo'],
@@ -109,7 +131,8 @@ export class AvaliacoesService {
     private realtime: RealtimeGateway,
     @Optional() private readonly observability?: ObservabilityService,
     @Optional() private readonly auditoria?: AuditoriaService,
-    @Optional() private readonly clinicalAlerts?: ClinicalAlertsService
+    @Optional() private readonly clinicalAlerts?: ClinicalAlertsService,
+    @Optional() private readonly notificacoes?: NotificacoesService
   ) {}
 
   private recordQuery(label: string, startedAt: number, context = 'GET /avaliacoes') {
@@ -498,6 +521,8 @@ export class AvaliacoesService {
       classificacao: canExposeClassification ? avaliacao.classificacao || null : null,
       classificacaoLabel: canExposeClassification ? avaliacao.classificacaoLabel || null : null,
       pontuacaoEBIA: Number.isFinite(avaliacao.pontuacaoEBIA) ? avaliacao.pontuacaoEBIA : null,
+      revisadoEm: avaliacao.revisadoEm || null,
+      revisadoPorNome: avaliacao.revisadoPorNome || null,
       meta: this.pickAthletePublicMeta(avaliacao.meta),
       dados: publicData,
       resultados: publicResults,
@@ -510,27 +535,92 @@ export class AvaliacoesService {
     return Number.isFinite(filtros.limit) && !filtros.pacienteId;
   }
 
-  private canAccessViaPaciente(user: AuthenticatedUser, paciente: Paciente | null) {
-    if (!paciente) return false;
+  // Contrato unico (UPD-12).
+  private async canAccessViaPaciente(user: AuthenticatedUser, paciente: Paciente | null) {
+    return (await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo))) !== null;
+  }
+
+  private applyAccessiblePacienteScope(
+    qb: SelectQueryBuilder<Avaliacao>,
+    user: AuthenticatedUser
+  ) {
+    if (!user.id) {
+      qb.andWhere('1 = 0');
+      return;
+    }
+
+    const alunosSupervisionadosSubQuery = this.usersRepo
+      .createQueryBuilder('aluno_supervisionado')
+      .select('aluno_supervisionado.id')
+      .where('(aluno_supervisionado.supervisorId = :userId OR aluno_supervisionado.profissionalId = :userId)')
+      .andWhere('aluno_supervisionado.deletedAt IS NULL');
+
+    const equipePacientesSubQuery = this.pacientesRepo
+      .createQueryBuilder('paciente')
+      .select('paciente.id')
+      .where(
+        clinicalScopeCondition({ alias: 'paciente', user, supervisedStudentsSubquery: alunosSupervisionadosSubQuery.getQuery() }) || '1 = 0',
+        { userId: user.id }
+      );
+    qb.andWhere(
+      `avaliacao.pacienteId IN (${equipePacientesSubQuery.getQuery()})`
+    );
+    qb.setParameters({
+      ...alunosSupervisionadosSubQuery.getParameters(),
+      ...equipePacientesSubQuery.getParameters()
+    });
+  }
+
+  private canUseEvaluationAuthor(
+    user: AuthenticatedUser,
+    paciente: Paciente,
+    alunoId?: string | null
+  ) {
     const role = normalizeRole(user.role);
-    if (hasGlobalAccess(role)) return true;
-
-    if (isStudentMemberRole(role)) {
-      return paciente.alunoResponsavelId === user.id
-        || (paciente.equipeTecnicaIds || []).includes(user.id);
-    }
-
-    if (hasTeamScopedAccess(role)) {
-      return paciente.professorSupervisorId === user.id
-        || paciente.alunoResponsavelId === user.id
-        || (paciente.equipeTecnicaIds || []).includes(user.id);
-    }
-
+    if (!alunoId) return true;
     if (role === 'atleta') {
-      return paciente.atletaUserId === user.id;
+      return paciente.alunoResponsavelId === alunoId;
+    }
+    if (isStudentMemberRole(role)) {
+      return alunoId === user.id;
+    }
+    return true;
+  }
+
+  // Regra de area vive no contrato unico (UPD-12); aqui so ha delegacao.
+  private normalizeAreaToken(value?: string | null): string | null {
+    return normalizeAreaToken(value);
+  }
+
+  private resolveEvaluationAreas(tipo?: string | null): string[] {
+    return areasRequeridasPorTipo(normalizeAvaliacaoTipo(String(tipo || '')));
+  }
+
+  private getCaseEditableAreas(user: AuthenticatedUser, paciente: Paciente): Set<string> {
+    return resolveCaseAreas(user, paciente);
+  }
+
+  private assertCaseAreaEditAccess(user: AuthenticatedUser, paciente: Paciente, tipo?: string | null): void {
+    const role = normalizeRole(user.role);
+    if (hasGlobalAccess(role) || role === 'atleta') return;
+    if (!isStudentMemberRole(role)) {
+      throw new ForbiddenException('Sem permissao para criar ou editar avaliacao.');
     }
 
-    return false;
+    const userAreas = this.getCaseEditableAreas(user, paciente);
+    const requiredAreas = this.resolveEvaluationAreas(tipo);
+    if (!requiredAreas.some((area) => userAreas.has(area))) {
+      throw new ForbiddenException('Formulario restrito a area de atuacao do membro neste caso.');
+    }
+  }
+
+  async findEditableById(id: string, user: AuthenticatedUser) {
+    const avaliacao = await this.findById(id, user);
+    if (!avaliacao) return null;
+    const paciente = await this.pacientesRepo.findOne({ where: { id: avaliacao.pacienteId } });
+    if (!paciente) return null;
+    this.assertCaseAreaEditAccess(user, paciente, avaliacao.tipo);
+    return avaliacao;
   }
 
   private asRecord(value: unknown): JsonObject {
@@ -867,15 +957,19 @@ export class AvaliacoesService {
     category: 'in_natura' | 'minimamente_processados' | 'processados' | 'ultraprocessados',
     sources: JsonObject[]
   ) {
+    // A tela do recordatório 24h envia as chaves no singular (WI-013).
+    const keys = category === 'in_natura' ? [category] : [category, category.replace(/s$/, '')];
     for (const source of sources) {
-      const raw = source[category];
-      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-        const nested = this.asRecord(raw);
-        const nestedEnergy = this.toNumber(this.pickFirstValue(nested.energiaTotal, nested.kcal, nested.value));
-        if (Number.isFinite(nestedEnergy)) return nestedEnergy;
+      for (const key of keys) {
+        const raw = source[key];
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+          const nested = this.asRecord(raw);
+          const nestedEnergy = this.toNumber(this.pickFirstValue(nested.energiaTotal, nested.kcal, nested.value));
+          if (Number.isFinite(nestedEnergy)) return nestedEnergy;
+        }
+        const numeric = this.toNumber(raw);
+        if (Number.isFinite(numeric)) return numeric;
       }
-      const numeric = this.toNumber(raw);
-      if (Number.isFinite(numeric)) return numeric;
     }
     return null;
   }
@@ -1072,11 +1166,11 @@ export class AvaliacoesService {
 
     if (!Number.isFinite(disponibilidadeEnergetica) || !Number.isFinite(scoreRastreio) || !classificacaoDE) {
       throw new BadRequestException(
-        'Triagem RED-S exige disponibilidade energetica, score de rastreio e classificacao para finalizar.'
+        'Triagem de Disponibilidade Energetica exige disponibilidade energetica, score de rastreio e classificacao para finalizar.'
       );
     }
     if (!sexo) {
-      throw new BadRequestException('Triagem RED-S exige sexo biologico para validar o questionario de rastreio.');
+      throw new BadRequestException('Triagem de Disponibilidade Energetica exige sexo biologico para validar o questionario de rastreio.');
     }
     if (sexo === 'female') {
       const leafAnswers = this.pickFirstValue(
@@ -1089,7 +1183,7 @@ export class AvaliacoesService {
       assertQuestionnaireComplete(
         leafAnswers,
         Array.from({ length: 12 }, (_, index) => `leaf_q${index + 1}`),
-        'Triagem RED-S exige LEAF-Q completo para finalizar.'
+        'Triagem de Disponibilidade Energetica exige LEAF-Q completo para finalizar.'
       );
     }
     if (sexo === 'male') {
@@ -1103,7 +1197,7 @@ export class AvaliacoesService {
       assertQuestionnaireComplete(
         leaAnswers,
         Array.from({ length: 13 }, (_, index) => `lea_q${index + 1}`),
-        'Triagem RED-S exige LEA-Q13 completo para finalizar.'
+        'Triagem de Disponibilidade Energetica exige LEA-Q13 completo para finalizar.'
       );
     }
   }
@@ -1470,9 +1564,14 @@ export class AvaliacoesService {
     if (role === 'atleta' && !hasScopeFilters) {
       throw new BadRequestException('Perfil atleta deve informar pacienteId ou projetoId para listar avaliacoes.');
     }
-    if (!hasGlobalAccess(role)) {
+    if (!hasGlobalAccess(role) && role !== 'coord_atendimento') {
       if (isStudentMemberRole(role)) {
-        qb.andWhere('avaliacao.alunoId = :userId', { userId: user.id });
+        if (filtros.pacienteId) {
+          this.applyAccessiblePacienteScope(qb, user);
+        } else {
+          qb.andWhere('avaliacao.alunoId = :userId', { userId: user.id });
+          this.applyAccessiblePacienteScope(qb, user);
+        }
       } else if (role === 'atleta') {
         const atletaPacientesSubQuery = this.pacientesRepo
           .createQueryBuilder('paciente')
@@ -1483,17 +1582,7 @@ export class AvaliacoesService {
         );
         qb.setParameters(atletaPacientesSubQuery.getParameters());
       } else if (hasTeamScopedAccess(role)) {
-        const equipePacientesSubQuery = this.pacientesRepo
-          .createQueryBuilder('paciente')
-          .select('paciente.id')
-          .where(
-            '(paciente.professorSupervisorId = :userId OR paciente.alunoResponsavelId = :userId OR :userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[])))',
-            { userId: user.id }
-          );
-        qb.andWhere(
-          `avaliacao.pacienteId IN (${equipePacientesSubQuery.getQuery()})`
-        );
-        qb.setParameters(equipePacientesSubQuery.getParameters());
+        this.applyAccessiblePacienteScope(qb, user);
       } else {
         qb.andWhere('1 = 0');
       }
@@ -1586,12 +1675,16 @@ export class AvaliacoesService {
     if (!avaliacao) return null;
 
     const role = normalizeRole(user.role);
-    if (hasGlobalAccess(role)) return avaliacao;
-    if (isStudentMemberRole(role) && avaliacao.alunoId === user.id) return avaliacao;
-
+    if (hasGlobalAccess(role)) {
+      await auditManagementAccess(this.auditoria, user, 'avaliacoes', avaliacao.id, { acao: 'leitura_avaliacao', pacienteId: avaliacao.pacienteId });
+      return avaliacao;
+    }
     const paciente = await this.pacientesRepo.findOne({ where: { id: avaliacao.pacienteId } });
-    if (!this.canAccessViaPaciente(user, paciente)) {
+    if (!(await this.canAccessViaPaciente(user, paciente))) {
       return null;
+    }
+    if (role === 'coord_atendimento') {
+      await auditManagementAccess(this.auditoria, user, 'avaliacoes', avaliacao.id, { acao: 'leitura_avaliacao', pacienteId: avaliacao.pacienteId });
     }
     return avaliacao;
   }
@@ -1616,12 +1709,15 @@ export class AvaliacoesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    if (!hasGlobalAccess(role) && !this.canAccessViaPaciente(user, paciente)) {
+    if (!hasGlobalAccess(role) && !(await this.canAccessViaPaciente(user, paciente))) {
       throw new ForbiddenException('Sem permissao para avaliar este paciente.');
     }
-    if (paciente.alunoResponsavelId) {
-      if (payload.alunoId && payload.alunoId !== paciente.alunoResponsavelId) {
-        throw new ForbiddenException('Avaliacao deve usar o aluno responsavel vinculado ao paciente.');
+    if (isStudentMemberRole(role)) {
+      this.assertCaseAreaEditAccess(user, paciente, payload.tipo);
+    }
+    if (role !== 'atleta') {
+      if (!this.canUseEvaluationAuthor(user, paciente, payload.alunoId)) {
+        throw new ForbiddenException('Sem permissao para registrar avaliacao com este aluno autor.');
       }
       payload.alunoId = payload.alunoId || paciente.alunoResponsavelId;
     }
@@ -1777,6 +1873,258 @@ export class AvaliacoesService {
     return saved;
   }
 
+  async marcarComoRevisado(id: string, user: AuthenticatedUser): Promise<Avaliacao> {
+    const avaliacao = await this.findByIdRaw(id);
+    if (!avaliacao) {
+      throw new NotFoundException('Avaliacao nao encontrada.');
+    }
+
+    const role = normalizeRole(user.role);
+    if (!REVIEW_ALLOWED_ROLES.has(role)) {
+      throw new ForbiddenException('Sem permissao para revisar avaliacao.');
+    }
+
+    const paciente = await this.pacientesRepo.findOne({ where: { id: avaliacao.pacienteId } });
+    if (!(await this.canAccessViaPaciente(user, paciente))) {
+      throw new NotFoundException('Avaliacao nao encontrada.');
+    }
+
+    const reviewedAt = new Date().toISOString();
+    const merged = this.repo.merge(avaliacao, {
+      status: 'finalizada',
+      revisadoEm: reviewedAt,
+      revisadoPorId: user.id,
+      revisadoPorNome: user.name || user.email || null,
+      meta: {
+        ...this.asRecord(avaliacao.meta),
+        aguardandoRevisao: false
+      }
+    });
+
+    const saved = await this.repo.save(merged);
+    await this.syncSessaoStatus(saved.sessaoId);
+    this.realtime.emit('avaliacoes.updated', saved);
+    return saved;
+  }
+
+  /*
+   * UPD-17: devolve a avaliacao ao aluno com orientacao. Somente quem tem
+   * vinculo de supervisao (supervisor, supervisao_aluno) ou gestao devolve;
+   * o aluno responsavel nao devolve o proprio item e o atleta nao devolve nada
+   * (ambos resolvem para um ClinicalLink fora da lista permitida abaixo).
+   */
+  async devolver(id: string, observacao: string, user: AuthenticatedUser): Promise<Avaliacao> {
+    const texto = String(observacao || '').trim();
+    if (texto.length < 5 || texto.length > 1000) {
+      throw new BadRequestException('Observacao deve ter entre 5 e 1000 caracteres.');
+    }
+
+    const avaliacao = await this.findByIdRaw(id);
+    if (!avaliacao) {
+      throw new NotFoundException('Avaliacao nao encontrada.');
+    }
+
+    const paciente = await this.pacientesRepo.findOne({ where: { id: avaliacao.pacienteId } });
+    const link = await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+    if (!link) {
+      throw new NotFoundException('Avaliacao nao encontrada.');
+    }
+    if (link !== 'gestao' && link !== 'supervisor' && link !== 'supervisao_aluno') {
+      throw new ForbiddenException('Apenas supervisor, profissional vinculado ou gestao podem devolver esta avaliacao.');
+    }
+
+    const priorMeta = this.asRecord(avaliacao.meta);
+    if (!priorMeta.aguardandoRevisao) {
+      throw new BadRequestException('Esta avaliacao nao esta aguardando revisao.');
+    }
+
+    this.assertStatusTransition(avaliacao.status as AvaliacaoStatus, 'rascunho');
+
+    const now = new Date().toISOString();
+    // Autoria e data fixadas pelo servidor; o payload nao informa quem devolveu.
+    const devolucao = {
+      porId: user.id,
+      porNome: user.name || user.email || null,
+      em: now,
+      observacao: texto
+    };
+    const historico = this.asArray(priorMeta.historicoDevolucoes);
+
+    const nextMeta: JsonObject = {
+      ...priorMeta,
+      aguardandoRevisao: false,
+      devolucao,
+      historicoDevolucoes: [...historico, devolucao]
+    };
+    // A pergunta do aluno (meta.observacaoEnvio, UPD-17) foi respondida pela
+    // devolucao; nao deve sobreviver ao proximo envio como se fosse nova.
+    delete nextMeta.observacaoEnvio;
+
+    const merged = this.repo.merge(avaliacao, {
+      status: 'rascunho',
+      meta: nextMeta
+    });
+
+    const saved = await this.repo.save(merged);
+    await this.syncSessaoStatus(saved.sessaoId);
+    this.realtime.emit('avaliacoes.updated', saved);
+
+    if (saved.alunoId) {
+      try {
+        await this.notificacoes?.createForUsers([saved.alunoId], {
+          titulo: 'Avaliacao devolvida',
+          mensagem: 'Uma avaliacao foi devolvida com orientacao; abra o prontuario.',
+          tipo: 'alerta_clinico'
+        });
+      } catch {
+        // Best-effort — nao interrompe a devolucao.
+      }
+    }
+
+    return saved;
+  }
+
+  /*
+   * UPD-17: envio opcional do aluno (ou equipe/gestao do caso) para a fila
+   * do supervisor. Ate aqui aguardandoRevisao so era marcado num unico lugar
+   * (create(), autorrelato do atleta) — avaliacao preenchida pelo aluno no
+   * atendimento nunca chegava ao supervisor. Este metodo grava exatamente
+   * os mesmos campos que aquele fluxo ja grava (submittedAt/submittedById/
+   * submittedByName), para findFilaRevisao (nao alterado neste item) nao
+   * precisar saber de onde veio o envio.
+   *
+   * O status volta para 'rascunho' porque aguardandoRevisao so ocorre nesse
+   * status em todo o resto do modulo (ver comentario de findFilaRevisao
+   * logo abaixo) — enviar uma avaliacao ja finalizada reabre para revisao em
+   * vez de deixar a flag marcada num estado que a fila nunca lista.
+   */
+  async enviarParaRevisao(id: string, observacao: string | undefined, user: AuthenticatedUser): Promise<Avaliacao> {
+    const avaliacao = await this.findByIdRaw(id);
+    if (!avaliacao) {
+      throw new NotFoundException('Avaliacao nao encontrada.');
+    }
+
+    const paciente = await this.pacientesRepo.findOne({ where: { id: avaliacao.pacienteId } });
+    const link = await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+    if (!link) {
+      throw new NotFoundException('Avaliacao nao encontrada.');
+    }
+    if (link !== 'gestao' && link !== 'responsavel' && link !== 'equipe') {
+      throw new ForbiddenException('Apenas o responsavel pelo caso, a equipe ou a gestao podem enviar esta avaliacao para revisao.');
+    }
+
+    const priorMeta = this.asRecord(avaliacao.meta);
+    if (priorMeta.aguardandoRevisao) {
+      throw new BadRequestException('Esta avaliacao ja esta aguardando revisao.');
+    }
+
+    const texto = String(observacao ?? '').trim();
+    if (texto.length > 1000) {
+      throw new BadRequestException('Observacao deve ter no maximo 1000 caracteres.');
+    }
+
+    const nextMeta: JsonObject = {
+      ...priorMeta,
+      aguardandoRevisao: true,
+      submittedAt: new Date().toISOString(),
+      submittedById: user.id,
+      submittedByName: user.name || ''
+    };
+    if (texto) {
+      nextMeta.observacaoEnvio = texto;
+    } else {
+      delete nextMeta.observacaoEnvio;
+    }
+
+    // Pedir revisao nao desqualifica o dado: avaliacao finalizada continua
+    // finalizada enquanto espera. Rebaixar para rascunho a tiraria da
+    // elegibilidade clinica — o GET finalizado alimenta as metas do plano
+    // (plano-alimentar.service.ts, resolveUltimaAvaliacaoElegivel) e a
+    // prescricao travaria por falta de GET so porque alguem pediu conferencia.
+    // Em devolver() o rebaixamento permanece: ali o supervisor apontou defeito.
+    const merged = this.repo.merge(avaliacao, { meta: nextMeta });
+
+    const saved = await this.repo.save(merged);
+    await this.syncSessaoStatus(saved.sessaoId);
+    this.realtime.emit('avaliacoes.updated', saved);
+
+    const supervisorId = paciente?.professorSupervisorId;
+    if (supervisorId && supervisorId !== user.id) {
+      try {
+        await this.notificacoes?.createForUsers([supervisorId], {
+          titulo: 'Avaliacao aguardando revisao',
+          mensagem: 'Uma avaliacao foi enviada para revisao; abra a fila para conferir.',
+          tipo: 'alerta_clinico'
+        });
+      } catch {
+        // Best-effort — nao interrompe o envio.
+      }
+    }
+
+    return saved;
+  }
+
+  /*
+   * UPD-17: fila de revisao do responsavel. Nao ha SQL clinico novo: o
+   * candidato (status 'rascunho', unico status em que aguardandoRevisao
+   * ocorre) vem de uma coluna indexada, e o acesso de cada item e decidido
+   * chamando resolveClinicalLink() por paciente — o mesmo contrato usado em
+   * findById/devolver, so que aplicado item a item em vez de como fragmento
+   * SQL. Papeis sem vinculo de supervisao (aluno, atleta) recebem fila
+   * vazia, nunca um erro.
+   */
+  async findFilaRevisao(user: AuthenticatedUser, filtros: { limit?: number; offset?: number }) {
+    const role = normalizeRole(user.role);
+    if (!hasGlobalAccess(role) && !hasTeamScopedAccess(role)) {
+      return [];
+    }
+
+    const limit = Math.max(1, Math.min(100, Math.floor(filtros.limit ?? 25)));
+    const offset = Math.max(0, Math.floor(filtros.offset ?? 0));
+
+    // O que enfileira e `meta.aguardandoRevisao`, nao o status: uma avaliacao
+    // finalizada tambem pode aguardar conferencia do supervisor.
+    const candidatas = await this.repo.find({ where: { deletedAt: IsNull() } });
+
+    const elegiveis: Array<{ avaliacao: Avaliacao; paciente: Paciente }> = [];
+    for (const avaliacao of candidatas) {
+      if (!this.asRecord(avaliacao.meta).aguardandoRevisao) continue;
+      const paciente = await this.pacientesRepo.findOne({ where: { id: avaliacao.pacienteId } });
+      if (!paciente) continue;
+      if (!hasGlobalAccess(role)) {
+        const link = await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+        if (!link) continue;
+      }
+      elegiveis.push({ avaliacao, paciente });
+    }
+
+    const alunoIds = [...new Set(elegiveis.map((item) => item.avaliacao.alunoId).filter((id): id is string => Boolean(id)))];
+    const alunos = alunoIds.length ? await this.usersRepo.find({ where: { id: In(alunoIds) } }) : [];
+    const alunoNomeById = new Map(alunos.map((aluno) => [aluno.id, aluno.name]));
+
+    const itens = elegiveis.map(({ avaliacao, paciente }) => {
+      const meta = this.asRecord(avaliacao.meta);
+      const submittedAt = typeof meta.submittedAt === 'string' ? meta.submittedAt : null;
+      const enfileiradoEm = submittedAt || avaliacao.updatedAt;
+      return {
+        tipo: 'avaliacao' as const,
+        id: avaliacao.id,
+        pacienteId: avaliacao.pacienteId,
+        pacienteNome: paciente.nome || null,
+        tipoInstrumento: avaliacao.tipo,
+        enviadoPorId: avaliacao.alunoId || null,
+        enviadoPorNome: (avaliacao.alunoId && alunoNomeById.get(avaliacao.alunoId)) || null,
+        enfileiradoEm,
+        // /avaliacao/:id resolve o parametro como PACIENTE
+        // (AvaliacaoCompleta.jsx: `const id = pacienteId || params.id`).
+        rota: `/avaliacao/${avaliacao.pacienteId}`
+      };
+    });
+
+    itens.sort((a, b) => new Date(a.enfileiradoEm).getTime() - new Date(b.enfileiradoEm).getTime());
+    return itens.slice(offset, offset + limit);
+  }
+
   async update(id: string, dto: AtualizarAvaliacaoDto, user: AuthenticatedUser) {
     const avaliacao = await this.findByIdRaw(id);
     if (!avaliacao) {
@@ -1796,9 +2144,6 @@ export class AvaliacoesService {
       if (dto.pacienteId && dto.pacienteId !== avaliacao.pacienteId) {
         throw new ForbiddenException('Sem permissao para trocar paciente da avaliacao.');
       }
-      if (isStudentMemberRole(role) && avaliacao.alunoId && avaliacao.alunoId !== user.id) {
-        throw new ForbiddenException('Sem permissao para editar avaliacao de outro aluno.');
-      }
     }
 
     const nextPacienteId = dto.pacienteId || avaliacao.pacienteId;
@@ -1807,9 +2152,14 @@ export class AvaliacoesService {
       throw new NotFoundException('Paciente nao encontrado.');
     }
 
+    const nextTipo = dto.tipo || avaliacao.tipo;
+    if (isStudentMemberRole(role)) {
+      this.assertCaseAreaEditAccess(user, nextPaciente, nextTipo);
+    }
+
     const nextAlunoId = dto.alunoId || avaliacao.alunoId || nextPaciente.alunoResponsavelId;
-    if (nextPaciente.alunoResponsavelId && nextAlunoId && nextPaciente.alunoResponsavelId !== nextAlunoId) {
-      throw new ForbiddenException('Avaliacao deve manter consistencia com o aluno vinculado ao paciente.');
+    if (dto.alunoId && !this.canUseEvaluationAuthor(user, nextPaciente, dto.alunoId)) {
+      throw new ForbiddenException('Sem permissao para registrar avaliacao com este aluno autor.');
     }
     await this.resolveAlunoOrThrow(nextAlunoId);
 
@@ -1929,7 +2279,7 @@ export class AvaliacoesService {
       throw new NotFoundException('Paciente nao encontrado.');
     }
     const role = normalizeRole(user.role);
-    if (!hasGlobalAccess(role) && !this.canAccessViaPaciente(user, paciente)) {
+    if (!hasGlobalAccess(role) && !(await this.canAccessViaPaciente(user, paciente))) {
       throw new ForbiddenException('Sem permissao para visualizar pendencias deste paciente.');
     }
 
@@ -1948,16 +2298,62 @@ export class AvaliacoesService {
       itemTipo: string;
       mensagem: string;
       acao: { label: string };
+      // Qual avaliacao a pendencia aponta — sem isso a tela sabe que ha algo a
+      // fazer e nao sabe onde.
+      avaliacaoId?: string;
     };
     const pendencias: Pendencia[] = [];
 
-    const tiposRealizados = new Set(
-      avaliacoes.map((a) => String(a.tipo || '').trim().toLowerCase())
+    const avaliacoesPorTipo = avaliacoes.reduce<Record<string, Avaliacao[]>>((acc, avaliacao) => {
+      const tipo = normalizeAvaliacaoTipo(avaliacao.tipo);
+      if (!tipo) return acc;
+      if (!acc[tipo]) acc[tipo] = [];
+      acc[tipo].push(avaliacao);
+      return acc;
+    }, {});
+    const tiposFinalizados = new Set(
+      avaliacoes
+        .filter((a) => this.normalizeStatus(a.status) === 'finalizada')
+        .map((a) => normalizeAvaliacaoTipo(a.tipo))
     );
 
     for (const obrigatorio of PENDENCIAS_OBRIGATORIAS) {
-      if (!tiposRealizados.has(obrigatorio)) {
+      if (!tiposFinalizados.has(obrigatorio)) {
         const entry = AVALIACAO_REGISTRY_BY_TIPO[obrigatorio];
+        const draft = (avaliacoesPorTipo[obrigatorio] || [])
+          .find((a) => this.normalizeStatus(a.status) !== 'finalizada');
+        if (draft) {
+          const meta = this.asRecord(draft.meta);
+          const completude = Number(meta.completude);
+          const label = Number.isFinite(completude) ? ` (${Math.round(completude)}%)` : '';
+
+          // Preenchida por inteiro e ainda em rascunho: nada no fluxo a move
+          // para finalizada quando ela chega a 100%. Pedir "Completar" o que
+          // ja esta completo era o texto literal que chegava na tela.
+          if (Number.isFinite(completude) && completude >= 100) {
+            pendencias.push({
+              id: `finalizar-${draft.id || obrigatorio}`,
+              tipo: 'avaliacao_pronta',
+              severidade: 'pronta',
+              itemTipo: obrigatorio,
+              avaliacaoId: draft.id,
+              mensagem: `${entry?.label || obrigatorio} pronta para finalizar`,
+              acao: { label: 'Finalizar' }
+            });
+            continue;
+          }
+
+          pendencias.push({
+            id: `incomplete-required-${draft.id || obrigatorio}`,
+            tipo: 'avaliacao_incompleta',
+            severidade: 'alta',
+            itemTipo: obrigatorio,
+            avaliacaoId: draft.id,
+            mensagem: `${entry?.label || obrigatorio} incompleta${label}`,
+            acao: { label: 'Completar' }
+          });
+          continue;
+        }
         pendencias.push({
           id: `missing-${obrigatorio}`,
           tipo: 'avaliacao_ausente',
@@ -1970,20 +2366,46 @@ export class AvaliacoesService {
     }
 
     for (const avaliacao of avaliacoes) {
+      const normalizedTipo = normalizeAvaliacaoTipo(avaliacao.tipo);
+      if (PENDENCIAS_OBRIGATORIAS_SET.has(normalizedTipo)) continue;
+      if (this.normalizeStatus(avaliacao.status) === 'finalizada') continue;
       const meta = this.asRecord(avaliacao.meta);
       const completude = Number(meta.completude);
-      if (Number.isFinite(completude) && completude < 80) {
-        const entry = AVALIACAO_REGISTRY_BY_TIPO[normalizeAvaliacaoTipo(avaliacao.tipo)];
+      const entry = AVALIACAO_REGISTRY_BY_TIPO[normalizedTipo];
+
+      // Espelho do caso das obrigatorias: com 100% e ainda aberta, ela nao
+      // gerava pendencia nenhuma e sumia — nem cobrada, nem fechada.
+      if (Number.isFinite(completude) && completude >= 100) {
+        pendencias.push({
+          id: `finalizar-${avaliacao.id}`,
+          tipo: 'avaliacao_pronta',
+          severidade: 'pronta',
+          itemTipo: avaliacao.tipo,
+          avaliacaoId: avaliacao.id,
+          mensagem: `${entry?.label || avaliacao.tipo} pronta para finalizar`,
+          acao: { label: 'Finalizar' }
+        });
+        continue;
+      }
+
+      if (!Number.isFinite(completude) || completude < 80) {
+        const label = Number.isFinite(completude) ? ` (${Math.round(completude)}%)` : '';
         pendencias.push({
           id: `incomplete-${avaliacao.id}`,
           tipo: 'avaliacao_incompleta',
           severidade: 'media',
           itemTipo: avaliacao.tipo,
-          mensagem: `${entry?.label || avaliacao.tipo} incompleta (${Math.round(completude)}%)`,
+          avaliacaoId: avaliacao.id,
+          mensagem: `${entry?.label || avaliacao.tipo} incompleta${label}`,
           acao: { label: 'Completar' }
         });
       }
     }
+
+    // Pronto para fechar vem primeiro: e o item mais barato de resolver e o
+    // que mais distorce a contagem enquanto fica no meio da lista.
+    const peso: Record<string, number> = { pronta: 0, alta: 1, media: 2 };
+    pendencias.sort((a, b) => (peso[a.severidade] ?? 3) - (peso[b.severidade] ?? 3));
 
     return pendencias;
   }
@@ -1995,7 +2417,7 @@ export class AvaliacoesService {
     }
     await this.repo.softDelete(id);
     await this.syncSessaoStatus(avaliacao.sessaoId);
-    this.realtime.emit('avaliacoes.deleted', { id });
+    this.realtime.emit('avaliacoes.deleted', { id, pacienteId: avaliacao.pacienteId });
     return { success: true };
   }
 }

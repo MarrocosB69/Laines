@@ -6,7 +6,23 @@ import AlimentoBuscador from '../../components/AlimentoBuscador';
 import EvaluationReadiness from '../../components/Avaliacoes/components/EvaluationReadiness';
 import { toLocalDateInputValue } from '../../utils/dateUtils';
 import '../../components/Avaliacoes/avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../../components/Avaliacoes/base';
 import './AvaliacaoAlimentar.css';
+
+const NOVA_GRUPOS = [
+  { id: 'in_natura', label: 'In natura', short: '1' },
+  { id: 'minimamente_processado', label: 'Min. processado', short: '2' },
+  { id: 'processado', label: 'Processado', short: '3' },
+  { id: 'ultraprocessado', label: 'Ultraprocessado', short: '4' }
+];
 
 const REFEICOES_BASE = [
   { id: 'cafe_da_manha', nome: 'Café da manhã' },
@@ -66,6 +82,38 @@ const normalizeDateValue = (value) => {
   return toLocalDateInputValue(date);
 };
 
+const normalizeAlimentoItem = (item) => {
+  const carboidrato = Number(toNumber(item?.carboidrato ?? item?.cho) || 0);
+  const proteina = Number(toNumber(item?.proteina ?? item?.ptn) || 0);
+  const lipidios = Number(toNumber(item?.lipidios ?? item?.lip) || 0);
+  const fibra = Number(toNumber(item?.fibra) || 0);
+  const calorias = Number(toNumber(item?.calorias ?? item?.energiaKcal) || 0);
+
+  return {
+    alimentoId: Number(item?.alimentoId),
+    codigo: Number(item?.codigo || 0),
+    descricao: String(item?.descricao || ''),
+    grupo: String(item?.grupo || ''),
+    medida: String(item?.medida || 'gramas'),
+    medidaLabel: String(item?.medidaLabel || 'Gramas (g)'),
+    fatorGramas: Number(item?.fatorGramas || 1),
+    quantidadeMedida: Number(item?.quantidadeMedida || 0),
+    quantidadeGramas: Number(item?.quantidadeGramas || 0),
+    calorias,
+    carboidrato,
+    proteina,
+    lipidios,
+    cho: carboidrato,
+    ptn: proteina,
+    lip: lipidios,
+    fibra,
+    novaGrupo: String(item?.novaGrupo || ''),
+    nutrientesPor100g: item?.nutrientesPor100g && typeof item.nutrientesPor100g === 'object'
+      ? item.nutrientesPor100g
+      : undefined
+  };
+};
+
 const normalizeRefeicoes = (value) => {
   const fromSnapshot = Array.isArray(value) ? value : [];
   const byId = new Map();
@@ -74,18 +122,7 @@ const normalizeRefeicoes = (value) => {
     if (!id) return;
     const itens = Array.isArray(row?.itens)
       ? row.itens
-        .map((item) => ({
-          alimentoId: Number(item?.alimentoId),
-          codigo: Number(item?.codigo || 0),
-          descricao: String(item?.descricao || ''),
-          grupo: String(item?.grupo || ''),
-          medida: String(item?.medida || 'gramas'),
-          medidaLabel: String(item?.medidaLabel || 'Gramas (g)'),
-          fatorGramas: Number(item?.fatorGramas || 1),
-          quantidadeMedida: Number(item?.quantidadeMedida || 0),
-          quantidadeGramas: Number(item?.quantidadeGramas || 0),
-          calorias: Number(item?.calorias || 0)
-        }))
+        .map(normalizeAlimentoItem)
         .filter((item) => Number.isInteger(item.alimentoId) && item.quantidadeGramas > 0)
       : [];
     byId.set(id, { id, nome: String(row?.nome || id), itens });
@@ -231,18 +268,73 @@ const AvaliacaoAlimentar = ({
     return Number((valid.reduce((acc, item) => acc + item, 0) / valid.length).toFixed(1));
   }, [rotinaClinica.adesaoHidratacao, rotinaClinica.adesaoPlanoAlimentar]);
 
+  const nutrientesRealtime = useMemo(() => {
+    const itens = flattenItens(refeicoes);
+    const sumBy = (picker) => Number(itens.reduce((sum, item) => sum + Number(toNumber(picker(item)) || 0), 0).toFixed(2));
+
+    return {
+      ...EMPTY_NUTRIENTES,
+      energiaKcal: sumBy((item) => item.calorias),
+      carboidrato: sumBy((item) => item.carboidrato ?? item.cho),
+      proteina: sumBy((item) => item.proteina ?? item.ptn),
+      lipidios: sumBy((item) => item.lipidios ?? item.lip),
+      fibra: sumBy((item) => item.fibra),
+      totalAlimentos: itens.length,
+      totalGramas: sumBy((item) => item.quantidadeGramas)
+    };
+  }, [refeicoes]);
+
+  const hasNutrientPreview = Number(nutrientesPreview.energiaKcal) > 0;
+  const nutrientesPainel = useMemo(
+    () => (hasNutrientPreview ? nutrientesPreview : nutrientesRealtime),
+    [hasNutrientPreview, nutrientesPreview, nutrientesRealtime]
+  );
+
+  const novaClassificados = useMemo(
+    () => flattenItens(refeicoes).filter((item) => !!item.novaGrupo).length,
+    [refeicoes]
+  );
+
+  const novaAnalise = useMemo(() => {
+    const result = Object.fromEntries(NOVA_GRUPOS.map((g) => [g.id, { kcal: 0, count: 0 }]));
+    result.sem_classificacao = { kcal: 0, count: 0 };
+    flattenItens(refeicoes).forEach((item) => {
+      const grupo = item.novaGrupo || '';
+      const kcal = Number(item.calorias || 0);
+      if (grupo && result[grupo]) {
+        result[grupo].kcal += kcal;
+        result[grupo].count++;
+      } else {
+        result.sem_classificacao.kcal += kcal;
+        result.sem_classificacao.count++;
+      }
+    });
+    return result;
+  }, [refeicoes]);
+
   const readinessItems = useMemo(() => {
-    const hasNutrientPreview = Number(nutrientesPreview.energiaKcal) > 0;
     return [
       { key: 'r24h', label: 'Recordatório 24h', status: totalItens > 0 ? 'ok' : 'pending', value: `${totalItens} alimentos` },
       { key: 'taco', label: 'Cálculo TACO', status: hasNutrientPreview ? 'ok' : totalItens > 0 ? 'warning' : 'pending', value: hasNutrientPreview ? `${Number(nutrientesPreview.energiaKcal).toFixed(0)} kcal` : 'após salvar' },
+      { key: 'nova', label: 'Classificação NOVA', status: totalItens > 0 && novaClassificados === totalItens ? 'ok' : totalItens > 0 && novaClassificados > 0 ? 'warning' : 'pending', value: totalItens > 0 ? `${novaClassificados}/${totalItens} classificados` : 'aguardando alimentos' },
       { key: 'adherence', label: 'Adesão da rotina', status: Number.isFinite(scoreAdesaoRotina) ? 'ok' : 'pending', value: Number.isFinite(scoreAdesaoRotina) ? `${scoreAdesaoRotina}/10` : 'opcional' },
-      { key: 'supplements', label: 'Suplementação', status: suplementosAtivos.length > 0 ? 'warning' : 'ok', value: suplementosAtivos.length > 0 ? `${suplementosAtivos.length} ativo(s)` : 'sem registro' }
+      { key: 'supplements', label: 'Suplementação', status: suplementosAtivos.length > 0 ? 'attention' : 'ok', value: suplementosAtivos.length > 0 ? `${suplementosAtivos.length} ativo(s)` : 'sem registro' }
     ];
-  }, [nutrientesPreview.energiaKcal, scoreAdesaoRotina, suplementosAtivos.length, totalItens]);
+  }, [hasNutrientPreview, novaClassificados, nutrientesPreview.energiaKcal, scoreAdesaoRotina, suplementosAtivos.length, totalItens]);
+
+  const updateItemNovaGrupo = useCallback((refeicaoId, itemIndex, novaGrupo) => {
+    setRefeicoes((prev) => prev.map((refeicao) => {
+      if (refeicao.id !== refeicaoId) return refeicao;
+      return {
+        ...refeicao,
+        itens: refeicao.itens.map((item, idx) => idx === itemIndex ? { ...item, novaGrupo } : item)
+      };
+    }));
+  }, []);
 
   const removeItem = useCallback((refeicaoId, itemIndex) => {
     setError('');
+    setNutrientesPreview(EMPTY_NUTRIENTES);
     setRefeicoes((prev) => prev.map((refeicao) => {
       if (refeicao.id !== refeicaoId) return refeicao;
       return { ...refeicao, itens: refeicao.itens.filter((_, index) => index !== itemIndex) };
@@ -251,9 +343,11 @@ const AvaliacaoAlimentar = ({
 
   const addItem = useCallback((refeicaoId, item) => {
     setError('');
+    setNutrientesPreview(EMPTY_NUTRIENTES);
+    const normalizedItem = normalizeAlimentoItem(item);
     setRefeicoes((prev) => prev.map((refeicao) => {
       if (refeicao.id !== refeicaoId) return refeicao;
-      return { ...refeicao, itens: [...refeicao.itens, item] };
+      return { ...refeicao, itens: [...refeicao.itens, normalizedItem] };
     }));
   }, []);
 
@@ -307,7 +401,14 @@ const AvaliacaoAlimentar = ({
           refeicoes,
           suplementos,
           rotinaClinica,
-          categorias: { in_natura: caloriasTotal, minimamente_processados: 0, processados: 0, ultraprocessados: 0 },
+          categorias: (() => {
+            const cats = { in_natura: 0, minimamente_processado: 0, processado: 0, ultraprocessado: 0 };
+            flattenItens(refeicoes).forEach((item) => {
+              const g = item.novaGrupo || '';
+              if (g && cats[g] !== undefined) cats[g] += Number(item.calorias || 0);
+            });
+            return cats;
+          })(),
           totalDiario: caloriasTotal,
           source: { mode: 'manual', system: 'taco', externalRef: 'taco-4ed' }
         },
@@ -355,298 +456,416 @@ const AvaliacaoAlimentar = ({
     if (saveStatusResetRef.current) clearTimeout(saveStatusResetRef.current);
   }, []);
 
-  return (
-    <div className={`avaliacao-alimentar-r24h${readOnly ? ' eval-card--readonly' : ''}`}>
+  // Só exibição: sem alimento no R24h e sem cálculo TACO salvo, as kcal e os
+  // macronutrientes aparecem como "—", não como 0. O estado, o cálculo e o
+  // payload continuam com os mesmos zeros de antes.
+  const temRegistroAlimentar = hasNutrientPreview || totalItens > 0;
+  const indiceAlimentar = [
+    { id: 'alimentar-recordatorio', titulo: 'Recordatório 24h' },
+    { id: 'alimentar-resumo', titulo: 'Resumo nutricional' },
+    totalItens > 0 ? { id: 'alimentar-nova', titulo: 'Classificação NOVA' } : null,
+    { id: 'alimentar-suplementacao', titulo: 'Suplementação' },
+    { id: 'alimentar-adesao', titulo: 'Adesão e rotina' }
+  ];
 
-      {/* Header */}
-      <div className="eval-card avaliacao-alimentar-r24h__header">
-        <div className="eval-header">
-          <div className="eval-icon"><Apple size={22} /></div>
-          <div>
-            <h3 className="eval-title">Avaliação alimentar (R24h)</h3>
-            <p className="eval-subtitle">Recordatório de 24h com cálculo via TACO</p>
-          </div>
-        </div>
-        <div className="avaliacao-alimentar-r24h__meta">
-          <div className="eval-field">
-            <label className="eval-label">Data da avaliação</label>
-            <input
-              type="date"
-              className="eval-input"
-              value={dataAvaliacao}
-              onChange={(event) => { setError(''); setDataAvaliacao(event.target.value); }}
-              disabled={readOnly}
-            />
-          </div>
-          <div className="avaliacao-alimentar-r24h__counter">
-            <span>{totalItens}</span>
-            <small>alimentos no R24h</small>
-          </div>
-        </div>
-      </div>
+  // O cabeçalho do cartão antigo virou o do módulo (mesmo h3 e subtítulo);
+  // a data e o contador passaram para o topo do recordatório. O aviso de
+  // somente leitura subiu do pé da coluna direita para o topo.
+  return (
+    <AvaliacaoModulo
+      className={`avaliacao-alimentar-r24h${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Avaliação alimentar (R24h)"
+      descricao="Recordatório de 24h com cálculo via TACO"
+      icone={<Apple size={22} />}
+    >
+      <AvaliacaoIndice itens={indiceAlimentar} />
+
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
 
       {onboardingResumo.length > 0 && (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto:</strong> {onboardingResumo.join(' | ')}
-        </div>
+        </AvisoAvaliacao>
       )}
 
       <EvaluationReadiness items={readinessItems} />
 
+      {/* Duas colunas em telas largas: o recordatório à esquerda; resumo,
+          NOVA, suplementação e adesão à direita. */}
       <div className="avaliacao-alimentar-r24h__grid">
 
-        {/* LEFT — busca + refeições */}
         <div className="avaliacao-alimentar-r24h__refeicoes">
-
-          {/* Busca única com seletor de refeição */}
-          {!readOnly && (
-            <div className="eval-card r24h-add-area">
-              <div className="r24h-add-area__header">
-                <span className="r24h-add-area__label">Adicionar à</span>
-                <select
-                  className="r24h-add-area__meal-select"
-                  value={selectedRefeicaoId}
-                  onChange={(event) => setSelectedRefeicaoId(event.target.value)}
-                  aria-label="Selecionar refeição"
-                >
-                  {refeicoes.map((r) => (
-                    <option key={r.id} value={r.id}>{r.nome}</option>
-                  ))}
-                </select>
+          <AvaliacaoSecao id="alimentar-recordatorio" titulo="Recordatório 24h">
+            <div className="avaliacao-alimentar-r24h__meta">
+              <Campo rotulo="Data da avaliação" className="eval-field">
+                <input
+                  type="date"
+                  className="eval-input"
+                  value={dataAvaliacao}
+                  onChange={(event) => { setError(''); setDataAvaliacao(event.target.value); }}
+                  disabled={readOnly}
+                />
+              </Campo>
+              <div className="avaliacao-alimentar-r24h__counter">
+                <span>{totalItens}</span>
+                <small>alimentos no R24h</small>
               </div>
-              <AlimentoBuscador
-                disabled={readOnly}
-                onAdd={(item) => addItem(selectedRefeicaoId, item)}
-              />
             </div>
-          )}
 
-          {/* Cards compactos por refeição */}
-          {refeicoes.map((refeicao) => {
-            const kcalRefeicao = refeicao.itens.reduce((sum, i) => sum + (i.calorias || 0), 0);
-            const isSelected = !readOnly && selectedRefeicaoId === refeicao.id;
-            return (
-              <div
-                key={refeicao.id}
-                className={`eval-card r24h-meal${isSelected ? ' r24h-meal--selected' : ''}`}
-              >
-                <div className="avaliacao-alimentar-r24h__meal-header">
-                  <h4>{refeicao.nome}</h4>
-                  <div className="avaliacao-alimentar-r24h__meal-stats">
-                    {refeicao.itens.length > 0 && (
-                      <span>{refeicao.itens.length} item{refeicao.itens.length !== 1 ? 's' : ''}</span>
-                    )}
-                    {kcalRefeicao > 0 && (
-                      <span className="avaliacao-alimentar-r24h__meal-kcal">{kcalRefeicao.toFixed(0)} kcal</span>
-                    )}
-                    {!readOnly && !isSelected && (
-                      <button
-                        type="button"
-                        className="r24h-meal__target-btn"
-                        onClick={() => setSelectedRefeicaoId(refeicao.id)}
-                      >
-                        + aqui
-                      </button>
-                    )}
-                    {isSelected && (
-                      <span className="r24h-meal__active-tag">selecionada</span>
-                    )}
-                  </div>
-                </div>
-
-                {refeicao.itens.length === 0 ? (
-                  <div className="avaliacao-alimentar-r24h__empty">Nenhum alimento registrado.</div>
-                ) : (
-                  <ul className="avaliacao-alimentar-r24h__items">
-                    {refeicao.itens.map((item, index) => (
-                      <li key={`${refeicao.id}-${item.alimentoId}-${index}`}>
-                        <div className="avaliacao-alimentar-r24h__item-info">
-                          <strong>{item.descricao}</strong>
-                          <small>{item.quantidadeMedida} {item.medidaLabel} · {item.quantidadeGramas.toFixed(0)} g</small>
-                        </div>
-                        <div className="avaliacao-alimentar-r24h__item-right">
-                          {(item.calorias || 0) > 0 && (
-                            <span className="avaliacao-alimentar-r24h__item-kcal">{Number(item.calorias).toFixed(0)} kcal</span>
-                          )}
-                          {!readOnly && (
-                            <button
-                              type="button"
-                              className="avaliacao-alimentar-r24h__remove-btn"
-                              onClick={() => removeItem(refeicao.id, index)}
-                              aria-label="Remover item"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </div>
-                      </li>
+            {/* Busca única com seletor de refeição. O select mantém o
+                aria-label de antes; "Adicionar à" passa a ser o rótulo visível. */}
+            {!readOnly && (
+              <div className="r24h-add-area">
+                <Campo rotulo="Adicionar à" className="r24h-add-area__header">
+                  <select
+                    className="r24h-add-area__meal-select"
+                    value={selectedRefeicaoId}
+                    onChange={(event) => setSelectedRefeicaoId(event.target.value)}
+                    aria-label="Selecionar refeição"
+                  >
+                    {refeicoes.map((r) => (
+                      <option key={r.id} value={r.id}>{r.nome}</option>
                     ))}
-                  </ul>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Salvar — sticky na base da coluna de refeições */}
-          {!readOnly && (
-            <div className="avaliacao-alimentar-r24h__sticky-save">
-              {error && <span className="r24h-save-error">{error}</span>}
-              {saveStatus && (
-                <span className={`save-indicator ${saveStatus}`}>
-                  {saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro'}
-                </span>
-              )}
-              <Button
-                type="button"
-                onClick={() => dispatchSalvar(false)}
-                disabled={readOnly || totalItens <= 0}
-                loading={saveStatus === 'saving'}
-                variant="primary"
-              >
-                <Save size={15} /> Salvar avaliação
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT — resumo nutricional + suplementação + adesão */}
-        <div className="eval-card avaliacao-alimentar-r24h__summary">
-
-          {/* Kcal em destaque */}
-          <div className="r24h-kcal-block">
-            <span className="r24h-kcal-block__value">{Number(nutrientesPreview.energiaKcal || 0).toFixed(0)}</span>
-            <span className="r24h-kcal-block__unit">kcal</span>
-            <span className="r24h-kcal-block__label">total do dia</span>
-          </div>
-
-          {/* Macronutrientes */}
-          <div className="r24h-macros-row">
-            <div className="r24h-macro-pill">
-              <strong>{Number(nutrientesPreview.carboidrato || 0).toFixed(0)}</strong>
-              <span>g CHO</span>
-            </div>
-            <div className="r24h-macro-pill">
-              <strong>{Number(nutrientesPreview.proteina || 0).toFixed(0)}</strong>
-              <span>g PTN</span>
-            </div>
-            <div className="r24h-macro-pill">
-              <strong>{Number(nutrientesPreview.lipidios || 0).toFixed(0)}</strong>
-              <span>g LIP</span>
-            </div>
-            <div className="r24h-macro-pill">
-              <strong>{Number(nutrientesPreview.fibra || 0).toFixed(0)}</strong>
-              <span>g Fibras</span>
-            </div>
-          </div>
-
-          {/* Micronutrientes (colapsável) */}
-          <div className="avaliacao-alimentar-r24h__section">
-            <button
-              type="button"
-              className="r24h-micros-toggle"
-              onClick={() => setShowMicros((prev) => !prev)}
-            >
-              Micronutrientes
-              {showMicros ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-            {showMicros && (
-              <div className="avaliacao-alimentar-r24h__summary-grid">
-                <div><span>Vit. D (µg)</span><strong>{Number(nutrientesPreview.vitaminaD || 0).toFixed(2)}</strong></div>
-                <div><span>Ferro (mg)</span><strong>{Number(nutrientesPreview.ferro || 0).toFixed(2)}</strong></div>
-                <div><span>Cálcio (mg)</span><strong>{Number(nutrientesPreview.calcio || 0).toFixed(1)}</strong></div>
-                <div><span>B12 (µg)</span><strong>{Number.isFinite(nutrientesPreview.vitaminaB12) ? Number(nutrientesPreview.vitaminaB12).toFixed(2) : '—'}</strong></div>
+                  </select>
+                </Campo>
+                <AlimentoBuscador
+                  disabled={readOnly}
+                  onAdd={(item) => addItem(selectedRefeicaoId, item)}
+                />
               </div>
             )}
-          </div>
 
-          {/* Suplementação */}
-          <div className="avaliacao-alimentar-r24h__section">
-            <div className="avaliacao-alimentar-r24h__section-header">
-              <h5>Suplementação</h5>
-              {!readOnly && (
-                <button type="button" className="avaliacao-alimentar-r24h__mini-btn" onClick={addSuplemento}>
-                  + Adicionar
-                </button>
+            {/* Uma subseção por refeição (h5): contagem, kcal e "+ aqui"
+                ficam nas ações do título. O "+ aqui" é descrito pelo nome da
+                refeição, que já está no título. */}
+            {refeicoes.map((refeicao) => {
+              const kcalRefeicao = refeicao.itens.reduce((sum, i) => sum + (i.calorias || 0), 0);
+              const isSelected = !readOnly && selectedRefeicaoId === refeicao.id;
+              const totalKcalDia = nutrientesRealtime.energiaKcal;
+              const kcalPct = totalKcalDia > 0 ? Math.min(100, Math.round((kcalRefeicao / totalKcalDia) * 100)) : 0;
+              return (
+                <AvaliacaoSecao
+                  key={refeicao.id}
+                  id={`alimentar-refeicao-${refeicao.id}`}
+                  titulo={refeicao.nome}
+                  className={`r24h-meal${isSelected ? ' r24h-meal--selected' : ''}`}
+                  acoes={(
+                    <div className="avaliacao-alimentar-r24h__meal-stats">
+                      {refeicao.itens.length > 0 && (
+                        <span>{refeicao.itens.length} item{refeicao.itens.length !== 1 ? 's' : ''}</span>
+                      )}
+                      {kcalRefeicao > 0 && (
+                        <span className="avaliacao-alimentar-r24h__meal-kcal">{kcalRefeicao.toFixed(0)} kcal</span>
+                      )}
+                      {!readOnly && !isSelected && (
+                        <button
+                          type="button"
+                          className="r24h-meal__target-btn eval-btn eval-btn-secondary"
+                          onClick={() => setSelectedRefeicaoId(refeicao.id)}
+                          aria-describedby={`alimentar-refeicao-${refeicao.id}-titulo`}
+                        >
+                          + aqui
+                        </button>
+                      )}
+                      {isSelected && (
+                        <span className="r24h-meal__active-tag">selecionada</span>
+                      )}
+                    </div>
+                  )}
+                >
+                  {refeicao.itens.length === 0 ? (
+                    <div className="avaliacao-alimentar-r24h__empty">Nenhum alimento registrado.</div>
+                  ) : (
+                    <ul className="avaliacao-alimentar-r24h__items">
+                      {refeicao.itens.map((item, index) => (
+                        <li key={`${refeicao.id}-${item.alimentoId}-${index}`}>
+                          <div className="avaliacao-alimentar-r24h__item-main">
+                            <div className="avaliacao-alimentar-r24h__item-info">
+                              <strong>{item.descricao}</strong>
+                              <small>{item.quantidadeMedida} {item.medidaLabel} · {item.quantidadeGramas.toFixed(0)} g</small>
+                            </div>
+                            <div className="avaliacao-alimentar-r24h__item-right">
+                              {(item.calorias || 0) > 0 && (
+                                <span className="avaliacao-alimentar-r24h__item-kcal">{Number(item.calorias).toFixed(0)} kcal</span>
+                              )}
+                              {!readOnly && (
+                                <button
+                                  type="button"
+                                  className="avaliacao-alimentar-r24h__remove-btn"
+                                  onClick={() => removeItem(refeicao.id, index)}
+                                  aria-label="Remover item"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {/* Grupo rotulado por "NOVA:"; cada botão diz o
+                              estado (aria-pressed) e lê o nome do grupo, que
+                              antes só estava no title. */}
+                          <div
+                            className="r24h-nova-selector"
+                            role="group"
+                            aria-labelledby={`alimentar-${refeicao.id}-${index}-nova`}
+                          >
+                            <span className="r24h-nova-selector__label" id={`alimentar-${refeicao.id}-${index}-nova`}>NOVA:</span>
+                            {NOVA_GRUPOS.map((g) => (
+                              <button
+                                key={g.id}
+                                type="button"
+                                className={`r24h-nova-btn${item.novaGrupo === g.id ? ` r24h-nova-btn--${g.id}` : ''}`}
+                                onClick={() => updateItemNovaGrupo(refeicao.id, index, item.novaGrupo === g.id ? '' : g.id)}
+                                title={g.label}
+                                disabled={readOnly}
+                                aria-pressed={item.novaGrupo === g.id}
+                              >
+                                {g.short}
+                                <span className="av-sr">{` ${g.label}`}</span>
+                              </button>
+                            ))}
+                            {item.novaGrupo && (
+                              <span className={`r24h-nova-label r24h-nova-label--${item.novaGrupo}`}>
+                                {NOVA_GRUPOS.find((g) => g.id === item.novaGrupo)?.label}
+                              </span>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {kcalRefeicao > 0 && (
+                    <div className="r24h-meal__kcal-bar" aria-hidden="true">
+                      <div className="r24h-meal__kcal-bar-fill" style={{ width: `${kcalPct}%` }} />
+                    </div>
+                  )}
+                </AvaliacaoSecao>
+              );
+            })}
+          </AvaliacaoSecao>
+        </div>
+
+        <div className="avaliacao-alimentar-r24h__summary">
+          {/* Mesmas expressões e casas de antes; sem registro, "—" em vez
+              de 0 (temRegistroAlimentar). Os micronutrientes só existem
+              depois do cálculo TACO, feito ao salvar. */}
+          <AvaliacaoSecao id="alimentar-resumo" titulo="Resumo nutricional">
+            <ResultadoCalculado
+              className="r24h-kcal-block"
+              rotulo="total do dia"
+              valor={temRegistroAlimentar ? Number(nutrientesPainel.energiaKcal || 0).toFixed(0) : null}
+              unidade="kcal"
+            />
+
+            <div className="r24h-macros-row">
+              <ResultadoCalculado
+                className="r24h-macro-pill r24h-macro-pill--cho"
+                rotulo="g CHO"
+                valor={temRegistroAlimentar ? Number(nutrientesPainel.carboidrato || 0).toFixed(0) : null}
+              />
+              <ResultadoCalculado
+                className="r24h-macro-pill r24h-macro-pill--ptn"
+                rotulo="g PTN"
+                valor={temRegistroAlimentar ? Number(nutrientesPainel.proteina || 0).toFixed(0) : null}
+              />
+              <ResultadoCalculado
+                className="r24h-macro-pill r24h-macro-pill--lip"
+                rotulo="g LIP"
+                valor={temRegistroAlimentar ? Number(nutrientesPainel.lipidios || 0).toFixed(0) : null}
+              />
+              <ResultadoCalculado
+                className="r24h-macro-pill r24h-macro-pill--fibra"
+                rotulo="g Fibras"
+                valor={temRegistroAlimentar ? Number(nutrientesPainel.fibra || 0).toFixed(0) : null}
+              />
+            </div>
+
+            <div className="avaliacao-alimentar-r24h__micros">
+              <button
+                type="button"
+                className="r24h-micros-toggle"
+                onClick={() => setShowMicros((prev) => !prev)}
+                aria-expanded={showMicros}
+              >
+                Micronutrientes
+                {showMicros ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
+              </button>
+              {showMicros && (
+                <div className="avaliacao-alimentar-r24h__summary-grid">
+                  <ResultadoCalculado rotulo="Vit. D (µg)" valor={hasNutrientPreview ? Number(nutrientesPreview.vitaminaD || 0).toFixed(2) : null} />
+                  <ResultadoCalculado rotulo="Ferro (mg)" valor={hasNutrientPreview ? Number(nutrientesPreview.ferro || 0).toFixed(2) : null} />
+                  <ResultadoCalculado rotulo="Cálcio (mg)" valor={hasNutrientPreview ? Number(nutrientesPreview.calcio || 0).toFixed(1) : null} />
+                  <ResultadoCalculado rotulo="B12 (µg)" valor={Number.isFinite(nutrientesPreview.vitaminaB12) ? Number(nutrientesPreview.vitaminaB12).toFixed(2) : null} />
+                </div>
               )}
             </div>
+          </AvaliacaoSecao>
+
+          {/* Classificação NOVA: a barra é uma imagem com nome; os valores
+              estão escritos na lista logo abaixo. */}
+          {totalItens > 0 && (
+            <AvaliacaoSecao
+              id="alimentar-nova"
+              titulo="Classificação NOVA"
+              acoes={<span className="r24h-nova-hint">{novaClassificados}/{totalItens} itens</span>}
+            >
+              <div className="r24h-nova-bar" role="img" aria-label="Distribuição kcal por grupo NOVA">
+                {NOVA_GRUPOS.map((g) => {
+                  const pct = nutrientesRealtime.energiaKcal > 0 && novaAnalise[g.id].kcal > 0
+                    ? (novaAnalise[g.id].kcal / nutrientesRealtime.energiaKcal) * 100 : 0;
+                  return pct > 1 ? (
+                    <div key={g.id} className={`r24h-nova-bar__seg r24h-nova-bar__seg--${g.id}`} style={{ width: `${pct}%` }} title={`${g.label}: ${pct.toFixed(0)}%`} />
+                  ) : null;
+                })}
+                {novaAnalise.sem_classificacao.kcal > 0 && nutrientesRealtime.energiaKcal > 0 && (
+                  <div
+                    className="r24h-nova-bar__seg r24h-nova-bar__seg--none"
+                    style={{ width: `${(novaAnalise.sem_classificacao.kcal / nutrientesRealtime.energiaKcal) * 100}%` }}
+                    title={`Não classificado: ${((novaAnalise.sem_classificacao.kcal / nutrientesRealtime.energiaKcal) * 100).toFixed(0)}%`}
+                  />
+                )}
+              </div>
+              <div className="r24h-nova-breakdown">
+                {/* Sem kcal no total do dia não há percentual: "—", não 0%
+                    (WI-013, decisão 6). */}
+                {NOVA_GRUPOS.map((g) => {
+                  const { kcal, count } = novaAnalise[g.id];
+                  const temTotal = nutrientesRealtime.energiaKcal > 0;
+                  const pct = temTotal ? ((kcal / nutrientesRealtime.energiaKcal) * 100).toFixed(0) : null;
+                  let pctTexto = '—';
+                  if (temTotal) pctTexto = count > 0 ? `${pct}%` : '0%';
+                  return (
+                    <div key={g.id} className="r24h-nova-breakdown__row">
+                      <span className={`r24h-nova-dot r24h-nova-dot--${g.id}`} />
+                      <span className="r24h-nova-breakdown__name">{g.label}</span>
+                      <span className="r24h-nova-breakdown__count">{count > 0 ? `${count}al` : '—'}</span>
+                      <span className="r24h-nova-breakdown__kcal">{count > 0 ? `${kcal.toFixed(0)} kcal` : '—'}</span>
+                      <span className="r24h-nova-breakdown__pct">{pctTexto}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {novaClassificados < totalItens && (
+                <AvisoAvaliacao tipo="atencao" className="r24h-nova-incomplete">
+                  {totalItens - novaClassificados} alimento(s) aguardam classificação. Toque em 1/2/3/4 em cada item.
+                </AvisoAvaliacao>
+              )}
+            </AvaliacaoSecao>
+          )}
+
+          {/* Suplementação: os textos que eram só placeholder passam a ser
+              também o rótulo visível de cada campo. */}
+          <AvaliacaoSecao
+            id="alimentar-suplementacao"
+            titulo="Suplementação"
+            acoes={!readOnly && (
+              <button type="button" className="avaliacao-alimentar-r24h__mini-btn eval-btn eval-btn-secondary" onClick={addSuplemento}>
+                + Adicionar
+              </button>
+            )}
+          >
             <div className="avaliacao-alimentar-r24h__supp-list">
               {suplementos.map((item) => (
-                <div className="avaliacao-alimentar-r24h__supp-row" key={item.id}>
-                  <input
-                    type="text"
-                    className="eval-input"
-                    placeholder="Suplemento"
-                    value={item.nome}
-                    onChange={(event) => updateSuplemento(item.id, 'nome', event.target.value)}
-                    disabled={readOnly}
-                  />
-                  <input
-                    type="text"
-                    className="eval-input"
-                    placeholder="Dose"
-                    value={item.dose}
-                    onChange={(event) => updateSuplemento(item.id, 'dose', event.target.value)}
-                    disabled={readOnly}
-                  />
-                  <input
-                    type="text"
-                    className="eval-input"
-                    placeholder="Frequência"
-                    value={item.frequencia}
-                    onChange={(event) => updateSuplemento(item.id, 'frequencia', event.target.value)}
-                    disabled={readOnly}
-                  />
-                  {!readOnly && (
-                    <button
-                      type="button"
-                      className="avaliacao-alimentar-r24h__icon-btn"
-                      onClick={() => removeSuplemento(item.id)}
-                      aria-label="Remover suplemento"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
+                <div className="avaliacao-alimentar-r24h__supp-card" key={item.id}>
+                  <div className="avaliacao-alimentar-r24h__supp-top">
+                    <Campo rotulo="Nome do suplemento">
+                      <input
+                        type="text"
+                        className="eval-input"
+                        placeholder="Nome do suplemento"
+                        value={item.nome}
+                        onChange={(event) => updateSuplemento(item.id, 'nome', event.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        className="avaliacao-alimentar-r24h__icon-btn"
+                        onClick={() => removeSuplemento(item.id)}
+                        aria-label="Remover suplemento"
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="avaliacao-alimentar-r24h__supp-bottom">
+                    <Campo rotulo="Dose">
+                      <input
+                        type="text"
+                        className="eval-input"
+                        placeholder="Dose"
+                        value={item.dose}
+                        onChange={(event) => updateSuplemento(item.id, 'dose', event.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
+                    <Campo rotulo="Frequência">
+                      <input
+                        type="text"
+                        className="eval-input"
+                        placeholder="Frequência"
+                        value={item.frequencia}
+                        onChange={(event) => updateSuplemento(item.id, 'frequencia', event.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          </AvaliacaoSecao>
 
-          {/* Adesão e rotina (simplificado) */}
-          <div className="avaliacao-alimentar-r24h__section">
-            <h5>Adesão e rotina</h5>
+          {/* Adesão e rotina. O controle deslizante continua com o mesmo
+              value (vazio vira 0 na posição); o número ao lado mostra "—"
+              enquanto a pergunta não foi respondida, em vez de "0/10". */}
+          <AvaliacaoSecao id="alimentar-adesao" titulo="Adesão e rotina">
             <div className="avaliacao-alimentar-r24h__adherence-grid">
-              <div className="eval-field">
-                <label className="eval-label">Adesão alimentar (0–10)</label>
-                <input
-                  type="number" min="0" max="10"
-                  className="eval-input"
-                  value={rotinaClinica.adesaoPlanoAlimentar}
-                  onChange={(event) => updateRotinaClinica('adesaoPlanoAlimentar', event.target.value)}
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="eval-field">
-                <label className="eval-label">Adesão hidratação (0–10)</label>
-                <input
-                  type="number" min="0" max="10"
-                  className="eval-input"
-                  value={rotinaClinica.adesaoHidratacao}
-                  onChange={(event) => updateRotinaClinica('adesaoHidratacao', event.target.value)}
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="eval-field">
-                <label className="eval-label">Fome pós-treino (0–10)</label>
-                <input
-                  type="number" min="0" max="10"
-                  className="eval-input"
-                  value={rotinaClinica.fomePosTreino}
-                  onChange={(event) => updateRotinaClinica('fomePosTreino', event.target.value)}
-                  disabled={readOnly}
-                />
-              </div>
-              <div className="eval-field">
-                <label className="eval-label">Principal barreira</label>
+              <Campo rotulo="Adesão alimentar" className="eval-field r24h-slider-field">
+                {(ligacao) => (
+                  <div className="r24h-slider">
+                    <input
+                      {...ligacao}
+                      type="range" min="0" max="10" step="1"
+                      className="r24h-score-slider"
+                      value={rotinaClinica.adesaoPlanoAlimentar || 0}
+                      onChange={(event) => updateRotinaClinica('adesaoPlanoAlimentar', event.target.value)}
+                      disabled={readOnly}
+                    />
+                    <span className="r24h-score-value">{rotinaClinica.adesaoPlanoAlimentar ? <>{rotinaClinica.adesaoPlanoAlimentar}/10</> : '—'}</span>
+                  </div>
+                )}
+              </Campo>
+              <Campo rotulo="Adesão hidratação" className="eval-field r24h-slider-field">
+                {(ligacao) => (
+                  <div className="r24h-slider">
+                    <input
+                      {...ligacao}
+                      type="range" min="0" max="10" step="1"
+                      className="r24h-score-slider"
+                      value={rotinaClinica.adesaoHidratacao || 0}
+                      onChange={(event) => updateRotinaClinica('adesaoHidratacao', event.target.value)}
+                      disabled={readOnly}
+                    />
+                    <span className="r24h-score-value">{rotinaClinica.adesaoHidratacao ? <>{rotinaClinica.adesaoHidratacao}/10</> : '—'}</span>
+                  </div>
+                )}
+              </Campo>
+              <Campo rotulo="Fome pós-treino" className="eval-field r24h-slider-field">
+                {(ligacao) => (
+                  <div className="r24h-slider">
+                    <input
+                      {...ligacao}
+                      type="range" min="0" max="10" step="1"
+                      className="r24h-score-slider"
+                      value={rotinaClinica.fomePosTreino || 0}
+                      onChange={(event) => updateRotinaClinica('fomePosTreino', event.target.value)}
+                      disabled={readOnly}
+                    />
+                    <span className="r24h-score-value">{rotinaClinica.fomePosTreino ? <>{rotinaClinica.fomePosTreino}/10</> : '—'}</span>
+                  </div>
+                )}
+              </Campo>
+              <Campo rotulo="Principal barreira" className="eval-field">
                 <input
                   type="text"
                   className="eval-input"
@@ -654,19 +873,37 @@ const AvaliacaoAlimentar = ({
                   onChange={(event) => updateRotinaClinica('principalBarreira', event.target.value)}
                   disabled={readOnly}
                 />
-              </div>
+              </Campo>
             </div>
             {Number.isFinite(scoreAdesaoRotina) && (
               <div className="avaliacao-alimentar-r24h__adherence-score">
                 Score adesão: <strong>{scoreAdesaoRotina}/10</strong>
               </div>
             )}
-          </div>
-
-          {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
+          </AvaliacaoSecao>
         </div>
       </div>
-    </div>
+
+      {/* Salvar: saiu do pé da coluna de refeições para o pé do módulo,
+          porque também salva suplementação e adesão. Continua fixo no pé da
+          tela enquanto o módulo está visível. */}
+      {!readOnly && (
+        <div className="avaliacao-alimentar-r24h__sticky-save">
+          {error && <AvisoAvaliacao tipo="perigo" anunciar className="r24h-save-error">{error}</AvisoAvaliacao>}
+          <BarraAcoesAvaliacao status={saveStatus} textosStatus={{ error: 'Erro' }}>
+            <Button
+              type="button"
+              onClick={() => dispatchSalvar(false)}
+              disabled={readOnly || totalItens <= 0}
+              loading={saveStatus === 'saving'}
+              variant="primary"
+            >
+              <Save size={15} /> Salvar avaliação
+            </Button>
+          </BarraAcoesAvaliacao>
+        </div>
+      )}
+    </AvaliacaoModulo>
   );
 };
 

@@ -5,9 +5,16 @@ import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import { calculateHydrationEvaluation } from '../../../services/calculationEngine';
 import { useSaveStatus } from '../hooks/useSaveStatus';
 import { useModuleSnapshot } from '../hooks/useModuleSnapshot';
-import EvaluationHeader from '../components/EvaluationHeader';
 import EvaluationReadiness from '../components/EvaluationReadiness';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  Campo,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../base';
 import './AvaliacaoHidratacao.css';
 
 const AvaliacaoHidratacao = ({
@@ -148,10 +155,11 @@ const AvaliacaoHidratacao = ({
   const normalizedInput = useMemo(() => hydration?.inputNormalized || {}, [hydration]);
   const classificacaoHidrica = hydration?.classification?.label || 'Sem classificação';
   const alertLevel = hydration?.classification?.alertLevel || 'neutral';
-  const metaReposicaoMl = useMemo(() => {
-    if (!Number.isFinite(calculated.perdaHidricaLiquidaMl)) return null;
-    return Math.round(calculated.perdaHidricaLiquidaMl * 1.5);
-  }, [calculated.perdaHidricaLiquidaMl]);
+  // Perda de suor <= 0 é registro inconsistente: perda, sudorese e reposição
+  // vêm nulas do motor e aparecem "—", com o aviso (WI-013, decisão 5).
+  const ganhoPeso = Boolean(hydration?.flags?.ganhoPeso);
+  const perdaSuorInconsistente = Boolean(hydration?.flags?.perdaSuorInconsistente);
+  const metaReposicaoMl = Number.isFinite(calculated.metaReposicaoMl) ? calculated.metaReposicaoMl : null;
   const adesaoReposicaoPct = useMemo(() => {
     const ingerido = toNumber(normalizedInput.volumeIngeridoMl);
     if (!Number.isFinite(metaReposicaoMl) || metaReposicaoMl <= 0 || !Number.isFinite(ingerido)) return null;
@@ -362,46 +370,53 @@ const AvaliacaoHidratacao = ({
     return () => clearTimeout(autoSaveRef.current);
   }, [hasValues, onAutoSave, readOnly, salvar]);
 
+  // O cabeçalho que vinha de EvaluationHeader passou a ser o do módulo: o
+  // mesmo h3, o mesmo subtítulo e o ícone decorativo, sem um segundo título.
+  // O aviso de somente leitura subiu do pé do formulário para o topo.
   return (
-    <div className={`eval-card avaliacao-hidratacao${readOnly ? ' eval-card--readonly' : ''}`}>
-      <EvaluationHeader
-        icon={<Droplets size={22} />}
-        title="Avaliação de hidratação"
-        subtitle="Sessão esportiva com perdas, reposição e risco hídrico"
-      />
+    <AvaliacaoModulo
+      className={`eval-card avaliacao-hidratacao${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Avaliação de hidratação"
+      descricao="Sessão esportiva com perdas, reposição e risco hídrico"
+      icone={<Droplets size={22} />}
+    >
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
 
       {onboardingResumo.length > 0 ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
 
       <EvaluationReadiness items={readinessItems} />
 
-      <div className="eval-grid">
-        <Field label="Data" name="dataAvaliacao" value={dados.dataAvaliacao} onChange={handleChange} readOnly={readOnly} type="date" />
-        <Field label="Peso antes (kg)" name="pesoAntesExercicio" value={dados.pesoAntesExercicio} onChange={handleChange} readOnly={readOnly} />
-        <Field label="Peso após (kg)" name="pesoAposExercicio" value={dados.pesoAposExercicio} onChange={handleChange} readOnly={readOnly} />
-        <Field label="Duracao (min)" name="duracaoExercicioMin" value={dados.duracaoExercicioMin} onChange={handleChange} readOnly={readOnly} />
-        <Field label="Volume ingerido (ml)" name="volumeIngeridoMl" value={dados.volumeIngeridoMl} onChange={handleChange} readOnly={readOnly} />
-        <Field label="Volume urinário (ml)" name="volumeUrinarioMl" value={dados.volumeUrinarioMl} onChange={handleChange} readOnly={readOnly} />
-        <Field label="Modalidade" name="modalidade" value={dados.modalidade} onChange={handleChange} readOnly={readOnly} type="text" />
-        <Field label="Temperatura ambiente (C)" name="temperaturaAmbiente" value={dados.temperaturaAmbiente} onChange={handleChange} readOnly={readOnly} />
-        <div className="eval-field" style={{ gridColumn: '1 / -1' }}>
-          <label className="eval-label">Observações</label>
-          <textarea
-            className="eval-textarea"
-            name="observacoes"
-            value={dados.observacoes}
-            onChange={handleChange}
-            rows="3"
-            disabled={readOnly}
-          />
+      <AvaliacaoSecao id="hidratacao-sessao" titulo="Dados da sessão">
+        <div className="eval-grid">
+          <Field label="Data" name="dataAvaliacao" value={dados.dataAvaliacao} onChange={handleChange} readOnly={readOnly} type="date" />
+          <Field label="Peso antes (kg)" name="pesoAntesExercicio" value={dados.pesoAntesExercicio} onChange={handleChange} readOnly={readOnly} />
+          <Field label="Peso após (kg)" name="pesoAposExercicio" value={dados.pesoAposExercicio} onChange={handleChange} readOnly={readOnly} />
+          <Field label="Duracao (min)" name="duracaoExercicioMin" value={dados.duracaoExercicioMin} onChange={handleChange} readOnly={readOnly} />
+          <Field label="Volume ingerido (ml)" name="volumeIngeridoMl" value={dados.volumeIngeridoMl} onChange={handleChange} readOnly={readOnly} />
+          <Field label="Volume urinário (ml)" name="volumeUrinarioMl" value={dados.volumeUrinarioMl} onChange={handleChange} readOnly={readOnly} />
+          <Field label="Modalidade" name="modalidade" value={dados.modalidade} onChange={handleChange} readOnly={readOnly} type="text" />
+          <Field label="Temperatura ambiente (C)" name="temperaturaAmbiente" value={dados.temperaturaAmbiente} onChange={handleChange} readOnly={readOnly} />
+          <Campo rotulo="Observações" className="eval-field av-inteiro">
+            <textarea
+              className="eval-textarea"
+              name="observacoes"
+              value={dados.observacoes}
+              onChange={handleChange}
+              rows="3"
+              disabled={readOnly}
+            />
+          </Campo>
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Estratégia hídrica e adesão</h4>
+      <AvaliacaoSecao id="hidratacao-estrategia" titulo="Estratégia hídrica e adesão" className="eval-section">
+        {/* As cores das bolinhas são o dado da própria escala; o texto ao
+            lado diz o que cada uma significa. As três mais escuras levam o
+            número em cor clara (contraste medido em AvaliacaoHidratacao.css). */}
         <details className="eval-urine-guide">
           <summary>Escala de cor da urina — Armstrong (1-8)</summary>
           <ul className="eval-urine-scale">
@@ -410,9 +425,9 @@ const AvaliacaoHidratacao = ({
             <li><span className="eval-urine-dot" style={{ background: '#fde047' }}>3</span> Amarelo — hidratação aceitável</li>
             <li><span className="eval-urine-dot" style={{ background: '#facc15' }}>4</span> Amarelo escuro — iniciar reidratação</li>
             <li><span className="eval-urine-dot" style={{ background: '#ca8a04' }}>5</span> Âmbar — desidratação leve</li>
-            <li><span className="eval-urine-dot" style={{ background: '#92400e' }}>6</span> Laranja acastanhado — desidratação moderada</li>
-            <li><span className="eval-urine-dot" style={{ background: '#78350f' }}>7</span> Marrom — desidratação grave</li>
-            <li><span className="eval-urine-dot" style={{ background: '#44120a' }}>8</span> Marrom muito escuro / esverdeado — muito grave</li>
+            <li><span className="eval-urine-dot eval-urine-dot--escura" style={{ background: '#92400e' }}>6</span> Laranja acastanhado — desidratação moderada</li>
+            <li><span className="eval-urine-dot eval-urine-dot--escura" style={{ background: '#78350f' }}>7</span> Marrom — desidratação grave</li>
+            <li><span className="eval-urine-dot eval-urine-dot--escura" style={{ background: '#44120a' }}>8</span> Marrom muito escuro / esverdeado — muito grave</li>
           </ul>
           <p className="eval-urine-note">Escala baseada em Armstrong et al. (1998). Valores ≥ 4 indicam necessidade de intervenção hídrica.</p>
         </details>
@@ -424,44 +439,81 @@ const AvaliacaoHidratacao = ({
           <Field label="Sede percebida — 0 = sem sede · 10 = intensa" name="sedePercebida" value={dados.sedePercebida} onChange={handleChange} readOnly={readOnly} />
           <Field label="Adesão ao plano hídrico — 0 = nenhuma · 10 = total" name="adesaoHidricaPlanejada" value={dados.adesaoHidricaPlanejada} onChange={handleChange} readOnly={readOnly} />
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Resultados automáticos</h4>
-        <div className="eval-summary-grid">
-          <Summary label="Perda absoluta" value={formatValue(calculated.perdaPesoAbsolutaKg, 'kg', 3)} />
-          <Summary label="Perda percentual" value={formatValue(calculated.perdaPesoPercentual, '%', 2)} />
-          <Summary label="Taxa sudorese" value={formatValue(calculated.taxaSudoreseLh, 'L/h', 2)} />
-          <Summary label="Perda hídrica líquida" value={Number.isFinite(calculated.perdaHidricaLiquidaMl) ? `${Math.round(calculated.perdaHidricaLiquidaMl)} ml` : 'Não calculada'} />
-          <Summary label="Meta de reposição" value={Number.isFinite(metaReposicaoMl) ? `${metaReposicaoMl} ml` : 'Não calculada'} />
-          <Summary label="Adesão reposição" value={Number.isFinite(adesaoReposicaoPct) ? `${adesaoReposicaoPct}%` : 'Não calculada'} />
-          <Summary label="Classificação" value={classificacaoHidrica} />
-          <Summary label="Alerta" value={hydration?.classification?.alertLabel || 'Indefinido'} />
+      {/* Mesmos valores, casas e textos de ausência de antes ("Não
+          calculado"/"Não calculada"); a unidade saiu do texto do valor para
+          a caixa de unidade. A classificação da perda percentual vai escrita
+          e o tom só a acompanha. */}
+      <AvaliacaoSecao id="hidratacao-resultados" titulo="Resultados automáticos" className="eval-section">
+        <div className="av-resultados">
+          {/* Peso após maior que antes: o primeiro cartão mostra o ganho e a
+              perda percentual fica "—". */}
+          <ResultadoCalculado
+            rotulo={ganhoPeso ? 'Ganho de peso' : 'Perda absoluta'}
+            valor={ganhoPeso
+              ? formatValue(calculated.ganhoPesoKg, '', 3)
+              : Number.isFinite(calculated.perdaPesoAbsolutaKg) ? formatValue(calculated.perdaPesoAbsolutaKg, '', 3) : null}
+            unidade="kg"
+            semValor="Não calculado"
+          />
+          <ResultadoCalculado
+            rotulo="Perda percentual"
+            valor={Number.isFinite(calculated.perdaPesoPercentual) ? formatValue(calculated.perdaPesoPercentual, '', 2) : null}
+            unidade="%"
+            semValor={ganhoPeso ? undefined : 'Não calculado'}
+            classificacao={Number.isFinite(calculated.perdaPesoPercentual) ? classificacaoHidrica : null}
+            tom={alertLevel}
+          />
+          <ResultadoCalculado
+            rotulo="Taxa sudorese"
+            valor={Number.isFinite(calculated.taxaSudoreseLh) ? formatValue(calculated.taxaSudoreseLh, '', 2) : null}
+            unidade="L/h"
+            semValor={perdaSuorInconsistente ? undefined : 'Não calculado'}
+          />
+          <ResultadoCalculado
+            rotulo="Perda hídrica líquida"
+            valor={Number.isFinite(calculated.perdaHidricaLiquidaMl) ? `${Math.round(calculated.perdaHidricaLiquidaMl)}` : null}
+            unidade="ml"
+            semValor={perdaSuorInconsistente ? undefined : 'Não calculada'}
+          />
+          <ResultadoCalculado
+            rotulo="Meta de reposição"
+            valor={Number.isFinite(metaReposicaoMl) ? `${metaReposicaoMl}` : null}
+            unidade="ml"
+            semValor={perdaSuorInconsistente ? undefined : 'Não calculada'}
+          />
+          <ResultadoCalculado
+            rotulo="Adesão reposição"
+            valor={Number.isFinite(adesaoReposicaoPct) ? `${adesaoReposicaoPct}` : null}
+            unidade="%"
+            semValor="Não calculada"
+          />
+          <ResultadoCalculado className="hidratacao-resultado--texto" rotulo="Classificação" valor={classificacaoHidrica} />
+          <ResultadoCalculado className="hidratacao-resultado--texto" rotulo="Alerta" valor={hydration?.classification?.alertLabel || 'Indefinido'} />
         </div>
+        {/* Todos os avisos, não só o primeiro: ganho de peso e perda de suor
+            inconsistente costumam vir juntos. */}
         {Array.isArray(hydration?.warnings) && hydration.warnings.length > 0 && (
-          <div className="eval-note">
-            {hydration.warnings[0]}
-          </div>
+          <AvisoAvaliacao tipo="atencao">
+            {hydration.warnings.join(' ')}
+          </AvisoAvaliacao>
         )}
-      </div>
+      </AvaliacaoSecao>
 
-      {error && <div className="form-error-message">{error}</div>}
-      {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="form-error-message">{error}</AvisoAvaliacao>}
 
-      <div className="eval-actions">
-        {saveStatus && (
-          <span className={`save-indicator ${saveStatus}`}>
-            {saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}
-          </span>
-        )}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={() => salvar(false)} disabled={readOnly} loading={saveStatus === 'saving'}>
           <Save size={18} /> Salvar avaliação
         </Button>
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+    </AvaliacaoModulo>
   );
 };
 
+// Mesma assinatura e o mesmo <input> de antes (type padrão number); o Campo
+// da base só liga o rótulo ao controle.
 const Field = ({
   label,
   name,
@@ -470,8 +522,7 @@ const Field = ({
   readOnly,
   type = 'number'
 }) => (
-  <div className="eval-field">
-    <label className="eval-label">{label}</label>
+  <Campo rotulo={label} className="eval-field">
     <input
       type={type}
       className="eval-input"
@@ -480,14 +531,7 @@ const Field = ({
       onChange={onChange}
       disabled={readOnly}
     />
-  </div>
-);
-
-const Summary = ({ label, value }) => (
-  <div className="eval-summary-item">
-    <span>{label}</span>
-    <strong>{value}</strong>
-  </div>
+  </Campo>
 );
 
 const parseNumeric = (value) => {

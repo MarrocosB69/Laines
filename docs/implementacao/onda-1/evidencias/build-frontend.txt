@@ -1,0 +1,68 @@
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 3097 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      3.37 kB │ gzip:   1.20 kB
+dist/assets/LogoLaines-B7-PYaTO.webp                29.02 kB
+dist/assets/LogoLainesSidebar-Dl4vpC5x.png          48.00 kB
+dist/assets/AppointmentModal-R-T7youJ.css            3.93 kB │ gzip:   1.02 kB
+dist/assets/AlimentoBuscador-DCot8QVe.css            4.39 kB │ gzip:   1.19 kB
+dist/assets/PrescricaoPlano-BSBlCLYc.css             6.41 kB │ gzip:   1.56 kB
+dist/assets/PatientModal-eE2435Yg.css                8.87 kB │ gzip:   2.28 kB
+dist/assets/TeamPortal-DQb3yUis.css                 10.64 kB │ gzip:   2.67 kB
+dist/assets/LoginPage-D1blQx-s.css                  17.35 kB │ gzip:   4.39 kB
+dist/assets/ProntuarioTheme-BQ5xD8YE.css            17.49 kB │ gzip:   3.47 kB
+dist/assets/InscricaoPublica-BnhNqyxX.css           17.49 kB │ gzip:   4.36 kB
+dist/assets/AvaliacaoSocioeconomica-B4Sn035j.css    20.88 kB │ gzip:   4.64 kB
+dist/assets/AdminView-kyhlv1Gv.css                  27.25 kB │ gzip:   5.37 kB
+dist/assets/PrescricaoPlanoAlimentar-DpO9-ido.css   33.43 kB │ gzip:   6.26 kB
+dist/assets/ProfessorView-C-7AzUk7.css              34.66 kB │ gzip:   5.99 kB
+dist/assets/StudentView-3K_Xwmy_.css                35.19 kB │ gzip:   6.49 kB
+dist/assets/Extensao-BKkIjLXV.css                   43.10 kB │ gzip:   6.85 kB
+dist/assets/AthleteView-CkSvud29.css                43.52 kB │ gzip:   7.91 kB
+dist/assets/index-D-X9jOVm.css                      69.82 kB │ gzip:  15.19 kB
+dist/assets/AdminView-CEg8wobf.css                 125.02 kB │ gzip:  20.27 kB
+dist/assets/PatientProntuario-jV3FriWM.css         131.01 kB │ gzip:  22.06 kB
+dist/assets/AvaliacaoCompleta-D_vF-pv-.css         160.23 kB │ gzip:  22.59 kB
+dist/assets/LogoLaines-DsMt-FjT.js                   0.06 kB │ gzip:   0.08 kB
+dist/assets/formatters-ClqD7Vvc.js                   0.19 kB │ gzip:   0.13 kB
+dist/assets/validation-DmvXYhgz.js                   0.51 kB │ gzip:   0.34 kB
+dist/assets/ProfileSwitcher-B42Y8Rfh.js              0.51 kB │ gzip:   0.32 kB
+dist/assets/Button-BnnYUlkH.js                       0.53 kB │ gzip:   0.35 kB
+dist/assets/NotFound-CG4DVP62.js                     0.70 kB │ gzip:   0.47 kB
+dist/assets/evaluationSummaryUtils-99f3T2rG.js       0.85 kB │ gzip:   0.45 kB
+dist/assets/academicNavigation-Dvdt7PEi.js           1.09 kB │ gzip:   0.45 kB
+dist/assets/FeedbackState-hoFI2Gf4.js                1.64 kB │ gzip:   0.67 kB
+dist/assets/AthleteSidebar-CDPmnI9H.js               3.26 kB │ gzip:   1.38 kB
+dist/assets/RouteSidebarLayout-BT89GjmV.js           4.23 kB │ gzip:   1.80 kB
+dist/assets/TeamSidebar-CXorQ8jW.js                  4.41 kB │ gzip:   1.77 kB
+dist/assets/ProfessorSidebar-N9Gw29i8.js             5.36 kB │ gzip:   1.94 kB
+dist/assets/clinicalInstruments-D3cwkw5_.js          5.60 kB │ gzip:   1.81 kB
+dist/assets/StudentSideBar-C6o1Bl1U.js               5.91 kB │ gzip:   2.00 kB
+dist/assets/AlimentoBuscador-41vR5hQ_.js             5.92 kB │ gzip:   2.23 kB
+dist/assets/AppointmentModal-But6tQ6D.js             6.69 kB │ gzip:   2.70 kB
+dist/assets/Sidebar-nhzStczF.js                      7.65 kB │ gzip:   2.62 kB
+dist/assets/AdminView-Cavb4oYK.js                    9.64 kB │ gzip:   3.32 kB
+dist/assets/AvaliacaoSocioeconomica-BT4fybWf.js     10.54 kB │ gzip:   3.38 kB
+dist/assets/TeamPortal-LuV6M5B-.js                  12.87 kB │ gzip:   4.00 kB
+dist/assets/LoginPage-BuOPOJdk.js                   24.92 kB │ gzip:   6.69 kB
+dist/assets/vendor-icons-cNiGAJ8A.js                30.60 kB │ gzip:   9.97 kB
+dist/assets/StudentView-BKE9XPqu.js                 32.95 kB │ gzip:   9.63 kB
+dist/assets/PatientModal-Dm7p5xAy.js                33.40 kB │ gzip:   8.61 kB
+dist/assets/PrescricaoPlanoAlimentar-BCDaWjtb.js    33.70 kB │ gzip:   9.08 kB
+dist/assets/InscricaoPublica-DoJ2ugM5.js            36.42 kB │ gzip:  11.35 kB
+dist/assets/ProfessorView-BjUMRA50.js               39.21 kB │ gzip:  11.33 kB
+dist/assets/PrescricaoPlano-B7apAFzo.js             61.14 kB │ gzip:  17.75 kB
+dist/assets/vendor-framer-CaCtZtvu.js               79.93 kB │ gzip:  25.89 kB
+dist/assets/municipios-CJCBYBi_.js                  85.08 kB │ gzip:  28.87 kB
+dist/assets/Extensao-B4bI11OM.js                    94.12 kB │ gzip:  21.16 kB
+dist/assets/AthleteView-duwO6igP.js                 99.56 kB │ gzip:  25.98 kB
+dist/assets/index-D4isFBJR.js                      124.60 kB │ gzip:  37.47 kB
+dist/assets/AdminView-GjqRrwgg.js                  159.53 kB │ gzip:  39.97 kB
+dist/assets/vendor-charts-BrpwWnIR.js              203.62 kB │ gzip:  54.02 kB
+dist/assets/PatientProntuario-BHXwyZxj.js          216.25 kB │ gzip:  62.14 kB
+dist/assets/vendor-react-kCFeM73v.js               232.35 kB │ gzip:  74.58 kB
+dist/assets/AvaliacaoCompleta-CIECZXTZ.js          466.83 kB │ gzip: 118.53 kB
+dist/assets/vendor-D9sQ0-5B.js                     873.83 kB │ gzip: 247.49 kB
+✓ built in 2m 33s

@@ -1,103 +1,723 @@
-.user-modal-container {
-  --app-modal-content-max-width: 920px;
-}
+/* Modal de cadastro e edição de usuário (UserModal.jsx), na direção
+   "Energia e velocidade" da landing (docs/design/landing-guia-visual.md,
+   seção "Direção vigente"; docs/implementacao/telas-v2/change-intent.md,
+   onda D2). Vai para o `body` por createPortal.
 
-.user-modal-header .header-content {
-  max-width: 85%;
-}
+   O JSX continua com as classes `app-modal-*` de src/styles/modalSystem.css
+   (onda A, mudando em paralelo), mas nada aqui depende delas: casca,
+   cabeçalho, seletor de perfil, corpo, rodapé, campos e botões são
+   redeclarados no escopo `.user-modal-overlay`/`.user-modal-container`,
+   com seletores que vencem os globais em qualquer ordem de carga. O mesmo
+   vale para as armadilhas de src/index.css e src/styles/theme.css: h2/h3
+   com fonte e cor, `label` a 13 px, `input:not(...)` com 0,2,1, `button {
+   white-space: nowrap }` e as utilidades do Tailwind no JSX
+   (`md:col-span-2`, `flex-col gap-2`).
 
-.user-role-selector {
-  width: min(calc(100% - (var(--app-modal-padding-x) * 2)), var(--app-modal-content-max-width));
-  margin: 0.95rem auto 0;
-  padding: 0.55rem;
-  border-radius: 1rem;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.45rem;
-}
+   Perfil escolhido em botões de alternar (aria-pressed) com o ativo no
+   fundo do estádio, seções com título (h3), campos de 48 px ligados ao
+   rótulo (label[for]), dicas ligadas por aria-describedby, erro anunciado
+   (role=alert) e ligado ao botão de salvar, botões de 44 px com o primário
+   no degradê de largada. Sem transição de cor nem movimento. */
 
-.user-role-selector .role-btn {
-  min-height: 2.42rem;
-  border-radius: 999px;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
-  color: #5b6d81;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  display: inline-flex;
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../landing/landing-tokens.css';
+
+/* ── Véu e casca ─────────────────────────────────────────────────────── */
+.user-modal-overlay.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.32rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: color-mix(in srgb, var(--lt-color-stadium) 62%, transparent);
+  backdrop-filter: blur(2px);
 }
 
-.user-role-selector .role-btn:hover:not(:disabled) {
-  border-color: #bfcbd9;
-  color: #21364d;
-  transform: translateY(-1px);
-}
-
-.user-role-selector .role-btn.active {
-  border-color: #103355;
-  background: #103355;
-  color: #ffffff;
-}
-
-.user-role-selector .role-btn:disabled {
-  opacity: 0.58;
-  cursor: not-allowed;
-}
-
-.user-modal-form {
+.user-modal-overlay .user-modal-container {
+  --um-atencao-texto: #9a3412; /* o par de atenção de painel.css: 6,88:1 sobre o fundo abaixo */
+  --um-atencao-fundo: #fff7ed;
   display: flex;
   flex-direction: column;
-  gap: 0.95rem;
-  padding: 0;
-}
-
-.user-modal-form label {
+  box-sizing: border-box;
+  width: min(62rem, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   margin: 0;
-  font-size: 0.79rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 30px 72px -38px rgba(10, 36, 68, 0.6);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+.user-modal-overlay .user-modal-container:focus-visible { outline: none; }
+
+.user-modal-container p { margin: 0; line-height: var(--lt-leading-normal); }
+
+.user-modal-container :is(h2, h3) {
+  margin: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
   font-weight: 700;
-  color: var(--color-text-muted);
+  letter-spacing: 0;
 }
 
-.user-field-input,
-.user-field-select {
-  border-radius: var(--radius-md);
+/* ── Cabeçalho: ícone do perfil, título e fechar ─────────────────────── */
+.user-modal-container .user-modal-header.app-modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-3);
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-bottom: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface);
 }
 
-.user-modal-form .form-group {
+.user-modal-container .user-modal-header .header-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+}
+
+.user-modal-container .user-modal-heading-line {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
   min-width: 0;
 }
 
-.user-modal-form .form-group.full-width {
-  grid-column: 1 / -1;
+.user-modal-container .user-modal-heading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
 }
 
-.user-modal-form .form-section h3 {
+/* Ícone decorativo (aria-hidden): azul sobre a pista. */
+.user-modal-container .user-modal-header-icon.app-modal-header-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.user-modal-container .user-modal-header .app-modal-title {
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.user-modal-container .user-modal-header .app-modal-subtitle {
   margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.user-modal-container .user-modal-header .app-modal-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: calc(-1 * var(--lt-space-2)) calc(-1 * var(--lt-space-2)) 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .user-modal-container .user-modal-header .app-modal-close:hover:not(:disabled) {
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
+}
+
+/* ── Tipo de usuário: botões de alternar (aria-pressed) ──────────────── */
+.user-modal-container .role-selector.user-role-selector {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  width: auto;
+  margin: var(--lt-space-4) var(--lt-space-5) 0;
+  padding: var(--lt-space-1);
+  border: 0;
+  border-radius: calc(var(--lt-radius-control) + 0.25rem);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+}
+
+.user-modal-container .user-role-selector .role-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
 }
 
-.user-modal .modern-select {
-  appearance: none;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #64748b 50%),
-    linear-gradient(135deg, #64748b 50%, transparent 50%);
-  background-position: calc(100% - 16px) calc(50% - 2px), calc(100% - 11px) calc(50% - 2px);
-  background-size: 5px 5px, 5px 5px;
+.user-modal-container .user-role-selector .role-btn svg { flex: none; color: var(--lt-color-brand-blue); }
+.user-modal-container .user-role-selector .role-btn span { min-width: 0; overflow-wrap: anywhere; }
+
+/* O perfil escolhido: fundo do estádio e texto branco (13,93:1), além do
+   aria-pressed. Continua legível quando o modal trava a troca (edição). */
+.user-modal-container .user-role-selector .role-btn.active {
+  border-color: var(--lt-color-stadium);
+  background: var(--lt-color-stadium);
+  color: var(--lt-color-text-inverse);
+}
+
+.user-modal-container .user-role-selector .role-btn.active svg { color: var(--lt-color-text-inverse); }
+
+@media (hover: hover) {
+  .user-modal-container .user-role-selector .role-btn:not(.active):not(:disabled):hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+}
+
+/* Travado (edição, ou perfil sem permissão de criar aluno): apoio sobre
+   campo, 6,17:1. */
+.user-modal-container .user-role-selector .role-btn:disabled { cursor: not-allowed; }
+.user-modal-container .user-role-selector .role-btn:disabled:not(.active) {
+  border-color: var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+}
+
+.user-modal-container .user-role-selector .role-btn:disabled:not(.active) svg { color: var(--lt-color-text-muted); }
+
+.user-modal-container .user-role-selector .role-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Conta criada: resultado, e-mail institucional e aviso ───────────── */
+.user-modal-container .app-modal-body.user-credentials-result {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-height: 0;
+  margin: 0;
+  padding: var(--lt-space-6) var(--lt-space-5) var(--lt-space-5);
+  overflow-y: auto;
+  background: var(--lt-color-surface);
+  text-align: center;
+}
+
+.user-modal-container .user-credentials-result > * { box-sizing: border-box; max-width: 30rem; margin-inline: 0; }
+
+.user-modal-container .user-credentials-result__icon {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.user-modal-container .user-credentials-result h3 {
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+}
+
+.user-modal-container .user-credentials-result > p {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+.user-modal-container .user-credentials-result__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  width: 100%;
+}
+
+.user-modal-container .user-credentials-result__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  text-align: left;
+}
+
+.user-modal-container .user-credentials-result__label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* O e-mail quebra linha em vez de ser cortado: é para anotar. */
+.user-modal-container .user-credentials-result__value {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  padding: 0.125rem 0.125rem 0.125rem var(--lt-space-3);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+}
+
+.user-modal-container .user-credentials-result__value > svg { flex: none; color: var(--lt-color-brand-blue); }
+
+.user-modal-container .user-credentials-result__value span {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--lt-space-2) 0;
+  overflow-wrap: anywhere;
+}
+
+.user-modal-container .user-credentials-result__value .user-credentials-result__copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: calc(var(--lt-radius-control) - 2px);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .user-modal-container .user-credentials-result__value .user-credentials-result__copy:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+}
+
+.user-modal-container .user-credentials-result__value .user-credentials-result__copy:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Aviso de prazo do link: o par de atenção (6,88:1). */
+.user-modal-container .user-credentials-result__warning {
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--um-atencao-fundo);
+  color: var(--um-atencao-texto);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+}
+
+.user-modal-container .user-credentials-result .app-modal-footer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* ── Formulário: rola; o rodapé fica preso embaixo ───────────────────── */
+.user-modal-container .user-modal-form.app-modal-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-height: 0;
+  margin: 0;
+  padding: var(--lt-space-4) var(--lt-space-5) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--lt-color-surface);
+}
+
+/* Anula `.app-modal-body > *` (largura máxima e margem automática). */
+.user-modal-container .user-modal-form > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.user-modal-container .form-grid.user-form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+/* 0,3,0: vence `md:col-span-2` do Tailwind e a grade de modalSystem.css. */
+.user-modal-container .user-form-grid .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  grid-column: span 6;
+  min-width: 0;
+}
+
+.user-modal-container .user-form-grid .form-group.full-width,
+.user-modal-container .user-form-grid .form-section,
+.user-modal-container .user-form-grid .form-section-note { grid-column: 1 / -1; }
+
+/* Título de seção (h3): Sofia 700, ícone azul e a marca verde de largada. */
+.user-modal-container .user-form-grid .form-section.app-modal-form-section {
+  display: block;
+  margin: var(--lt-space-3) 0 0;
+  padding: var(--lt-space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.user-modal-container .user-form-grid > .form-section:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+
+.user-modal-container .user-form-grid .form-section h3 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding-left: 0.875rem;
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-snug);
+}
+
+.user-modal-container .user-form-grid .form-section h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0.2em;
+  width: 3px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+}
+
+.user-modal-container .user-form-grid .form-section h3 svg { flex: none; color: var(--lt-color-brand-blue); }
+
+/* Nota da seção: informativa, tinta sobre a pista (12,39:1). */
+.user-modal-container .user-form-grid .form-section-note {
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+/* 0,2,1: vence `label` de theme.css (13 px, cinza, margem de 6 px). */
+.user-modal-container .user-modal-form label {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* 0,3,1: vence `.app-modal-input:not(...):not(...)` (0,3,0) e o
+   `input:not(...)` de theme.css (0,2,1); o e-mail de contato não tem
+   classe e entra pelo tipo. Campo de 48 px, borda de componente (3,91:1)
+   e texto a 16 px, que evita o zoom do iOS. */
+.user-modal-container .user-modal-form input.user-field-input,
+.user-modal-container .user-modal-form input[type="email"],
+.user-modal-container .user-modal-form select.user-field-select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  opacity: 1;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI. Vale também para `.modern-select`, a mesma peça. */
+.user-modal-container .user-modal-form select.user-field-select {
+  padding-right: 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  padding-right: 2.15rem;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
 }
 
+.user-modal-container .user-modal-form input.user-field-input:focus,
+.user-modal-container .user-modal-form input[type="email"]:focus,
+.user-modal-container .user-modal-form select.user-field-select:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Travado (supervisores carregando ou função fixa na edição): apoio sobre
+   campo, 6,17:1. */
+.user-modal-container .user-modal-form select.user-field-select:disabled {
+  background-color: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  cursor: not-allowed;
+}
+
+.user-modal-container .user-modal-form input::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
+}
+
+/* E-mail institucional gerado: só leitura, no fundo de campo. */
+.user-modal-container .user-modal-form .readonly-field.user-readonly-field {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: var(--lt-space-2) 0.875rem;
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.user-modal-container .user-readonly-field > svg { flex: none; color: var(--lt-color-brand-blue); }
+.user-modal-container .user-readonly-field > span { min-width: 0; overflow-wrap: anywhere; }
+
+.user-modal-container .user-modal-form .field-hint.user-field-hint {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Erro do formulário: o par de perigo (5,91:1), anunciado ─────────── */
+.user-modal-container .user-modal-form .error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 1px solid color-mix(in srgb, var(--lt-color-danger-text) 25%, transparent);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.user-modal-container .user-modal-form .error-message svg { flex: none; margin-top: 0.0625rem; }
+
+/* ── Rodapé: preso ao pé da área que rola ────────────────────────────── */
+.user-modal-container .user-modal-form .user-modal-footer.app-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding: var(--lt-space-4) 0 var(--lt-space-5);
+  border: 0;
+  border-top: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface);
+}
+
+/* Direção declarada aqui: sem isso, abaixo de 760 px valeriam as de
+   modalSystem.css (coluna invertida e botões de largura total). */
+.user-modal-container .user-modal-footer .app-modal-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-2);
+  width: 100%;
+}
+
+.user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  width: auto;
+  min-width: 10rem;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-5);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+}
+
+/* Secundário: contorno de campo e texto azul (6,33:1). */
+.user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn.app-modal-btn--secondary {
+  border-color: var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+/* Primário: o degradê de largada (4,82:1 no topo e 6,20:1 na base). */
+.user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn.app-modal-btn--primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+@media (hover: hover) {
+  .user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn.app-modal-btn--secondary:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+
+  .user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn.app-modal-btn--primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+  }
+}
+
+.user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn:disabled { opacity: 0.6; cursor: progress; }
+
+.user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn:focus-visible,
+.user-modal-container .user-modal-header .app-modal-close:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Faixas de largura ───────────────────────────────────────────────── */
+@media (max-width: 61.25rem) {
+  .user-modal-container .role-selector.user-role-selector { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 45rem) {
+  .user-modal-container .role-selector.user-role-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .user-modal-container .user-form-grid .form-group { grid-column: 1 / -1; }
+}
+
+/* No celular a casca inteira rola (cabeçalho, perfil e formulário juntos),
+   para o seletor de perfil não roubar a altura do formulário; o rodapé
+   continua preso ao pé. */
+@media (max-width: 30rem) {
+  .user-modal-overlay .user-modal-container { width: calc(100vw - 1rem); overflow-y: auto; overscroll-behavior: contain; }
+  .user-modal-container .user-modal-form.app-modal-body { flex: 0 0 auto; min-height: auto; overflow: visible; padding: var(--lt-space-4) var(--lt-space-4) 0; }
+  .user-modal-container .user-modal-header.app-modal-header { padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-3); }
+  .user-modal-container .role-selector.user-role-selector { margin: var(--lt-space-3) var(--lt-space-4) 0; }
+  .user-modal-container .app-modal-body.user-credentials-result { padding: var(--lt-space-5) var(--lt-space-4) var(--lt-space-4); }
+  .user-modal-container .user-modal-form .user-modal-footer.app-modal-footer { padding-bottom: var(--lt-space-4); }
+
+  /* Botões empilhados, o primário em cima. */
+  .user-modal-container .user-modal-footer .app-modal-actions { flex-direction: column-reverse; align-items: stretch; }
+  .user-modal-container :is(.user-modal-footer, .user-credentials-result) .app-modal-btn { width: 100%; min-width: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LEGADO SEM CONSUMIDOR
+   Regras da versão anterior sem nenhum elemento que as use hoje: a caixa
+   `.modern-checkbox`, o `.user-coord-toggle`, o destaque `.highlight` do
+   campo só leitura e a senha provisória (`.user-credentials-result__
+   password*`), que a administração não exibe mais. Guardadas sem mudança
+   até decisão de remover (change-intent, "Não objetivos").
+   ══════════════════════════════════════════════════════════════════════ */
 .user-modal .modern-checkbox {
   width: 16px;
   height: 16px;
@@ -117,23 +737,6 @@
   font-weight: 600;
 }
 
-.user-modal .readonly-field {
-  min-height: 2.62rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: #f8fafc;
-  color: var(--color-text-muted);
-  font-size: 0.83rem;
-  padding: 0.56rem 0.74rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.user-readonly-field {
-  border-radius: var(--radius-md);
-}
-
 .user-modal .readonly-field.highlight {
   border-color: rgba(16, 51, 85, 0.3);
   background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
@@ -144,34 +747,21 @@
   border-color: rgba(16, 51, 85, 0.3);
 }
 
-.user-modal .field-hint {
-  margin: 0;
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
+.user-credentials-result__value--password {
+  background: #fefce8;
+  border-color: #fde68a;
 }
 
-.user-field-hint {
-  margin-top: 0.12rem;
+.user-credentials-result__password {
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #92400e;
 }
 
-.user-modal .error-message {
-  margin-top: 0.2rem;
-}
-
-.user-modal-footer {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-@media (max-width: 1100px) {
-  .user-role-selector {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .user-role-selector {
-    width: calc(100% - 1.76rem);
-  }
+.user-modal .readonly-field.highlight {
+  border-color: #c9ddc3;
+  background: #edf7eb;
+  color: #24431f;
 }

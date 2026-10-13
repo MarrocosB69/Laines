@@ -1,0 +1,28 @@
+{
+  "name": "LAINES - Sistema de Gestao Clinica",
+  "short_name": "LAINES",
+  "description": "Plataforma integrada de avaliacao nutricional e suporte multiprofissional.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7fafc",
+  "theme_color": "#103355",
+  "categories": ["health", "education", "productivity"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

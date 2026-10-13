@@ -10,16 +10,12 @@ export const normalizeUserRecord = (rawUser) => {
   const email = ensureString(rawUser.email).trim();
   const role = normalizeRole(rawUser.role);
   const mustChangePassword = !!rawUser.mustChangePassword;
-  const temporaryPassword = ensureString(rawUser.temporaryPassword || rawUser.tempPassword).trim();
-  const hasTemporaryPassword = typeof rawUser.hasTemporaryPassword === 'boolean'
-    ? rawUser.hasTemporaryPassword
-    : !!temporaryPassword;
   const passwordChanged = typeof rawUser.passwordChanged === 'boolean'
     ? rawUser.passwordChanged
     : !mustChangePassword;
 
   return {
-    ...rawUser,
+    ...Object.fromEntries(Object.entries(rawUser).filter(([key]) => !['passwordHash', 'tempPassword', 'temporaryPassword', 'hasTemporaryPassword'].includes(key))),
     id: id || undefined,
     uid: id || undefined,
     userId: id || undefined,
@@ -28,8 +24,6 @@ export const normalizeUserRecord = (rawUser) => {
     email,
     role,
     mustChangePassword,
-    temporaryPassword: temporaryPassword || null,
-    hasTemporaryPassword,
     passwordChanged
   };
 };

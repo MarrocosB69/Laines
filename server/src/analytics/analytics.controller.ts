@@ -9,68 +9,36 @@ import {
   UseGuards
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthenticatedUser, normalizeRole } from '../auth/access-control';
+import {
+  AuthenticatedUser,
+  canAccessAnalyticsDashboard,
+  canAccessAnalyticsReports,
+  canAccessOperationalAnalytics,
+  canReadDetailedAnalytics,
+  analyticsProjectScope,
+  hasAnyPermission,
+  resolveEffectiveAnonymize
+} from '../auth/access-control';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ADMIN_AREA_ROLES, ADMIN_ROLES, PERMISSIONS } from '../common/domain/access.constants';
 import { AnalyticsService } from './analytics.service';
-import { analyticsProjectScope, canReadDetailedAnalytics, resolveEffectiveAnonymize } from './analytics-access';
-
-const ADMIN_PANEL_PERMISSIONS = new Set<string>([
-  PERMISSIONS.ADMIN_ACCESS,
-  PERMISSIONS.USERS_MANAGE,
-  PERMISSIONS.PATIENTS_MANAGE,
-  PERMISSIONS.RESEARCH_MANAGE,
-  PERMISSIONS.REQUESTS_REVIEW,
-  PERMISSIONS.RESEARCH_CREATE,
-  PERMISSIONS.RESEARCH_UPDATE_OWN_AREA,
-  PERMISSIONS.EXTENSAO_CREATE,
-  PERMISSIONS.EXTENSAO_UPDATE_OWN_AREA,
-  PERMISSIONS.ENSINO_CREATE,
-  PERMISSIONS.ENSINO_UPDATE_OWN_AREA,
-  PERMISSIONS.MARKETING_CREATE,
-  PERMISSIONS.MARKETING_UPDATE_OWN_AREA
-]);
-
-const REPORTS_PERMISSIONS = new Set<string>([
-  PERMISSIONS.RESEARCH_MANAGE,
-  PERMISSIONS.MARKETING_CREATE,
-  PERMISSIONS.MARKETING_UPDATE_OWN_AREA
-]);
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
-  private hasAdminAreaRole(user?: AuthenticatedUser) {
-    const role = normalizeRole(user?.role);
-    return role ? (ADMIN_AREA_ROLES as readonly string[]).includes(role) : false;
-  }
-
-  private hasAnyPermission(user: AuthenticatedUser | undefined, allowedPermissions: Set<string>) {
-    const permissions = Array.isArray(user?.permissions) ? user.permissions : [];
-    return permissions.some((permission) => allowedPermissions.has(permission));
-  }
-
   private assertCanAccessDashboard(user?: AuthenticatedUser) {
-    if (this.hasAdminAreaRole(user) || this.hasAnyPermission(user, ADMIN_PANEL_PERMISSIONS)) {
-      return;
-    }
+    if (canAccessAnalyticsDashboard(user)) return;
     throw new ForbiddenException('Sem permissao para acessar indicadores administrativos.');
   }
 
   private assertCanAccessOperationalBoard(user?: AuthenticatedUser) {
-    const role = normalizeRole(user?.role);
-    if (role && (ADMIN_ROLES as readonly string[]).includes(role)) {
-      return;
-    }
+    if (canAccessOperationalAnalytics(user)) return;
     throw new ForbiddenException('Sem permissao para acessar o painel operacional da coordenacao.');
   }
 
   private assertCanAccessReports(user?: AuthenticatedUser) {
-    if (this.hasAdminAreaRole(user) || this.hasAnyPermission(user, REPORTS_PERMISSIONS)) {
-      return;
-    }
+    if (canAccessAnalyticsReports(user)) return;
     throw new ForbiddenException('Sem permissao para acessar relatorios administrativos.');
   }
 
@@ -149,6 +117,7 @@ export class AnalyticsController {
     return {
       generatedAt: result.generatedAt,
       filters: result.filters,
+      period: result.period,
       dataset: result.dataset,
       absenteeism: {
         byTurn: result.absenteeism.byTurn,

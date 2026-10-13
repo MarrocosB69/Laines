@@ -1,0 +1,1432 @@
+/* Base visual dos formulários de avaliação (onda "avaliações v2"), na
+   direção "Energia e velocidade" da landing (docs/design/landing-guia-visual.md,
+   seção "Direção vigente"). Contrato:
+   docs/implementacao/avaliacoes-v2/contrato-avaliacao.md.
+
+   Tudo escopado em `.av-modulo`: avaliacoes.css também é importado por
+   src/views/Athlete/AthleteSelfEvaluationModal.jsx, fora da onda, então nada
+   daqui pode valer fora da raiz. Dentro dela, além das peças `av-*` da base,
+   as classes legadas mais usadas (eval-*, valor-anterior*, save-indicator e
+   ui-button*) ganham o visual novo: um formulário que só adote a raiz já
+   fica coerente.
+
+   Especificidade: os controles usam (0,3,0), acima de
+   `input:not([type=checkbox]):not([type=radio])` de theme.css e de
+   `.eval-field input[type="text"]` de avaliacoes.css (0,2,1), e abaixo do
+   que o CSS de cada formulário pode escrever com `.av-modulo` + duas
+   classes. Onde avaliacoes.css tem regra mais forte (hover do botão, tom do
+   valor anterior, rótulo de campo obrigatório), a regra daqui tem uma classe
+   a mais, para não depender da ordem das folhas. O modo essencial de
+   AvaliacaoCompleta esconde campos com (0,5,0) e continua vencendo.
+
+   Armadilhas globais redeclaradas dentro da raiz: h1 com degradê recortado
+   no texto, h1…h6 em Poppins e com cor, `p` com entrelinha 1,6, `button {
+   white-space: nowrap }`, `label` a 13 px e `*:focus-visible` com contorno
+   verde.
+
+   Cores: só tokens --lt-* e os --av-* declarados na raiz, com contraste
+   medido por scripts/test-avaliacao-base.cjs. Sem modo escuro (o usuário
+   decide depois), sem animação e sem will-change.
+
+   As fontes vêm aqui pelo mesmo motivo de painel.css: ao recarregar direto
+   numa avaliação, a folha da landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../../views/landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.av-modulo {
+  /* Tons sem par em --lt-*: os mesmos de painel.css, medidos de novo. */
+  --av-atencao-texto: #9a3412;  /* 7,31:1 sobre branco · 6,88:1 sobre --av-atencao-fundo · 6,84:1 sobre --lt-color-surface-field */
+  --av-atencao-fundo: #fff7ed;
+  --av-atencao-traco: #c2410c;  /* gráfico, não texto: 5,18:1 sobre branco (piso 3:1) */
+  --av-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+  --av-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --av-sombra-largada: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  --av-sombra-largada-forte: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+  --av-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+  --av-controle-altura: 48px;
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+  animation: none;
+  transform: none;
+}
+
+/* A raiz costuma levar a classe legada eval-card (repassada para o modo
+   essencial). Duas regras de avaliacoes.css escapam do reset acima: o hover
+   (0,3,0), que levantava o módulo inteiro, e a trama de leitura em ::before. */
+.av-modulo.eval-card:not(.eval-card--readonly):hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.av-modulo.eval-card--readonly::before { content: none; }
+
+.av-modulo > * { min-width: 0; }
+
+/* Reset dos globais com :where(), para não pesar mais que uma classe: o CSS
+   próprio de cada formulário, importado depois, ainda ajusta um título. */
+.av-modulo :where(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.av-modulo :where(p) { line-height: var(--lt-leading-normal); }
+.av-modulo :where(button) { white-space: normal; }
+
+.av-modulo :where(a, button, summary, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+.av-modulo :where(img, canvas, video) { max-width: 100%; }
+
+/* Tabela larga rola dentro do próprio invólucro (bia-table-wrap e afins),
+   nunca a página: nada de rolagem horizontal a 390 px. */
+.av-modulo [class*="table-wrap"] { max-width: 100%; overflow-x: auto; }
+
+/* ── Cabeçalho do módulo: título na voz de campanha ──────────────────── */
+.av-modulo :is(.av-modulo__cabecalho, .eval-header) {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  min-width: 0;
+  margin: 0;
+  padding: var(--av-respiro) var(--av-respiro) calc(var(--av-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--av-sombra);
+}
+
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.av-modulo :is(.av-modulo__cabecalho, .eval-header)::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.av-modulo :is(.av-modulo__icone, .eval-icon) {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+.av-modulo :is(.av-modulo__titulos, .eval-header-text) { flex: 1 1 16rem; min-width: 0; }
+
+.av-modulo :is(.av-modulo__titulo, .eval-title) {
+  margin: 0;
+  padding-right: 0.1em;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-lg);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  text-transform: none;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.av-modulo :is(.av-modulo__descricao, .eval-subtitle) {
+  margin: var(--lt-space-2) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-weight: 400;
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .av-modulo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-3) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .av-modulo__data { font-variant-numeric: tabular-nums; }
+
+.av-modulo :is(.av-modulo__acoes, .eval-header-badge) {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-self: center;
+  gap: var(--lt-space-2);
+}
+
+/* Selo de status: o texto vai sempre escrito; o tom muda só o fundo. */
+.av-modulo :is(.av-selo, .eval-date-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  min-height: 1.75rem;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+}
+
+.av-modulo .av-selo--positivo { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.av-modulo .av-selo--atencao { background: var(--av-atencao-fundo); color: var(--av-atencao-texto); }
+.av-modulo .av-selo--perigo { background: var(--lt-color-danger-bg); color: var(--lt-color-danger-text); }
+
+/* ── Índice "Neste formulário" ───────────────────────────────────────── */
+.av-modulo .av-indice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4) var(--av-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--av-sombra);
+}
+
+/* Verde de texto (5,37:1), o eyebrow do login. */
+.av-modulo .av-indice__titulo {
+  margin: 0;
+  color: var(--lt-color-brand-green-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: var(--lt-leading-snug);
+  text-transform: uppercase;
+}
+
+.av-modulo .av-indice__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.av-modulo .av-indice__item { min-width: 0; margin: 0; padding: 0; }
+
+.av-modulo .av-indice__link {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+@media (hover: hover) {
+  .av-modulo .av-indice__link:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+.av-modulo .av-indice__link:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Seções: cartões brancos; dentro de outro cartão, viram faixa ───── */
+.av-modulo :is(.av-secao, .eval-section) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--av-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--av-sombra);
+  color: var(--lt-color-text);
+  scroll-margin-top: var(--lt-space-6);
+}
+
+.av-modulo :is(.av-secao, .eval-section) > * { min-width: 0; }
+
+/* Cartões internos dos formulários (Alimentar, Carga de treino, REDS) e o
+   quadro de prontidão: o mesmo cartão branco. */
+.av-modulo :is(.eval-card, .eval-readiness) {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--av-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--av-sombra);
+  animation: none;
+  transform: none;
+}
+
+/* Cartão dentro de cartão, não: a seção aninhada (subseção), o cartão e o
+   quadro de prontidão dentro de outro viram uma faixa com fio em cima. */
+.av-modulo :is(.av-secao, .eval-section, .eval-card) :is(.av-secao, .eval-section, .eval-card, .eval-readiness) {
+  padding: var(--lt-space-4) 0 0;
+  border-top: 1px solid var(--lt-color-border);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.av-modulo .av-secao__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  min-width: 0;
+}
+
+.av-modulo .av-secao__titulos { flex: 1 1 14rem; min-width: 0; }
+.av-modulo .av-secao__acoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+/* Título de seção: Sofia 700 com a marca verde de largada, o gesto do
+   cabeçalho da Visão geral em tamanho de seção. */
+.av-modulo :is(.av-secao__titulo, .eval-section-title) {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0 0 0 0.875rem;
+  border: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+  scroll-margin-top: var(--lt-space-6);
+}
+
+.av-modulo :is(.av-secao__titulo, .eval-section-title)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  bottom: 0.1em;
+  width: 4px;
+  height: auto;
+  border-radius: 2px;
+  background: var(--lt-color-brand-green);
+  transform: skewX(-12deg);
+}
+
+/* avaliacoes.css pinta o título da seção "primária" de verde (0,2,0). */
+.av-modulo .eval-section--primary :is(.eval-section-title, .eval-legend) { color: var(--lt-color-text); }
+
+/* Subseção (h5): sem a marca, um degrau abaixo. */
+.av-modulo .av-secao--sub { gap: var(--lt-space-3); }
+.av-modulo .av-secao--sub .av-secao__titulo { padding-left: 0; font-size: var(--lt-text-lead); }
+.av-modulo .av-secao--sub .av-secao__titulo::before { content: none; }
+
+.av-modulo :is(.av-secao__descricao, .eval-section-subtitle) {
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+}
+
+/* Grupo legado com fieldset/legend: legenda no degrau de subseção. */
+.av-modulo .eval-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+
+.av-modulo :is(.eval-legend, .eval-field-group__label) {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 var(--lt-space-3);
+  padding: 0 0 var(--lt-space-2);
+  border: 0;
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-lead);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .eval-field-group__label::before { content: none; }
+
+.av-modulo .eval-field-group { display: flex; flex-direction: column; gap: var(--lt-space-3); min-width: 0; }
+
+/* ── Grades ───────────────────────────────────────────────────────────
+   Colunas de 13rem ou mais: a 390 px sobra uma só, sem rolagem lateral. */
+.av-modulo :is(.av-grade, .eval-grid, .eval-field-group__grid) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--lt-space-4) var(--lt-space-5);
+  align-items: start;
+  min-width: 0;
+}
+
+.av-modulo .eval-grid.eval-grid-compact {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--lt-space-3) var(--lt-space-4);
+}
+
+.av-modulo :is(.av-inteiro, .eval-field-full) { grid-column: 1 / -1; }
+
+.av-modulo .av-resultados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+/* ── Campo: rótulo, valor anterior, controle com unidade, ajuda e erro ── */
+.av-modulo :is(.av-campo, .eval-field) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+}
+
+.av-modulo .av-campo__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  min-width: 0;
+}
+
+/* `label` global a 13 px e o .eval-label em caixa alta miúda: aqui o
+   rótulo é o de .ip-label da inscrição, Sofia 700 a 15 px. */
+.av-modulo :is(.av-campo__rotulo, .av-grupo__legenda),
+.av-modulo .eval-label,
+.av-modulo .eval-field .eval-label {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+/* "obrigatório" por extenso; vermelho de texto sobre branco. */
+.av-modulo .av-campo__obrigatorio {
+  display: inline;
+  margin: 0;
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Legado: avaliacoes.css escurece e engrossa o rótulo do campo com
+   `required` (0,4,0) e põe um asterisco depois. O asterisco fica; o peso e
+   a cor voltam ao padrão. */
+.av-modulo .eval-field:has(:is(.eval-input, .eval-select, .eval-textarea)[required]) .eval-label {
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.av-modulo .eval-field:has(:is(.eval-input, .eval-select, .eval-textarea)[required]) .eval-label::after {
+  color: var(--lt-color-danger-text);
+  font-weight: 700;
+}
+
+.av-modulo .av-campo__anterior { flex: none; max-width: 100%; }
+
+/* rotuloOculto (campo de tabela): sem valor anterior nem dica, a linha do
+   rótulo some da caixa, e o gap do campo não deixa um vão acima do
+   controle. `display: contents`, e não `none`: o <label> continua no
+   documento e segue dando nome ao controle. */
+.av-modulo .av-campo__cabeca:has(> .av-sr:only-child) { display: contents; }
+
+/* Controles: :where() segura a especificidade em (0,3,0) — vence theme.css
+   e avaliacoes.css (0,2,1) e deixa o CSS do formulário ajustar um caso.
+   O segundo :where() tira da regra o que não é caixa de texto. */
+.av-modulo :where(.av-controle, .eval-input, .eval-select, .eval-textarea, .eval-field :is(input, select, textarea)):where(:not([type="hidden"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not([type="checkbox"]):not([type="radio"]) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--av-controle-altura);
+  min-height: var(--av-controle-altura);
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  opacity: 1;
+  transition: border-color 160ms, box-shadow 160ms, background-color 160ms;
+}
+
+.av-modulo :where(.av-controle, .eval-input, .eval-select, .eval-textarea, .eval-field :is(input, select, textarea)):where(:not([type="hidden"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not([type="checkbox"]):not([type="radio"])::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o valor fica igual ao de inscricao-campos.css. */
+.av-modulo :where(select.av-controle, select.eval-select, select.eval-input, .eval-field select):not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+
+.av-modulo :where(textarea.av-controle, textarea.eval-input, .eval-textarea, .eval-field textarea):not([type="checkbox"]):not([type="radio"]) {
+  height: auto;
+  min-height: 7.5rem;
+  padding: 0.75rem 0.875rem;
+  resize: vertical;
+}
+
+.av-modulo :where(.av-controle, .eval-input, .eval-select, .eval-textarea, .eval-field :is(input, select, textarea)):where(:not([type="hidden"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not([type="checkbox"]):not([type="radio"]):focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Só leitura (readOnly vira `disabled` na maioria dos formulários): o valor
+   continua na cor de texto, legível para quem só consulta. */
+.av-modulo :where(.av-controle, .eval-input, .eval-select, .eval-textarea, .eval-field :is(input, select, textarea)):where(:not([type="hidden"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not([type="checkbox"]):not([type="radio"]):is(:disabled, [readonly]) {
+  border-color: var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  -webkit-text-fill-color: var(--lt-color-text);
+  cursor: default;
+}
+
+/* Erro e atenção: aria-invalid, as classes que os formulários já usam
+   (bia-input-invalid, dobras-input-warning...) e os modificadores da base.
+   O texto do estado vem do formulário; aqui é só a borda e o fundo. */
+.av-modulo :where(.av-controle, .eval-input, .eval-select, .eval-textarea, .eval-field :is(input, select, textarea)):where(:not([type="hidden"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not([type="checkbox"]):not([type="radio"]):is([class*="-input-warning"], .av-controle--atencao) {
+  border-color: var(--av-atencao-traco);
+  background-color: var(--av-atencao-fundo);
+}
+
+.av-modulo :where(.av-controle, .eval-input, .eval-select, .eval-textarea, .eval-field :is(input, select, textarea)):where(:not([type="hidden"], [type="file"], [type="range"], [type="color"], [type="button"], [type="submit"], [type="reset"], [type="image"])):not([type="checkbox"]):not([type="radio"]):is([aria-invalid="true"], [class*="-input-invalid"], .av-controle--erro) {
+  border-color: var(--lt-color-danger-text);
+  background-color: var(--lt-color-danger-bg);
+}
+
+/* Tom do Campo (`tom="atencao"|"perigo"`): (0,3,0), depois da regra base.
+   Foco, só leitura e erro (0,4,0) continuam vencendo; `background-color`,
+   e não o atalho, para não apagar a seta do select. */
+.av-modulo :where(.av-campo--atencao > .av-campo__controle > :is(input, select, textarea)):not([type="checkbox"]):not([type="radio"]) {
+  border-color: var(--av-atencao-traco);
+  background-color: var(--av-atencao-fundo);
+}
+
+.av-modulo :where(.av-campo--perigo > .av-campo__controle > :is(input, select, textarea)):not([type="checkbox"]):not([type="radio"]) {
+  border-color: var(--lt-color-danger-text);
+  background-color: var(--lt-color-danger-bg);
+}
+
+/* Unidade visível ao lado do controle, fora do placeholder. Apoio sobre
+   --lt-color-track-tint: 5,79:1. */
+.av-modulo .av-campo__controle { display: flex; align-items: stretch; min-width: 0; }
+.av-modulo .av-campo__controle > * { flex: 1 1 auto; min-width: 0; }
+
+.av-modulo .av-campo__controle > .av-campo__unidade {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--av-controle-altura);
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-left: 0;
+  border-radius: 0 var(--lt-radius-control) var(--lt-radius-control) 0;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: nowrap;
+}
+
+.av-modulo .av-campo__controle--unidade > .av-controle:not([type="checkbox"]):not([type="radio"]) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.av-modulo .av-campo__controle--unidade:focus-within > .av-campo__unidade { border-color: var(--lt-color-brand-blue); }
+
+.av-modulo :is(.av-campo__ajuda, .eval-hint) {
+  max-width: 70ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-color-text-subtle);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+}
+
+.av-modulo .av-campo__erro {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-1);
+  margin: 0;
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .av-campo__erro svg { flex: none; margin-top: 0.0625rem; }
+
+/* Ícone do tom no rótulo (triângulo na atenção, octógono no perigo) e a
+   ajuda escrita no tom: a cor nunca vai sozinha. Sobre branco,
+   --av-atencao-texto dá 7,31:1 e --lt-color-danger-text 6,47:1. */
+.av-modulo :is(.av-campo, .av-grupo) .av-tom__icone {
+  display: inline-block;
+  margin-right: var(--lt-space-1);
+  vertical-align: -0.15em;
+}
+
+.av-modulo :is(.av-campo--atencao, .av-grupo--atencao) .av-tom__icone { color: var(--av-atencao-traco); }
+.av-modulo :is(.av-campo--perigo, .av-grupo--perigo) .av-tom__icone { color: var(--lt-color-danger-text); }
+
+.av-modulo :is(.av-campo--atencao, .av-grupo--atencao) > .av-campo__ajuda { color: var(--av-atencao-texto); font-weight: 700; }
+.av-modulo :is(.av-campo--perigo, .av-grupo--perigo) > .av-campo__ajuda { color: var(--lt-color-danger-text); font-weight: 700; }
+
+/* ── Dica "?": botão de 44 px fora do rótulo e o texto num painel ────── */
+.av-modulo .av-dica__botao {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  min-width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: none;
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Na linha do rótulo, o alvo de 44 px avança 12 px sobre o respiro de
+   cima e 4 px sobre o de baixo: a linha fica com 28 px e não encosta no
+   controle (o gap do campo é de 8 px). O auto à direita empurra o valor
+   anterior para a ponta, como antes. */
+.av-modulo :is(.av-campo__cabeca, .av-grupo__cabeca, .av-resultado__cabeca) > .av-dica__botao {
+  align-self: center;
+  margin: -0.75rem auto -0.25rem calc(-1 * var(--lt-space-2));
+}
+
+/* A marca desenhada é o círculo de 24 px de antes; o alvo é o botão. */
+.av-modulo .av-dica__marca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1;
+  transition: border-color 160ms, background-color 160ms, color 160ms;
+}
+
+@media (hover: hover) {
+  .av-modulo .av-dica__botao:hover .av-dica__marca { border-color: var(--lt-color-brand-blue); }
+}
+
+/* Aberta: a marca fica cheia (muda a forma, não só a cor); o estado vai
+   em aria-expanded. Branco sobre --lt-color-brand-blue: 6,33:1. */
+.av-modulo .av-dica__botao[aria-expanded="true"] .av-dica__marca {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-brand-blue);
+  color: var(--lt-color-text-inverse);
+}
+
+/* O anel vai na marca, não na caixa transparente de 44 px. */
+.av-modulo .av-dica__botao:focus-visible { outline: none; box-shadow: none; }
+.av-modulo .av-dica__botao:focus-visible .av-dica__marca { box-shadow: var(--lt-focus-ring); }
+
+/* O painel fica no fluxo, logo abaixo da linha do "?": não cobre o
+   controle nem é cortado pela rolagem de uma tabela. Num contêiner flex com
+   quebra, ocupa a linha de baixo inteira. */
+.av-modulo .av-dica__painel {
+  display: grid;
+  flex: 1 1 100%;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  max-width: 70ch;
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  font-style: normal;
+  line-height: var(--lt-leading-normal);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* `display: grid` acima venceria o [hidden] da folha do navegador. */
+.av-modulo .av-dica__painel[hidden] { display: none; }
+.av-modulo .av-dica__linha { display: block; }
+
+/* Unidade e "opcional" legados (bia-, clinica-, dobras-, perimetros-,
+   eval-): avaliacoes.css os deixa em caixa baixa e a 45–75 % de opacidade.
+   A caixa baixa trocava "mmHg" por "mmhg"; a opacidade tirava o contraste. */
+.av-modulo :is(.eval-label, .eval-field) :is(.eval-unit-badge, [class*="-unit-badge"], [class*="-optional-badge"]),
+.av-modulo .eval-unit-badge {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  opacity: 1;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ── Grupo de opções: fieldset/legend e opções de 44 px ─────────────── */
+.av-modulo .av-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.av-modulo .av-grupo .av-grupo__legenda { float: none; width: 100%; margin-bottom: var(--lt-space-1); }
+
+.av-modulo .av-grupo__opcoes { display: flex; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
+.av-modulo .av-grupo--horizontal .av-grupo__opcoes { flex-direction: row; flex-wrap: wrap; }
+
+/* Grupo com dica ou rotulado por um título existente: role="group", e a
+   legenda (quando há) é um <span> na linha do "?". */
+.av-modulo .av-grupo__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  min-width: 0;
+  margin-bottom: var(--lt-space-1);
+}
+
+.av-modulo .av-grupo__cabeca > .av-grupo__legenda { width: auto; margin: 0; }
+
+/* Tom do grupo (questão de risco): faixa no tom com um fio à esquerda e o
+   ícone na legenda. --lt-color-text sobre --av-atencao-fundo e sobre
+   --lt-color-danger-bg passa de 12:1. */
+.av-modulo :is(.av-grupo--atencao, .av-grupo--perigo) {
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+}
+
+.av-modulo .av-grupo--atencao { background: var(--av-atencao-fundo); box-shadow: inset 3px 0 0 var(--av-atencao-traco); }
+.av-modulo .av-grupo--perigo { background: var(--lt-color-danger-bg); box-shadow: inset 3px 0 0 var(--lt-color-danger-text); }
+
+/* A opção inteira é o alvo; o estado marcado é o do próprio controle
+   nativo, a cor só acompanha. */
+.av-modulo .av-opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 400;
+  line-height: var(--lt-leading-snug);
+  cursor: pointer;
+  transition: border-color 160ms, background-color 160ms;
+}
+
+.av-modulo .av-opcao input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: inherit;
+}
+
+.av-modulo .av-opcao__texto { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; overflow-wrap: anywhere; }
+.av-modulo .av-opcao__descricao { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+@media (hover: hover) {
+  .av-modulo .av-opcao:hover { border-color: var(--lt-color-brand-blue); }
+}
+
+.av-modulo .av-opcao:has(input:checked) {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  font-weight: 700;
+}
+
+.av-modulo .av-opcao:has(input:disabled) { cursor: default; background: var(--lt-color-surface-field); }
+
+.av-modulo .av-opcao:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Resultado calculado ─────────────────────────────────────────────
+   Valor na voz de campanha, unidade e classificação escritas. O tom muda
+   a raia e o selo da classificação, nunca o fundo do cartão. */
+.av-modulo .av-resultado {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) calc(var(--lt-space-4) + 0.25rem);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+}
+
+.av-modulo .av-resultado::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--av-tom, var(--av-raia));
+  transform: skewX(-12deg);
+}
+
+.av-modulo .av-resultado--positivo { --av-tom: var(--lt-color-brand-green); }
+.av-modulo .av-resultado--atencao { --av-tom: var(--av-atencao-traco); }
+.av-modulo .av-resultado--perigo { --av-tom: var(--lt-color-danger-text); }
+
+.av-modulo .av-resultado__rotulo {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .av-resultado__valor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--lt-space-1);
+  margin: 0;
+  line-height: 1;
+}
+
+.av-modulo .av-resultado__numero {
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.625rem, 2.2vw, 2rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Ausência escrita ("Não calculado"): texto de apoio, não número. */
+.av-modulo .av-resultado__numero--texto {
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .av-resultado__valor--ausente .av-resultado__numero { color: var(--lt-color-text-muted); }
+
+.av-modulo .av-resultado__unidade { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 700; }
+
+.av-modulo .av-resultado__classificacao {
+  align-self: flex-start;
+  margin: var(--lt-space-1) 0 0;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .av-resultado--positivo .av-resultado__classificacao { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.av-modulo .av-resultado--atencao .av-resultado__classificacao { background: var(--av-atencao-fundo); color: var(--av-atencao-texto); }
+.av-modulo .av-resultado--perigo .av-resultado__classificacao { background: var(--lt-color-danger-bg); color: var(--lt-color-danger-text); }
+
+/* Rótulo com dica: o "?" na mesma linha e o texto da dica embaixo. */
+.av-modulo .av-resultado__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Valor em texto: a classificação é o próprio valor ("Prioridade: Alta"),
+   então vai em texto, no tom. Sobre --lt-color-surface-field (o fundo do
+   cartão), os três passam de 4,5:1 (medido no teste). */
+.av-modulo .av-resultado--texto .av-resultado__numero--texto { font-size: var(--lt-text-lead); }
+.av-modulo .av-resultado--texto.av-resultado--positivo .av-resultado__numero { color: var(--lt-color-success-text); }
+.av-modulo .av-resultado--texto.av-resultado--atencao .av-resultado__numero { color: var(--av-atencao-texto); }
+.av-modulo .av-resultado--texto.av-resultado--perigo .av-resultado__numero { color: var(--lt-color-danger-text); }
+
+/* Variação em relação ao anterior: o sinal vem escrito pelo formulário;
+   sem `melhorQuando`, fica neutra (um aumento não é bom por si). */
+.av-modulo .av-resultado__variacao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .av-resultado__variacao svg { flex: none; }
+.av-modulo .av-resultado__variacao--positivo { color: var(--lt-color-success-text); }
+.av-modulo .av-resultado__variacao--atencao { color: var(--av-atencao-texto); }
+
+.av-modulo :is(.av-resultado__referencia, .av-resultado__metodo) {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* Resumo legado (eval-summary-*): o mesmo desenho do resultado. */
+.av-modulo .eval-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.av-modulo .eval-summary-item,
+.av-modulo .eval-summary-item:hover {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  transform: none;
+  transition: none;
+}
+
+.av-modulo .eval-summary-item span {
+  display: block;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: var(--lt-leading-snug);
+  text-transform: none;
+}
+
+.av-modulo .eval-summary-item strong {
+  display: block;
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.375rem, 1.8vw, 1.625rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* ── Avisos: informativo, atenção, perigo e sucesso ──────────────────── */
+.av-modulo :is(.av-aviso, .eval-note) {
+  --av-aviso-tom: var(--lt-color-brand-blue);
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 500;
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .av-aviso { display: flex; align-items: flex-start; gap: var(--lt-space-2); }
+
+.av-modulo :is(.av-aviso, .eval-note)::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--av-aviso-tom);
+  transform: skewX(-12deg);
+}
+
+.av-modulo :is(.av-aviso--atencao, .eval-note--warning) {
+  --av-aviso-tom: var(--av-atencao-traco);
+  background: var(--av-atencao-fundo);
+  color: var(--av-atencao-texto);
+}
+
+.av-modulo :is(.av-aviso--perigo, .eval-note--danger) {
+  --av-aviso-tom: var(--lt-color-danger-text);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+}
+
+.av-modulo :is(.av-aviso--sucesso, .eval-note--success) {
+  --av-aviso-tom: var(--lt-color-brand-green);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.av-modulo :is(.av-aviso, .eval-note) strong { color: inherit; font-weight: 700; }
+.av-modulo .av-aviso__icone { flex: none; margin-top: 0.125rem; color: var(--av-aviso-tom); }
+.av-modulo .av-aviso__texto { min-width: 0; }
+
+/* ── Prontidão do módulo ─────────────────────────────────────────────
+   O estado vem escrito (e, quando o item traz um valor, lido pelo leitor
+   de tela). A marca muda de forma além de cor: círculo cheio (ok),
+   triângulo (atenção), losango (crítico) e anel vazio (pendente). */
+.av-modulo .eval-readiness { display: grid; gap: var(--lt-space-3); }
+.av-modulo .eval-readiness__header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2); }
+
+.av-modulo .eval-readiness__header strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .eval-readiness__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-2);
+}
+
+.av-modulo .eval-readiness__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.av-modulo .eval-readiness__label {
+  display: block;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .eval-readiness__item strong {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .eval-readiness__item .eval-readiness__dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--lt-color-text-subtle);
+}
+
+.av-modulo .eval-readiness__item--ok .eval-readiness__dot {
+  background: var(--lt-color-brand-green);
+  box-shadow: none;
+}
+
+.av-modulo :is(.eval-readiness__item--warning, .eval-readiness__item--attention) .eval-readiness__dot {
+  width: 0.875rem;
+  border-radius: 0;
+  background: var(--av-atencao-traco);
+  box-shadow: none;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.av-modulo .eval-readiness__item--danger .eval-readiness__dot {
+  border-radius: 1px;
+  background: var(--lt-color-danger-text);
+  box-shadow: none;
+  transform: rotate(45deg) scale(0.85);
+}
+
+/* ── Valor anterior e tendência ──────────────────────────────────────── */
+.av-modulo .valor-anterior {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem 0.375rem;
+  margin-left: auto;
+  padding-left: 0;
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: var(--lt-leading-snug);
+  text-transform: none;
+  white-space: normal;
+}
+
+/* As opacidades de avaliacoes.css (0,6 e 0,85) tiravam o contraste. */
+.av-modulo .valor-anterior .valor-anterior__base { opacity: 1; color: var(--lt-color-text); }
+.av-modulo .valor-anterior .valor-anterior__quando { opacity: 1; color: var(--lt-color-text-subtle); }
+
+.av-modulo .valor-anterior .valor-anterior__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.av-modulo .valor-anterior.tom-bom .valor-anterior__delta { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.av-modulo .valor-anterior.tom-atencao .valor-anterior__delta { background: var(--av-atencao-fundo); color: var(--av-atencao-texto); }
+
+.av-modulo .av-tendencia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.av-modulo .av-tendencia__rotulo {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .av-tendencia__grafico { max-width: 100%; overflow: hidden; }
+.av-modulo .av-tendencia__grafico svg { display: block; }
+
+/* A regra de autor vence o atributo stroke do SVG do MiniSparkline. A
+   linha tracejada é referência (anterior ou alvo), não alerta: cinza. */
+.av-modulo .av-tendencia .mini-sparkline polyline { stroke: var(--lt-color-brand-blue); }
+.av-modulo .av-tendencia .mini-sparkline line { stroke: var(--lt-color-text-subtle); }
+
+.av-modulo .av-tendencia .mini-sparkline--empty {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Botões: primário no degradê de largada, secundário em contorno ──── */
+.av-modulo :is(.ui-button, .eval-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-5);
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+/* Branco sobre o degradê: 4,82:1 no topo e 6,20:1 na base. */
+.av-modulo :is(.ui-button-primary, .eval-btn-primary) {
+  border: 0;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: var(--av-sombra-largada);
+  color: var(--lt-color-text-inverse);
+}
+
+.av-modulo :is(.ui-button-secondary, .eval-btn-secondary) {
+  border: 1.5px solid var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+.av-modulo .ui-button-ghost {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+.av-modulo .ui-button-danger {
+  border: 1.5px solid transparent;
+  background: var(--lt-color-danger-bg);
+  box-shadow: none;
+  color: var(--lt-color-danger-text);
+}
+
+@media (hover: hover) {
+  .av-modulo :is(.ui-button-primary, .eval-btn-primary):hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: var(--av-sombra-largada-forte);
+    transform: none;
+  }
+
+  .av-modulo :is(.ui-button-secondary, .eval-btn-secondary, .ui-button-ghost):hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .av-modulo .ui-button-danger:hover:not(:disabled) { border-color: var(--lt-color-danger-text); background: var(--lt-color-danger-bg); }
+}
+
+.av-modulo :is(.ui-button, .eval-btn):active { transform: none; }
+
+.av-modulo :is(.ui-button, .eval-btn):focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.av-modulo :is(.ui-button, .eval-btn):disabled { box-shadow: none; opacity: 0.6; cursor: not-allowed; }
+
+/* ── Barra de ações e status de salvamento ───────────────────────────── */
+.av-modulo :is(.av-acoes, .eval-actions) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-3);
+  margin: 0;
+  padding: var(--lt-space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.av-modulo .av-acoes__status { display: inline-flex; align-items: center; gap: var(--lt-space-1); margin-right: auto; }
+
+/* O status é texto ("Salvando...", "Salvo", "Erro ao salvar"); o tom e o
+   ícone só acompanham. */
+.av-modulo .save-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  min-height: 2rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .save-indicator.saved { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.av-modulo .save-indicator.error { background: var(--lt-color-danger-bg); color: var(--lt-color-danger-text); }
+
+/* ── Outras peças legadas ────────────────────────────────────────────── */
+.av-modulo .eval-empty {
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 1.5px dashed var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
+.av-modulo .eval-divider { height: 1px; margin: 0; background: var(--lt-color-border); }
+
+/* O rótulo "Resultados calculados" é conteúdo gerado por avaliacoes.css:
+   o texto fica, muda só a fonte e a cor. */
+.av-modulo .eval-results-section { margin: 0; padding-top: var(--lt-space-5); }
+.av-modulo .eval-results-section::before { height: 1px; background: var(--lt-color-border-brand); opacity: 1; }
+
+.av-modulo .eval-results-section::after {
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-green-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 30rem) {
+  .av-modulo :is(.av-acoes, .eval-actions) > :is(.ui-button, .eval-btn) { flex: 1 1 100%; }
+  .av-modulo .av-acoes__status { flex-basis: 100%; }
+}
+
+/* ── Só para leitor de tela ───────────────────────────────────────────
+   Por último: vence o rótulo quando o campo pede `rotuloOculto`. */
+.av-modulo .av-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

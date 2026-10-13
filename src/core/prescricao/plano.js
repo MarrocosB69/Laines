@@ -1,12 +1,13 @@
 import { cobertura, cargaGlicemicaItem, somaOuNull, valorNutriente } from './nutrientes.js';
 import { totaisRefeicao } from './totais.js';
+import { nomeParaExibicao } from './nomeAlimento.js';
 
 /** Junta o item prescrito com o alimento do catálogo. */
 export function resolverItem(item, catalogoPorId) {
   const a = catalogoPorId[item.alimentoId];
   return {
     ...item,
-    nome: a.nome,
+    nome: a.nomeExibicao || nomeParaExibicao(a),
     fonte: a.fonte,
     grupo: a.grupo,
     ig: a.ig,
@@ -67,24 +68,29 @@ export function calcularPlano(plano, metas, referencias, { catalogoPorId } = {})
     };
   };
 
-  const linhaMacro = (nutriente, rotulo, unidade, valor, referencia) => ({
-    nutriente,
-    rotulo,
-    unidade,
-    tipo: 'meta',
-    direcao: 'meta',
-    referencia,
-    valor,
-    cobertura: 1,
-    percentual: podeComparar(referencia) ? (valor / referencia) * 100 : null
-  });
+  const linhaMacro = (nutriente, rotulo, unidade, referencia) => {
+    const valor = somaOuNull(todosItens, (i) => valorNutriente(i, nutriente));
+    return {
+      nutriente,
+      rotulo,
+      unidade,
+      tipo: 'meta',
+      direcao: 'meta',
+      referencia,
+      valor,
+      cobertura: cobertura(todosItens, nutriente),
+      percentual: valor !== null && podeComparar(referencia) ? (valor / referencia) * 100 : null
+    };
+  };
 
   const macros = [
-    linhaMacro('kcal', 'Energia', 'kcal', dia.kcal, metas.kcal),
-    linhaMacro('cho', 'Carboidrato', 'g', dia.cho, metas.cho),
-    linhaMacro('ptn', 'Proteína', 'g', dia.ptn, metas.ptn),
-    linhaMacro('lip', 'Lipídio', 'g', dia.lip, metas.lip),
-    ...referencias.filter((r) => r.nutriente === 'fibra').map(linhaRef)
+    linhaMacro('kcal', 'Energia', 'kcal', metas.kcal),
+    linhaMacro('cho', 'Carboidrato', 'g', metas.cho),
+    linhaMacro('ptn', 'Proteína', 'g', metas.ptn),
+    linhaMacro('lip', 'Lipídio', 'g', metas.lip),
+    ...(Number.isFinite(metas.fibra)
+      ? [linhaMacro('fibra', 'Fibra', 'g', metas.fibra)]
+      : referencias.filter((r) => r.nutriente === 'fibra').map(linhaRef))
   ];
   const micros = referencias.filter((r) => r.nutriente !== 'fibra').map(linhaRef);
 

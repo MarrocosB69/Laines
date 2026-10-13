@@ -1,572 +1,836 @@
+/* Agenda do professor (ProfessorAgenda.jsx e a lista do dia em
+   agenda/ProfessorAgendaDayAppointments.jsx), na direção "Energia e
+   velocidade" da landing (docs/design/landing-guia-visual.md, seção
+   "Direção vigente"; docs/implementacao/telas-v2/change-intent.md, onda C).
+   Mesmo desenho das peças da Visão geral (src/components/painel/painel.css)
+   e da agenda do aluno (StudentAgenda.css): cartões brancos com
+   --lt-radius-card, títulos em Sofia 700, o título da página na voz de
+   campanha, alvos de 44 px, campos de 48 px e foco com --lt-focus-ring.
+
+   Tudo escopado em `.professor-agenda`, inclusive o carregando (o JSX o
+   envolve na mesma raiz). Armadilhas globais de src/index.css e
+   src/styles/theme.css declaradas de volta aqui, sem depender delas: h1
+   com degradê recortado no texto, h1…h6 em Poppins e com cor, `p` com
+   entrelinha 1,6, `button { white-space: nowrap; display: inline-flex }`,
+   `*:focus-visible` com contorno verde, `input:not(...)` com especificidade
+   0,2,1, `select` global e `.laines-feedback-state` (borda tracejada e
+   ícones de 48 px).
+
+   Calendário: o dia selecionado tem anel azul de 2 px e fundo claro; o de
+   hoje, o número dentro de um anel. As duas marcas são forma, não só cor,
+   e vão também em aria-pressed e aria-current="date" no JSX. Estado da
+   consulta sempre escrito (Agendada, Realizada, Remarcada, Falta).
+
+   Todo texto fica sobre superfície própria (branco, campo ou
+   --lt-color-track-tint): o contraste vale também com o modo escuro do
+   portal, que só escurece o fundo da página. Tons sem par em --lt-* são os
+   de painel.css, já medidos. As fontes vêm aqui pelo mesmo motivo de
+   painel.css: ao recarregar direto no portal, a landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
 .professor-agenda {
-  max-width: 1400px;
-  margin: 0 auto;
+  --pa-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --pa-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --pa-atencao-fundo */
+  --pa-atencao-fundo: #fff7ed;
+  --pa-atencao-traco: #c2410c; /* gráfico, não texto: 5,18:1 sobre branco */
+  --pa-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+  --pa-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding-bottom: 2rem;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0 0 var(--lt-space-6);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.professor-agenda-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.professor-agenda-header h1 {
-  margin: 0.4rem 0 0.2rem;
-  color: var(--text);
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-extrabold);
-}
-
-.professor-agenda-header p {
+/* Reset dos globais de título e parágrafo (0,1,1); cada peça dá o resto. */
+.professor-agenda :is(h1, h2, h3) {
   margin: 0;
-  color: #475569;
-  font-size: var(--font-size-sm);
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
 }
 
-.professor-agenda-header-actions {
+.professor-agenda p { margin: 0; line-height: var(--lt-leading-normal); }
+.professor-agenda svg { flex: none; }
+
+/* ── Cabeçalho: título na voz de campanha ────────────────────────────── */
+.professor-agenda .professor-agenda-header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  margin: 0;
+  padding: var(--pa-respiro) var(--pa-respiro) calc(var(--pa-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pa-sombra);
+}
+
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.professor-agenda .professor-agenda-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.professor-agenda .professor-agenda-header > div:first-child { flex: 1 1 18rem; min-width: 0; }
+
+/* 0,3,0: vence `.professor-view .section-label` (ProfessorView.css). */
+.professor-agenda .professor-agenda-header .section-label {
+  display: block;
+  margin: 0 0 var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.professor-agenda .professor-agenda-header h1 {
+  position: relative;
+  margin: 0;
+  padding: 0 0.1em 0 0.32em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o gesto de .painel-cabecalho__titulo::before. */
+.professor-agenda .professor-agenda-header h1::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.professor-agenda .professor-agenda-header p {
+  margin-top: var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
+
+.professor-agenda .professor-agenda-header-actions {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.4rem;
+  gap: var(--lt-space-1);
+  min-width: 0;
 }
 
-.professor-agenda-refresh {
-  border: 1px solid var(--border);
-  background: #ffffff;
-  color: #1d3350;
-  border-radius: 999px;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  cursor: pointer;
-}
-
-.professor-agenda-refresh:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.professor-agenda-sync {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.professor-agenda-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.7rem;
-}
-
-.professor-agenda-stat {
-  border: 1px solid var(--border);
-  background: #ffffff;
-  border-radius: 0.9rem;
-  padding: 0.72rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-}
-
-.professor-agenda-stat span {
-  font-size: 0.72rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 800;
-}
-
-.professor-agenda-stat strong {
-  font-size: 1.15rem;
-  color: #1d3350;
-}
-
-.professor-agenda-stat.success {
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(236, 253, 245, 0.85);
-}
-
-.professor-agenda-stat.warning {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(255, 251, 235, 0.85);
-}
-
-.professor-agenda-stat.danger {
-  border-color: rgba(239, 68, 68, 0.32);
-  background: rgba(254, 242, 242, 0.88);
-}
-
-.professor-agenda-filters {
-  border: 1px solid var(--border);
-  background: #ffffff;
-  border-radius: 1rem;
-  padding: 0.7rem;
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 0.55rem;
-}
-
-.professor-agenda-search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 0.85rem;
-  padding: 0.5rem 0.65rem;
-  color: #64748b;
-}
-
-.professor-agenda-search input {
-  width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.88rem;
-  color: #1d3350;
-}
-
-.professor-agenda-filters select,
-.professor-agenda-filters button {
-  border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  padding: 0.5rem 0.65rem;
-  background: #ffffff;
-  color: #1d3350;
-  font-size: 0.82rem;
+.professor-agenda .professor-agenda-sync {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
   font-weight: 600;
 }
 
-.professor-agenda-filters button {
+/* ── Botões secundários: contorno de campo e texto azul (6,33:1) ─────── */
+.professor-agenda .professor-agenda-refresh,
+.professor-agenda .professor-agenda-filters .professor-agenda-clear,
+.professor-agenda .open-prontuario-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-.professor-agenda-filters button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.professor-agenda .professor-agenda-refresh:disabled { opacity: 0.6; cursor: progress; }
+.professor-agenda .professor-agenda-filters .professor-agenda-clear:disabled { opacity: 0.55; cursor: not-allowed; }
+
+@media (hover: hover) {
+  .professor-agenda .professor-agenda-refresh:hover:not(:disabled),
+  .professor-agenda .professor-agenda-filters .professor-agenda-clear:hover:not(:disabled),
+  .professor-agenda .open-prontuario-btn:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
 }
 
-.professor-agenda-error {
-  padding: 0.75rem 0.9rem;
-  font-size: 0.84rem;
+/* ── Resumo do mês: quatro contadores com o estado escrito ───────────── */
+.professor-agenda .professor-agenda-stats {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+@media (min-width: 22.5rem) {
+  .professor-agenda .professor-agenda-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 64rem) {
+  .professor-agenda .professor-agenda-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.professor-agenda .professor-agenda-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pa-sombra);
+  color: var(--lt-color-text);
+}
+
+/* O acento do tom: marca curta e inclinada no alto, como no Painel. O
+   nome do estado vem escrito no rótulo; a cor só acompanha. */
+.professor-agenda .professor-agenda-stat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-5);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--pa-tom, var(--lt-color-brand-blue));
+  transform: skewX(-20deg);
+}
+
+.professor-agenda .professor-agenda-stat.success { --pa-tom: var(--lt-color-brand-green); }
+.professor-agenda .professor-agenda-stat.warning { --pa-tom: var(--pa-atencao-traco); }
+.professor-agenda .professor-agenda-stat.danger { --pa-tom: var(--lt-color-danger-text); }
+
+.professor-agenda .professor-agenda-stat span {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.professor-agenda .professor-agenda-stat strong {
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.875rem, 2.6vw, 2.375rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Filtros: busca, dois seletores e limpar, em campos de 48 px ─────── */
+.professor-agenda .professor-agenda-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--pa-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pa-sombra);
+}
+
+@media (min-width: 48rem) {
+  .professor-agenda .professor-agenda-filters {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+}
+
+/* O campo inteiro é a caixa (ícone + texto); o foco aparece nela. */
+.professor-agenda .professor-agenda-search {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted); /* ícone: 6,59:1 */
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.professor-agenda .professor-agenda-search:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* 0,3,1: vence `input:not(...):not(...)` (0,2,1) e `.content-area input`. */
+.professor-agenda .professor-agenda-filters .professor-agenda-search input {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 45px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  text-overflow: ellipsis;
+}
+
+.professor-agenda .professor-agenda-filters .professor-agenda-search input:focus {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.professor-agenda .professor-agenda-filters .professor-agenda-search input::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o hex fica igual ao de inscricao-campos.css. */
+.professor-agenda .professor-agenda-filters select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 2.6rem 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.professor-agenda .professor-agenda-filters select:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.professor-agenda .professor-agenda-filters .professor-agenda-clear { min-height: 48px; }
+
+/* Erro de carga: o par de perigo (5,91:1), escrito. */
+.professor-agenda .professor-agenda-error {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
   text-align: left;
 }
 
-.professor-agenda-layout {
+/* ── Disposição: calendário e o dia selecionado ──────────────────────── */
+.professor-agenda .professor-agenda-layout {
   display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.4fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--lt-space-4);
+  min-width: 0;
 }
 
-.professor-agenda-calendar-card,
-.professor-agenda-day-card {
-  border: 1px solid var(--border);
-  background: #ffffff;
-  border-radius: 1.1rem;
-  padding: 0.9rem;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+@media (min-width: 64rem) {
+  .professor-agenda .professor-agenda-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: var(--lt-space-5);
+  }
 }
 
-.professor-agenda-month-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.7rem;
-}
-
-.professor-agenda-month-header h3 {
+.professor-agenda .professor-agenda-calendar-card,
+.professor-agenda .professor-agenda-day-card {
+  box-sizing: border-box;
+  min-width: 0;
   margin: 0;
-  color: #1d3350;
-  font-size: 0.98rem;
-  text-transform: capitalize;
+  padding: var(--pa-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pa-sombra);
+  color: var(--lt-color-text);
 }
 
-.month-nav-btn {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--border);
-  border-radius: 0.7rem;
-  background: #ffffff;
+/* ── Mês: anterior e próximo em alvos de 44 px ───────────────────────── */
+.professor-agenda .professor-agenda-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2);
+  margin: 0 0 var(--lt-space-3);
+}
+
+.professor-agenda .professor-agenda-month-header h3,
+.professor-agenda .day-card-header h3 {
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+}
+
+.professor-agenda .professor-agenda-month-header h3 { flex: 1 1 auto; min-width: 0; text-align: center; }
+
+.professor-agenda .month-nav-btn {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  color: #334155;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
   cursor: pointer;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-.professor-agenda-weekdays {
+@media (hover: hover) {
+  .professor-agenda .month-nav-btn:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+/* ── Grade do mês ────────────────────────────────────────────────────── */
+.professor-agenda .professor-agenda-weekdays,
+.professor-agenda .professor-agenda-days-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.45rem;
-  margin-bottom: 0.45rem;
+  gap: var(--lt-space-1);
 }
 
-.professor-agenda-weekdays span {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #64748b;
+.professor-agenda .professor-agenda-weekdays { margin: 0 0 var(--lt-space-1); }
+
+.professor-agenda .professor-agenda-weekdays span {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
   text-align: center;
+  text-transform: uppercase;
 }
 
-.professor-agenda-days-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.45rem;
-}
+.professor-agenda .calendar-day-empty { min-height: var(--lt-target-min); }
 
-.calendar-day-empty {
-  height: 54px;
-}
-
-.calendar-day-btn {
-  height: 54px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 0.75rem;
-  background: #f8fafc;
-  color: #334155;
+/* Dia sem consulta: número de apoio no fundo de campo. Com consulta:
+   cartão branco com contorno, número em tinta e a contagem num selo. */
+.professor-agenda .calendar-day-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
+  gap: 0.125rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-1) 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transform: none;
+  transition: background-color 160ms, box-shadow 160ms;
 }
 
-.calendar-day-btn:hover {
-  border-color: rgba(30, 64, 175, 0.3);
-  background: #eef3fb;
+@media (min-width: 30rem) {
+  .professor-agenda .calendar-day-btn,
+  .professor-agenda .calendar-day-empty { min-height: 3.25rem; }
 }
 
-.calendar-day-btn.is-selected {
-  border-color: rgba(29, 51, 80, 0.45);
-  background: rgba(30, 64, 175, 0.08);
+.professor-agenda .calendar-day-btn.has-items {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border-field);
+  color: var(--lt-color-text);
 }
 
-.calendar-day-btn.is-today .day-number {
-  color: #1d4ed8;
+.professor-agenda .day-number {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 0.125rem;
+  border: 2px solid transparent;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.calendar-day-btn.has-items {
-  background: rgba(241, 245, 249, 0.95);
+.professor-agenda .calendar-day-btn.has-items .day-number { font-weight: 700; }
+
+/* Hoje: o número dentro de um anel (aria-current="date" no JSX). */
+.professor-agenda .calendar-day-btn.is-today .day-number {
+  border-color: currentcolor;
+  color: var(--lt-color-text);
 }
 
-.day-number {
-  font-size: 0.82rem;
-  font-weight: 800;
+/* Selecionado: anel azul de 2 px e fundo claro (aria-pressed no JSX). */
+.professor-agenda .calendar-day-btn.is-selected {
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 2px var(--lt-color-brand-blue);
+  color: var(--lt-color-brand-blue); /* 5,57:1 sobre --lt-color-track-tint */
 }
 
-.day-badge {
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: #1d3350;
-  color: #ffffff;
-  font-size: 0.67rem;
-  font-weight: 800;
+.professor-agenda .calendar-day-btn.is-selected.is-today .day-number { color: var(--lt-color-brand-blue); }
+
+@media (hover: hover) {
+  .professor-agenda .calendar-day-btn:not(.is-selected):hover {
+    background: var(--lt-color-track-tint);
+    box-shadow: inset 0 0 0 1px var(--lt-color-brand-blue);
+  }
+}
+
+/* Contagem de consultas do dia: branco sobre --lt-color-brand-blue, 6,33:1. */
+.professor-agenda .day-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.3rem;
+  box-sizing: border-box;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3125rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-brand-blue);
+  color: var(--lt-color-text-inverse);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-.day-card-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  color: #1d3350;
-  text-transform: capitalize;
+/* ── O dia selecionado ───────────────────────────────────────────────── */
+.professor-agenda .day-card-header { margin: 0 0 var(--lt-space-4); }
+
+.professor-agenda .day-card-header p {
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
 }
 
-.day-card-header p {
-  margin: 0.25rem 0 0;
-  color: #64748b;
-  font-size: 0.82rem;
-}
-
-.day-empty-state {
-  border: 1px dashed rgba(148, 163, 184, 0.35);
-  border-radius: 0.9rem;
-  padding: 1rem;
-  margin-top: 0.85rem;
-  color: #64748b;
+.professor-agenda .day-appointments-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  text-align: center;
-}
-
-.day-empty-state p {
+  gap: var(--lt-space-2);
+  min-width: 0;
   margin: 0;
 }
 
-.day-appointments-list {
-  margin-top: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  max-height: 460px;
-  overflow: auto;
+/* Em duas colunas, a lista rola dentro do cartão para não esticar a
+   página além do calendário; numa coluna, ela corre com a página. */
+@media (min-width: 64rem) {
+  .professor-agenda .day-appointments-list {
+    max-height: 460px;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
 }
 
-.day-appointment-item {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 0.85rem;
-  padding: 0.72rem 0.8rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.7rem;
-}
-
-.appointment-item-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.34rem;
-}
-
-.appointment-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: #334155;
-  font-size: 0.82rem;
-}
-
-.appointment-row strong {
-  color: #1d3350;
-}
-
-.appointment-meta {
-  margin-top: 0.25rem;
+/* Consulta: linha no fundo de campo com a raia, como .painel-lista__linha.
+   Sem espaço, o botão desce para baixo dos dados em vez de espremê-los. */
+.professor-agenda .day-appointment-item {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-3) var(--lt-space-3) var(--lt-space-3) var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
 }
 
-.meta-pill {
+.professor-agenda .day-appointment-item::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.5rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--pa-raia);
+  transform: skewX(-12deg);
+}
+
+.professor-agenda .appointment-item-main {
+  display: flex;
+  flex: 1 1 14rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.professor-agenda .appointment-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.professor-agenda .appointment-row svg { color: var(--lt-color-brand-blue); }
+
+.professor-agenda .appointment-row:first-child {
+  color: var(--lt-color-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.professor-agenda .appointment-row strong {
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+}
+
+.professor-agenda .appointment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  margin-top: var(--lt-space-1);
+}
+
+/* ── Selos: tipo e avaliações neutros; o estado escrito e com cor ──────
+   Agendada: azul sobre --lt-color-track-tint (5,57:1). Realizada: o par
+   de sucesso (6,81:1). Remarcada: o par de atenção do Painel (6,88:1).
+   Falta: o par de perigo (5,91:1). */
+.professor-agenda .meta-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background: rgba(248, 250, 252, 0.95);
-  padding: 0.22rem 0.55rem;
-  font-size: 0.66rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #334155;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.meta-pill.status-agendada {
-  border-color: #bfdbfe;
-  background: #dbeafe;
-  color: #1e40af;
-}
+.professor-agenda .meta-pill.status-agendada { background: var(--lt-color-track-tint); box-shadow: none; color: var(--lt-color-brand-blue); }
+.professor-agenda .meta-pill.status-realizada { background: var(--lt-color-success-bg); box-shadow: none; color: var(--lt-color-success-text); }
+.professor-agenda .meta-pill.status-remarcada { background: var(--pa-atencao-fundo); box-shadow: none; color: var(--pa-atencao-texto); }
+.professor-agenda .meta-pill.status-falta { background: var(--lt-color-danger-bg); box-shadow: none; color: var(--lt-color-danger-text); }
 
-.meta-pill.status-realizada {
-  border-color: #bbf7d0;
-  background: #dcfce7;
-  color: #166534;
-}
+.professor-agenda .open-prontuario-btn { flex: none; }
 
-.meta-pill.status-remarcada {
-  border-color: #fde68a;
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.meta-pill.status-falta {
-  border-color: #fecaca;
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.open-prontuario-btn {
-  border: 1px solid rgba(29, 51, 80, 0.2);
-  background: #ffffff;
-  color: #1d3350;
-  border-radius: 999px;
-  padding: 0.38rem 0.7rem;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.open-prontuario-btn:hover {
-  background: rgba(15, 23, 42, 0.04);
-}
-
-.professor-agenda-loading {
-  display: inline-flex;
+/* ── Vazio e carregando: o tom de .painel-estado ──────────────────────
+   0,2,0 vence `.laines-feedback-state` de index.css e theme.css; o ícone
+   vira um círculo (0,2,1 vence `.laines-feedback-state svg`, 48 px). */
+.professor-agenda .day-empty-state,
+.professor-agenda .professor-agenda-loading {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  width: fit-content;
-  padding: 0.9rem 1rem;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
 }
 
-.is-rotating {
-  animation: professor-agenda-rotate 0.8s linear infinite;
+/* O carregando substitui a página: cartão branco próprio. */
+.professor-agenda .professor-agenda-loading {
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: var(--lt-space-6) var(--lt-space-4);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pa-sombra);
 }
 
-@keyframes professor-agenda-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.professor-agenda .day-empty-state p {
+  max-width: 36rem;
+  margin: 0;
+  color: inherit;
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  text-align: center;
 }
 
-@media (max-width: 1024px) {
-  .professor-agenda-layout {
-    grid-template-columns: 1fr;
-  }
+.professor-agenda .day-empty-state svg,
+.professor-agenda .professor-agenda-loading svg {
+  box-sizing: content-box;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  color: var(--lt-color-brand-blue);
 }
 
-@media (max-width: 768px) {
-  .professor-agenda-header h1 {
-    font-size: var(--font-size-3xl);
-  }
-
-  .professor-agenda-header-actions {
-    width: 100%;
-    align-items: flex-start;
-  }
-
-  .professor-agenda-filters {
-    grid-template-columns: 1fr;
-  }
-
-  .day-appointment-item {
-    flex-direction: column;
-  }
-
-  .open-prontuario-btn {
-    width: 100%;
-    justify-content: center;
-  }
+.professor-agenda .day-empty-state svg {
+  padding: 0.75rem;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
 }
 
-/* Parte 2 — normalização visual (Professor / Agenda) */
-.professor-agenda {
-  gap: 1.25rem;
+/* ── Foco: o anel da landing em tudo que é clicável ──────────────────── */
+.professor-agenda .professor-agenda-refresh:focus-visible,
+.professor-agenda .professor-agenda-filters .professor-agenda-clear:focus-visible,
+.professor-agenda .month-nav-btn:focus-visible,
+.professor-agenda .calendar-day-btn:focus-visible,
+.professor-agenda .open-prontuario-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
-.professor-agenda-header {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 18px 22px;
-  box-shadow: var(--shadow-sm);
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 48rem) {
+  .professor-agenda .professor-agenda-header-actions { align-items: flex-start; }
+  .professor-agenda .professor-agenda-filters .professor-agenda-clear { width: 100%; }
 }
 
-.professor-agenda-header h1 {
-  margin-top: 0.2rem;
-  font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.55rem);
-  color: var(--color-navy);
+/* A 390 px sobram ~330 px para sete colunas: cartão e espaços encolhem
+   para cada dia continuar com 44 px de largura. */
+@media (max-width: 30rem) {
+  .professor-agenda .professor-agenda-calendar-card { padding: var(--lt-space-3); }
+  .professor-agenda .professor-agenda-weekdays,
+  .professor-agenda .professor-agenda-days-grid { gap: 2px; }
+  .professor-agenda .open-prontuario-btn { width: 100%; }
+  .professor-agenda .professor-agenda-filters .professor-agenda-search input::placeholder { font-size: var(--lt-text-sm); }
 }
 
-.professor-agenda-header p,
-.professor-agenda-sync {
-  color: var(--color-text-muted);
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com `prefers-reduced-motion: no-preference` e só transform: a marca
+   de largada se desenha uma vez e o ícone de atualizar gira enquanto
+   atualiza. Com movimento reduzido, tudo fica parado (o texto já diz
+   "Atualizando..."). */
+@media (prefers-reduced-motion: no-preference) {
+  .professor-agenda .professor-agenda-header h1::before { animation: pa-largada 420ms var(--lt-ease-out) 120ms backwards; }
+  .professor-agenda .is-rotating { animation: pa-girar 0.8s linear infinite; }
+
+  @keyframes pa-largada { from { transform: skewX(-12deg) scaleY(0); } }
+  @keyframes pa-girar { to { transform: rotate(360deg); } }
 }
 
-.professor-agenda-refresh {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  color: var(--color-navy);
-}
-
-.professor-agenda-refresh:hover:not(:disabled) {
-  background: rgba(16, 51, 85, 0.05);
-  border-color: rgba(16, 51, 85, 0.26);
-}
-
-.professor-agenda-stat,
-.professor-agenda-filters,
-.professor-agenda-calendar-card,
-.professor-agenda-day-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.professor-agenda-stat {
-  padding: 0.9rem 1rem;
-}
-
-.professor-agenda-stat.success {
-  background: #ecfdf5;
-  border-color: rgba(22, 163, 74, 0.24);
-}
-
-.professor-agenda-stat.warning {
-  background: #fffbeb;
-  border-color: rgba(217, 119, 6, 0.26);
-}
-
-.professor-agenda-stat.danger {
-  background: #fef2f2;
-  border-color: rgba(220, 38, 38, 0.22);
-}
-
-.professor-agenda-search,
-.professor-agenda-filters select,
-.professor-agenda-filters button,
-.month-nav-btn,
-.calendar-day-btn,
-.open-prontuario-btn {
-  border-radius: var(--radius-md);
-}
-
-.professor-agenda-filters button {
-  color: var(--color-navy);
-  border-color: var(--color-border);
-}
-
-.professor-agenda-filters button:hover:not(:disabled) {
-  background: rgba(16, 51, 85, 0.06);
-}
-
-.calendar-day-btn {
-  background: #f8fafc;
-}
-
-.calendar-day-btn.is-selected {
-  border-color: rgba(16, 51, 85, 0.4);
-  background: rgba(16, 51, 85, 0.1);
-}
-
-.day-badge {
-  background: var(--color-navy);
-}
-
-.day-empty-state {
-  border-radius: var(--radius-md);
-}
-
-.day-appointment-item {
-  border-radius: var(--radius-md);
-  border: 1px solid #e2e8f0;
-}
-
-.open-prontuario-btn {
-  border: 1px solid var(--color-border);
-  color: var(--color-navy);
-}
-
-.open-prontuario-btn:hover {
-  background: rgba(16, 51, 85, 0.06);
+@media (prefers-reduced-motion: reduce) {
+  .professor-agenda .is-rotating { animation: none; }
 }

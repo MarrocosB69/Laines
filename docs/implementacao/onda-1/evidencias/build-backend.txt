@@ -1,0 +1,4 @@
+
+> laines-server@0.1.0 build
+> node -e "require('fs').rmSync('dist',{recursive:true,force:true})" && nest build
+

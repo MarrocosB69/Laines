@@ -3,24 +3,33 @@ import api, { getApiErrorMessage } from '../../../../services/api';
 
 const AUTO_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
+// Sem resposta do servidor, os números ficam null e a tela mostra "—": um
+// erro de carga não pode aparecer como zero (WI-016).
 const emptyOverview = {
   generatedAt: null,
   filters: {
     range: 'month',
     projectId: 'all'
   },
+  period: null,
+  previousPeriod: null,
   projects: [],
   metrics: {
-    totalAlunos: 0,
-    professores: 0,
-    totalPacientes: 0,
-    avaliacoesPeriodo: 0,
-    taxaVinculacao: 0,
-    integridade: 0,
-    completionRate: 0,
-    satisfacao: 0,
-    retencao: 0
+    totalAlunos: null,
+    professores: null,
+    totalPacientes: null,
+    avaliacoesPeriodo: null,
+    taxaVinculacao: null,
+    integridade: null,
+    completionRate: null,
+    satisfacao: null,
+    retencao: null,
+    atendimentosRealizados: null,
+    novosAtletas: null,
+    retornos: null,
+    atletasAvaliados: null
   },
+  trends: {},
   usageByType: [],
   quarterly: [],
   metricDefinitions: {}
@@ -31,10 +40,11 @@ const emptyCorrelations = {
   filters: {
     projectId: 'all'
   },
+  period: null,
   dataset: {
-    patients: 0,
-    evaluations: 0,
-    appointments: 0
+    patients: null,
+    evaluations: null,
+    appointments: null
   },
   absenteeism: {
     byTurn: [],
@@ -58,14 +68,24 @@ const emptyCorrelations = {
   alerts: []
 };
 
-export const useReportsOverview = ({ range, projectId, notify }) => {
+// Sem `habilitado` (perfil sem relatorios.exportacao, WI-016), nada é pedido:
+// nem indicadores, nem correlações, nem a atualização automática. O servidor
+// responderia 403 a todos.
+export const useReportsOverview = ({ range, projectId, notify, habilitado = true }) => {
   const [overview, setOverview] = useState(emptyOverview);
   const [correlations, setCorrelations] = useState(emptyCorrelations);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(habilitado);
+  const [loadError, setLoadError] = useState(false);
+  const [correlationsError, setCorrelationsError] = useState(false);
 
   const loadOverview = useCallback(async (forceRefresh = false) => {
+    if (!habilitado) {
+      setIsLoading(false);
+      return;
+    }
     if (!forceRefresh) setIsLoading(true);
     try {
+      let correlationsFailed = false;
       const [overviewRes, correlationsRes] = await Promise.all([
         api.get('/analytics/reports/overview', {
           params: {
@@ -80,7 +100,10 @@ export const useReportsOverview = ({ range, projectId, notify }) => {
             projectId,
             forceRefresh
           }
-        }).catch(() => ({ data: emptyCorrelations }))
+        }).catch(() => {
+          correlationsFailed = true;
+          return { data: emptyCorrelations };
+        })
       ]);
       const data = overviewRes.data;
       setOverview({
@@ -90,6 +113,7 @@ export const useReportsOverview = ({ range, projectId, notify }) => {
           ...emptyOverview.metrics,
           ...((data && data.metrics) || {})
         },
+        trends: data?.trends && typeof data.trends === 'object' ? data.trends : {},
         usageByType: Array.isArray(data?.usageByType) ? data.usageByType : [],
         quarterly: Array.isArray(data?.quarterly) ? data.quarterly : [],
         projects: Array.isArray(data?.projects) ? data.projects : [],
@@ -102,34 +126,41 @@ export const useReportsOverview = ({ range, projectId, notify }) => {
         ...emptyCorrelations,
         ...correlationData
       });
+      setLoadError(false);
+      setCorrelationsError(correlationsFailed);
     } catch (error) {
       setOverview(emptyOverview);
       setCorrelations(emptyCorrelations);
+      setLoadError(true);
+      setCorrelationsError(true);
       notify?.({
         type: 'error',
-        title: 'Erro ao carregar relatorios',
+        title: 'Erro ao carregar relatórios',
         message: getApiErrorMessage(error, 'Não foi possível carregar o resumo analítico.')
       });
     } finally {
       setIsLoading(false);
     }
-  }, [notify, projectId, range]);
+  }, [habilitado, notify, projectId, range]);
 
   useEffect(() => {
     loadOverview(false);
   }, [loadOverview]);
 
   useEffect(() => {
+    if (!habilitado) return undefined;
     const intervalId = window.setInterval(() => {
       loadOverview(true);
     }, AUTO_REFRESH_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
-  }, [loadOverview]);
+  }, [habilitado, loadOverview]);
 
   return {
     overview,
     correlations,
     isLoading,
+    loadError,
+    correlationsError,
     autoRefreshIntervalMs: AUTO_REFRESH_INTERVAL_MS,
     reload: () => loadOverview(true)
   };

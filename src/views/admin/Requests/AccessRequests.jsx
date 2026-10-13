@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { MotionConfig, motion } from 'framer-motion';
 import {
   CheckCircle,
+  CheckCircle2,
   Clock,
+  Copy,
   Mail,
   Phone,
   UserPlus,
@@ -27,6 +29,8 @@ const AccessRequests = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('pendente');
+  const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
   const { user } = useAuth();
   const { notify, confirm } = useUiFeedback();
 
@@ -113,6 +117,13 @@ const AccessRequests = () => {
       setRequests((prev) => prev.map((item) => (
         item.id === request.id ? { ...item, status: 'aprovado' } : item
       )));
+      setCreatedCredentials({
+        name: request.nome || data?.user?.name || '',
+        email: data?.user?.email || request.email,
+        role: data?.user?.role || request.cargoSolicitado || 'professor',
+        delivery: data?.activation?.delivery,
+        existed: Boolean(data?.user?.existed)
+      });
 
       logAudit({
         user,
@@ -143,6 +154,20 @@ const AccessRequests = () => {
       // Sem sessão secundária no backend.
     }
   }, [confirm, notify, user]);
+
+  const handleCopyField = useCallback((field, value) => {
+    if (!value) return;
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    }).catch(() => {
+      notify({
+        type: 'warning',
+        title: 'Copie manualmente',
+        message: 'Não foi possível usar a área de transferência deste navegador.'
+      });
+    });
+  }, [notify]);
 
   const filteredRequests = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -190,7 +215,7 @@ const AccessRequests = () => {
               <span><Mail size={12} /> {request.email || 'E-mail não informado'}</span>
               {request.telefone && (
                 <>
-                  <span className="meta-separator">.</span>
+                  <span className="meta-separator" aria-hidden="true">.</span>
                   <span><Phone size={12} /> {request.telefone}</span>
                 </>
               )}
@@ -245,6 +270,8 @@ const AccessRequests = () => {
       header: 'Ações',
       width: '20%',
       align: 'right',
+      // O nome acessível começa pelo texto visível e acrescenta a pessoa:
+      // numa lista de solicitações, "Recusar" sozinho não diz de quem.
       render: (request) => (
         <div className="request-actions">
           <button
@@ -252,6 +279,7 @@ const AccessRequests = () => {
             className="action-btn approve"
             onClick={() => approveAndCreateUser(request)}
             disabled={request.status === 'aprovado'}
+            aria-label={`Aprovar e criar: ${request.nome || request.email || 'Nome não informado'}`}
           >
             <CheckCircle size={16} />
             Aprovar e criar
@@ -261,6 +289,7 @@ const AccessRequests = () => {
             className="action-btn reject"
             onClick={() => updateStatus(request, 'recusado')}
             disabled={request.status === 'recusado'}
+            aria-label={`Recusar: ${request.nome || request.email || 'Nome não informado'}`}
           >
             <XCircle size={16} />
             Recusar
@@ -277,22 +306,70 @@ const AccessRequests = () => {
     { id: 'all', label: 'Todos', count: stats.total }
   ];
 
+  // MotionConfig: com "reduzir movimento" no sistema, a entrada da página e
+  // das linhas da Table não desloca nada (só a opacidade continua).
   return (
+    <MotionConfig reducedMotion="user">
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="access-requests"
     >
-      <div className="requests-header">
+      {/* h2, não h1: o cabeçalho do portal já tem o h1 com o título da página. */}
+      <header className="requests-header">
         <div className="header-left">
           <div className="header-badge">
-            <div className="badge-line" />
+            <span className="badge-line" aria-hidden="true" />
             <span>SOLICITAÇÕES</span>
           </div>
-          <h1>Solicitações de acesso</h1>
+          <h2>Solicitações de acesso</h2>
           <p>Gerencie novas entradas de professores e parceiros.</p>
         </div>
-      </div>
+      </header>
+
+      {createdCredentials && (
+        <section className="request-credentials" aria-live="polite">
+          <div className="request-credentials__header">
+            <div>
+              <span className="request-credentials__eyebrow">Credenciais de acesso</span>
+              <h2>{createdCredentials.existed ? 'Usuário existente vinculado' : 'Conta criada com senha temporária'}</h2>
+            </div>
+            <button
+              type="button"
+              className="request-credentials__close"
+              onClick={() => setCreatedCredentials(null)}
+            >
+              Ocultar
+            </button>
+          </div>
+
+          <div className="request-credentials__grid">
+            <div className="request-credentials__field">
+              <span className="request-credentials__label">E-mail de login</span>
+              <div className="request-credentials__value">
+                <Mail size={15} />
+                <span>{createdCredentials.email}</span>
+                <button
+                  type="button"
+                  className="request-credentials__copy"
+                  onClick={() => handleCopyField('email', createdCredentials.email)}
+                  aria-label={copiedField === 'email' ? 'E-mail copiado' : 'Copiar e-mail'}
+                >
+                  {copiedField === 'email' ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+                </button>
+              </div>
+            </div>
+
+          </div>
+          <p className="request-credentials__warning">
+            {createdCredentials.existed
+              ? 'Solicitacao vinculada a conta existente. Para recuperar acesso, envie um link pelo cadastro de usuarios.'
+              : createdCredentials.delivery === 'sent'
+                ? 'Link de ativacao enviado ao contato da solicitacao. Validade: 15 minutos.'
+                : 'Conta criada; envio do link pendente. Confira o contato e o servico de email antes de reenviar pelo cadastro de usuarios.'}
+          </p>
+        </section>
+      )}
 
       <div className="requests-stats">
         <div className="stat-card">
@@ -322,13 +399,14 @@ const AccessRequests = () => {
           className="requests-search"
           aria-label="Buscar solicitações por nome, e-mail ou área"
         />
-        <div className="requests-filters">
+        <div className="requests-filters" role="group" aria-label="Filtrar por status">
           {filters.map((filter) => (
             <button
               key={filter.id}
               type="button"
               onClick={() => setActiveFilter(filter.id)}
               className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
+              aria-pressed={activeFilter === filter.id}
             >
               <span>{filter.label}</span>
               <span className="count">{filter.count}</span>
@@ -346,6 +424,7 @@ const AccessRequests = () => {
         />
       </div>
     </motion.div>
+    </MotionConfig>
   );
 };
 

@@ -7,6 +7,8 @@
   --student-accent: var(--color-green);
 }
 
+/* As variáveis --student-* acima não têm consumidor em src/ (grep em 30/09/2026);
+   ficam até a limpeza do legado. Os tokens --lt-* vêm de index.css (onda A). */
 .student-view .admin-bg-pattern {
-  background: radial-gradient(circle at 10% 0%, rgba(116, 168, 101, 0.08), transparent 42%);
+  background: radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--lt-color-brand-blue) 6%, transparent), transparent 42%);
 }

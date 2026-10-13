@@ -49,14 +49,25 @@ const requestDelete = async (path, token) => (
   })
 );
 
+const calculateCpfDigit = (digits) => {
+  const sum = digits.reduce((acc, digit, index) => acc + digit * (digits.length + 1 - index), 0);
+  const rest = (sum * 10) % 11;
+  return rest === 10 ? 0 : rest;
+};
+
+const createValidCpf = () => {
+  const seed = String(Date.now()).replace(/\D/g, '').padEnd(9, '0').slice(-9);
+  const base = seed.split('').map((digit) => Number(digit));
+  const firstDigit = calculateCpfDigit(base);
+  const secondDigit = calculateCpfDigit([...base, firstDigit]);
+  return [...base, firstDigit, secondDigit].join('');
+};
+
 const createPacientePayload = () => {
   const timestamp = Date.now();
-  const randomSuffix = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-  const digits = String(timestamp).replace(/\D/g, '').slice(-8);
-  const cpf = `999${digits}${randomSuffix}`.slice(0, 11);
   return {
     nome: `E2E Avaliacoes ${timestamp}`,
-    cpf,
+    cpf: createValidCpf(),
     status: 'Lista de Espera',
     objetivo: 'performance',
     intensidade: 'moderada',

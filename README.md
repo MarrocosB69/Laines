@@ -2,6 +2,18 @@
 
 Sistema web do ecossistema LAINES com frontend React (Vite) e backend NestJS + PostgreSQL.
 
+## Documentação vigente
+
+Revisão documental de 21/09/2026 — UPD-19, [WI-004](docs/inception/fechamento/WI-004/README.md).
+
+- [Matriz de autorização](docs/rbac-matrix.md): papéis, permissões, vínculos e limites por canal.
+- [Contratos de estabilização](docs/product/construction/fechamento/logical_design.md): identidade, autorização e plano alimentar versionado.
+- [Manual do usuário](docs/manual/manual-laines.html): orientação editorial atualizada; capturas de maio mantidas como histórico.
+- [Operação e inventário do candidato UPD-19](docs/operations/README.md): fontes canônicas, arquivos revisados e retenção dos artefatos.
+- [Avaliação por imagem](docs/operations/avaliacao-imagem.md): contrato e limites da integração experimental.
+
+Manuais exportados e relatórios datados descrevem a execução indicada em cada arquivo. O resultado de vulnerabilidades de maio não certifica a árvore atual; a [evidência de dependências da onda 1](docs/implementacao/onda-1/dependencias.md) também tem escopo e data próprios. O HEAD isolado não identifica os arquivos locais modificados, e esta revisão documental não representa uma release homologada.
+
 ## Estrutura
 
 - `src/`: frontend (React)
@@ -187,5 +199,9 @@ Documentacao operacional versionada:
 
 ## Observacoes
 
+- Auditoria de fechamento de 11/09/2026: [diagnóstico, evidências e proposta de atualização](docs/auditoria-2026-09-11/README.md).
+
 - Alertas de observabilidade podem ser enviados para webhook externo via `OBSERVABILITY_WEBHOOK_URL`.
 - Para escala horizontal, recomenda-se mover rate-limits em memoria para store distribuido.
+
+Atualizações da auditoria: [execução, evidências e pendências](docs/implementacao/README.md).

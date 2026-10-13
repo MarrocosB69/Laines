@@ -1,22 +1,28 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Plus, Save } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Clock, FileText, Info, Plus, RefreshCw, Save, TriangleAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import { COR, REFERENCIAS } from '../../constants/prescricao/seed.js';
+import { useUiFeedback } from '../../contexts/UiFeedbackContext';
+import { COR } from '../../constants/prescricao/seed.js';
 import { gruposDoCatalogo } from '../../services/prescricaoCatalogo.js';
+import { nomeParaExibicao } from '../../core/prescricao/nomeAlimento.js';
 import { horarioDe, ordenarPorHorario } from '../../core/prescricao/horarios.js';
 import { analisesDoPlano } from '../../core/prescricao/analises.js';
 import { distribuicaoNova, listaDeCompras } from '../../core/prescricao/classificacao.js';
 import { porcoesDoItem } from '../../core/prescricao/equivalentes.js';
+import { montarOpcao } from '../../core/prescricao/equivalencia.js';
 import { usePrescricaoApi } from '../../hooks/usePrescricaoApi.js';
 import { usePlanoCalculado } from '../../hooks/usePlanoCalculado.js';
+import { useEdicaoPendente } from '../../hooks/useEdicaoPendente.js';
 import RefeicaoCard from '../../components/Prescricao/RefeicaoCard.jsx';
+import MapaRefeicoes from '../../components/Prescricao/MapaRefeicoes.jsx';
+import ConferenciaPlano from '../../components/Prescricao/ConferenciaPlano.jsx';
 import PainelMacros from '../../components/Prescricao/PainelMacros.jsx';
 import TabelaAdequacao from '../../components/Prescricao/TabelaAdequacao.jsx';
+import PainelRestricoes from '../../components/Prescricao/PainelRestricoes.jsx';
 import Analises from '../../components/Prescricao/Analises.jsx';
 import GrauProcessamento from '../../components/Prescricao/GrauProcessamento.jsx';
 import ListaCompras from '../../components/Prescricao/ListaCompras.jsx';
-import BuscaAlimento from '../../components/Prescricao/BuscaAlimento.jsx';
 import { n } from '../../components/Prescricao/formato.js';
 import './PrescricaoPlano.css';
 
@@ -32,27 +38,105 @@ const TOTAIS_VAZIOS = {
  * `usePlanoCalculado` (cálculo). Nenhum componente abaixo conhece qualquer um
  * dos dois — todos recebem dado pronto.
  *
- * As referências DRI vêm do arquivo de seed porque são tabela de referência,
- * não dado de exemplo; um dia serão por idade e sexo do paciente.
+ * Referências elegíveis e restrições vêm do contexto clínico do paciente.
  */
 export default function PrescricaoPlano() {
   const { pacienteId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { notify, confirm } = useUiFeedback();
   const podeRevisar = ['professor', 'profissional'].includes(user?.role)
     && Boolean(user?.crn || (user?.conselhoTipo === 'CRN' && user?.conselhoNumero));
+  const currentUserId = user?.uid || user?.id || '';
 
   const {
-    carregando, erro, paciente, metas, plano, setPlano,
-    catalogoPorId, registrarAlimento,
+    carregando, erro, paciente, metas, contextoClinico, plano, setPlano,
+    catalogoPorId, candidatosPorId, registrarAlimento,
     busca, buscar, carregarGrupo, salvar, salvando, salvoEm, planoId, transicionar, exportarPdf, alterado
   } = usePrescricaoApi(pacienteId);
 
   const [abertos, setAbertos] = useState(() => new Set());
-  const [buscaEm, setBuscaEm] = useState(null);
+  const [buscaAtiva, setBuscaAtiva] = useState(null);
   const [metodo, setMetodo] = useState('alimentos');
   const [biblioteca, setBiblioteca] = useState([]);
   const [composicaoConferida, setComposicaoConferida] = useState(false);
+  const [acaoConferencia, setAcaoConferencia] = useState(null);
+
+  // UPD-18 (UX-07): protecao de edicao nao salva do plano alimentar, separada
+  // do redirecionamento de sessao. `alterado` (usePrescricaoApi) ja e a
+  // deteccao de "sujo" certa aqui — compara o plano+catalogo atual contra a
+  // assinatura do que foi salvo por ultimo, entao reabrir sem editar nada
+  // nunca conta como pendencia. `dados` carrega os dois porque um alimento
+  // novo (ainda nao salvo) só existe no catalogo local; sem ele, recuperar o
+  // plano reintroduziria itens sem composicao nutricional resolvivel.
+  const [draftBannerDismissed, setDraftBannerDismissed] = useState(false);
+  useEffect(() => {
+    setBiblioteca([]);
+    setAbertos(new Set());
+    setBuscaAtiva(null);
+    setDraftBannerDismissed(false);
+    setAcaoConferencia(null);
+  }, [pacienteId]);
+  const {
+    rascunhoDisponivel: draftAvailable,
+    recuperarRascunho: recoverDraft,
+    descartarRascunho: discardDraft
+  } = useEdicaoPendente({
+    ativo: Boolean(plano) && Boolean(pacienteId),
+    dirty: alterado,
+    dados: { plano, catalogoPorId },
+    screenId: 'prescricao-plano',
+    userId: currentUserId,
+    recordId: pacienteId
+  });
+
+  const handleRecoverDraft = useCallback(() => {
+    const draftData = recoverDraft();
+    setDraftBannerDismissed(true);
+    if (!draftData) return;
+    if (draftData.plano) setPlano(draftData.plano);
+    if (draftData.catalogoPorId && typeof draftData.catalogoPorId === 'object') {
+      Object.values(draftData.catalogoPorId).forEach(registrarAlimento);
+    }
+    notify({
+      type: 'success',
+      title: 'Rascunho recuperado',
+      message: 'O plano alimentar digitado antes da sessão expirar foi restaurado. Revise e salve para confirmar.'
+    });
+  }, [notify, recoverDraft, registrarAlimento, setPlano]);
+
+  const handleDiscardDraft = useCallback(() => {
+    discardDraft();
+    setDraftBannerDismissed(true);
+  }, [discardDraft]);
+
+  const handleVoltar = useCallback(async () => {
+    // UPD-18 (UX-07): abandono deliberado pelo botao "Voltar" da propria
+    // tela — o app usa BrowserRouter, sem useBlocker/unstable_usePrompt para
+    // interceptar a navegacao pelo router.
+    if (alterado) {
+      const proceed = await confirm({
+        title: 'Sair sem salvar?',
+        message: 'Há alterações no plano alimentar que ainda não foram salvas. Elas serão perdidas se você sair agora.',
+        confirmLabel: 'Sair sem salvar',
+        cancelLabel: 'Continuar editando',
+        variant: 'danger'
+      });
+      if (!proceed) return;
+    }
+    navigate(-1);
+  }, [alterado, confirm, navigate]);
+
+  const handleSalvar = useCallback(async () => {
+    const resultado = await salvar();
+    if (resultado) discardDraft();
+  }, [discardDraft, salvar]);
+
+  const handleEnviarRevisao = useCallback(async () => {
+    const resultado = await salvar('em_revisao');
+    if (resultado) discardDraft();
+    return resultado;
+  }, [discardDraft, salvar]);
 
   // O treino nao e do plano nem do paciente ainda: e do profissional montando
   // a prescricao. Ancorar as refeicoes nele so exige estas duas informacoes.
@@ -61,12 +145,32 @@ export default function PrescricaoPlano() {
     [plano]
   );
 
-  const catalogo = useMemo(() => Object.values(catalogoPorId), [catalogoPorId]);
+  const catalogo = useMemo(
+    () => Object.values({ ...candidatosPorId, ...catalogoPorId }),
+    [candidatosPorId, catalogoPorId]
+  );
   const grupos = useMemo(() => gruposDoCatalogo(catalogo), [catalogo]);
 
-  // Restrições vêm da anamnese; enquanto não houver esse vínculo, nenhuma
-  // exclusão é aplicada — melhor não filtrar do que filtrar por engano.
-  const restricoes = useMemo(() => [], []);
+  // Restrições (UPD-11): a conferência registrada no plano prevalece sobre a
+  // leitura bruta da anamnese; sem conferência, as sugestões ficam suspensas.
+  const restricoesContexto = useMemo(() => contextoClinico?.restricoes || {
+    pendenteRevisao: true, motivo: 'Contexto de restrições indisponível. Sugestões automáticas suspensas.'
+  }, [contextoClinico]);
+  const restricoes = useMemo(() => {
+    const registro = plano?.restricoes;
+    if (!registro?.conferidoEm) return restricoesContexto;
+    return {
+      pendenteRevisao: false,
+      semRestricao: Boolean(registro.semRestricao),
+      alimentoIds: registro.alimentoIds || [],
+      grupos: registro.grupos || [],
+      justificativas: registro.justificativas || {},
+      descricao: registro.origem?.descricao || restricoesContexto.descricao || '',
+      origem: restricoesContexto.origem || null,
+      motivo: null
+    };
+  }, [plano?.restricoes, restricoesContexto]);
+  const referencias = useMemo(() => contextoClinico?.referencias?.linhas || [], [contextoClinico]);
 
   const planoParaCalculo = useMemo(() => plano || { refeicoes: [] }, [plano]);
   const metasSeguras = useMemo(() => {
@@ -79,21 +183,39 @@ export default function PrescricaoPlano() {
 
   const {
     calculado, totaisPorId, itensPorRefeicao, opcoesPorItem,
-    sugestoesPorItem, valoresPorItem, macros, micros, distribuicao
+    sugestoesPorItem, valoresPorItem, restritosPorItem, macros, micros, distribuicao
   } = usePlanoCalculado(planoParaCalculo, {
     metas: metasSeguras,
-    referencias: REFERENCIAS,
+    referencias,
     catalogo,
     catalogoPorId,
     grupos,
     restricoes,
     abertos
   });
+  const energiaConhecida = macros.find((linha) => linha.nutriente === 'kcal');
 
   const refeicoesOrdenadas = useMemo(
     () => (plano ? ordenarPorHorario(plano.refeicoes, treino) : []),
     [plano, treino]
   );
+  const horarioDeRefeicao = useCallback((refeicao) => horarioDe(refeicao, treino), [treino]);
+  const irParaRefeicao = useCallback((id) => {
+    setAcaoConferencia(null);
+    setPlano((atual) => {
+      if (!atual?.refeicoes?.some((r) => r.id === id && !r.aberta)) return atual;
+      return { ...atual, refeicoes: atual.refeicoes.map((r) =>
+        r.id === id ? { ...r, aberta: true } : r) };
+    });
+    requestAnimationFrame(() => {
+      const alvo = document.getElementById(`pp-refeicao-${id}`);
+      alvo?.focus({ preventScroll: true });
+      alvo?.scrollIntoView({ block: 'start' });
+    });
+  }, [setPlano]);
+  useEffect(() => {
+    if (acaoConferencia) document.getElementById('pp-conferencia-titulo')?.focus();
+  }, [acaoConferencia]);
 
   const analises = useMemo(() => {
     const itens = calculado.resolvidas.flatMap((r) => r.itens);
@@ -109,6 +231,73 @@ export default function PrescricaoPlano() {
     () => calculado.resolvidas.flatMap((r) => r.itens),
     [calculado]
   );
+
+  const itensEmConflito = useMemo(() => {
+    const conflitos = itensResolvidos
+      .filter((item) => restritosPorItem[item.id])
+      .map((item) => ({ id: item.id, nome: item.nome, ...restritosPorItem[item.id] }));
+    if (restricoes.pendenteRevisao || restricoes.semRestricao) return conflitos;
+    const ids = new Set(restricoes.alimentoIds || []);
+    const gruposRestritos = new Set(restricoes.grupos || []);
+    for (const item of itensResolvidos) {
+      for (const sub of item.substitutos || []) {
+        const alimento = catalogoPorId[sub.alimentoId];
+        if (!alimento) continue;
+        const motivo = ids.has(String(sub.alimentoId)) ? 'alimento'
+          : gruposRestritos.has(alimento.grupo) ? 'grupo' : null;
+        if (!motivo) continue;
+        const id = `${item.id}:${sub.alimentoId}`;
+        const justificativa = String(restricoes.justificativas?.[id] || '').trim();
+        conflitos.push({ id, nome: `Opção para ${item.nome}: ${alimento.nomeExibicao || nomeParaExibicao(alimento)}`,
+          motivo, justificada: justificativa.length >= 5 });
+      }
+    }
+    return conflitos;
+  }, [itensResolvidos, restritosPorItem, catalogoPorId, restricoes]);
+  const restricoesPendentes = Boolean(restricoesContexto.pendenteRevisao) && !plano?.restricoes?.conferidoEm;
+  const conflitosSemJustificativa = itensEmConflito.filter((item) => !item.justificada).length;
+  const quantidadePendente = plano?.refeicoes.some((refeicao) => refeicao.itens.some((item) =>
+    !Number.isFinite(Number(item.quantidade)) || Number(item.quantidade) <= 0
+    || (item.substitutos || []).some((sub) => sub.modo === 'fixa'
+      && (!Number.isFinite(Number(sub.quantidade)) || Number(sub.quantidade) <= 0)))) ?? false;
+  const bloqueioQuantidade = quantidadePendente ? 'Informe quantidades positivas para todos os alimentos e opções prescritas.' : '';
+  const bloqueioRevisao = restricoesPendentes
+    ? 'Confira as restrições alimentares antes de enviar para revisão.'
+    : conflitosSemJustificativa
+      ? `${conflitosSemJustificativa} conflito(s) com restrição sem justificativa.`
+      : '';
+
+  const confirmarConferencia = async () => {
+    const acao = acaoConferencia;
+    if (!acao || salvando || quantidadePendente || (acao === 'enviar' && bloqueioRevisao)) return;
+    const resultado = acao === 'enviar'
+      ? await handleEnviarRevisao()
+      : await transicionar(acao === 'ativar' ? 'ativar' : 'revisar', composicaoConferida);
+    if (resultado) setAcaoConferencia(null);
+  };
+  const corrigirQuantidade = () => {
+    const refeicao = plano?.refeicoes.find((r) => r.itens.some((item) =>
+      !Number.isFinite(Number(item.quantidade)) || Number(item.quantidade) <= 0
+      || (item.substitutos || []).some((sub) => sub.modo === 'fixa'
+        && (!Number.isFinite(Number(sub.quantidade)) || Number(sub.quantidade) <= 0))));
+    if (!refeicao) return;
+    const item = refeicao.itens.find((linha) => !Number.isFinite(Number(linha.quantidade))
+      || Number(linha.quantidade) <= 0 || (linha.substitutos || []).some((sub) =>
+        sub.modo === 'fixa' && (!Number.isFinite(Number(sub.quantidade)) || Number(sub.quantidade) <= 0)));
+    if (item?.substitutos?.some((sub) => sub.modo === 'fixa'
+      && (!Number.isFinite(Number(sub.quantidade)) || Number(sub.quantidade) <= 0))) {
+      setAbertos((atual) => new Set([...atual, item.id]));
+    }
+    irParaRefeicao(refeicao.id);
+  };
+  const corrigirRestricoes = () => {
+    setAcaoConferencia(null);
+    requestAnimationFrame(() => {
+      const alvo = document.getElementById('pp-restricoes');
+      alvo?.focus({ preventScroll: true });
+      alvo?.scrollIntoView({ block: 'start' });
+    });
+  };
 
   const distribNova = useMemo(() => distribuicaoNova(itensResolvidos), [itensResolvidos]);
 
@@ -132,14 +321,26 @@ export default function PrescricaoPlano() {
     setPlano((p) => ({ ...p, refeicoes: p.refeicoes.map((r) => ({ ...r, itens: r.itens.map(fn) })) }));
   }, [setPlano]);
 
+  const fecharBusca = useCallback(() => {
+    setBuscaAtiva(null);
+    buscar('');
+  }, [buscar]);
+
+  const alternarBusca = useCallback((alvo) => {
+    buscar('');
+    setBuscaAtiva((atual) => (atual === alvo ? null : alvo));
+  }, [buscar]);
+
   const alternarRefeicao = useCallback((id) => {
+    fecharBusca();
     setPlano((p) => ({
       ...p,
       refeicoes: p.refeicoes.map((r) => (r.id === id ? { ...r, aberta: !r.aberta } : r))
     }));
-  }, [setPlano]);
+  }, [fecharBusca, setPlano]);
 
   const alternarItem = useCallback((itemId) => {
+    fecharBusca();
     setAbertos((atual) => {
       const proximo = new Set(atual);
       if (proximo.has(itemId)) proximo.delete(itemId);
@@ -152,13 +353,16 @@ export default function PrescricaoPlano() {
       }
       return proximo;
     });
-  }, [calculado, carregarGrupo]);
+  }, [calculado, carregarGrupo, fecharBusca]);
 
   const alterarQuantidade = useCallback((itemId, quantidade) => {
     mapItens((i) => (i.id === itemId ? { ...i, quantidade } : i));
   }, [mapItens]);
 
   const adicionarSubstituto = useCallback((itemId, op) => {
+    const candidato = catalogoPorId[op.alimentoId] || candidatosPorId[op.alimentoId];
+    if (!candidato) return;
+    registrarAlimento(candidato);
     mapItens((i) => (
       i.id !== itemId || (i.substitutos ?? []).some((s) => s.alimentoId === op.alimentoId)
         ? i
@@ -167,7 +371,7 @@ export default function PrescricaoPlano() {
           substitutos: [...(i.substitutos ?? []), { alimentoId: op.alimentoId, medidaIdx: op.medidaIdx, modo: 'auto' }]
         }
     ));
-  }, [mapItens]);
+  }, [mapItens, catalogoPorId, candidatosPorId, registrarAlimento]);
 
   /**
    * Prescrever a substituicao: a quantidade passa a ser a que o profissional
@@ -182,7 +386,7 @@ export default function PrescricaoPlano() {
           sub.alimentoId !== alimentoId ? sub : (
             quantidade === null || quantidade === undefined || Number.isNaN(quantidade)
               ? { alimentoId: sub.alimentoId, medidaIdx: sub.medidaIdx, modo: 'auto' }
-              : { ...sub, modo: 'fixa', quantidade: Math.max(0, quantidade) }
+              : { ...sub, modo: 'fixa', quantidade: quantidade === '' ? null : Math.max(0, quantidade) }
           )
         ))
       }
@@ -197,14 +401,20 @@ export default function PrescricaoPlano() {
    * quando a equivalência é calculável — e quando não é, a opção aparece
    * assim mesmo, marcada como sem equivalência, com a quantidade editável.
    */
-  const escolherSubstituto = useCallback((itemId, alimento) => {
+  const escolherSubstituto = useCallback((itemId, alimento, medidaIdx = 0) => {
+    const base = itensResolvidos.find((item) => item.id === itemId);
+    const automatica = base && montarOpcao(base, alimento, medidaIdx, { grupos });
     registrarAlimento(alimento);
     mapItens((i) => (
       i.id !== itemId || (i.substitutos ?? []).some((sub) => sub.alimentoId === alimento.id)
         ? i
-        : { ...i, substitutos: [...(i.substitutos ?? []), { alimentoId: alimento.id, medidaIdx: 0, modo: 'auto' }] }
+        : { ...i, substitutos: [...(i.substitutos ?? []), {
+          alimentoId: alimento.id, medidaIdx,
+          modo: automatica ? 'auto' : 'fixa', ...(!automatica ? { quantidade: null } : {})
+        }] }
     ));
-  }, [mapItens, registrarAlimento]);
+    setBuscaAtiva(null);
+  }, [itensResolvidos, grupos, mapItens, registrarAlimento]);
 
   const removerSubstituto = useCallback((itemId, alimentoId) => {
     mapItens((i) => (
@@ -215,7 +425,7 @@ export default function PrescricaoPlano() {
   }, [mapItens]);
 
   /** Registra o alimento no catálogo local e o acrescenta à refeição. */
-  const adicionarAlimento = useCallback((refeicaoId, alimento, gramas) => {
+  const adicionarAlimento = useCallback((refeicaoId, alimento, quantidade, medidaIdx = 0) => {
     registrarAlimento(alimento);
     setPlano((p) => ({
       ...p,
@@ -225,14 +435,14 @@ export default function PrescricaoPlano() {
           itens: [...r.itens, {
             id: `i${Date.now()}`,
             alimentoId: alimento.id,
-            medidaIdx: 0,
-            quantidade: gramas,
+            medidaIdx,
+            quantidade,
             substitutos: []
           }]
         }
       ))
     }));
-    setBuscaEm(null);
+    setBuscaAtiva(null);
   }, [registrarAlimento, setPlano]);
 
   const editarRefeicao = useCallback((id, patch) => {
@@ -335,7 +545,10 @@ export default function PrescricaoPlano() {
     onRemover: removerSubstituto,
     onQuantidadeSubstituto: alterarQuantidadeSubstituto,
     busca,
+    buscaAtiva,
     onBuscarSubstituto: buscar,
+    onAlternarBuscaSubstituto: (itemId) => alternarBusca(`substituto:${itemId}`),
+    onFecharBusca: fecharBusca,
     onEscolherSubstituto: escolherSubstituto,
     onSalvarBloco: salvarBloco,
     onAplicarBloco: aplicarBloco
@@ -343,235 +556,390 @@ export default function PrescricaoPlano() {
 
   if (carregando) {
     return (
-      <div className="prescricao-plano min-h-screen bg-stone-50 p-6 text-sm text-stone-500">
-        Carregando prescrição…
+      <div className="prescricao-plano">
+        <p className="pp-estado" role="status">
+          Carregando prescrição…
+        </p>
       </div>
     );
   }
 
   if (!plano) {
     return (
-      <div className="prescricao-plano min-h-screen bg-stone-50 p-6">
-        <p className="text-sm text-red-700">{erro || 'Prescrição indisponível.'}</p>
+      <div className="prescricao-plano">
+        <p className="pp-aviso pp-aviso--perigo" role="alert">
+          <AlertCircle className="pp-aviso__icone" aria-hidden="true" />
+          <span className="pp-aviso__texto">{erro || 'Prescrição indisponível.'}</span>
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="prescricao-plano min-h-screen bg-stone-50 p-6 font-sans text-stone-900">
-      <div className="mx-auto max-w-5xl">
-        {erro && <p className="mb-3 text-xs text-red-700">{erro}</p>}
+    <div className="prescricao-plano">
+      {erro && (
+        <p role="alert" className="pp-aviso pp-aviso--perigo">
+          <AlertCircle className="pp-aviso__icone" aria-hidden="true" />
+          <span className="pp-aviso__texto">{erro}</span>
+        </p>
+      )}
 
-        <div className="flex gap-4 max-[999px]:flex-col-reverse">
-          <div className="min-w-0 flex-1">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  aria-label="Voltar"
-                  className="rounded-lg border border-stone-300 p-1.5 hover:bg-stone-100"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                </button>
-                <div className="min-w-0">
-                  <h1 className="truncate text-lg leading-tight">
-                    {paciente?.nome || 'Paciente'}
-                  </h1>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-stone-500">
-                    <span>Plano alimentar</span>
-                    {plano.status && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span className="rounded bg-stone-100 px-1.5 py-0.5">{plano.status}</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {salvoEm && <span className="text-xs text-stone-400">{alterado ? 'alterações não salvas' : `versão ${plano.version} salva`}</span>}
-                <button
-                  type="button"
-                  onClick={() => salvar()}
-                  disabled={salvando}
-                  className="flex items-center gap-1.5 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs hover:bg-stone-100 disabled:opacity-50"
-                >
-                  <Save className="w-3.5 h-3.5" /> {salvando ? 'Salvando…' : 'Salvar plano'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => salvar('em_revisao')}
-                  disabled={salvando || (!alterado && plano.status === 'em_revisao')}
-                  className="flex items-center gap-1.5 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs hover:bg-stone-100 disabled:opacity-50"
-                >
-                  Enviar para revisão
-                </button>
-                {podeRevisar && plano.status === 'em_revisao' && (
-                  <button type="button" disabled={salvando || alterado}
-                    onClick={() => transicionar(plano.revisaoFinal?.confirmada ? 'ativar' : 'revisar', composicaoConferida)}
-                    className="rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs disabled:opacity-50">
-                    {plano.revisaoFinal?.confirmada ? 'Ativar plano' : 'Aprovar revisão'}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={exportarPdf}
-                  disabled={!planoId || alterado || salvando}
-                  className="flex items-center gap-1.5 rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs hover:bg-stone-100 disabled:opacity-50"
-                >
-                  <FileText className="w-3.5 h-3.5" /> PDF
-                </button>
-              </div>
-            </div>
-
-            {plano.revisaoFinal?.confirmada && (
-              <p className="mb-2 text-xs text-stone-600">Revisado por {plano.revisaoFinal.confirmadoPorNome} · CRN {plano.revisaoFinal.crn}. Salvar alterações exige nova revisão.</p>
-            )}
-            {podeRevisar && plano.status === 'em_revisao' && Object.values(catalogoPorId).some((a) => a.origemComposicao !== 'catalogo' && !a.validacaoComposicao) && (
-              <label className="mb-2 flex items-center gap-2 text-xs text-stone-600">
-                <input type="checkbox" checked={composicaoConferida} onChange={(e) => setComposicaoConferida(e.target.checked)} />
-                Conferi a origem, as unidades e a composição dos alimentos manuais ou legados deste plano.
-              </label>
-            )}
-
-            {/* Ancorar refeicoes no treino so precisa destas duas informacoes;
-                mudar o horario do treino move pre e pos-treino juntos. */}
-            <div className="mb-2 flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs text-stone-500">
-              <span>Treino</span>
-              <label className="sr-only" htmlFor="treino-inicio">Início do treino</label>
-              <input
-                id="treino-inicio"
-                type="time"
-                value={plano.treinoInicio || ''}
-                onChange={(e) => setPlano((p) => ({ ...p, treinoInicio: e.target.value }))}
-                className="rounded border border-stone-200"
-              />
-              <span aria-hidden="true">·</span>
-              <label className="sr-only" htmlFor="treino-duracao">Duração em minutos</label>
-              <input
-                id="treino-duracao"
-                type="number"
-                min="0"
-                step="5"
-                value={plano.treinoDuracao ?? 60}
-                onChange={(e) => setPlano((p) => ({ ...p, treinoDuracao: Number(e.target.value) }))}
-                className="pp-largura-num rounded border border-stone-200 text-right"
-              />
-              <span>min</span>
-
-              <span className="mx-1 h-4 w-px bg-stone-200" aria-hidden="true" />
-
-              <label htmlFor="peso-paciente">Peso</label>
-              <input
-                id="peso-paciente"
-                type="number"
-                min="0"
-                step="0.1"
-                value={plano.pesoPaciente ?? ''}
-                placeholder="—"
-                onChange={(e) => setPlano((p) => ({ ...p, pesoPaciente: e.target.value }))}
-                className="pp-largura-num rounded border border-stone-200 text-right"
-              />
-              <span>kg</span>
-
-              <span className="mx-1 h-4 w-px bg-stone-200" aria-hidden="true" />
-
-              <label htmlFor="metodo">Método</label>
-              <select
-                id="metodo"
-                value={metodo}
-                onChange={(e) => setMetodo(e.target.value)}
-                className="rounded border border-stone-200"
-              >
-                <option value="alimentos">Por alimentos</option>
-                <option value="equivalentes">Por equivalentes</option>
-                <option value="qualitativo">Qualitativo</option>
-              </select>
-
-              {!plano.treinoInicio && (
-                <span className="text-stone-400">
-                  — sem horário de treino, refeições ancoradas ficam sem hora
-                </span>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              {refeicoesOrdenadas.map((r) => (
-                <div key={r.id}>
-                  <RefeicaoCard
-                    refeicao={r}
-                    horario={horarioDe(r, treino)}
-                    itens={itensPorRefeicao[r.id] ?? []}
-                    totais={totaisPorId[r.id] ?? TOTAIS_VAZIOS}
-                    ancoraPorItem={ancoraPorItem}
-                    valoresPorItem={valoresPorItem}
-                    opcoesPorItem={opcoesPorItem}
-                    sugestoesPorItem={sugestoesPorItem}
-                    abertos={abertos}
-                    metodo={metodo}
-                    porcoesPorItem={porcoesPorItem}
-                    blocoPorAlimentoId={blocoPorAlimentoId}
-                    onToggle={alternarRefeicao}
-                    onAdicionarAlimento={() => setBuscaEm(buscaEm === r.id ? null : r.id)}
-                    onEditarRefeicao={editarRefeicao}
-                    onDuplicarRefeicao={duplicarRefeicao}
-                    onExcluirRefeicao={excluirRefeicao}
-                    onExcluirItem={(itemId) => excluirItem(r.id, itemId)}
-                    {...handlers}
-                  />
-                  {buscaEm === r.id && (
-                    <BuscaAlimento
-                      termo={busca.termo}
-                      resultados={busca.resultados}
-                      carregando={busca.carregando}
-                      erro={busca.erro}
-                      onTermo={buscar}
-                      onEscolher={(a, g) => adicionarAlimento(r.id, a, g)}
-                      onFechar={() => setBuscaEm(null)}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
+      {/* UPD-18 (UX-07): sessao expirada e o pior caso de abandono de
+          edicao — ninguem escolheu sair, e o redirecionamento para o login
+          levaria junto o plano em edicao. O rascunho so existe porque
+          useEdicaoPendente o guardou no instante em que o evento de sessao
+          expirada chegou; aqui ele e oferecido de volta, nunca aplicado
+          sozinho. */}
+      {draftAvailable && !draftBannerDismissed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pp-aviso pp-aviso--atencao pp-aviso--com-acoes"
+        >
+          <Clock className="pp-aviso__icone" aria-hidden="true" />
+          <p className="pp-aviso__texto">
+            A sessão expirou enquanto havia alterações não salvas neste plano alimentar. Recupere para
+            continuar de onde parou ou descarte para partir dos dados salvos.
+          </p>
+          <span className="pp-aviso__acoes">
             <button
               type="button"
-              onClick={adicionarRefeicao}
-              className="mt-2 flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-800"
+              onClick={handleRecoverDraft}
+              className="pp-botao pp-botao--secundario"
             >
-              <Plus className="w-3.5 h-3.5" /> Adicionar refeição
+              <RefreshCw className="pp-icone" aria-hidden="true" /> Recuperar rascunho
             </button>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="pp-botao pp-botao--discreto"
+            >
+              Descartar
+            </button>
+          </span>
+        </div>
+      )}
 
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-100 px-4 py-2.5 text-xs text-stone-600">
-              <span>
-                Total do dia · {plano.refeicoes.length}{' '}
-                {plano.refeicoes.length === 1 ? 'refeição' : 'refeições'}
-              </span>
-              <span className="text-stone-900">
-                {n(calculado.dia.kcal)} kcal · carga glicêmica {n(calculado.dia.cargaGlicemica)}
+      {/* Cabecalho em largura total: quem e o paciente, em que estado esta o
+          plano e as acoes de salvar, revisar e publicar. O h1 da pagina ja vem
+          do RouteSidebarLayout; o nome do paciente e o h2. */}
+      <header className="pp-cabecalho">
+        <div className="pp-cabecalho__identidade">
+          <button
+            type="button"
+            onClick={handleVoltar}
+            aria-label="Voltar"
+            className="pp-icone-botao pp-icone-botao--contorno"
+          >
+            <ArrowLeft className="pp-icone" aria-hidden="true" />
+          </button>
+          <div className="pp-cabecalho__texto">
+            <h2 className="pp-cabecalho__titulo">
+              {paciente?.nome || 'Paciente'}
+            </h2>
+            <p className="pp-cabecalho__apoio">
+              <span>Plano alimentar</span>
+              {plano.status && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span className={`pp-status pp-status--${plano.status}`}>{plano.status}</span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="pp-cabecalho__acoes">
+          <span role="status" aria-live="polite" className={alterado ? 'pp-salvo pp-salvo--pendente' : 'pp-salvo'}>
+            {salvando ? 'Salvando…' : alterado ? 'Alterações não salvas' : planoId || salvoEm ? `Versão ${plano.version} salva` : 'Novo plano · ainda não salvo'}
+          </span>
+          {/* Uma acao solida por regiao: para quem revisa um plano em revisao
+              a principal e aprovar/ativar (mesma condicao que mostra o botao
+              abaixo); para os demais, salvar. So muda a classe. */}
+          <button
+            type="button"
+            onClick={handleSalvar}
+            disabled={salvando || quantidadePendente}
+            title={bloqueioQuantidade || undefined}
+            className={podeRevisar && plano.status === 'em_revisao' ? 'pp-botao pp-botao--secundario' : 'pp-botao pp-botao--primario'}
+          >
+            <Save className="pp-icone" aria-hidden="true" /> {salvando ? 'Salvando…' : plano.status === 'ativo' ? 'Salvar nova versão' : 'Salvar plano'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setAcaoConferencia('enviar')}
+            disabled={salvando || (!alterado && plano.status === 'em_revisao')}
+            className="pp-botao pp-botao--secundario"
+          >
+            Conferir para revisão
+          </button>
+          {podeRevisar && plano.status === 'em_revisao' && (
+            <button type="button" disabled={salvando || alterado}
+              onClick={() => setAcaoConferencia(plano.revisaoFinal?.confirmada ? 'ativar' : 'revisar')}
+              className="pp-botao pp-botao--primario">
+              {plano.revisaoFinal?.confirmada ? 'Conferir e ativar' : 'Conferir e aprovar'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={exportarPdf}
+            disabled={!planoId || alterado || salvando}
+            className="pp-botao pp-botao--secundario"
+          >
+            <FileText className="pp-icone" aria-hidden="true" /> PDF
+          </button>
+        </div>
+      </header>
+
+      {acaoConferencia && (
+        <ConferenciaPlano
+          pacienteNome={paciente?.nome || 'Paciente'}
+          acao={acaoConferencia}
+          refeicoes={refeicoesOrdenadas}
+          totaisPorId={totaisPorId}
+          itensPorRefeicao={itensPorRefeicao}
+          opcoesPorItem={opcoesPorItem}
+          valoresPorItem={valoresPorItem}
+          horarioDeRefeicao={horarioDeRefeicao}
+          macros={macros}
+          bloqueioQuantidade={bloqueioQuantidade}
+          bloqueioRevisao={bloqueioRevisao}
+          salvando={salvando}
+          onCancelar={() => setAcaoConferencia(null)}
+          onConfirmar={confirmarConferencia}
+          onCorrigirQuantidade={corrigirQuantidade}
+          onCorrigirRestricoes={corrigirRestricoes}
+        />
+      )}
+
+      {/* UX-03: paciente/status/acao e refeicoes vem antes da analise no
+          celular. A coluna principal e sempre a primeira no DOM; na coluna
+          unica o container empilha na ordem natural (sem reverter), entao
+          o resumo grafico (PainelMacros) cai para o fim, nao para o topo. */}
+      <div className="pp-layout">
+        <div className="pp-principal">
+          {plano.revisaoFinal?.confirmada && (
+            <p className="pp-aviso pp-aviso--info">
+              <Info className="pp-aviso__icone" aria-hidden="true" />
+              <span className="pp-aviso__texto">Revisado por {plano.revisaoFinal.confirmadoPorNome} · CRN {plano.revisaoFinal.crn}. {plano.status === 'ativo' ? 'As alterações serão salvas em uma nova versão; o plano vigente permanece disponível até a próxima publicação.' : 'Salvar alterações exige nova revisão.'}</span>
+            </p>
+          )}
+          {podeRevisar && plano.status === 'em_revisao' && Object.values(catalogoPorId).some((a) => a.origemComposicao !== 'catalogo' && !a.validacaoComposicao) && (
+            <label className="pp-checagem pp-checagem--destaque">
+              <input type="checkbox" checked={composicaoConferida} onChange={(e) => setComposicaoConferida(e.target.checked)} />
+              <span>Conferi a origem, as unidades e a composição dos alimentos manuais ou legados deste plano.</span>
+            </label>
+          )}
+
+          {bloqueioQuantidade && (
+            <p role="status" className="pp-aviso pp-aviso--atencao">
+              <TriangleAlert className="pp-aviso__icone" aria-hidden="true" />
+              <span className="pp-aviso__texto">{bloqueioQuantidade}</span>
+            </p>
+          )}
+          {bloqueioRevisao && (
+            <p role="status" className="pp-aviso pp-aviso--atencao">
+              <TriangleAlert className="pp-aviso__icone" aria-hidden="true" />
+              <span className="pp-aviso__texto">{bloqueioRevisao}</span>
+            </p>
+          )}
+
+          <div id="pp-restricoes" tabIndex={-1} className="pp-alvo-navegacao">
+            <PainelRestricoes
+              contexto={restricoesContexto}
+              registro={plano.restricoes}
+              grupos={grupos}
+              itensEmConflito={itensEmConflito}
+              onChange={(registro) => setPlano((p) => ({ ...p, restricoes: registro }))}
+            />
+          </div>
+
+          {/* Ancorar refeicoes no treino so precisa destas duas informacoes;
+              mudar o horario do treino move pre e pos-treino juntos. */}
+          <div className="pp-parametros">
+            <fieldset className="pp-parametros__treino">
+              <legend className="pp-rotulo">Treino</legend>
+              <div className="pp-campo">
+                <label className="pp-rotulo pp-rotulo--sub" htmlFor="treino-inicio">Início do treino</label>
+                <input
+                  id="treino-inicio"
+                  type="time"
+                  value={plano.treinoInicio || ''}
+                  onChange={(e) => setPlano((p) => ({ ...p, treinoInicio: e.target.value }))}
+                  className="pp-controle pp-controle--hora"
+                />
+              </div>
+              <div className="pp-campo">
+                <label className="pp-rotulo pp-rotulo--sub" htmlFor="treino-duracao">Duração em minutos</label>
+                <span className="pp-unidade">
+                  <input
+                    id="treino-duracao"
+                    type="number"
+                    min="0"
+                    step="5"
+                    value={plano.treinoDuracao ?? 60}
+                    onChange={(e) => setPlano((p) => ({ ...p, treinoDuracao: Number(e.target.value) }))}
+                    className="pp-controle pp-controle--num"
+                  />
+                  <span>min</span>
+                </span>
+              </div>
+            </fieldset>
+
+            <div className="pp-campo">
+              <label className="pp-rotulo" htmlFor="peso-paciente">Peso</label>
+              <span className="pp-unidade">
+                <input
+                  id="peso-paciente"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={plano.pesoPaciente ?? ''}
+                  placeholder="—"
+                  onChange={(e) => setPlano((p) => ({ ...p, pesoPaciente: e.target.value }))}
+                  className="pp-controle pp-controle--num"
+                />
+                <span>kg</span>
               </span>
             </div>
 
-            <TabelaAdequacao macros={macros} micros={micros} />
-            <Analises analises={analises} peso={metasSeguras.peso} />
+            <div className="pp-campo">
+              <label className="pp-rotulo" htmlFor="metodo">Visualização da edição</label>
+              <select
+                id="metodo"
+                aria-describedby="metodo-nota"
+                value={metodo}
+                onChange={(e) => setMetodo(e.target.value)}
+                className="pp-controle"
+              >
+                <option value="alimentos">Alimentos e quantidades</option>
+                <option value="equivalentes">Equivalentes</option>
+                <option value="qualitativo">Grupos alimentares</option>
+              </select>
+              <span id="metodo-nota" className="pp-parametros__nota">O plano entregue lista alimentos e quantidades.</span>
+            </div>
 
-            <div className="mt-2 grid grid-cols-2 gap-2 max-[860px]:grid-cols-1">
+            {!plano.treinoInicio && (
+              <span className="pp-parametros__nota">
+                — sem horário de treino, refeições ancoradas ficam sem hora
+              </span>
+            )}
+          </div>
+
+          <MapaRefeicoes
+            refeicoes={refeicoesOrdenadas}
+            totaisPorId={totaisPorId}
+            itensPorRefeicao={itensPorRefeicao}
+            horarioDeRefeicao={horarioDeRefeicao}
+            onIr={irParaRefeicao}
+          />
+
+          <div className="pp-refeicoes">
+            {refeicoesOrdenadas.map((r) => (
+              <div key={r.id} id={`pp-refeicao-${r.id}`} tabIndex={-1} className="pp-refeicao-bloco pp-alvo-navegacao">
+                <RefeicaoCard
+                  refeicao={r}
+                  horario={horarioDe(r, treino)}
+                  itens={itensPorRefeicao[r.id] ?? []}
+                  totais={totaisPorId[r.id] ?? TOTAIS_VAZIOS}
+                  ancoraPorItem={ancoraPorItem}
+                  valoresPorItem={valoresPorItem}
+                  opcoesPorItem={opcoesPorItem}
+                  sugestoesPorItem={sugestoesPorItem}
+                  restritosPorItem={restritosPorItem}
+                  abertos={abertos}
+                  metodo={metodo}
+                  porcoesPorItem={porcoesPorItem}
+                  blocoPorAlimentoId={blocoPorAlimentoId}
+                  onToggle={alternarRefeicao}
+                  onAdicionarAlimento={() => alternarBusca(`alimento:${r.id}`)}
+                  buscaAberta={buscaAtiva === `alimento:${r.id}`}
+                  buscaAlimento={busca}
+                  onBuscarAlimento={buscar}
+                  onEscolherAlimento={(alimento, quantidade, medidaIdx) => adicionarAlimento(r.id, alimento, quantidade, medidaIdx)}
+                  onFecharBusca={fecharBusca}
+                  onEditarRefeicao={editarRefeicao}
+                  onDuplicarRefeicao={duplicarRefeicao}
+                  onExcluirRefeicao={excluirRefeicao}
+                  onExcluirItem={(itemId) => excluirItem(r.id, itemId)}
+                  {...handlers}
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={adicionarRefeicao}
+            className="pp-botao pp-botao--acrescentar"
+          >
+            <Plus className="pp-icone" aria-hidden="true" /> Adicionar refeição
+          </button>
+
+          <div className="pp-total">
+            <span className="pp-total__rotulo">
+              Total do dia · {plano.refeicoes.length}{' '}
+              {plano.refeicoes.length === 1 ? 'refeição' : 'refeições'}
+            </span>
+            <span className="pp-total__valor">
+              {energiaConhecida?.valor === null ? '—' : n(calculado.dia.kcal)} kcal
+              {energiaConhecida?.valor !== null && energiaConhecida?.cobertura < 1 ? ' · subtotal conhecido' : ''}
+              {' · '}carga glicêmica {n(calculado.dia.cargaGlicemica)}
+            </span>
+          </div>
+
+          <div className="pp-acoes-finais">
+            <span>{alterado ? 'Há alterações não salvas.' : 'Confira as refeições antes de concluir.'}</span>
+            <div className="pp-acoes-finais__botoes">
+              <button type="button" onClick={handleSalvar} disabled={salvando || quantidadePendente}
+                className="pp-botao pp-botao--secundario">
+                <Save className="pp-icone" aria-hidden="true" /> {salvando ? 'Salvando…' : plano.status === 'ativo' ? 'Salvar nova versão' : 'Salvar plano'}
+              </button>
+              {podeRevisar && plano.status === 'em_revisao' ? (
+                <button type="button" disabled={salvando || alterado}
+                  onClick={() => setAcaoConferencia(plano.revisaoFinal?.confirmada ? 'ativar' : 'revisar')}
+                  className="pp-botao pp-botao--primario">
+                  {plano.revisaoFinal?.confirmada ? 'Conferir e ativar' : 'Conferir e aprovar'}
+                </button>
+              ) : (
+                <button type="button" disabled={salvando || (!alterado && plano.status === 'em_revisao')}
+                  onClick={() => setAcaoConferencia('enviar')} className="pp-botao pp-botao--primario">
+                  Conferir para revisão
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Paineis de apoio agrupados depois das refeicoes: primeiro a
+              adequacao, depois as leituras do plano como conjunto. */}
+          <div className="pp-apoio">
+            <TabelaAdequacao macros={macros} micros={micros} contexto={contextoClinico} />
+            {/* UX-03: analise secundaria fica recolhida por padrao — o mesmo
+                padrao que a tabela de adequacao ja usa para micronutrientes.
+                O conteudo continua no DOM (nao e removido), so comeca fechado. */}
+            <details className="pp-detalhes">
+              <summary className="pp-detalhes__resumo">
+                Ver análises detalhadas do plano
+              </summary>
+              <Analises analises={analises} peso={metasSeguras.peso} />
+            </details>
+
+            <div className="pp-apoio__par">
               <GrauProcessamento distribuicao={distribNova} />
               <ListaCompras lista={compras} />
             </div>
           </div>
+        </div>
 
-          {/* Abaixo de 1000px sai da lateral e vira faixa no topo. */}
-          <div className="w-60 shrink-0 max-[999px]:w-full">
-            <div className="sticky top-6 space-y-2 max-[999px]:static">
-              <PainelMacros
-                dia={calculado.dia}
-                metas={metasSeguras}
-                distribuicao={distribuicao}
-                cores={COR}
-              />
-            </div>
+        {/* Na coluna unica sai da lateral e vai para o fim (ver UX-03 acima). */}
+        <div className="pp-lateral">
+          <div className="pp-lateral__fixo">
+            <PainelMacros
+              dia={calculado.dia}
+              metas={metasSeguras}
+              distribuicao={distribuicao}
+              cores={COR}
+              macros={macros}
+            />
           </div>
         </div>
       </div>

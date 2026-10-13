@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, Apple, ClipboardList, Droplets, Dumbbell, X } from 'lucide-react';
 import { useModalBodyLock } from '../../hooks/useModalBodyLock';
@@ -6,6 +6,8 @@ import { useModalFocusTrap } from '../../hooks/useModalFocusTrap';
 import { toLocalDateInputValue } from '../../utils/dateUtils';
 import { getAthleteSelfEvaluationConfig } from './athleteSelfEvaluations';
 import '../../components/Avaliacoes/avaliacoes.css';
+// Base das avaliações: dá aos eval-* o desenho novo só dentro de .av-modulo.
+import '../../components/Avaliacoes/base/avaliacao-base.css';
 import './AthleteSelfEvaluationModal.css';
 
 const FORM_COMPONENTS = {
@@ -111,20 +113,25 @@ export default AthleteSelfEvaluationModal;
    Shared helpers
 ───────────────────────────────────────────────────────────── */
 
+// Cada campo envolve um único input, select ou textarea: o rótulo passa a
+// apontar para ele (htmlFor + id), o contrato de src/views/public/inscricao/
+// campos.jsx.
 function FormField({ label, children }) {
+  const controlId = useId();
   return (
     <div className="eval-field">
-      <label className="eval-label">{label}</label>
-      {children}
+      <label className="eval-label" htmlFor={controlId}>{label}</label>
+      {React.cloneElement(children, { id: controlId })}
     </div>
   );
 }
 
 function FormFieldFull({ label, children }) {
+  const controlId = useId();
   return (
     <div className="eval-field eval-field-full">
-      <label className="eval-label">{label}</label>
-      {children}
+      <label className="eval-label" htmlFor={controlId}>{label}</label>
+      {React.cloneElement(children, { id: controlId })}
     </div>
   );
 }
@@ -196,7 +203,7 @@ function AthleteAlimentarForm({ pacienteId, onSalvar, readOnly = false }) {
   };
 
   return (
-    <div className="eval-card">
+    <div className="eval-card av-modulo">
       <div className="eval-grid">
         <FormField label="Data">
           <input type="date" className="eval-input" value={formData.dataAvaliacao}
@@ -219,7 +226,7 @@ function AthleteAlimentarForm({ pacienteId, onSalvar, readOnly = false }) {
             onChange={(e) => updateField('observacoes', e.target.value)} disabled={readOnly} />
         </FormFieldFull>
       </div>
-      {error ? <div className="form-error-message">{error}</div> : null}
+      {error ? <div className="form-error-message" role="alert">{error}</div> : null}
       <div className="eval-actions">
         <button type="button" className="eval-btn eval-btn-primary"
           onClick={handleSubmit} disabled={readOnly}>
@@ -293,7 +300,7 @@ function AthleteHidratacaoForm({ pacienteId, onSalvar, readOnly = false }) {
   };
 
   return (
-    <div className="eval-card">
+    <div className="eval-card av-modulo">
       <div className="eval-grid">
         <FormField label="Data">
           <input type="date" className="eval-input" value={formData.dataAvaliacao}
@@ -335,7 +342,7 @@ function AthleteHidratacaoForm({ pacienteId, onSalvar, readOnly = false }) {
             onChange={(e) => updateField('observacoes', e.target.value)} disabled={readOnly} />
         </FormFieldFull>
       </div>
-      {error ? <div className="form-error-message">{error}</div> : null}
+      {error ? <div className="form-error-message" role="alert">{error}</div> : null}
       <div className="eval-actions">
         <button type="button" className="eval-btn eval-btn-primary"
           onClick={handleSubmit} disabled={readOnly}>
@@ -413,7 +420,7 @@ function AthleteCargaTreinoForm({ pacienteId, onSalvar, readOnly = false }) {
   };
 
   return (
-    <div className="eval-card">
+    <div className="eval-card av-modulo">
       <div className="eval-grid">
         <FormField label="Semana de referência">
           <input type="date" className="eval-input" value={formData.dataAvaliacao}
@@ -456,7 +463,7 @@ function AthleteCargaTreinoForm({ pacienteId, onSalvar, readOnly = false }) {
             disabled={readOnly} />
         </FormFieldFull>
       </div>
-      {error ? <div className="form-error-message">{error}</div> : null}
+      {error ? <div className="form-error-message" role="alert">{error}</div> : null}
       <div className="eval-actions">
         <button type="button" className="eval-btn eval-btn-primary"
           onClick={handleSubmit} disabled={readOnly}>
@@ -540,7 +547,7 @@ function AthletePainReportForm({
   };
 
   return (
-    <div className="eval-card">
+    <div className="eval-card av-modulo">
       <div className="eval-grid">
         <FormField label="Data">
           <input type="date" className="eval-input" value={formData.dataAvaliacao}
@@ -585,7 +592,7 @@ function AthletePainReportForm({
             onChange={(e) => updateField('observacoes', e.target.value)} disabled={readOnly} />
         </FormFieldFull>
       </div>
-      {error ? <div className="form-error-message">{error}</div> : null}
+      {error ? <div className="form-error-message" role="alert">{error}</div> : null}
       <div className="eval-actions">
         <button type="button" className="eval-btn eval-btn-primary"
           onClick={handleSubmit} disabled={readOnly}>

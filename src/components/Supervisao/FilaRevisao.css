@@ -1,0 +1,394 @@
+/* UPD-17 — fila de supervisão (FilaRevisao.jsx), na direção "Energia e
+   velocidade" (docs/design/landing-guia-visual.md, seção "Direção
+   vigente"; docs/implementacao/telas-v2/change-intent.md, onda C), com o
+   vocabulário das peças do Painel (src/components/painel/painel.css):
+   cartão branco, linhas no fundo de campo com a raia, alvos de 44 px, o
+   primário ("Aprovar", "Confirmar devolução") no degradê de largada e foco
+   com --lt-focus-ring. Sem depender de escopo de tela: o componente pode
+   ser montado em mais de uma área.
+
+   Na Visão geral do professor, ProfessorDashboard.css transforma o cartão
+   num trecho da seção "O que precisa de você" (`.prof-visao-geral
+   .sup-fila`, 0,2,0, e títulos a 0,2,1). Por isso a raiz fica em 0,1,0 e
+   o título e o texto do cabeçalho em 0,1,1: as regras de lá vencem sem
+   depender da ordem de carga. Botões e campo usam os mesmos valores que
+   ela declara (44 px, quebra de linha, 16 px no campo).
+
+   Os botões e o estado de carregar/vazio/erro vêm de components/ui (onda
+   A, mudando em paralelo); aqui eles são redeclarados dentro de
+   `.sup-fila`, com um seletor a mais que os de ui.css. O estado é escrito:
+   a contagem "N itens" no par de atenção do Painel; vazio e erro com
+   título. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../views/landing/landing-tokens.css';
+
+/* ── Cartão ──────────────────────────────────────────────────────────── */
+.sup-fila {
+  --sf-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --sf-atencao-fundo */
+  --sf-atencao-fundo: #fff7ed;
+  --sf-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0 0 var(--lt-space-4);
+  padding: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+.sup-fila__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  margin: 0 0 var(--lt-space-4);
+}
+
+.sup-fila__title {
+  display: flex;
+  flex: 1 1 16rem;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  color: var(--lt-color-text);
+}
+
+.sup-fila__title > svg { flex: none; margin-top: 0.125rem; color: var(--lt-color-brand-blue); }
+.sup-fila__title > div { min-width: 0; }
+
+/* 0,1,1: vence h2 global (Poppins, cor e tamanho) e perde para a Visão
+   geral (0,2,1), que o põe como subtítulo da seção. */
+.sup-fila__title h2 {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.sup-fila__title p {
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Itens aguardando decisão: o par de atenção, com o número escrito. */
+.sup-fila .sup-fila__count {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--sf-atencao-fundo);
+  color: var(--sf-atencao-texto);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Itens: linha no fundo de campo com a raia ───────────────────────── */
+.sup-fila .sup-fila__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.sup-fila .sup-fila-item {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-3) var(--lt-space-3) var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.sup-fila .sup-fila-item::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.5rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--sf-raia);
+  transform: skewX(-12deg);
+}
+
+.sup-fila .sup-fila-item__info {
+  display: flex;
+  flex: 1 1 15rem;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.sup-fila .sup-fila-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-2);
+  min-width: 0;
+}
+
+.sup-fila .sup-fila-item__head strong {
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* Instrumento (avaliação ou plano): selo neutro em contorno sobre branco. */
+.sup-fila .sup-fila-item__tipo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted); /* 6,59:1 sobre branco */
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.sup-fila .sup-fila-item__meta {
+  margin: 0;
+  color: var(--lt-color-text-muted); /* 6,17:1 sobre o campo */
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* A observação do aluno, citada: fio à esquerda, texto em tinta. */
+.sup-fila .sup-fila-item__observacao {
+  margin: var(--lt-space-1) 0 0;
+  padding-left: var(--lt-space-2);
+  border-left: 2px solid var(--lt-color-border-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-style: italic;
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.sup-fila .sup-fila-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+
+/* ── Botões (components/ui): 0,3,0 vence ui.css; mesmos 44 px e quebra
+   que a Visão geral declara em `.prof-visao-geral .sup-fila .ui-button`. */
+.sup-fila .sup-fila-item__actions .ui-button,
+.sup-fila .ui-feedback-state__action .ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue); /* 6,33:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+/* Primário: o degradê de largada. Branco a 4,82:1 no topo e 6,20:1 na
+   base (scripts/test-landing-tokens.cjs). */
+.sup-fila .sup-fila-item__actions .ui-button.ui-button-primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+@media (hover: hover) {
+  .sup-fila .sup-fila-item__actions .ui-button:not(.ui-button-primary):hover:not(:disabled),
+  .sup-fila .ui-feedback-state__action .ui-button:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
+
+  .sup-fila .sup-fila-item__actions .ui-button.ui-button-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+    color: var(--lt-color-text-inverse);
+  }
+}
+
+.sup-fila .sup-fila-item__actions .ui-button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.sup-fila .sup-fila-item__actions .ui-button:focus-visible,
+.sup-fila .ui-feedback-state__action .ui-button:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Devolver: a orientação é o rótulo do campo ──────────────────────── */
+.sup-fila .sup-fila-item__devolver-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+/* 0,2,0: vence `label` de theme.css (13 px, cinza, margem de 6 px). */
+.sup-fila .sup-fila-item__devolver-label {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+/* 0,2,0: vence `textarea` de theme.css e `.content-area textarea`. */
+.sup-fila .sup-fila-textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 6rem;
+  margin: 0;
+  padding: 0.7rem 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  line-height: var(--lt-leading-normal);
+  resize: vertical;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.sup-fila .sup-fila-textarea::placeholder { color: var(--lt-color-text-subtle); opacity: 1; }
+
+.sup-fila .sup-fila-textarea:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.sup-fila .sup-fila-textarea:disabled { background: var(--lt-color-surface-field); cursor: not-allowed; }
+
+/* ── Carregando, vazio e erro: o tom de .painel-estado ────────────────
+   0,2,0 vence `.ui-feedback-state` e as partes dele em ui.css. */
+.sup-fila .ui-feedback-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  text-align: center;
+}
+
+.sup-fila .ui-feedback-state.ui-feedback-state--loading {
+  align-items: stretch;
+  padding: 0;
+  background: transparent;
+}
+
+.sup-fila .ui-feedback-state__icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  opacity: 1;
+}
+
+.sup-fila .ui-feedback-state__title {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.sup-fila .ui-feedback-state__description {
+  max-width: 36rem;
+  margin: 0;
+  color: var(--lt-color-text-muted); /* 6,17:1 sobre o campo */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+.sup-fila .ui-feedback-state.ui-feedback-state--error { background: var(--lt-color-danger-bg); }
+
+.sup-fila .ui-feedback-state--error .ui-feedback-state__icon,
+.sup-fila .ui-feedback-state--error .ui-feedback-state__title { color: var(--lt-color-danger-text); }
+
+/* ── Telas estreitas: ações abaixo dos dados, com a largura toda ─────── */
+@media (max-width: 40rem) {
+  .sup-fila .sup-fila-item { flex-direction: column; align-items: stretch; }
+  .sup-fila .sup-fila-item__actions .ui-button { flex: 1 1 auto; }
+}
+
+/* ── Movimento: o esqueleto pulsa 3 vezes e o giro do botão só existe
+   sem movimento reduzido (as animações vêm de ui.css). ──────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .sup-fila .ui-skeleton { animation-iteration-count: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sup-fila .ui-skeleton,
+  .sup-fila .ui-button-spinner { animation: none; }
+}

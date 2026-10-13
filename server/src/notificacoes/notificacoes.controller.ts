@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { AuthenticatedUser } from '../auth/access-control';
+import { ADMIN_ROLES } from '../common/domain/access.constants';
 
 @Controller('notificacoes')
 export class NotificacoesController {
@@ -51,14 +52,14 @@ export class NotificacoesController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'coordenacao', 'presidente', 'vice')
+  @Roles(...ADMIN_ROLES)
   @Patch(':id')
   update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: AtualizarNotificacaoDto) {
     return this.notificacoesService.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'coordenacao', 'presidente', 'vice')
+  @Roles(...ADMIN_ROLES)
   @Delete(':id')
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.notificacoesService.remove(id);

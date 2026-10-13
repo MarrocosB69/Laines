@@ -13,7 +13,14 @@ const REQUIRED_FIELD_LABELS = {
 };
 
 const BASE_REQUIRED_FIELDS = ['name', 'cpf', 'telefone', 'dataNascimento'];
-const STUDENT_REQUIRED_FIELDS = ['matricula', 'curso', 'periodo', 'supervisorId', 'projetoId'];
+// Participação acadêmica: identifica a pessoa e o vínculo com a liga. Sem
+// isso, o cadastro fica incompleto e bloqueia o uso do sistema.
+const STUDENT_PARTICIPATION_FIELDS = ['matricula', 'curso', 'periodo'];
+// Habilitação para atendimento: libera a rotina clínica (agenda, pacientes),
+// mas não é cadastro obrigatório da liga. Sem supervisor/projeto, o aluno
+// continua lendo a Liga normalmente; só o atendimento fica pendente
+// (UPD-13, produto-clinico.md — "Liga acadêmica: leitura transversal").
+const STUDENT_ATENDIMENTO_FIELDS = ['supervisorId', 'projetoId'];
 
 const isFilled = (value) => {
   if (value === null || value === undefined) return false;
@@ -24,10 +31,16 @@ const isFilled = (value) => {
 export const getRequiredProfileFields = (role) => {
   const normalizedRole = normalizeRole(role);
   if (isStudentMemberRole(normalizedRole)) {
-    return [...BASE_REQUIRED_FIELDS, ...STUDENT_REQUIRED_FIELDS];
+    return [...BASE_REQUIRED_FIELDS, ...STUDENT_PARTICIPATION_FIELDS];
   }
   return [...BASE_REQUIRED_FIELDS];
 };
+
+// Campos que habilitam o atendimento clínico. Não entram no cadastro
+// obrigatório (getRequiredProfileFields) para não bloquear a leitura da Liga.
+export const getAtendimentoProfileFields = (role) => (
+  isStudentMemberRole(normalizeRole(role)) ? [...STUDENT_ATENDIMENTO_FIELDS] : []
+);
 
 export const getProfileCompletionState = (user) => {
   if (!user) {

@@ -6,7 +6,9 @@ import {
   ADMIN_AREA_ROLES,
   PROFESSOR_AREA_ROLES,
   STUDENT_MEMBER_ROLES,
-  normalizeRole
+  getPaginaDeOrigem,
+  normalizeRole,
+  temDoisPapeis
 } from '../../constants/roles';
 import AdminSidebar from '../admin/SideBar/Sidebar';
 import StudentSidebar from '../Student/StudentView/StudentSideBar';
@@ -17,9 +19,15 @@ import NotificationTaskCenter from '../../components/shared/NotificationTaskCent
 import '../admin/AdminView/AdminView.css';
 import '../admin/AdminView/AdminHeader.css';
 
-const inferAreaFromContext = (role, pathname, routeState) => {
+const AREA_DA_PAGINA_UNICA = Object.freeze({ '/aluno': 'student', '/professor': 'professor' });
+
+// paginaUnica: página de origem de quem tem dois papéis (WI-015), ou null.
+// Essa pessoa não usa mais a barra do painel: um retorno a /admin mostra a
+// barra da página única (e /admin a leva para lá, ver App.jsx).
+const inferAreaFromContext = (role, pathname, routeState, paginaUnica = null) => {
   const returnTo = String(routeState?.returnTo || '').toLowerCase();
 
+  if (paginaUnica && returnTo.startsWith('/admin')) return AREA_DA_PAGINA_UNICA[paginaUnica];
   if (returnTo.startsWith('/aluno')) return 'student';
   if (returnTo.startsWith('/professor')) return 'professor';
   if (returnTo.startsWith('/admin')) return 'admin';
@@ -52,14 +60,14 @@ const getDefaultTabForArea = (area, pathname) => {
 
 const AREA_LABELS = {
   admin: 'Painel administrativo',
-  professor: 'Area do professor',
-  student: 'Area do aluno',
-  team: 'Area da equipe tecnica',
-  athlete: 'Area do atleta'
+  professor: 'Área do professor',
+  student: 'Área do aluno',
+  team: 'Área da equipe técnica',
+  athlete: 'Área do atleta'
 };
 
 const PAGE_LABELS = {
-  '/avaliacao': 'Avaliacao',
+  '/avaliacao': 'Avaliação',
   '/planos-alimentares': 'Plano alimentar'
 };
 
@@ -72,9 +80,10 @@ const RouteSidebarLayout = ({ children }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const normalizedRole = normalizeRole(user?.role);
+  const paginaUnica = temDoisPapeis(user) ? getPaginaDeOrigem(user?.role) : null;
   const area = useMemo(
-    () => inferAreaFromContext(normalizedRole, location.pathname, location.state),
-    [normalizedRole, location.pathname, location.state]
+    () => inferAreaFromContext(normalizedRole, location.pathname, location.state, paginaUnica),
+    [normalizedRole, location.pathname, location.state, paginaUnica]
   );
   const defaultTab = useMemo(
     () => getDefaultTabForArea(area, location.pathname),
@@ -103,14 +112,15 @@ const RouteSidebarLayout = ({ children }) => {
   }, [defaultTab]);
 
   useEffect(() => {
+    // UX-01: só fecha ao cruzar para mobile com o menu aberto. A versão
+    // anterior reabria a barra lateral em qualquer resize no desktop
+    // (`if (!prev) return true`), desfazendo um recolhimento deliberado do
+    // usuário a cada redimensionamento — mesmo padrão agora usado em
+    // StudentView/ProfessorView/AthleteView/TeamPortal.
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
-      setSidebarOpen((prev) => {
-        if (mobile) return false;
-        if (!prev) return true;
-        return prev;
-      });
+      setSidebarOpen((prev) => (mobile && prev ? false : prev));
     };
 
     window.addEventListener('resize', handleResize);
@@ -133,31 +143,36 @@ const RouteSidebarLayout = ({ children }) => {
       navigate(`/admin?tab=${encodeURIComponent(tab || 'dashboard')}`);
       return;
     }
+    // Os quatro portais aceitam ?area= (useAreaNavegacao): sem ele, clicar
+    // "Atletas" a partir da prescrição levava à aba inicial, que agora é a
+    // Visão Geral (revisão de 27/09/2026). Aba inválida cai no padrão.
+    const comArea = (rota) => (tab ? `${rota}?area=${encodeURIComponent(tab)}` : rota);
     if (area === 'professor') {
-      navigate('/professor');
+      navigate(comArea('/professor'));
       return;
     }
     if (area === 'team') {
-      navigate('/equipe');
+      navigate(comArea('/equipe'));
       return;
     }
     if (area === 'athlete') {
-      navigate('/atleta');
+      navigate(comArea('/atleta'));
       return;
     }
-    navigate('/aluno');
+    navigate(comArea('/aluno'));
   }, [area, navigate]);
 
   const sidebarProps = {
     activeTab,
     setActiveTab: handleSelectTab,
     isOpen: isSidebarOpen,
-    onToggle: () => setSidebarOpen((prev) => !prev)
+    onToggle: () => setSidebarOpen((prev) => !prev),
+    isMobile
   };
 
   let sidebar = <StudentSidebar {...sidebarProps} />;
   if (area === 'admin') {
-    sidebar = <AdminSidebar {...sidebarProps} isMobile={isMobile} requestsCount={0} />;
+    sidebar = <AdminSidebar {...sidebarProps} requestsCount={0} />;
   } else if (area === 'professor') {
     sidebar = <ProfessorSidebar {...sidebarProps} />;
   } else if (area === 'team') {
@@ -167,10 +182,11 @@ const RouteSidebarLayout = ({ children }) => {
   }
 
   const mainClassName = `admin-main-content ${!isSidebarOpen ? (isMobile ? 'expanded' : 'collapsed') : ''}`;
+  const shellClassName = `admin-view light-mode route-shell route-shell--${area} ${isMobile ? 'route-shell--mobile' : 'route-shell--desktop'}`;
 
   return (
     <motion.div
-      className="admin-view light-mode"
+      className={shellClassName}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}

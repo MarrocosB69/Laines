@@ -11,29 +11,29 @@ export default function ListaCompras({ lista }) {
   const opcoes = lista.reduce((acc, c) => acc + c.itens.filter((i) => i.opcao).length, 0);
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white px-4 py-3">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
-        <p className="text-sm text-stone-900">Lista de compras</p>
-        <span className="text-xs text-stone-400">
+    <div className="pp-cartao">
+      <div className="pp-cartao__cabeca">
+        <h3 className="pp-cartao__titulo">Lista de compras</h3>
+        <span className="pp-cartao__contagem">
           {total} {total === 1 ? 'item' : 'itens'}
           {opcoes > 0 && ` · ${opcoes} como opção`}
         </span>
       </div>
 
-      {total === 0 && <p className="text-xs text-stone-400">Sem alimentos no plano.</p>}
+      {total === 0 && <p className="pp-cartao__vazio">Sem alimentos no plano.</p>}
 
       {lista.map((categoria) => (
-        <div key={categoria.categoria} className="mb-2">
-          <p className="mb-1 text-xs text-stone-400">{categoria.categoria}</p>
-          <ul>
+        <div key={categoria.categoria} className="pp-compras__categoria">
+          <p className="pp-compras__titulo">{categoria.categoria}</p>
+          <ul className="pp-compras__lista">
             {categoria.itens.map((item) => (
               <li
                 key={item.id}
-                className={`border-t border-stone-200 py-0.5 text-xs ${item.opcao ? 'text-stone-400' : 'text-stone-700'}`}
+                className={`pp-compras__item${item.opcao ? ' pp-compras__item--opcao' : ''}`}
               >
                 {item.nome}
                 {/* Marcado, e nao omitido: quem for trocar precisa comprar. */}
-                {item.opcao && <span className="ml-1.5 text-stone-300">opção</span>}
+                {item.opcao && <span className="pp-compras__marca">opção</span>}
               </li>
             ))}
           </ul>

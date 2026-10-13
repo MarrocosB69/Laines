@@ -42,7 +42,8 @@ const EQUIPE_ATENDIMENTO_OPTION_ROLES = [
 ] as const;
 const STUDENT_OPTION_ROLES = ['aluno', 'presidente', 'vice'] as const;
 const CREDENTIALED_SUPERVISOR_ROLES = new Set(['professor', 'profissional']);
-type AuthLookupUser = Pick<User, 'id' | 'email' | 'passwordHash' | 'role' | 'name' | 'status' | 'diretoria' | 'permissions' | 'mustChangePassword' | 'sessionVersion'>;
+type AuthLookupUser = Pick<User, 'id' | 'email' | 'passwordHash' | 'role' | 'name' | 'status' | 'diretoria' | 'permissions' | 'mustChangePassword' | 'sessionVersion'
+  | 'projetoId' | 'supervisorId' | 'coordAtendimento' | 'crn' | 'conselhoTipo' | 'conselhoNumero'>;
 
 @Injectable()
 export class UsersService {
@@ -390,9 +391,15 @@ export class UsersService {
     };
   }
 
-  private toPublic(user: User, _includeTemporaryPassword = false) {
+  private toAdmin(user: User) {
     if (!user) return user;
     const { passwordHash, tempPassword, ...rest } = user;
+    return { ...rest, passwordChanged: !rest.mustChangePassword };
+  }
+
+  private toPublic(user: User, _includeTemporaryPassword = false) {
+    if (!user) return user;
+    const { passwordHash, tempPassword, cpf, dataNascimento, ...rest } = user;
     return {
       ...rest,
       passwordChanged: !rest.mustChangePassword
@@ -411,7 +418,7 @@ export class UsersService {
     }
 
     const users = await qb.getMany();
-    return users.map((user) => this.toPublic(user, true));
+    return users.map((user) => this.toAdmin(user));
   }
 
   async listEquipeAtendimentoOptions() {
@@ -539,7 +546,13 @@ export class UsersService {
         diretoria,
         permissions,
         must_change_password as "mustChangePassword",
-        session_version as "sessionVersion"
+        session_version as "sessionVersion",
+        projeto_id as "projetoId",
+        supervisor_id as "supervisorId",
+        coord_atendimento as "coordAtendimento",
+        crn,
+        conselho_tipo as "conselhoTipo",
+        conselho_numero as "conselhoNumero"
       from users
       where email = $1
         and deleted_at is null
@@ -568,7 +581,13 @@ export class UsersService {
           ? row.permissions.map((permission) => String(permission)).filter(Boolean)
           : [],
         mustChangePassword: Boolean(row.mustChangePassword),
-        sessionVersion: Number(row.sessionVersion || 1)
+        sessionVersion: Number(row.sessionVersion || 1),
+        projetoId: row.projetoId ? String(row.projetoId) : undefined,
+        supervisorId: row.supervisorId ? String(row.supervisorId) : undefined,
+        coordAtendimento: Boolean(row.coordAtendimento),
+        crn: row.crn ? String(row.crn) : undefined,
+        conselhoTipo: row.conselhoTipo ? String(row.conselhoTipo) : undefined,
+        conselhoNumero: row.conselhoNumero ? String(row.conselhoNumero) : undefined
       } as AuthLookupUser;
       this.writeCache(this.authByEmailCache, normalizedEmail, parsed, this.authLookupCacheTtlMs);
       return parsed;
@@ -624,9 +643,9 @@ export class UsersService {
     return loadPromise;
   }
 
-  async findPublicById(id: string, includeTemporaryPassword = false) {
+  async findPublicById(id: string, includePersonalData = false) {
     const user = await this.findByIdCached(id);
-    return user ? this.toPublic(user, includeTemporaryPassword) : null;
+    return user ? (includePersonalData ? this.toAdmin(user) : this.toPublic(user)) : null;
   }
 
   async create(data: Partial<User>) {
@@ -715,7 +734,7 @@ export class UsersService {
       : await this.sendActivationLink(user.id);
 
     return {
-      user: this.toPublic(user, true),
+      user: this.toAdmin(user),
       activation
     };
   }
@@ -830,7 +849,7 @@ export class UsersService {
         .set({
           ...payload,
           sessionVersion: () => '"session_version" + 1'
-        } as unknown as Partial<User>)
+        })
         .where('id = :id', { id })
         .execute();
     } else {
@@ -846,7 +865,7 @@ export class UsersService {
       await this.syncUserNameDenormalizations(updated.id, updated.name);
       this.clearReadCaches();
     }
-    return this.toPublic(updated, true);
+    return this.toAdmin(updated);
   }
 
   async setUserPermissions(userId: string, permissions: string[]) {
@@ -861,7 +880,7 @@ export class UsersService {
       .set({
         permissions: normalized,
         sessionVersion: () => '"session_version" + 1'
-      } as unknown as Partial<User>)
+      })
       .where('id = :userId', { userId })
       .execute();
     this.clearReadCaches();
@@ -869,7 +888,7 @@ export class UsersService {
     if (!updated) {
       throw new NotFoundException('Usuario nao encontrado.');
     }
-    return this.toPublic(updated, true);
+    return this.toAdmin(updated);
   }
 
   async updateSelfProfile(id: string, dto: UpdateProfileDto) {
@@ -1148,7 +1167,7 @@ export class UsersService {
         mustChangePassword: true,
         tempPassword: null,
         sessionVersion: () => '"session_version" + 1'
-      } as unknown as Partial<User>)
+      })
       .where('id = :id', { id })
       .execute();
 
@@ -1178,7 +1197,7 @@ export class UsersService {
       .set({
         ...payload,
         sessionVersion: () => '"session_version" + 1'
-      } as unknown as Partial<User>)
+      })
       .where('id = :id', { id })
       .execute();
     this.clearReadCaches();
@@ -1189,7 +1208,7 @@ export class UsersService {
       .update(User)
       .set({
         sessionVersion: () => '"session_version" + 1'
-      } as unknown as Partial<User>)
+      })
       .where('id = :id', { id })
       .execute();
     this.clearReadCaches();

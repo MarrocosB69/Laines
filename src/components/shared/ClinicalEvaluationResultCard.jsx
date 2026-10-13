@@ -5,20 +5,26 @@ import {
 } from './evaluationSummaryUtils';
 import './ClinicalEvaluationResultCard.css';
 
+// Tipos e domínios do catálogo (server/src/avaliacoes/evaluation-registry.ts,
+// campo `dominio`); a composição integrada é registro legado, fora do catálogo.
+// O Plano de metas fica de fora de propósito: ele não muda no WI-013.
 const DOMAIN_BY_TYPE = {
-  bioimpedancia: 'antropometria',
-  dobras_cutaneas: 'antropometria',
+  anamnese_inicial: 'anamnese',
+  avaliacao_clinica: 'clinica',
+  avaliacao_socioeconomica: 'social',
   perimetros: 'antropometria',
+  dobras_cutaneas: 'antropometria',
+  bioimpedancia: 'antropometria',
+  composicao_corporal_imagem: 'antropometria',
   composicao_corporal_integrada: 'antropometria',
   gasto_energetico_total: 'antropometria',
-  avaliacao_alimentar: 'nutricao',
-  registro_consumo: 'nutricao',
-  avaliacao_clinica: 'clinica',
+  carga_treino: 'esportivo',
+  alimentar: 'nutricao',
+  hidratacao: 'nutricao',
+  psicologia: 'multiprofissional',
+  fisioterapia: 'multiprofissional',
+  triagem_reds: 'esportivo',
   exames_laboratoriais: 'clinica',
-  avaliacao_fisioterapia: 'multiprofissional',
-  avaliacao_psicologia: 'multiprofissional',
-  avaliacao_socioeconomica: 'social',
-  anamnese_inicial: 'anamnese',
   evolucao_retorno: 'anamnese'
 };
 
@@ -110,6 +116,7 @@ const ClinicalEvaluationResultCard = ({
             type="button"
             className="clinical-result-card__detail-btn"
             onClick={() => setExpanded((prev) => !prev)}
+            aria-expanded={expanded}
           >
             {expanded ? 'Ocultar detalhes' : 'Ver detalhes completos'}
           </button>

@@ -4,6 +4,15 @@ const toDate = (value) => {
   if (typeof value?.seconds === "number") return new Date(value.seconds * 1000);
   if (value instanceof Date) return value;
   if (typeof value === "string") {
+    const civil = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (civil) {
+      const year = Number(civil[1]);
+      const month = Number(civil[2]);
+      const day = Number(civil[3]);
+      const local = new Date(year, month - 1, day);
+      return local.getFullYear() === year && local.getMonth() === month - 1
+        && local.getDate() === day ? local : null;
+    }
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }

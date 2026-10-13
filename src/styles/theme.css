@@ -9,6 +9,17 @@
      Gray  #677487  — neutro · texto secundário · bordas
 ════════════════════════════════════════════════════════════ */
 
+/* Onda A das telas v2 (docs/implementacao/telas-v2/change-intent.md):
+   tipografia, cor de texto e foco das regras globais abaixo passam aos
+   tokens --lt-* ("Energia e velocidade"), carregados por src/index.css.
+   Ficam como estavam, de propósito:
+   - os valores de :root, que dezenas de telas das ondas B–E consomem;
+   - as regras que mudam layout ou que as telas já migradas usam como
+     base: `button { white-space: nowrap; display: inline-flex }`, o
+     `input:not([type=checkbox]):not([type=radio])` (0,2,1), `label`, as
+     tabelas e a geometria dos cartões e selos.
+   Cada tela migrada redeclara esses pontos no próprio escopo. */
+
 :root {
   /* ── Cores da marca ──────────────────────────────────────── */
   --color-navy:         #1D3350;
@@ -71,7 +82,15 @@
   /* ── Texto ───────────────────────────────────────────────── */
   --color-text-primary:   var(--color-navy);
   --color-text-secondary: var(--color-gray);
-  --color-text-muted:     #8fa0b3;
+  /* UX-08 (revisão independente): consolidado como fonte única — este
+     token só existia aqui como #8fa0b3 (~2,68:1 sobre branco, falha AA) e
+     era sobreposto em src/index.css com #5c728a por causa da ordem de
+     import em main.jsx (theme.css antes de index.css). Funcionava, mas
+     dependia silenciosamente de ninguém reordenar os imports ou apagar a
+     linha em index.css. #5c728a mede ~4,97:1 sobre branco e ~4,53:1 sobre
+     --pn-surface-3 (#f1f5f9, o fundo mais escuro catalogado que este token
+     toca) — ver scripts/test-acessibilidade-tokens.cjs. */
+  --color-text-muted:     #5c728a;
   --color-text-inverse:   #ffffff;
 
   /* ── Escala de border-radius ─────────────────────────────── */
@@ -134,14 +153,18 @@
 /* ── Reset base ──────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
+/* src/index.css repete body e *:focus-visible depois deste arquivo (ordem de
+   main.jsx) e vence; os valores são os mesmos para a ordem não importar. */
 body {
-  background: var(--color-surface-alt);
-  color: var(--color-text-primary);
-  font-family: "Inter", system-ui, sans-serif;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
 }
 
+/* Azul da marca: 6,33:1 sobre branco (o contorno anterior, #56ADDB,
+   media 2,5:1 e não cruzava os 3:1 de componente). */
 *:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--lt-color-brand-blue);
   outline-offset: 2px;
 }
 
@@ -159,18 +182,21 @@ button,
   gap: 8px;
 }
 
+/* Primário no degradê de largada: branco a 4,82:1 no topo e 6,20:1 na
+   base. Antes, --color-primary resolvia para #74A865 (index.css vence
+   theme.css) e o branco por cima media 2,8:1. Medidas e padding ficam. */
 .primary-btn,
 .admin-btn--primary,
 .admin-btn--success,
 .tab-btn--primary,
 .eval-btn-primary {
-  background: var(--color-primary);
-  color: #fff;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  color: var(--lt-color-text-inverse);
   border: none;
   padding: 9px 20px;
-  border-radius: var(--radius-md);
+  border-radius: var(--lt-radius-control);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   transition: var(--transition);
 }
 
@@ -179,22 +205,23 @@ button,
 .admin-btn--success:hover,
 .tab-btn--primary:hover,
 .eval-btn-primary:hover {
-  background: var(--color-navy-dark);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -14px rgba(42, 111, 24, 0.85);
 }
 
+/* Secundário: contorno de campo e texto azul (6,33:1). */
 .secondary-btn,
 .admin-btn--surface,
 .admin-btn--ghost,
 .tab-btn--secondary,
 .eval-btn-secondary {
   background: transparent;
-  color: var(--color-primary);
-  border: 1.5px solid var(--color-primary-border);
+  color: var(--lt-color-brand-blue);
+  border: 1.5px solid var(--lt-color-border-field);
   padding: 9px 20px;
-  border-radius: var(--radius-md);
+  border-radius: var(--lt-radius-control);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .secondary-btn:hover,
@@ -202,21 +229,25 @@ button,
 .admin-btn--ghost:hover,
 .tab-btn--secondary:hover,
 .eval-btn-secondary:hover {
-  background: var(--color-primary-light);
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
 }
 
+/* Vermelho de texto sobre o fundo de erro: 5,91:1. No hover, um anel
+   interno no lugar de outro tom de fundo. */
 .admin-btn--danger,
 .danger-btn,
 .tab-btn--danger {
-  background: var(--color-danger-light);
-  color: #991b1b;
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
   border: none;
 }
 
 .admin-btn--danger:hover,
 .danger-btn:hover,
 .tab-btn--danger:hover {
-  background: #fecaca;
+  background: var(--lt-color-danger-bg);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-danger-text);
 }
 
 /* ── Inputs globais ──────────────────────────────────────── */
@@ -333,7 +364,26 @@ tbody tr:last-child td { border-bottom: none; }
 .driver-card:hover,
 .driver-detail-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+}
+
+/* O cartão que sobe no hover é movimento: só sem preferência por menos
+   movimento. Painel, Áreas e Pesquisa já anulam o hover no próprio escopo. */
+@media (prefers-reduced-motion: no-preference) {
+  .stat-card:hover,
+  .admin-stat-card:hover,
+  .team-card:hover,
+  .athlete-card:hover,
+  .summary-card:hover,
+  .area-card:hover,
+  .results-highlight-card:hover,
+  .next-action-card:hover,
+  .patient-card:hover,
+  .appointments-next-card:hover,
+  .quarter-card:hover,
+  .driver-card:hover,
+  .driver-detail-card:hover {
+    transform: translateY(-1px);
+  }
 }
 
 /* ── Badges de status ────────────────────────────────────── */
@@ -351,54 +401,59 @@ tbody tr:last-child td { border-bottom: none; }
   font-weight: 600;
 }
 
+/* O status é o texto do selo; a cor só acompanha. Pares medidos:
+   sucesso 6,81:1, erro 5,91:1, azul sobre --lt-color-track-tint 5,57:1 e o
+   par de atenção de painel.css (#9a3412 sobre #fff7ed), 6,88:1. Antes,
+   o verde #5a8a4e sobre o verde translúcido media cerca de 3,6:1. */
 .status-badge.badge-ok,
 .status-badge.approved,
 .badge.approved,
 .badge.ativo,
 .badge.concluido {
-  background: var(--color-success-light);
-  color: var(--color-success-dark);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 .status-badge.badge-attention,
 .badge.pendente,
 .badge.aguardando {
-  background: var(--color-warn-light);
-  color: #854d0e;
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 .badge.recusado,
 .badge.inativo {
-  background: var(--color-danger-light);
-  color: #991b1b;
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
 }
 
 .badge.agendado,
 .badge.em-andamento {
-  background: var(--color-info-light);
-  color: var(--color-navy);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
 .badge.admin {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
 }
 
 .badge.aluno,
 .badge.atleta,
 .badge.professor {
-  background: var(--color-success-light);
-  color: var(--color-success-dark);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 /* ── Títulos de página ───────────────────────────────────── */
+/* --color-primary resolvia para o verde #74A865: título a 2,8:1. */
 .laines-page-title,
 .page-title,
 .admin-page-title,
 .section-title {
   font-size: 20px;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--lt-color-text);
   margin-bottom: 4px;
 }
 
@@ -407,7 +462,7 @@ tbody tr:last-child td { border-bottom: none; }
 .admin-page-subtitle,
 .section-subtitle {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--lt-color-text-muted);
 }
 
 .title-block,
@@ -430,13 +485,14 @@ tbody tr:last-child td { border-bottom: none; }
   text-align: center;
 }
 
+/* Ícone decorativo: o estado vem escrito no título e no texto. */
 .laines-feedback-state svg,
 .empty-state svg,
 .admin-empty-icon svg,
 .reports-empty-state svg {
   width: 48px;
   height: 48px;
-  color: var(--color-primary-border);
+  color: var(--lt-color-text-subtle);
 }
 
 .laines-feedback-state strong,
@@ -444,8 +500,8 @@ tbody tr:last-child td { border-bottom: none; }
 .admin-empty-title,
 .reports-empty-state h3 {
   font-size: 16px;
-  font-weight: 600;
-  color: var(--color-primary);
+  font-weight: 700;
+  color: var(--lt-color-text);
   margin: 16px 0 8px;
 }
 
@@ -454,23 +510,28 @@ tbody tr:last-child td { border-bottom: none; }
 .admin-empty-text,
 .reports-empty-state p {
   font-size: 13px;
-  color: var(--color-text-secondary);
+  color: var(--lt-color-text-muted);
   max-width: 320px;
   text-align: center;
 }
 
-/* ── Skeleton ────────────────────────────────────────────── */
+/* ── Skeleton ──────────────────────────────────────────────
+   Bloco parado com a tinta a 8%; o pulso só mexe em opacidade e só sem
+   preferência por menos movimento. O brilho anterior animava
+   background-position em laço, também com movimento reduzido. */
 .skeleton {
-  background: linear-gradient(90deg, var(--color-surface-alt) 25%, var(--color-border) 50%, var(--color-surface-alt) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
-  border-radius: var(--radius-md);
+  background: rgba(38, 41, 71, 0.08);
+  border-radius: var(--lt-radius-control);
 }
 
 .skeleton-line  { height: 16px; }
 .skeleton-card  { height: 80px; }
 
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton { animation: shimmer 1.4s ease-in-out infinite; }
+}
+
 @keyframes shimmer {
-  0%   { background-position:  200% 0; }
-  100% { background-position: -200% 0; }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
 }

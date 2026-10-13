@@ -31,7 +31,6 @@ const normalizeType = (value) =>
 const PainelRevisaoAtleta = ({
   pendingSubmissions = [],
   isMarkingReviewedId = null,
-  formatDate,
   onMarkAsReviewed
 }) => {
   if (pendingSubmissions.length === 0) return null;
@@ -40,13 +39,13 @@ const PainelRevisaoAtleta = ({
     <section className="pron-card pron-panel pron-revisao-atleta">
       <header className="pron-panel-header">
         <div className="pron-title-inline">
-          <ClipboardCheck size={16} />
+          <ClipboardCheck size={18} aria-hidden="true" />
           <div>
             <h2>Envios do atleta para revisão</h2>
-            <p>{pendingSubmissions.length} formulário(s) preenchido(s) pelo atleta aguardando revisão da equipe.</p>
+            <p>{pendingSubmissions.length === 1 ? '1 formulário preenchido' : `${pendingSubmissions.length} formulários preenchidos`} pelo atleta aguardando revisão da equipe.</p>
           </div>
         </div>
-        <span className="pron-badge pron-badge-warn">{pendingSubmissions.length} pendente(s)</span>
+        <span className="pron-badge pron-badge-warn">{pendingSubmissions.length} {pendingSubmissions.length === 1 ? 'pendente' : 'pendentes'}</span>
       </header>
       <div className="pron-revisao-list">
         {pendingSubmissions.map((item) => {
@@ -70,10 +69,11 @@ const PainelRevisaoAtleta = ({
                 className="pron-btn pron-btn-primary pron-btn-sm"
                 onClick={() => onMarkAsReviewed(item.id)}
                 disabled={Boolean(isMarkingReviewedId)}
+                aria-label={`${isBusy ? 'Salvando...' : 'Marcar como revisado'}: ${getEvaluationTypeLabel(item.tipo)}`}
               >
                 {isBusy
                   ? 'Salvando...'
-                  : <><CheckCircle size={13} /> Marcar como revisado</>}
+                  : <><CheckCircle size={16} aria-hidden="true" /> Marcar como revisado</>}
               </button>
             </article>
           );

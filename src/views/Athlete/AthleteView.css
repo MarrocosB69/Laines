@@ -1,28 +1,20 @@
-.athlete-view {
-  --athlete-primary: #1D3350;
-  --athlete-accent: #56ADDB;
-}
+/* Moldura do portal do atleta (AthleteView.jsx), onda B de
+   docs/implementacao/telas-v2/change-intent.md.
+
+   Só o fundo da página muda: o tom sólido da landing (--lt-color-bg-app)
+   no lugar do degradê azul. Os cartões do portal são brancos e trazem a
+   própria cor de texto, então continuam legíveis também com o modo escuro
+   do cabeçalho, que esta onda não altera.
+
+   O cabeçalho (AthleteHeader.jsx) usa AdminHeader.css, da onda A. As
+   regras que o recoloriam só no atleta (fundo, borda, sombra, cor do
+   ícone e do subtítulo) saíram daqui: com elas, o cabeçalho do atleta
+   destoava do dos outros portais e brigaria com a onda A. */
+
+@import '../landing/landing-tokens.css';
 
 .athlete-view .admin-bg-pattern {
-  background:
-    radial-gradient(circle at top left, rgba(86, 173, 219, 0.08), transparent 42%),
-    radial-gradient(circle at bottom right, rgba(29, 51, 80, 0.05), transparent 40%),
-    linear-gradient(180deg, #f3f8fb 0%, #f8fafb 100%);
-}
-
-.athlete-view .admin-header {
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid rgba(29, 51, 80, 0.10);
-  box-shadow: 0 4px 16px rgba(29, 51, 80, 0.06);
-  backdrop-filter: blur(8px);
-}
-
-.athlete-view .icon-wrapper {
-  color: var(--athlete-primary);
-}
-
-.athlete-view .header-page-subtitle {
-  color: #64748b;
+  background: var(--lt-color-bg-app);
 }
 
 .athlete-view .content-area {

@@ -1,0 +1,279 @@
+/* Escalas visuais da triagem publica (direcao "Energia e velocidade",
+   docs/implementacao/inscricao-v2/). Usa os tokens --lt-* de
+   src/views/landing/landing-tokens.css — nada de --ip-color-*: os paineis e
+   rotulos ao redor (`.ip-panel`, `.ip-label`, `.ip-help-text`) sao
+   vocabulario do agente B, nao redefinido aqui.
+
+   Estado selecionado nunca depende so de cor: borda azul + fundo
+   --lt-color-track-tint + icone (check ou traco). As opcoes de ausencia
+   ("Nenhuma", "Nada disso", "Nao sei") usam um tratamento visualmente
+   distinto do de presenca — marcar ausencia nao e marcar presenca. */
+
+/* ── Chips ───────────────────────────────────────────────────────────────── */
+.ip-chips-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+}
+
+.ip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+}
+
+.ip-chips--escape { margin-top: 0.2rem; }
+
+.ip-chip {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: var(--lt-target-min);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  background: var(--lt-color-surface-field);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  padding: 0.5rem 1rem;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.ip-chip:hover { border-color: var(--lt-color-brand-blue); }
+
+.ip-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Selecionado: nunca solido — o unico solido da regiao e o botao da
+   moldura (etapa 6 em diante / navegacao). */
+.ip-chip[aria-pressed='true'] {
+  background: var(--lt-color-track-tint);
+  border-color: var(--lt-color-brand-blue);
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.ip-chip-icon { flex: none; color: var(--lt-color-brand-blue); }
+
+/* Ausencia: neutro, nunca azul — nao e a mesma linguagem de "presente". */
+.ip-chip--neutral { border-style: dashed; }
+
+.ip-chip--neutral[aria-pressed='true'] {
+  background: var(--lt-color-surface-field);
+  border-color: var(--lt-color-text-muted);
+  border-style: solid;
+  color: var(--lt-color-text);
+}
+
+.ip-chip-icon--neutral { color: var(--lt-color-text-muted); }
+
+/* ── Bristol ─────────────────────────────────────────────────────────────── */
+.ip-bristol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: var(--lt-space-3);
+}
+
+.ip-bristol-opt {
+  position: relative;
+  appearance: none;
+  min-height: var(--lt-target-min);
+  background: var(--lt-color-surface-field);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: border-color 0.18s, background 0.18s, transform 0.18s;
+}
+
+.ip-bristol-opt:hover {
+  border-color: var(--lt-color-brand-blue);
+  transform: translateY(-1px);
+}
+
+.ip-bristol-opt:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+.ip-bristol-opt[aria-pressed='true'] {
+  background: var(--lt-color-track-tint);
+  border-color: var(--lt-color-brand-blue);
+}
+
+.ip-bristol-check {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  color: var(--lt-color-brand-blue);
+}
+
+.ip-bristol-n {
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  color: var(--lt-color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.ip-bristol-opt[aria-pressed='true'] .ip-bristol-n { color: var(--lt-color-brand-blue); }
+
+.ip-bristol-opt svg { display: block; }
+
+/* ── Urina ───────────────────────────────────────────────────────────────── */
+/* As 8 cores (URINE_TONES, em EscalasVisuais.jsx) sao a escala clinica e nao
+   mudam. Aqui so a moldura, a selecao e os numeros. */
+.ip-urine-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--lt-space-5);
+}
+
+.ip-urine-when {
+  font-size: var(--lt-text-xs);
+  /* Explicita: o `p { line-height }` global de src/index.css venceria. */
+  line-height: var(--lt-leading-normal);
+  color: var(--lt-color-text-subtle);
+  margin: 0 0 var(--lt-space-2);
+}
+
+.ip-urine-strip {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.35rem;
+}
+
+.ip-urine-opt {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  cursor: pointer;
+  border-radius: var(--lt-radius-control);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  min-height: var(--lt-target-min);
+  transition: transform 0.18s;
+}
+
+.ip-urine-opt:hover { transform: translateY(-2px); }
+
+.ip-urine-opt:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+  border-radius: var(--lt-radius-control);
+}
+
+.ip-urine-swatch {
+  width: 100%;
+  aspect-ratio: 1 / 1.9;
+  border-radius: 0.35rem;
+  /* Cor da faixa: literal do array URINE_TONES, nao um --lt-*; a moldura
+     em volta e que segue o vocabulario novo. */
+  border: 1px solid var(--lt-color-border-field);
+  box-shadow: inset 0 -6px 10px -6px rgba(0, 0, 0, 0.28);
+}
+
+.ip-urine-opt[aria-pressed='true'] .ip-urine-swatch {
+  outline: 2.5px solid var(--lt-color-brand-blue);
+  outline-offset: 2px;
+}
+
+.ip-urine-n {
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.ip-urine-opt[aria-pressed='true'] .ip-urine-n {
+  color: var(--lt-color-brand-blue);
+  font-weight: 700;
+}
+
+/* A 320px, 8 colunas deixam cada opcao estreita demais para um alvo
+   confortavel; 4x2 dobra a largura disponivel por opcao. */
+@media (max-width: 420px) {
+  .ip-urine-strip { grid-template-columns: repeat(4, 1fr); gap: 0.5rem 0.4rem; }
+}
+
+/* ── Questionario Sim/Nao ────────────────────────────────────────────────── */
+/* Usado pelo REDS/LEAF (YesNoQuestionnaire) e, em EtapaFinalizacao.jsx, pelas
+   perguntas da EBIA — mesmo par segmentado, para as duas perguntarem do
+   mesmo jeito. */
+.ip-qlist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+}
+
+.ip-qrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  align-items: center;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  background: var(--lt-color-surface-field);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+}
+
+.ip-qrow-q {
+  font-size: var(--lt-text-base);
+  color: var(--lt-color-text);
+  line-height: var(--lt-leading-normal);
+}
+
+.ip-qrow-a {
+  display: flex;
+  gap: var(--lt-space-2);
+}
+
+.ip-qbtn {
+  appearance: none;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  cursor: pointer;
+  background: var(--lt-color-surface);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  min-width: 4.2rem;
+  min-height: var(--lt-target-min);
+  color: var(--lt-color-text-muted);
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.ip-qbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+.ip-qbtn[aria-pressed='true'] {
+  background: var(--lt-color-track-tint);
+  border-color: var(--lt-color-brand-blue);
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .ip-qrow { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-chip,
+  .ip-bristol-opt,
+  .ip-urine-opt,
+  .ip-qbtn { transition: none; }
+}

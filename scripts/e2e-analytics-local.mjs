@@ -30,12 +30,30 @@ const localEnv = {
   E2E_STUDENT_PASSWORD: process.env.E2E_STUDENT_PASSWORD || "Aluno#123456",
   E2E_PROFESSOR_EMAIL: process.env.E2E_PROFESSOR_EMAIL || "professor.ci@laines.ufrn.br",
   E2E_PROFESSOR_PASSWORD: process.env.E2E_PROFESSOR_PASSWORD || "Professor#123456",
+  E2E_TEAM_EMAIL: process.env.E2E_TEAM_EMAIL || "tecnico.ci@laines.ufrn.br",
+  E2E_ATHLETE_EMAIL: process.env.E2E_ATHLETE_EMAIL || "atleta.ci@laines.ufrn.br",
   E2E_ANALYTICS_PROJECT_ID: process.env.E2E_ANALYTICS_PROJECT_ID || "11111111-1111-4111-8111-111111111111",
+  E2E_ANALYTICS_PATIENT_ID: "21111111-1111-4111-8111-111111111111",
+  E2E_ANALYTICS_STRICT_COUNTS: process.env.E2E_ANALYTICS_STRICT_COUNTS || "true",
   DB_HOST: process.env.DB_HOST || envFileValues.DB_HOST || "127.0.0.1",
   DB_PORT: process.env.DB_PORT || envFileValues.DB_PORT || "5432",
   DB_USER: process.env.DB_USER || envFileValues.DB_USER || "laines",
   DB_PASSWORD: process.env.DB_PASSWORD || envFileValues.DB_PASSWORD || "",
-  DB_NAME: process.env.DB_NAME || envFileValues.DB_NAME || "laines"
+  DB_NAME: String(process.env.DB_NAME || "").trim(),
+  NODE_ENV: "test"
+};
+
+const ensureIsolatedTarget = () => {
+  if (!/^laines_audit_[a-zA-Z0-9_]+$/.test(localEnv.DB_NAME)) {
+    throw new Error("Defina DB_NAME=laines_audit_* explicitamente para o banco isolado.");
+  }
+  if (!["127.0.0.1", "localhost", "::1"].includes(localEnv.DB_HOST)) {
+    throw new Error("O banco de auditoria deve usar DB_HOST de loopback.");
+  }
+  const url = new URL(apiBaseUrl);
+  if (url.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
+    throw new Error("A API do ensaio deve usar HTTP em loopback.");
+  }
 };
 
 const runStep = (label, cmd, args) => {
@@ -58,6 +76,7 @@ const ensureApiUp = async () => {
 };
 
 const main = async () => {
+  ensureIsolatedTarget();
   console.log(`[e2e-analytics-local] API base: ${apiBaseUrl}`);
   await ensureApiUp();
   runStep("seed users", "node", ["server/scripts/seed-ci-users.js"]);

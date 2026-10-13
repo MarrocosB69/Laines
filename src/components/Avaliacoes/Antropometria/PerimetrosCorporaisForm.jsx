@@ -1,6 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Ruler } from 'lucide-react';
-import MiniSparkline from '../../shared/MiniSparkline';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
@@ -8,11 +7,28 @@ import {
   calculateAnthropometryIndicators,
   calculateCircumferenceIndicators,
   calculateTmbComparative,
+  calculateYmcaPercentFat,
+  readSavedYmcaPercentFat,
   resolveOfficialTmbSelection,
-  validatePhysiologicalRange
+  validatePhysiologicalRange,
+  YMCA_LEGACY_UNITS_LABEL
 } from '../../../services/calculationEngine';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  CampoNumero,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao,
+  Tendencia,
+  Dica
+} from '../base';
 import './PerimetrosCorporaisForm.css';
 
 const REQUIRED_FIELDS = [
@@ -216,11 +232,26 @@ const INDICATOR_INFO = {
   },
   ymca: {
     name: '% gordura estimado (YMCA)',
-    formula: 'Homem: (-98.42 + 4.15*cintura - 0.082*peso)/peso*100 | Mulher: (-76.76 + 4.15*cintura - 0.082*peso)/peso*100',
+    formula: 'Homem: (-98.42 + 4.15*cintura - 0.082*peso)/peso*100 | Mulher: (-76.76 + 4.15*cintura - 0.082*peso)/peso*100 | cintura em polegadas (cm ÷ 2,54), peso em libras (kg × 2,20462)',
     reference: 'YMCA',
     year: 'protocolo clinico'
   }
 };
+
+// Índice "Neste formulário", na ordem das seções da tela.
+const PERIMETROS_INDICE = [
+  { id: 'perimetros-obrigatorios', titulo: 'Dados obrigatórios' },
+  { id: 'perimetros-contexto', titulo: 'Contexto da medição' },
+  { id: 'perimetros-opcionais', titulo: 'Dados opcionais' },
+  { id: 'perimetros-resultados', titulo: 'Resultados calculados' },
+  { id: 'perimetros-comparacao', titulo: 'Comparacao longitudinal' },
+  { id: 'perimetros-circunferencias', titulo: 'Circunferências corporais' },
+  { id: 'perimetros-tmb', titulo: 'Comparativo de TMB' }
+];
+
+// Tom do risco pela cintura (resolveTone) → tipo do aviso da base. O texto
+// do aviso continua sendo o rótulo e a fonte da classificação.
+const AVISO_POR_TOM = { danger: 'perigo', warning: 'atencao', success: 'sucesso' };
 
 const createInitialData = () => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
@@ -279,7 +310,6 @@ const PerimetrosCorporaisForm = ({
   moduleSnapshot,
   currentSessionId,
   moduleHistory = [],
-  allEvaluationHistory = []
 }) => {
   const { confirm } = useUiFeedback();
 
@@ -748,20 +778,22 @@ const PerimetrosCorporaisForm = ({
     sharedSex
   ]);
 
-  const latestFatFreeMass = useMemo(
-    () => resolveLatestFatFreeMass(allEvaluationHistory),
-    [allEvaluationHistory]
+  // Registro antigo com % YMCA absurdo (calculado em cm e kg): enquanto ninguém
+  // mexe no formulário, o cartão mostra "—" e a nota, não o recálculo.
+  const savedYmcaLegacyUnits = useMemo(
+    () => readSavedYmcaPercentFat(readSavedYmcaValue(moduleSnapshot)).legacyUnits,
+    [moduleSnapshot]
   );
+  const showYmcaLegacyNote = savedYmcaLegacyUnits && (readOnly || !hasUserInput);
+  const ymcaOutOfRange = Boolean(circumferenceIndicators?.flags?.ymcaPercentFatOutOfRange);
 
   const tmbComparative = useMemo(() => calculateTmbComparative({
     weightKg: numericFields.pesoKg,
     heightCm: numericFields.estaturaCm,
     ageYears: sharedAge,
     sex: sharedSex,
-    fatFreeMassKg: latestFatFreeMass,
     population: 'tropical'
   }), [
-    latestFatFreeMass,
     numericFields.estaturaCm,
     numericFields.pesoKg,
     sharedAge,
@@ -1421,33 +1453,34 @@ const PerimetrosCorporaisForm = ({
   }, [dados.condicaoMedicao, dados.equipamento, dados.horarioPesagem]);
 
   return (
-    <div className={`eval-card perimetros-form perimetros-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <Ruler size={22} />
-        </div>
-        <div>
-          <h3 className="eval-title">Antropometria basica</h3>
-          <p className="eval-subtitle">
-            Medidas principais, indicadores automaticos e comparacao longitudinal da evolucao.
-          </p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card perimetros-form perimetros-form--modern${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Antropometria basica"
+      descricao="Medidas principais, indicadores automaticos e comparacao longitudinal da evolucao."
+      icone={<Ruler size={22} />}
+    >
+      <AvaliacaoIndice itens={PERIMETROS_INDICE} />
+
+      {readOnly && (
+        <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>
+      )}
 
       {onboardingResumo.length > 0 ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
-      <div className="eval-note">
+      <AvisoAvaliacao tipo="info">
         <strong>Status de comparabilidade:</strong> {comparabilidadeColeta}
-      </div>
+      </AvisoAvaliacao>
 
-      <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Dados obrigatórios</legend>
-        <div className="perimetros-grid">
-          <div className="eval-field">
-            <label className="eval-label">Data da avaliacao</label>
+      <AvaliacaoSecao
+        id="perimetros-obrigatorios"
+        titulo="Dados obrigatórios"
+        className="eval-section eval-section--primary"
+      >
+        <div className="av-grade">
+          <Campo rotulo="Data da avaliacao" className="eval-field">
             <input
               type="date"
               className="eval-input"
@@ -1458,7 +1491,7 @@ const PerimetrosCorporaisForm = ({
               }}
               disabled={readOnly}
             />
-          </div>
+          </Campo>
 
           {REQUIRED_FIELDS.map((field) => {
             const fieldValidation = combinedValidation[field.key];
@@ -1489,18 +1522,62 @@ const PerimetrosCorporaisForm = ({
           })}
         </div>
         {(isSharedWeightLocked || isSharedHeightLocked) && (
-          <p className="perimetros-shared-hint">
+          <AvisoAvaliacao tipo="info">
             Peso e/ou estatura estao vinculados a ficha base compartilhada da sessao.
-          </p>
+          </AvisoAvaliacao>
         )}
-      </fieldset>
+      </AvaliacaoSecao>
 
-      <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Dados opcionais</legend>
+      {/* Contexto da medição vinha depois dos dados opcionais. Subiu para
+          junto do peso: horário, jejum e equipamento descrevem a pesagem, e o
+          foco cardiometabólico decide se a cintura, logo abaixo, é exigida. */}
+      <AvaliacaoSecao id="perimetros-contexto" titulo="Contexto da medição" className="eval-section">
+        <div className="av-grade">
+          {MEASUREMENT_CONTEXT_FIELDS.map((field) => (
+            <Campo
+              key={field.key}
+              rotulo={field.label}
+              dica={{ texto: field.tooltip, rotulo: ROTULO_DICA }}
+              className={`eval-field ${field.key === 'equipamento' ? 'eval-field-full' : ''}`}
+            >
+              {field.type === 'select' ? (
+                <select
+                  className="eval-input"
+                  value={dados[field.key]}
+                  onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, field.key, event.target.value)}
+                  disabled={readOnly}
+                >
+                  {(field.options || []).map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  className="eval-input"
+                  value={dados[field.key]}
+                  placeholder={field.placeholder || ''}
+                  onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, field.key, event.target.value)}
+                  disabled={readOnly}
+                />
+              )}
+            </Campo>
+          ))}
+          <GrupoOpcoes legenda="Foco cardiometabolico" className="eval-field eval-field-full">
+            <Opcao
+              tipo="checkbox"
+              rotulo="Exigir cintura como obrigatoria nesta avaliacao."
+              checked={Boolean(dados.focoCardiometabolico)}
+              onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'focoCardiometabolico', event.target.checked)}
+              disabled={readOnly}
+            />
+          </GrupoOpcoes>
+        </div>
+      </AvaliacaoSecao>
 
-        <div className="eval-field-group">
-          <span className="eval-field-group__label">Tronco</span>
-          <div className="eval-field-group__grid">
+      <AvaliacaoSecao id="perimetros-opcionais" titulo="Dados opcionais" className="eval-section">
+        <AvaliacaoSecao titulo="Tronco" className="eval-field-group">
+          <div className="av-grade">
             {OPTIONAL_FIELDS.filter((f) => ['cinturaCm', 'quadrilCm', 'pescocoCm', 'toraxInspiradoCm', 'toraxExpiradoCm'].includes(f.key)).map((field) => {
               const fieldValidation = combinedValidation[field.key];
               const showState = submitAttempted || touchedFields[field.key];
@@ -1525,11 +1602,10 @@ const PerimetrosCorporaisForm = ({
               );
             })}
           </div>
-        </div>
+        </AvaliacaoSecao>
 
-        <div className="eval-field-group">
-          <span className="eval-field-group__label">Membros superiores</span>
-          <div className="eval-field-group__grid">
+        <AvaliacaoSecao titulo="Membros superiores" className="eval-field-group">
+          <div className="av-grade">
             {BILATERAL_MEMBER_FIELDS.filter((field) => ['bracoRelaxadoCm', 'bracoContraidoCm', 'antebracoCm'].includes(field.key)).map((field) => {
               const rightKey = `${field.key}D`;
               const leftKey = `${field.key}E`;
@@ -1540,11 +1616,17 @@ const PerimetrosCorporaisForm = ({
               const asymmetry = bilateralAsymmetryRows.find((row) => row.key === field.key);
 
               return (
-                <div key={field.key} className="eval-field eval-field-full perimetros-bilateral-row">
+                <div
+                  key={field.key}
+                  className="eval-field eval-field-full perimetros-bilateral-row"
+                  role="group"
+                  aria-labelledby={`perimetros-bilateral-${field.key}`}
+                >
                   <div className="perimetros-bilateral-header">
-                    <label className="eval-label">{field.label} (bilateral)</label>
+                    <span className="eval-label" id={`perimetros-bilateral-${field.key}`}>{field.label} (bilateral)</span>
                     {Number.isFinite(asymmetry?.asymmetryPct) && (
                       <span className={`perimetros-asymmetry-badge ${asymmetry.asymmetryPct >= 10 ? 'is-alert' : ''}`}>
+                        {asymmetry.asymmetryPct >= 10 ? <AlertTriangle size={14} aria-hidden="true" /> : null}
                         Assimetria: {formatNumber(asymmetry.asymmetryPct, 1)}%
                       </span>
                     )}
@@ -1583,11 +1665,10 @@ const PerimetrosCorporaisForm = ({
               );
             })}
           </div>
-        </div>
+        </AvaliacaoSecao>
 
-        <div className="eval-field-group">
-          <span className="eval-field-group__label">Membros inferiores</span>
-          <div className="eval-field-group__grid">
+        <AvaliacaoSecao titulo="Membros inferiores" className="eval-field-group">
+          <div className="av-grade">
             {BILATERAL_MEMBER_FIELDS.filter((field) => ['coxaProximalCm', 'coxaMedialCm', 'panturrilhaCm'].includes(field.key)).map((field) => {
               const rightKey = `${field.key}D`;
               const leftKey = `${field.key}E`;
@@ -1598,11 +1679,17 @@ const PerimetrosCorporaisForm = ({
               const asymmetry = bilateralAsymmetryRows.find((row) => row.key === field.key);
 
               return (
-                <div key={field.key} className="eval-field eval-field-full perimetros-bilateral-row">
+                <div
+                  key={field.key}
+                  className="eval-field eval-field-full perimetros-bilateral-row"
+                  role="group"
+                  aria-labelledby={`perimetros-bilateral-${field.key}`}
+                >
                   <div className="perimetros-bilateral-header">
-                    <label className="eval-label">{field.label} (bilateral)</label>
+                    <span className="eval-label" id={`perimetros-bilateral-${field.key}`}>{field.label} (bilateral)</span>
                     {Number.isFinite(asymmetry?.asymmetryPct) && (
                       <span className={`perimetros-asymmetry-badge ${asymmetry.asymmetryPct >= 10 ? 'is-alert' : ''}`}>
+                        {asymmetry.asymmetryPct >= 10 ? <AlertTriangle size={14} aria-hidden="true" /> : null}
                         Assimetria: {formatNumber(asymmetry.asymmetryPct, 1)}%
                       </span>
                     )}
@@ -1642,62 +1729,20 @@ const PerimetrosCorporaisForm = ({
             })}
           </div>
           {panturrilhaBelowCutoff && (
-            <div className="eval-note perimetros-alert-note">
+            <AvisoAvaliacao tipo="perigo" className="perimetros-alert-note">
               Panturrilha abaixo de 31 cm detectada. Revisar risco funcional e massa muscular.
-            </div>
+            </AvisoAvaliacao>
           )}
-        </div>
-      </fieldset>
+        </AvaliacaoSecao>
+      </AvaliacaoSecao>
 
-      <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Contexto da medição</legend>
-        <div className="perimetros-grid">
-          {MEASUREMENT_CONTEXT_FIELDS.map((field) => (
-            <div key={field.key} className={`eval-field ${field.key === 'equipamento' ? 'eval-field-full' : ''}`}>
-              <label className="eval-label">
-                {field.label}
-                <InlineHelp lines={field.tooltip} />
-              </label>
-              {field.type === 'select' ? (
-                <select
-                  className="eval-input"
-                  value={dados[field.key]}
-                  onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, field.key, event.target.value)}
-                  disabled={readOnly}
-                >
-                  {(field.options || []).map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  className="eval-input"
-                  value={dados[field.key]}
-                  placeholder={field.placeholder || ''}
-                  onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, field.key, event.target.value)}
-                  disabled={readOnly}
-                />
-              )}
-            </div>
-          ))}
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Foco cardiometabolico</label>
-            <label className="perimetros-toggle">
-              <input
-                type="checkbox"
-                checked={Boolean(dados.focoCardiometabolico)}
-                onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'focoCardiometabolico', event.target.checked)}
-                disabled={readOnly}
-              />
-              <span>Exigir cintura como obrigatoria nesta avaliacao.</span>
-            </label>
-          </div>
-        </div>
-      </fieldset>
-
-      <div className="eval-results-section">
-        <div className="perimetros-results-grid">
+      {/* "Resultados calculados" já aparecia aqui, escrito pelo ::after de
+          .eval-results-section (avaliacoes.css); agora é o título da seção.
+          A comparação longitudinal, que vinha no mesmo bloco, virou a seção
+          seguinte. Nenhuma das duas é .eval-section, como antes: o modo
+          essencial continua sem escondê-las. */}
+      <AvaliacaoSecao id="perimetros-resultados" titulo="Resultados calculados">
+        <div className="av-resultados">
           <ResultCard
             title="IMC"
             value={anthropometry?.indicators?.bmi}
@@ -1755,91 +1800,94 @@ const PerimetrosCorporaisForm = ({
             })}
             tooltipInfo={INDICATOR_INFO.conicity}
           />
+          {/* Fora da faixa plausível ou registro antigo com unidades erradas:
+              "—" e o aviso escrito no lugar da classificação. */}
           <ResultCard
             title="% Gordura estimado (YMCA)"
-            value={circumferenceIndicators?.indicators?.ymcaPercentFat}
+            value={showYmcaLegacyNote ? null : circumferenceIndicators?.indicators?.ymcaPercentFat}
             unit="%"
             digits={2}
-            classification={circumferenceIndicators?.classifications?.ymcaPercentFat}
+            semValor={showYmcaLegacyNote || ymcaOutOfRange ? null : undefined}
+            classification={showYmcaLegacyNote
+              ? { label: YMCA_LEGACY_UNITS_LABEL, tone: 'warning', source: 'YMCA' }
+              : circumferenceIndicators?.classifications?.ymcaPercentFat}
             tooltipInfo={INDICATOR_INFO.ymca}
           />
         </div>
 
         {anthropometry?.classifications?.waistRisk && anthropometry.classifications.waistRisk.tone !== 'neutral' && (
-          <div className={`perimetros-waist-alert perimetros-tone-${resolveTone(anthropometry.classifications.waistRisk.tone)}`}>
-            <AlertTriangle size={16} />
-            <div>
-              <strong>{anthropometry.classifications.waistRisk.label}</strong>
-              <p>{anthropometry.classifications.waistRisk.source}</p>
-            </div>
-          </div>
+          <AvisoAvaliacao
+            tipo={AVISO_POR_TOM[resolveTone(anthropometry.classifications.waistRisk.tone)] || 'info'}
+            className="perimetros-waist-alert"
+          >
+            <strong>{anthropometry.classifications.waistRisk.label}</strong>
+            <p>{anthropometry.classifications.waistRisk.source}</p>
+          </AvisoAvaliacao>
         )}
+      </AvaliacaoSecao>
 
-        <div className="perimetros-comparison">
-          <h5>Comparacao longitudinal</h5>
-          <div className="perimetros-comparison-table-wrap">
-            <table className="perimetros-comparison-table">
-              <thead>
-                <tr>
-                  <th>Indicador</th>
-                  <th>Atual</th>
-                  <th>Anterior</th>
-                  <th>Primeira</th>
-                  <th>Delta abs.</th>
-                  <th>Delta %</th>
+      <AvaliacaoSecao id="perimetros-comparacao" titulo="Comparacao longitudinal">
+        <div className="perimetros-comparison-table-wrap">
+          <table className="perimetros-comparison-table">
+            <thead>
+              <tr>
+                <th>Indicador</th>
+                <th>Atual</th>
+                <th>Anterior</th>
+                <th>Primeira</th>
+                <th>Delta abs.</th>
+                <th>Delta %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonRows.map((row) => (
+                <tr key={row.key}>
+                  <td>{row.label}</td>
+                  <td>{formatMetric(row.current, row.unit, row.key)}</td>
+                  <td>{formatMetric(row.previous, row.unit, row.key)}</td>
+                  <td>{formatMetric(row.first, row.unit, row.key)}</td>
+                  <td className={resolveDeltaClass(row.delta.deltaAbs)}>
+                    {formatSigned(row.delta.deltaAbs, row.unit, row.key)}
+                  </td>
+                  <td className={resolveDeltaClass(row.delta.deltaPct)}>
+                    {formatSigned(row.delta.deltaPct, '%', 'percent')}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((row) => (
-                  <tr key={row.key}>
-                    <td>{row.label}</td>
-                    <td>{formatMetric(row.current, row.unit, row.key)}</td>
-                    <td>{formatMetric(row.previous, row.unit, row.key)}</td>
-                    <td>{formatMetric(row.first, row.unit, row.key)}</td>
-                    <td className={resolveDeltaClass(row.delta.deltaAbs)}>
-                      {formatSigned(row.delta.deltaAbs, row.unit, row.key)}
-                    </td>
-                    <td className={resolveDeltaClass(row.delta.deltaPct)}>
-                      {formatSigned(row.delta.deltaPct, '%', 'percent')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="perimetros-sparklines">
-            <SparklineCard
-              label="Peso (ultimos 6)"
-              values={sparklineSeries.peso}
-              target={previousReference?.metrics?.peso ?? null}
-            />
-            <SparklineCard
-              label="IMC (ultimos 6)"
-              values={sparklineSeries.imc}
-              target={previousReference?.metrics?.imc ?? null}
-            />
-            <SparklineCard
-              label="ICE (ultimos 6)"
-              values={sparklineSeries.ice}
-              target={previousReference?.metrics?.ice ?? null}
-            />
-            <SparklineCard
-              label="Conicidade (ultimos 6)"
-              values={sparklineSeries.conicity}
-              target={previousReference?.metrics?.conicity ?? null}
-            />
-          </div>
-          <p className="perimetros-interpretation">{autoInterpretation}</p>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
+        <div className="perimetros-sparklines">
+          <SparklineCard
+            label="Peso (ultimos 6)"
+            values={sparklineSeries.peso}
+            target={previousReference?.metrics?.peso ?? null}
+          />
+          <SparklineCard
+            label="IMC (ultimos 6)"
+            values={sparklineSeries.imc}
+            target={previousReference?.metrics?.imc ?? null}
+          />
+          <SparklineCard
+            label="ICE (ultimos 6)"
+            values={sparklineSeries.ice}
+            target={previousReference?.metrics?.ice ?? null}
+          />
+          <SparklineCard
+            label="Conicidade (ultimos 6)"
+            values={sparklineSeries.conicity}
+            target={previousReference?.metrics?.conicity ?? null}
+          />
+        </div>
+        <p className="perimetros-interpretation">{autoInterpretation}</p>
+      </AvaliacaoSecao>
 
-      <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Circunferências corporais</legend>
+      <AvaliacaoSecao id="perimetros-circunferencias" titulo="Circunferências corporais" className="eval-section">
         <div className="perimetros-circ-layout">
-          <div className="perimetros-silhouette-card">
-            <h5>Silhueta por segmentos</h5>
+          <figure className="av-tendencia perimetros-silhouette-card">
+            <figcaption className="av-tendencia__rotulo">Silhueta por segmentos</figcaption>
             <CircumferenceSilhouette segments={silhouetteSegments} />
-          </div>
+          </figure>
           <details
             className="perimetros-meta-card"
             open={metaOpen}
@@ -1851,11 +1899,7 @@ const PerimetrosCorporaisForm = ({
             </summary>
             <div className="perimetros-meta-grid">
               {CIRCUMFERENCE_SEGMENTS.map((segment) => (
-                <div key={segment.metaKey} className="eval-field">
-                  <label className="eval-label">
-                    Meta {segment.label}
-                    <span className="perimetros-unit-badge">cm</span>
-                  </label>
+                <Campo key={segment.metaKey} rotulo={<>Meta {segment.label}</>} unidade="cm" className="eval-field">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -1865,7 +1909,7 @@ const PerimetrosCorporaisForm = ({
                     disabled={readOnly}
                     placeholder="Opcional"
                   />
-                </div>
+                </Campo>
               ))}
             </div>
           </details>
@@ -1896,12 +1940,11 @@ const PerimetrosCorporaisForm = ({
             </tbody>
           </table>
         </div>
-      </fieldset>
+      </AvaliacaoSecao>
 
-      <fieldset className="eval-section eval-fieldset">
-        <legend className="eval-section-title eval-legend">Comparativo de TMB</legend>
+      <AvaliacaoSecao id="perimetros-tmb" titulo="Comparativo de TMB" className="eval-section">
         <p className="eval-section-subtitle">
-          Perfil usado: {formatProfileSummary(sharedAge, sharedSex, numericFields.pesoKg, numericFields.estaturaCm, latestFatFreeMass)}
+          Perfil usado: {formatProfileSummary(sharedAge, sharedSex, numericFields.pesoKg, numericFields.estaturaCm)}
         </p>
         {hasApplicableTmbRows ? (
           <div className="perimetros-tmb-table-wrap">
@@ -1933,13 +1976,15 @@ const PerimetrosCorporaisForm = ({
                       }}
                       tabIndex={row.applicable && !readOnly ? 0 : -1}
                       role="button"
+                      aria-pressed={isSelected}
                       aria-label={`Selecionar formula ${row.label}`}
                     >
                       <td>
                         <div className="perimetros-formula-name">
                           <span>{row.label}{row.recommended ? ' *' : ''}</span>
-                          <InlineHelp
-                            lines={[
+                          <Dica
+                            rotulo={ROTULO_DICA}
+                            texto={[
                               `Equacao: ${row.equation}`,
                               `Referencia: ${row.reference}`,
                               `Ano: ${row.year}`
@@ -1956,9 +2001,9 @@ const PerimetrosCorporaisForm = ({
             </table>
           </div>
         ) : (
-          <div className="eval-note">
+          <AvisoAvaliacao tipo="info">
             Dados insuficientes para calcular formulas de TMB nesta avaliacao.
-          </div>
+          </AvisoAvaliacao>
         )}
 
         {selectedTmb?.selected && (
@@ -1971,19 +2016,20 @@ const PerimetrosCorporaisForm = ({
         )}
 
         {tmbComparative?.hasRelevantSpread && (
-          <div className="perimetros-tmb-warning">
-            <AlertTriangle size={16} />
-            <span>
-              Variacao relevante entre metodos ({Math.round(tmbComparative.spreadKcal)} kcal). Confirme a formula mais adequada.
-            </span>
-          </div>
+          <AvisoAvaliacao tipo="atencao">
+            Variacao relevante entre metodos ({Math.round(tmbComparative.spreadKcal)} kcal). Confirme a formula mais adequada.
+          </AvisoAvaliacao>
         )}
 
-        <div className="eval-field eval-field-full">
-          <label className="eval-label">
-            Justificativa da formula oficial
-            <span className="perimetros-optional-badge">Opcional</span>
-          </label>
+        <Campo
+          rotulo={(
+            <>
+              Justificativa da formula oficial
+              <span className="perimetros-optional-badge">Opcional</span>
+            </>
+          )}
+          className="eval-field eval-field-full"
+        >
           <textarea
             className="eval-textarea"
             rows={3}
@@ -1992,25 +2038,23 @@ const PerimetrosCorporaisForm = ({
             onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'tmbSelectionReason', event.target.value)}
             disabled={readOnly}
           />
-        </div>
-      </fieldset>
+        </Campo>
+      </AvaliacaoSecao>
 
-      {readOnly && (
-        <div className="eval-note">Somente leitura para o seu perfil.</div>
-      )}
-
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={handleSubmit} disabled={readOnly} loading={saveStatus === 'saving'}>
           Salvar antropometria basica
         </Button>
-      </div>
+      </BarraAcoesAvaliacao>
 
-      {error && <div className="eval-note perimetros-error-note">{error}</div>}
-    </div>
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="perimetros-error-note">{error}</AvisoAvaliacao>}
+    </AvaliacaoModulo>
   );
 };
 
+// A mensagem é a mesma de antes: o erro vai em `erro` e o aviso de faixa
+// fisiológica, em `ajuda`. "obrigatório" substitui o asterisco e mantém a
+// marca perimetros-required-dot, que o modo essencial procura.
 const NumericField = ({
   label,
   unit,
@@ -2026,39 +2070,35 @@ const NumericField = ({
   onChange,
   onBlur
 }) => (
-  <div className="eval-field">
-    <label className="eval-label">
-      {label}
-      <span className="perimetros-unit-badge">{unit}</span>
-      {required ? <span className="perimetros-required-dot" aria-hidden="true">*</span> : null}
-      {optional ? <span className="perimetros-optional-badge">Opcional</span> : null}
-      <InlineHelp lines={tooltipLines} />
-    </label>
-    <input
-      type="text"
-      inputMode="decimal"
-      className={`eval-input ${isInvalid ? 'perimetros-input-invalid' : ''} ${isWarning ? 'perimetros-input-warning' : ''}`}
-      value={value}
-      placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value)}
-      onBlur={onBlur}
-      disabled={disabled}
-      aria-invalid={isInvalid ? 'true' : 'false'}
-    />
-    {message ? <small className={`perimetros-field-message ${isInvalid ? 'is-error' : 'is-warning'}`}>{message}</small> : null}
-  </div>
+  <CampoNumero
+    rotulo={(
+      <>
+        {label}
+        {optional ? <span className="perimetros-optional-badge">Opcional</span> : null}
+      </>
+    )}
+    dica={{ texto: tooltipLines, rotulo: ROTULO_DICA }}
+    unidade={unit}
+    obrigatorio={required}
+    classeObrigatorio="perimetros-required-dot"
+    erro={message && isInvalid ? message : undefined}
+    ajuda={message && !isInvalid ? message : undefined}
+    className="eval-field"
+    type="text"
+    inputMode="decimal"
+    inputClassName={`eval-input ${isInvalid ? 'perimetros-input-invalid' : ''} ${isWarning ? 'perimetros-input-warning' : ''}`}
+    value={value}
+    placeholder={placeholder}
+    onChange={(event) => onChange(event.target.value)}
+    onBlur={onBlur}
+    disabled={disabled}
+    aria-invalid={isInvalid ? 'true' : 'false'}
+  />
 );
 
-const InlineHelp = ({ lines = [] }) => (
-  <span className="perimetros-help" tabIndex={0} role="button" aria-label="Abrir informacao da formula ou protocolo">
-    ?
-    <span className="perimetros-help-tooltip" role="tooltip">
-      {lines.map((line, index) => (
-        <span key={`${line}-${index}`}>{line}</span>
-      ))}
-    </span>
-  </span>
-);
+// Nome do botão "?" (o aria-label de antes). A dica agora é da base: um
+// botão de 44 px fora do <label>, com o mesmo texto.
+const ROTULO_DICA = 'Abrir informacao da formula ou protocolo';
 
 const ResultCard = ({
   title,
@@ -2068,53 +2108,60 @@ const ResultCard = ({
   digits = 2,
   classification,
   delta,
-  tooltipInfo
+  tooltipInfo,
+  // null mostra "—" (valor descartado); o padrão segue "Nao calculado".
+  semValor = 'Nao calculado'
 }) => {
   const tone = resolveTone(classification?.tone);
+  // O título deixa de ser h6 (saltava níveis): vira o rótulo do resultado,
+  // com a mesma dica, agora ao lado dele e fora do nome do rótulo. Valor e unidade saem separados, com as mesmas casas;
+  // a ausência continua escrita ("Nao calculado", "Sem classificacao") e o
+  // tom só acompanha uma classificação de verdade. A fonte da
+  // classificação vai em `referencia`; a variação, no texto de apoio.
   return (
-    <article className="perimetros-result-card">
-      <div className="perimetros-result-card__header">
-        <h6>{title}</h6>
-        <InlineHelp
-          lines={[
-            `${tooltipInfo?.name || 'Indicador'}`,
-            `Formula: ${tooltipInfo?.formula || 'N/A'}`,
-            `Referencia: ${tooltipInfo?.reference || 'N/A'}`,
-            `Ano/Fonte: ${tooltipInfo?.year || 'N/A'}`
-          ]}
-        />
-      </div>
-
-      <strong className="perimetros-result-card__value">
-        {valueRange && Number.isFinite(valueRange?.min) && Number.isFinite(valueRange?.max)
-          ? `${formatNumber(valueRange.min, digits)} - ${formatNumber(valueRange.max, digits)}${unit ? ` ${unit}` : ''}`
-          : Number.isFinite(value)
-            ? `${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}`
-            : 'Nao calculado'}
-      </strong>
-
-      <div className="perimetros-result-card__meta">
-        <span className={`perimetros-status-badge perimetros-tone-${tone}`}>
-          {classification?.label || 'Sem classificacao'}
-        </span>
-        {classification?.source ? <small>{classification.source}</small> : null}
-      </div>
-
-      {delta && Number.isFinite(delta.deltaAbs) && (
-        <p className={`perimetros-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
+    <ResultadoCalculado
+      className="perimetros-result-card"
+      rotulo={title}
+      dica={{
+        texto: [
+          `${tooltipInfo?.name || 'Indicador'}`,
+          `Formula: ${tooltipInfo?.formula || 'N/A'}`,
+          `Referencia: ${tooltipInfo?.reference || 'N/A'}`,
+          `Ano/Fonte: ${tooltipInfo?.year || 'N/A'}`
+        ],
+        rotulo: ROTULO_DICA
+      }}
+      valor={valueRange && Number.isFinite(valueRange?.min) && Number.isFinite(valueRange?.max)
+        ? `${formatNumber(valueRange.min, digits)} - ${formatNumber(valueRange.max, digits)}`
+        : Number.isFinite(value)
+          ? formatNumber(value, digits)
+          : null}
+      unidade={unit || undefined}
+      semValor={semValor || undefined}
+      classificacao={classification?.label || 'Sem classificacao'}
+      tom={classification?.label ? tone : 'neutral'}
+      referencia={classification?.source || undefined}
+      metodo={delta && Number.isFinite(delta.deltaAbs) ? (
+        <span className={`perimetros-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
           {formatSigned(delta.deltaAbs, unit, unit === '%' ? 'percent' : 'default')}
           {Number.isFinite(delta.deltaPct) ? ` (${formatSigned(delta.deltaPct, '%', 'percent')})` : ''}
-        </p>
-      )}
-    </article>
+        </span>
+      ) : null}
+    />
   );
 };
 
+// Mesma série e mesmo tamanho de antes; a linha tracejada é o valor anterior.
 const SparklineCard = ({ label, values, target }) => (
-  <div className="perimetros-sparkline-card">
-    <p>{label}</p>
-    <MiniSparkline values={values} target={target} width={220} height={72} />
-  </div>
+  <Tendencia
+    className="perimetros-sparkline-card"
+    rotulo={label}
+    valores={values}
+    alvo={target}
+    largura={220}
+    altura={72}
+    rotuloAlvo="valor anterior"
+  />
 );
 
 const CircumferenceSilhouette = ({ segments = [] }) => {
@@ -2577,12 +2624,12 @@ function resolvePerimetrosMetrics(record) {
     resultados?.indice_conicidade,
     dados?.indice_conicidade
   )) ?? computeConicity(weight, heightCm, waist);
-  const ymcaPercentFat = parseNumeric(firstDefined(
-    resultadosCalculados?.percentualGorduraYmca,
-    resultadosCalculados?.percentual_gordura_ymca,
-    resultados?.percentual_gordura_ymca,
-    dados?.percentual_gordura_ymca
-  )) ?? computeYmcaPercentFat({ sex, waistCm: waist, weightKg: weight });
+  // Valor salvo fora da faixa (registro antigo, cm e kg) vira null; sem valor
+  // salvo, recalcula com a equação corrigida do motor.
+  const savedYmca = readSavedYmcaPercentFat(readSavedYmcaValue(record));
+  const ymcaPercentFat = savedYmca.legacyUnits
+    ? null
+    : savedYmca.value ?? calculateYmcaPercentFat({ sex, waistCm: waist, weightKg: weight }).value;
 
   return {
     peso: Number.isFinite(weight) ? weight : null,
@@ -2630,51 +2677,25 @@ function computeConicity(weight, heightCm, waistCm) {
   return waistM / (0.109 * Math.sqrt(weight / heightM));
 }
 
-function computeYmcaPercentFat({ sex, waistCm, weightKg }) {
-  if (!sex || !Number.isFinite(waistCm) || !Number.isFinite(weightKg) || weightKg <= 0) return null;
-  if (sex === 'male') {
-    return ((-98.42 + (4.15 * waistCm) - (0.082 * weightKg)) / weightKg) * 100;
-  }
-  return ((-76.76 + (4.15 * waistCm) - (0.082 * weightKg)) / weightKg) * 100;
+function readSavedYmcaValue(record) {
+  const dados = record?.dados || {};
+  const resultados = record?.resultados || {};
+  const resultadosCalculados = dados?.resultados_calculados || resultados?.calculated || {};
+  return firstDefined(
+    resultadosCalculados?.percentualGorduraYmca,
+    resultadosCalculados?.percentual_gordura_ymca,
+    resultados?.percentual_gordura_ymca,
+    dados?.percentual_gordura_ymca
+  );
 }
 
-function resolveLatestFatFreeMass(history = []) {
-  if (!Array.isArray(history)) return null;
-  const sorted = [...history].sort((a, b) => {
-    const aDate = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
-    const bDate = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
-    return bDate - aDate;
-  });
-
-  for (const item of sorted) {
-    const candidates = [
-      item?.dados?.massa_magra,
-      item?.dados?.massaMagra,
-      item?.dados?.resultados_calculados?.massaMagra,
-      item?.dados?.resultados_calculados?.massa_magra,
-      item?.resultados?.massa_magra,
-      item?.resultados?.massaMagra,
-      item?.resultados?.calculated?.massaMagra,
-      item?.resultados?.calculated?.massa_magra
-    ];
-
-    for (const candidate of candidates) {
-      const numeric = parseNumeric(candidate);
-      if (Number.isFinite(numeric)) return numeric;
-    }
-  }
-
-  return null;
-}
-
-function formatProfileSummary(age, sex, weightKg, heightCm, fatFreeMassKg) {
+function formatProfileSummary(age, sex, weightKg, heightCm) {
   const segments = [];
   if (Number.isFinite(age)) segments.push(`${Math.round(age)} anos`);
   if (sex === 'male') segments.push('M');
   if (sex === 'female') segments.push('F');
   if (Number.isFinite(weightKg)) segments.push(`${formatNumber(weightKg, 1)} kg`);
   if (Number.isFinite(heightCm)) segments.push(`${formatNumber(heightCm, 1)} cm`);
-  if (Number.isFinite(fatFreeMassKg)) segments.push(`MM ${formatNumber(fatFreeMassKg, 1)} kg`);
   if (!segments.length) return 'dados incompletos';
   return segments.join(' | ');
 }

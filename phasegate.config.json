@@ -1,0 +1,34 @@
+{
+  "project": {
+    "name": "laines-app",
+    "preset": "standard",
+    "languages": [
+      "typescript"
+    ]
+  },
+  "architecture": {
+    "preset": "clean"
+  },
+  "layers": {},
+  "quickMode": {},
+  "phaseDependencies": {
+    "preset": "default",
+    "override": false,
+    "customRules": []
+  },
+  "planningMode": {
+    "default": "interactive",
+    "perPhase": {}
+  },
+  "harnesses": {},
+  "paths": {
+    "designDocs": "docs/product/construction",
+    "inceptionDocs": "docs/inception",
+    "principlesDocs": "docs/principles",
+    "folderRulesDoc": "docs/folder_management_rules.md"
+  },
+  "reporting": {
+    "format": "json",
+    "outputDir": "reports"
+  }
+}

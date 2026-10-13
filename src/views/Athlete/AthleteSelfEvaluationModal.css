@@ -1,51 +1,162 @@
-.athlete-self-eval-modal {
+/* Modal das autoavaliações do atleta (AthleteSelfEvaluationModal.jsx), onda
+   B de docs/implementacao/telas-v2/change-intent.md.
+
+   Casca: o mesmo padrão novo do modal da EBIA (AthleteEbiaModal.css), com a
+   classe própria ao lado de cada peça app-modal-* de modalSystem.css (onda
+   A, portal no `body`).
+
+   Formulários: cada um leva agora a raiz `.av-modulo`, a base das
+   avaliações (src/components/Avaliacoes/base/avaliacao-base.css, importada
+   pelo JSX). Ela dá aos eval-* legados de avaliacoes.css o desenho novo
+   (rótulo em Sofia 700, campos de 48 px, botão no degradê de largada) só
+   dentro da raiz, sem editar avaliacoes.css. Aqui ficam só as duas peças
+   próprias do modal: o resultado calculado e a mensagem de erro. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* O véu no azul do estádio da landing (--lt-color-stadium a 55%). */
+.athlete-self-eval-overlay.app-modal-overlay { background: rgba(11, 42, 94, 0.55); }
+
+.athlete-self-eval-modal.app-modal-shell {
   --app-modal-width: 1040px;
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 30px 72px -38px rgba(10, 36, 68, 0.56);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.athlete-self-eval-header {
-  gap: 0.9rem;
+.athlete-self-eval-modal .app-modal-header {
+  position: relative;
+  align-items: flex-start;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  padding: var(--lt-space-5) var(--lt-space-5) calc(var(--lt-space-4) + 3px);
+  border-bottom: 0;
+  background: var(--lt-color-surface);
 }
 
-.athlete-self-eval-header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(16, 51, 85, 0.2);
-  background: rgba(16, 51, 85, 0.1);
-  color: var(--color-navy);
+.athlete-self-eval-modal .app-modal-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.athlete-self-eval-modal .app-modal-header-icon {
   display: grid;
+  flex: none;
   place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
-.athlete-self-eval-body {
-  border-top: 1px solid #edf2f7;
-  padding-top: 0.95rem;
-  overflow-y: auto;
-}
+.athlete-self-eval-modal .app-modal-heading { flex: 1 1 auto; gap: var(--lt-space-1); min-width: 0; }
 
-.athlete-self-eval-body .eval-card,
-.athlete-self-eval-body .avaliacao-alimentar-r24h,
-.athlete-self-eval-body .carga-treino {
+/* Reset do h2 global (Poppins, cor e tamanho). */
+.athlete-self-eval-modal .app-modal-title {
   margin: 0;
-}
-
-.athlete-calc-result {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.42rem 0.75rem;
-  border-radius: 8px;
-  background: #f0f9ff;
-  border: 1px solid rgba(2, 132, 199, 0.20);
-  font-size: 0.8rem;
-  color: #0369a1;
-}
-
-.athlete-calc-result strong {
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
   font-weight: 700;
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
-.athlete-calc-result__note {
-  color: #64748b;
-  font-size: 0.73rem;
+.athlete-self-eval-modal .app-modal-subtitle {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-self-eval-modal .app-modal-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, color 160ms;
+}
+
+@media (hover: hover) {
+  .athlete-self-eval-modal .app-modal-close:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+}
+
+.athlete-self-eval-modal .app-modal-close:focus-visible { outline: none; border-color: var(--lt-color-brand-blue); box-shadow: var(--lt-focus-ring); }
+.athlete-self-eval-modal .app-modal-close:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.athlete-self-eval-modal .athlete-self-eval-body {
+  overflow-y: auto;
+  padding: var(--lt-space-5);
+  border-top: 0;
+  background: var(--lt-color-surface);
+}
+
+.athlete-self-eval-body :is(.eval-card, .avaliacao-alimentar-r24h, .carga-treino) { margin: 0; }
+
+/* Resultado calculado na hora (perda de peso, carga da semana): informativo,
+   tinta sobre o azul claro (12,39:1), com o número em 700. */
+.athlete-self-eval-modal .athlete-calc-result {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-self-eval-modal .athlete-calc-result strong { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Apoio sobre o azul claro: 5,79:1. */
+.athlete-self-eval-modal .athlete-calc-result__note { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+/* "Preencha ao menos um campo": o par de erro (5,91:1). */
+.athlete-self-eval-modal .form-error-message {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+@media (max-width: 47.5rem) {
+  .athlete-self-eval-modal .app-modal-header { padding-inline: var(--lt-space-4); }
+  .athlete-self-eval-modal .athlete-self-eval-body { padding: var(--lt-space-4); }
 }

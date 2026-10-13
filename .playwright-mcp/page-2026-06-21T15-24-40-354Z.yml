@@ -1,0 +1,768 @@
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - banner:
+      - generic:
+        - generic [ref=e6]:
+          - text: menu
+          - link "Google for Developers" [ref=e8] [cursor=pointer]:
+            - /url: /
+            - img "Google for Developers" [ref=e10]
+          - generic [ref=e15]:
+            - combobox "Search" [ref=e16]
+            - img [ref=e18]
+            - generic [ref=e21]: /
+          - generic "Selecione o idioma de sua preferência." [ref=e22]:
+            - button "Language" [ref=e23] [cursor=pointer]:
+              - img
+              - generic [ref=e24]: Language
+              - img
+        - generic [ref=e27]:
+          - list [ref=e31]:
+            - listitem [ref=e32]:
+              - link "Google AI Edge" [ref=e33] [cursor=pointer]:
+                - /url: https://developers.google.com/edge
+          - navigation "Lower tabs" [ref=e36]:
+            - generic [ref=e37]:
+              - link "MediaPipe, selected" [ref=e38] [cursor=pointer]:
+                - /url: https://developers.google.com/edge/mediapipe/solutions/guide
+                - text: MediaPipe
+              - button "Dropdown menu for MediaPipe" [ref=e39] [cursor=pointer]: arrow_drop_down
+            - link "LiteRT" [ref=e41] [cursor=pointer]:
+              - /url: https://developers.google.com/edge/litert
+            - link "LiteRT-LM" [ref=e43] [cursor=pointer]:
+              - /url: https://developers.google.com/edge/litert-lm
+            - link "Model Explorer" [ref=e45] [cursor=pointer]:
+              - /url: https://developers.google.com/edge/model-explorer
+            - link "AI Edge Portal" [ref=e47] [cursor=pointer]:
+              - /url: https://developers.google.com/edge/ai-edge-portal
+            - link "Google Tensor SDK" [ref=e49] [cursor=pointer]:
+              - /url: https://developers.google.com/edge/tensor-sdk
+            - button "arrow_drop_down Apps" [ref=e51] [cursor=pointer]
+            - link "API Reference" [ref=e53] [cursor=pointer]:
+              - /url: https://developers.google.com/edge/api
+            - text: arrow_drop_down
+    - generic [ref=e55]:
+      - text: filter_list close
+      - navigation "Side menu" [ref=e56]:
+        - text: arrow_back
+        - generic [ref=e57]:
+          - text: arrow_forward arrow_forward arrow_forward
+          - list [ref=e59]:
+            - listitem [ref=e60]:
+              - generic [ref=e62]: MediaPipe Solutions
+            - listitem [ref=e63]:
+              - link "Overview" [ref=e64] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/guide
+                - generic [ref=e65]: Overview
+            - listitem [ref=e66]:
+              - link "Tasks" [ref=e67] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/tasks
+                - generic [ref=e68]: Tasks
+            - listitem [ref=e69]:
+              - link "Model Maker" [ref=e70] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/model_maker
+                - generic [ref=e71]: Model Maker
+                - generic [ref=e72]: not_interested
+            - listitem [ref=e73]:
+              - link "Instant Demos" [ref=e74] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/studio
+                - generic [ref=e75]: Instant Demos
+            - listitem [ref=e76]:
+              - generic [ref=e78]: Vision tasks
+            - listitem [ref=e79]:
+              - generic [ref=e80]:
+                - generic [ref=e81] [cursor=pointer]: arrow_drop_down
+                - button "Object detection" [ref=e82] [cursor=pointer]:
+                  - generic [ref=e83]: Object detection
+                - text: not_interested
+            - listitem [ref=e84]:
+              - generic [ref=e85]:
+                - generic [ref=e86] [cursor=pointer]: arrow_drop_down
+                - button "Image classification" [ref=e87] [cursor=pointer]:
+                  - generic [ref=e88]: Image classification
+                - text: not_interested
+            - listitem [ref=e89]:
+              - generic [ref=e90]:
+                - generic [ref=e91] [cursor=pointer]: arrow_drop_down
+                - button "Image segmentation" [ref=e92] [cursor=pointer]:
+                  - generic [ref=e93]: Image segmentation
+            - listitem [ref=e94]:
+              - generic [ref=e95]:
+                - generic [ref=e96] [cursor=pointer]: arrow_drop_down
+                - button "Interactive segmentation" [ref=e97] [cursor=pointer]:
+                  - generic [ref=e98]: Interactive segmentation
+            - listitem [ref=e99]:
+              - generic [ref=e100]:
+                - generic [ref=e101] [cursor=pointer]: arrow_drop_down
+                - button "Gesture recognition" [ref=e102] [cursor=pointer]:
+                  - generic [ref=e103]: Gesture recognition
+                - text: not_interested
+            - listitem [ref=e104]:
+              - generic [ref=e105]:
+                - generic [ref=e106] [cursor=pointer]: arrow_drop_down
+                - button "Hand landmark detection" [ref=e107] [cursor=pointer]:
+                  - generic [ref=e108]: Hand landmark detection
+            - listitem [ref=e109]:
+              - generic [ref=e110]:
+                - generic [ref=e111] [cursor=pointer]: arrow_drop_down
+                - button "Image embedding" [ref=e112] [cursor=pointer]:
+                  - generic [ref=e113]: Image embedding
+            - listitem [ref=e114]:
+              - generic [ref=e115]:
+                - generic [ref=e116] [cursor=pointer]: arrow_drop_down
+                - button "Face detection" [ref=e117] [cursor=pointer]:
+                  - generic [ref=e118]: Face detection
+            - listitem [ref=e119]:
+              - generic [ref=e120]:
+                - generic [ref=e121] [cursor=pointer]: arrow_drop_down
+                - button "Face landmark detection" [ref=e122] [cursor=pointer]:
+                  - generic [ref=e123]: Face landmark detection
+            - listitem [ref=e124]:
+              - generic [ref=e125]:
+                - generic [ref=e126] [cursor=pointer]: arrow_drop_down
+                - button "Pose landmark detection" [ref=e127] [cursor=pointer]:
+                  - generic [ref=e128]: Pose landmark detection
+                - list [ref=e129]:
+                  - listitem [ref=e130]:
+                    - link "Overview" [ref=e131] [cursor=pointer]:
+                      - /url: /edge/mediapipe/solutions/vision/pose_landmarker
+                      - generic [ref=e132]: Overview
+                  - listitem [ref=e133]:
+                    - link "Android" [ref=e134] [cursor=pointer]:
+                      - /url: /edge/mediapipe/solutions/vision/pose_landmarker/android
+                      - generic [ref=e135]: Android
+                  - listitem [ref=e136]:
+                    - link "Web" [ref=e137] [cursor=pointer]:
+                      - /url: /edge/mediapipe/solutions/vision/pose_landmarker/web_js
+                      - generic [ref=e138]: Web
+                  - listitem [ref=e139]:
+                    - link "Python" [ref=e140] [cursor=pointer]:
+                      - /url: /edge/mediapipe/solutions/vision/pose_landmarker/python
+                      - generic [ref=e141]: Python
+                  - listitem [ref=e142]:
+                    - link "iOS" [ref=e143] [cursor=pointer]:
+                      - /url: /edge/mediapipe/solutions/vision/pose_landmarker/ios
+                      - generic [ref=e144]:
+                        - text: i
+                        - text: OS
+            - listitem [ref=e145]:
+              - link "Holistic landmark detection" [ref=e146] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/vision/holistic_landmarker
+                - generic [ref=e147]: Holistic landmark detection
+            - listitem [ref=e148]:
+              - generic [ref=e150]: Text tasks
+            - listitem [ref=e151]:
+              - generic [ref=e152]:
+                - generic [ref=e153] [cursor=pointer]: arrow_drop_down
+                - button "Text classification" [ref=e154] [cursor=pointer]:
+                  - generic [ref=e155]: Text classification
+                - text: not_interested
+            - listitem [ref=e156]:
+              - generic [ref=e157]:
+                - generic [ref=e158] [cursor=pointer]: arrow_drop_down
+                - button "Text embedding" [ref=e159] [cursor=pointer]:
+                  - generic [ref=e160]: Text embedding
+            - listitem [ref=e161]:
+              - generic [ref=e162]:
+                - generic [ref=e163] [cursor=pointer]: arrow_drop_down
+                - button "Language detection" [ref=e164] [cursor=pointer]:
+                  - generic [ref=e165]: Language detection
+            - listitem [ref=e166]:
+              - generic [ref=e168]: Audio tasks
+            - listitem [ref=e169]:
+              - generic [ref=e170]:
+                - generic [ref=e171] [cursor=pointer]: arrow_drop_down
+                - button "Audio classification" [ref=e172] [cursor=pointer]:
+                  - generic [ref=e173]: Audio classification
+            - listitem [ref=e174]:
+              - generic [ref=e176]: Platform setup guides
+            - listitem [ref=e177]:
+              - link "Android setup" [ref=e178] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/setup_android
+                - generic [ref=e179]: Android setup
+            - listitem [ref=e180]:
+              - link "Python setup" [ref=e181] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/setup_python
+                - generic [ref=e182]: Python setup
+            - listitem [ref=e183]:
+              - link "Web setup" [ref=e184] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/setup_web
+                - generic [ref=e185]: Web setup
+            - listitem [ref=e186]:
+              - link "iOS setup" [ref=e187] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/setup_ios
+                - generic [ref=e188]: iOS setup
+            - listitem [ref=e189]:
+              - generic [ref=e191]: Generative AI tasks
+            - listitem [ref=e192]:
+              - generic [ref=e193]:
+                - generic [ref=e194] [cursor=pointer]: arrow_drop_down
+                - button "LLM Inference" [ref=e195] [cursor=pointer]:
+                  - generic [ref=e196]: LLM Inference
+            - listitem [ref=e197]:
+              - generic [ref=e198]:
+                - generic [ref=e199] [cursor=pointer]: arrow_drop_down
+                - button "Retrieval Augmented Generation (RAG)" [ref=e200] [cursor=pointer]:
+                  - generic [ref=e201]: Retrieval Augmented Generation (RAG)
+                  - generic [ref=e202]: not_interested
+            - listitem [ref=e203]:
+              - generic [ref=e204]:
+                - generic [ref=e205] [cursor=pointer]: arrow_drop_down
+                - button "Function Calling" [ref=e206] [cursor=pointer]:
+                  - generic [ref=e207]: Function Calling
+                  - generic [ref=e208]: not_interested
+            - listitem [ref=e209]:
+              - generic [ref=e210]:
+                - generic [ref=e211] [cursor=pointer]: arrow_drop_down
+                - button "Image generation" [ref=e212] [cursor=pointer]:
+                  - generic [ref=e213]: Image generation
+                  - generic [ref=e214]: not_interested
+                - text: open_in_new
+            - listitem [ref=e215]:
+              - generic [ref=e217]: Build from source
+            - listitem [ref=e218]:
+              - link "Build Python Wheel Package" [ref=e219] [cursor=pointer]:
+                - /url: /edge/mediapipe/solutions/build_python
+                - generic [ref=e220]: Build Python Wheel Package
+            - listitem [ref=e221]:
+              - generic [ref=e223]: MediaPipe Framework
+            - listitem [ref=e224]:
+              - link "Overview" [ref=e225] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework
+                - generic [ref=e226]: Overview
+            - listitem [ref=e227]:
+              - link "Installation" [ref=e228] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/getting_started/install
+                - generic [ref=e229]: Installation
+            - listitem [ref=e230]:
+              - generic [ref=e232]: Getting started
+            - listitem [ref=e233]:
+              - generic [ref=e234]:
+                - generic [ref=e235] [cursor=pointer]: arrow_drop_down
+                - button "Framework on Android" [ref=e236] [cursor=pointer]:
+                  - generic [ref=e237]: Framework on Android
+            - listitem [ref=e238]:
+              - generic [ref=e239]:
+                - generic [ref=e240] [cursor=pointer]: arrow_drop_down
+                - button "Framework on iOS" [ref=e241] [cursor=pointer]:
+                  - generic [ref=e242]: Framework on iOS
+            - listitem [ref=e243]:
+              - link "Framework in Python" [ref=e244] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/getting_started/python_framework
+                - generic [ref=e245]: Framework in Python
+            - listitem [ref=e246]:
+              - generic [ref=e247]:
+                - generic [ref=e248] [cursor=pointer]: arrow_drop_down
+                - button "Framework in C++" [ref=e249] [cursor=pointer]:
+                  - generic [ref=e250]: Framework in C++
+            - listitem [ref=e251]:
+              - generic [ref=e253]: Framework concepts
+            - listitem [ref=e254]:
+              - link "Overview" [ref=e255] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/framework_concepts/overview
+                - generic [ref=e256]: Overview
+            - listitem [ref=e257]:
+              - link "Calculators" [ref=e258] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/framework_concepts/calculators
+                - generic [ref=e259]: Calculators
+            - listitem [ref=e260]:
+              - generic [ref=e261]:
+                - generic [ref=e262] [cursor=pointer]: arrow_drop_down
+                - button "Graphs" [ref=e263] [cursor=pointer]:
+                  - generic [ref=e264]: Graphs
+            - listitem [ref=e265]:
+              - link "Packets" [ref=e266] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/framework_concepts/packets
+                - generic [ref=e267]: Packets
+            - listitem [ref=e268]:
+              - link "Synchronization" [ref=e269] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/framework_concepts/synchronization
+                - generic [ref=e270]: Synchronization
+            - listitem [ref=e271]:
+              - link "GPU" [ref=e272] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/framework_concepts/gpu
+                - generic [ref=e273]: GPU
+            - listitem [ref=e274]:
+              - link "Real-time Streams" [ref=e275] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/framework_concepts/realtime_streams
+                - generic [ref=e276]: Real-time Streams
+            - listitem [ref=e277]:
+              - generic [ref=e279]: Framework tools
+            - listitem [ref=e280]:
+              - link "Visualizer" [ref=e281] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/tools/visualizer
+                - generic [ref=e282]: Visualizer
+            - listitem [ref=e283]:
+              - generic [ref=e285]: Resources
+            - listitem [ref=e286]:
+              - link "Getting Help" [ref=e287] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/getting_started/help
+                - generic [ref=e288]: Getting Help
+            - listitem [ref=e289]:
+              - link "FAQ" [ref=e290] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/getting_started/faq
+                - generic [ref=e291]: FAQ
+            - listitem [ref=e292]:
+              - link "Troubleshooting" [ref=e293] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/getting_started/troubleshooting
+                - generic [ref=e294]: Troubleshooting
+            - listitem [ref=e295]:
+              - link "GPU Support" [ref=e296] [cursor=pointer]:
+                - /url: /edge/mediapipe/framework/getting_started/gpu_support
+                - generic [ref=e297]: GPU Support
+    - button "Ocultar navegação lateral" [expanded] [ref=e298] [cursor=pointer]:
+      - generic [ref=e299]: chevron_left
+    - generic [ref=e300]:
+      - main [ref=e301]:
+        - generic [ref=e302]:
+          - article [ref=e303]:
+            - generic [ref=e306]:
+              - link "Introducing Google AI Edge Portal" [ref=e307] [cursor=pointer]:
+                - /url: https://ai.google.dev/edge/ai-edge-portal
+              - text: ": Benchmark Edge AI at scale."
+              - link "Sign-up" [ref=e308] [cursor=pointer]:
+                - /url: https://docs.google.com/forms/d/e/1FAIpQLSfTcGPycQve8TLAsfH46pBlXBZe9FrgJAClwbF7DeL1LgVn4Q/viewform
+              - text: to request access during private preview.
+            - navigation [ref=e309]:
+              - list "Breadcrumb" [ref=e310]:
+                - listitem [ref=e311]:
+                  - link "Home" [ref=e312] [cursor=pointer]:
+                    - /url: https://developers.google.com/
+                - listitem [ref=e313]:
+                  - generic [ref=e314]: chevron_right
+                  - link "Products" [ref=e315] [cursor=pointer]:
+                    - /url: https://developers.google.com/products
+                - listitem [ref=e316]:
+                  - generic [ref=e317]: chevron_right
+                  - link "Google AI Edge" [ref=e318] [cursor=pointer]:
+                    - /url: https://developers.google.com/edge
+                - listitem [ref=e319]:
+                  - generic [ref=e320]: chevron_right
+                  - link "MediaPipe" [ref=e321] [cursor=pointer]:
+                    - /url: https://developers.google.com/edge/mediapipe/solutions/guide
+            - button "Send feedback" [ref=e323] [cursor=pointer]
+            - heading "Pose landmark detection guide for Web Ferramentas de LLM" [level=1] [ref=e324]:
+              - text: Pose landmark detection guide for Web
+              - generic [ref=e325]:
+                - listbox "Bookmark collections drop down" [ref=e328] [cursor=pointer]:
+                  - button "Abrir o menu suspenso" [ref=e329]:
+                    - generic:
+                      - generic [ref=e330]: bookmark_border
+                      - text: bookmark
+                    - text: arrow_drop_down
+                - group "Ferramentas de LLM" [ref=e332]:
+                  - button "Copiar página como Markdown" [ref=e334] [cursor=pointer]:
+                    - generic [ref=e335]: content_copy
+                  - button "Mais opções de ferramentas de LLM" [ref=e338] [cursor=pointer]: arrow_drop_down
+            - list [ref=e340]:
+              - listitem [ref=e341]:
+                - heading "Nesta página" [level=2] [ref=e342]:
+                  - generic [ref=e343]: Nesta página
+                - button "expand_more" [ref=e344] [cursor=pointer]
+              - listitem [ref=e345]:
+                - link "Code example" [ref=e346] [cursor=pointer]:
+                  - /url: "#code_example"
+                  - generic [ref=e347]: Code example
+              - listitem [ref=e348]:
+                - link "Setup" [ref=e349] [cursor=pointer]:
+                  - /url: "#setup"
+                  - generic [ref=e350]: Setup
+                - list [ref=e351]:
+                  - listitem [ref=e352]:
+                    - link "JavaScript packages" [ref=e353] [cursor=pointer]:
+                      - /url: "#javascript_packages"
+                      - generic [ref=e354]: JavaScript packages
+                  - listitem [ref=e355]:
+                    - link "Model" [ref=e356] [cursor=pointer]:
+                      - /url: "#model"
+                      - generic [ref=e357]: Model
+              - listitem [ref=e358]:
+                - link "Create the task" [ref=e359] [cursor=pointer]:
+                  - /url: "#create_the_task"
+                  - generic [ref=e360]: Create the task
+                - list [ref=e361]:
+                  - listitem [ref=e362]:
+                    - link "Configuration options" [ref=e363] [cursor=pointer]:
+                      - /url: "#configuration_options"
+                      - generic [ref=e364]: Configuration options
+              - listitem [ref=e365]:
+                - link "Prepare data" [ref=e366] [cursor=pointer]:
+                  - /url: "#prepare_data"
+                  - generic [ref=e367]: Prepare data
+              - listitem [ref=e368]:
+                - link "Run the task" [ref=e369] [cursor=pointer]:
+                  - /url: "#run_the_task"
+                  - generic [ref=e370]: Run the task
+              - listitem [ref=e371]:
+                - button "more_horiz" [ref=e372] [cursor=pointer]
+            - generic [ref=e373]:
+              - paragraph
+              - paragraph [ref=e374]: The MediaPipe Pose Landmarker task lets you detect landmarks of human bodies in an image or video. You can use this task to identify key body locations, analyze posture, and categorize movements. This task uses machine learning (ML) models that work with single images or video. The task outputs body pose landmarks in image coordinates and in 3-dimensional world coordinates.
+              - paragraph [ref=e375]:
+                - text: These instructions show you how to use the Pose Landmarker for web and JavaScript apps. For more information about the capabilities, models, and configuration options of this task, see the
+                - link "Overview" [ref=e376] [cursor=pointer]:
+                  - /url: https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/index
+                - text: .
+              - 'heading "Code example Copiar o link desta seção: Code example" [level=2] [ref=e377]':
+                - heading "Code example" [level=2] [ref=e378]
+                - 'button "Copiar o link desta seção: Code example" [ref=e379] [cursor=pointer]': link
+              - paragraph [ref=e380]:
+                - text: The example code for Pose Landmarker provides a complete implementation of this task in JavaScript for your reference. This code helps you test this task and get started on building your own pose landmarker app. You can view, run, and edit the Pose Landmarker
+                - link "example" [ref=e381] [cursor=pointer]:
+                  - /url: https://stackblitz.com/https://github.com/google-ai-edge/mediapipe-samples-web/
+                - text: using just your web browser.
+              - heading "Setup" [level=2] [ref=e382]
+              - paragraph [ref=e383]:
+                - text: This section describes key steps for setting up your development environment specifically to use Pose Landmarker. For general information on setting up your web and JavaScript development environment, including platform version requirements, see the
+                - link "Setup guide for web" [ref=e384] [cursor=pointer]:
+                  - /url: /mediapipe/solutions/setup_web
+                - text: .
+              - heading "JavaScript packages" [level=3] [ref=e385]:
+                - text: Java
+                - text: Script packages
+              - paragraph [ref=e386]:
+                - text: Pose Landmarker code is available through the MediaPipe
+                - code [ref=e387]: "@mediapipe/tasks-vision"
+                - link "NPM" [ref=e388] [cursor=pointer]:
+                  - /url: https://www.npmjs.com/search?q=%40mediapipe
+                - text: package. You can find and download these libraries by following the instructions in the platform
+                - link "Setup guide" [ref=e389] [cursor=pointer]:
+                  - /url: /mediapipe/solutions/setup_web#downloads
+                - text: .
+              - complementary [ref=e390]:
+                - text: "Attention: This MediaPipe Solutions Preview is an early release."
+                - link "Learn more" [ref=e391] [cursor=pointer]:
+                  - /url: /edge/mediapipe/solutions/about#notice
+                - text: .
+              - paragraph [ref=e392]: "You can install the required packages through NPM using the following command:"
+              - code [ref=e395]: npm install @mediapipe/tasks-vision
+              - paragraph [ref=e396]: "If you want to import the task code via a content delivery network (CDN) service, add the following code in the <head> tag in your HTML file:"
+              - code [ref=e399]: <!-- You can replace JSDeliver with another CDN if you prefer --> <head> <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.mjs" crossorigin="anonymous"></script> </head>
+              - heading "Model" [level=3] [ref=e400]
+              - paragraph [ref=e401]:
+                - text: The MediaPipe Pose Landmarker task requires a trained model that is compatible with this task. For more information on available trained models for Pose Landmarker, see the task overview
+                - link "Models section" [ref=e402] [cursor=pointer]:
+                  - /url: https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/index#models
+                - text: .
+              - paragraph [ref=e403]: "Select and download a model, and then store it within your project directory:"
+              - code [ref=e406]: <dev-project-root>/app/shared/models/
+              - heading "Create the task" [level=2] [ref=e407]
+              - paragraph [ref=e408]:
+                - text: Use one of the Pose Landmarker
+                - code [ref=e409]: createFrom...()
+                - text: functions to prepare the task for running inferences. Use the
+                - code [ref=e410]: createFromModelPath()
+                - text: function with a relative or absolute path to the trained model file. If your model is already loaded into memory, you can use the
+                - code [ref=e411]: createFromModelBuffer()
+                - text: method.
+              - paragraph [ref=e412]:
+                - text: The code example below demonstrates using the
+                - code [ref=e413]: createFromOptions()
+                - text: function to set up the task. The
+                - code [ref=e414]: createFromOptions()
+                - text: function allows you to customize the Pose Landmarker with configuration options. For more information on configuration options, see
+                - link "Configuration options" [ref=e415] [cursor=pointer]:
+                  - /url: "#configuration_options"
+                - text: .
+              - paragraph [ref=e416]: "The following code demonstrates how to build and configure the task with custom options:"
+              - code [ref=e419]: "const vision = await FilesetResolver.forVisionTasks( // path/to/wasm/root \"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm\" ); const poseLandmarker = await poseLandmarker.createFromOptions( vision, { baseOptions: { modelAssetPath: \"path/to/model\" }, runningMode: runningMode });"
+              - heading "Configuration options" [level=3] [ref=e420]
+              - paragraph [ref=e421]: "This task has the following configuration options for Web and JavaScript applications:"
+              - table [ref=e423]:
+                - rowgroup [ref=e424]:
+                  - row "Option Name Description Value Range Default Value" [ref=e425]:
+                    - columnheader "Option Name" [ref=e426]
+                    - columnheader "Description" [ref=e427]
+                    - columnheader "Value Range" [ref=e428]
+                    - columnheader "Default Value" [ref=e429]
+                - rowgroup [ref=e430]:
+                  - 'row "runningMode Sets the running mode for the task. There are two modes: IMAGE: The mode for single image inputs. VIDEO: The mode for decoded frames of a video or on a livestream of input data, such as from a camera. {IMAGE, VIDEO} IMAGE" [ref=e431]':
+                    - cell "runningMode" [ref=e432]:
+                      - code [ref=e433]: runningMode
+                    - 'cell "Sets the running mode for the task. There are two modes: IMAGE: The mode for single image inputs. VIDEO: The mode for decoded frames of a video or on a livestream of input data, such as from a camera." [ref=e434]':
+                      - text: "Sets the running mode for the task. There are two modes:"
+                      - text: "IMAGE: The mode for single image inputs."
+                      - text: "VIDEO: The mode for decoded frames of a video or on a livestream of input data, such as from a camera."
+                    - 'cell "{IMAGE, VIDEO}" [ref=e435]':
+                      - text: "{"
+                      - code [ref=e436]: IMAGE, VIDEO
+                      - text: "}"
+                    - cell "IMAGE" [ref=e437]:
+                      - code [ref=e438]: IMAGE
+                  - row "numPoses The maximum number of poses that can be detected by the Pose Landmarker. Integer > 0 1" [ref=e439]:
+                    - cell "numPoses" [ref=e440]:
+                      - code [ref=e441]: numPoses
+                    - cell "The maximum number of poses that can be detected by the Pose Landmarker." [ref=e442]
+                    - cell "Integer > 0" [ref=e443]:
+                      - code [ref=e444]: Integer > 0
+                    - cell "1" [ref=e445]:
+                      - code [ref=e446]: "1"
+                  - row "minPoseDetectionConfidence The minimum confidence score for the pose detection to be considered successful. Float [0.0,1.0] 0.5" [ref=e447]:
+                    - cell "minPoseDetectionConfidence" [ref=e448]:
+                      - code [ref=e449]: minPoseDetectionConfidence
+                    - cell "The minimum confidence score for the pose detection to be considered successful." [ref=e450]
+                    - cell "Float [0.0,1.0]" [ref=e451]:
+                      - code [ref=e452]: Float [0.0,1.0]
+                    - cell "0.5" [ref=e453]:
+                      - code [ref=e454]: "0.5"
+                  - row "minPosePresenceConfidence The minimum confidence score of pose presence score in the pose landmark detection. Float [0.0,1.0] 0.5" [ref=e455]:
+                    - cell "minPosePresenceConfidence" [ref=e456]:
+                      - code [ref=e457]: minPosePresenceConfidence
+                    - cell "The minimum confidence score of pose presence score in the pose landmark detection." [ref=e458]
+                    - cell "Float [0.0,1.0]" [ref=e459]:
+                      - code [ref=e460]: Float [0.0,1.0]
+                    - cell "0.5" [ref=e461]:
+                      - code [ref=e462]: "0.5"
+                  - row "minTrackingConfidence The minimum confidence score for the pose tracking to be considered successful. Float [0.0,1.0] 0.5" [ref=e463]:
+                    - cell "minTrackingConfidence" [ref=e464]:
+                      - code [ref=e465]: minTrackingConfidence
+                    - cell "The minimum confidence score for the pose tracking to be considered successful." [ref=e466]
+                    - cell "Float [0.0,1.0]" [ref=e467]:
+                      - code [ref=e468]: Float [0.0,1.0]
+                    - cell "0.5" [ref=e469]:
+                      - code [ref=e470]: "0.5"
+                  - row "outputSegmentationMasks Whether Pose Landmarker outputs a segmentation mask for the detected pose. Boolean False" [ref=e471]:
+                    - cell "outputSegmentationMasks" [ref=e472]:
+                      - code [ref=e473]: outputSegmentationMasks
+                    - cell "Whether Pose Landmarker outputs a segmentation mask for the detected pose." [ref=e474]
+                    - cell "Boolean" [ref=e475]:
+                      - code [ref=e476]: Boolean
+                    - cell "False" [ref=e477]:
+                      - code [ref=e478]: "False"
+              - heading "Prepare data" [level=2] [ref=e479]
+              - paragraph [ref=e480]: Pose Landmarker can detect poses in images in any format supported by the host browser. The task also handles data input preprocessing, including resizing, rotation and value normalization. To landmark poses in videos, you can use the API to quickly process one frame at a time, using the timestamp of the frame to determine when the poses occur within the video.
+              - heading "Run the task" [level=2] [ref=e481]
+              - paragraph [ref=e482]:
+                - text: The Pose Landmarker uses the
+                - code [ref=e483]: detect()
+                - text: (with running mode
+                - code [ref=e484]: IMAGE
+                - text: ) and
+                - code [ref=e485]: detectForVideo()
+                - text: (with running mode
+                - code [ref=e486]: VIDEO
+                - text: ) methods to trigger inferences. The task processes the data, attempts to landmark poses, and then reports the results.
+              - paragraph [ref=e487]:
+                - text: Calls to the Pose Landmarker
+                - code [ref=e488]: detect()
+                - text: and
+                - code [ref=e489]: detectForVideo()
+                - text: methods run synchronously and block the user interpose thread. If you detect poses in video frames from a device's camera, each detection blocks the main thread. You can prevent this by implementing web workers to run the
+                - code [ref=e490]: detect()
+                - text: and
+                - code [ref=e491]: detectForVideo()
+                - text: methods on another thread.
+              - paragraph [ref=e492]: "The following code demonstrates how execute the processing with the task model:"
+              - generic [ref=e494]:
+                - tablist [ref=e495]:
+                  - generic [ref=e496]:
+                    - tab "Image" [selected] [ref=e497]:
+                      - button "Image" [expanded] [ref=e498] [cursor=pointer]
+                    - tab "Video" [ref=e499]:
+                      - button "Video" [ref=e500] [cursor=pointer]
+                    - text: arrow_drop_down
+                - tabpanel "Image" [ref=e501]:
+                  - generic [ref=e503]: const image = document.getElementById("image") as HTMLImageElement; const poseLandmarkerResult = poseLandmarker.detect(image);
+              - paragraph [ref=e504]:
+                - text: For a more complete implementation of running an Pose Landmarker task, see the
+                - link "example" [ref=e505] [cursor=pointer]:
+                  - /url: https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/workers/pose-landmarker.worker.ts
+                - text: .
+              - heading "Handle and display results" [level=2] [ref=e506]
+              - paragraph [ref=e507]:
+                - text: The Pose Landmarker returns a
+                - code [ref=e508]: poseLandmarkerResult
+                - text: object for each detection run. The result object contains coordinates for each pose landmark.
+              - paragraph [ref=e509]: "The following shows an example of the output data from this task:"
+              - code [ref=e512]: "PoseLandmarkerResult: Landmarks: Landmark #0: x : 0.638852 y : 0.671197 z : 0.129959 visibility : 0.9999997615814209 presence : 0.9999984502792358 Landmark #1: x : 0.634599 y : 0.536441 z : -0.06984 visibility : 0.999909 presence : 0.999958 ... (33 landmarks per pose) WorldLandmarks: Landmark #0: x : 0.067485 y : 0.031084 z : 0.055223 visibility : 0.9999997615814209 presence : 0.9999984502792358 Landmark #1: x : 0.063209 y : -0.00382 z : 0.020920 visibility : 0.999976 presence : 0.999998 ... (33 world landmarks per pose) SegmentationMasks: ... (pictured below)"
+              - paragraph [ref=e513]:
+                - text: The output contains both normalized coordinates (
+                - code [ref=e514]: Landmarks
+                - text: ) and world coordinates (
+                - code [ref=e515]: WorldLandmarks
+                - text: ) for each landmark.
+              - paragraph [ref=e516]:
+                - text: The output contains the following normalized coordinates (
+                - code [ref=e517]: Landmarks
+                - text: "):"
+              - list [ref=e518]:
+                - listitem [ref=e519]:
+                  - paragraph [ref=e520]:
+                    - code [ref=e521]: x
+                    - text: and
+                    - code [ref=e522]: "y"
+                    - text: ": Landmark coordinates normalized between 0.0 and 1.0 by the image width ("
+                    - code [ref=e523]: x
+                    - text: ) and height (
+                    - code [ref=e524]: "y"
+                    - text: ).
+                - listitem [ref=e525]:
+                  - paragraph [ref=e526]:
+                    - code [ref=e527]: z
+                    - text: ": The landmark depth, with the depth at the midpoint of the hips as the origin. The smaller the value, the closer the landmark is to the camera. The magnitude of z uses roughly the same scale as"
+                    - code [ref=e528]: x
+                    - text: .
+                - listitem [ref=e529]:
+                  - paragraph [ref=e530]:
+                    - code [ref=e531]: visibility
+                    - text: ": The likelihood of the landmark being visible within the image."
+              - paragraph [ref=e532]:
+                - text: The output contains the following world coordinates (
+                - code [ref=e533]: WorldLandmarks
+                - text: "):"
+              - list [ref=e534]:
+                - listitem [ref=e535]:
+                  - paragraph [ref=e536]:
+                    - code [ref=e537]: x
+                    - text: ","
+                    - code [ref=e538]: "y"
+                    - text: ", and"
+                    - code [ref=e539]: z
+                    - text: ": Real-world 3-dimensional coordinates in meters, with the midpoint of the hips as the origin."
+                - listitem [ref=e540]:
+                  - paragraph [ref=e541]:
+                    - code [ref=e542]: visibility
+                    - text: ": The likelihood of the landmark being visible within the image."
+              - paragraph [ref=e543]: "The following image shows a visualization of the task output:"
+              - paragraph [ref=e544]:
+                - img "A woman in a meditative pose. Her pose is highlighted with a wireframe that indicates the positioning of her limbs and torso" [ref=e545]
+              - paragraph [ref=e546]: "The optional segmentation mask represents the likelihood of each pixel belonging to a detected person. The following image is a segmentation mask of the task output:"
+              - paragraph [ref=e547]:
+                - img "Segmentation mask of the previous image that outlines the shape of the woman" [ref=e548]
+              - paragraph [ref=e549]:
+                - text: The Pose Landmarker example code demonstrates how to display the results returned from the task, see the
+                - link "example" [ref=e550] [cursor=pointer]:
+                  - /url: https://github.com/google-ai-edge/mediapipe-samples-web/blob/main/src/tasks/pose-landmarker.ts
+            - button "Send feedback" [ref=e552] [cursor=pointer]
+          - generic [ref=e585]:
+            - paragraph [ref=e586]:
+              - text: Except as otherwise noted, the content of this page is licensed under the
+              - link "Creative Commons Attribution 4.0 License" [ref=e587] [cursor=pointer]:
+                - /url: https://creativecommons.org/licenses/by/4.0/
+              - text: ", and code samples are licensed under the"
+              - link "Apache 2.0 License" [ref=e588] [cursor=pointer]:
+                - /url: https://www.apache.org/licenses/LICENSE-2.0
+              - text: . For details, see the
+              - link "Google Developers Site Policies" [ref=e589] [cursor=pointer]:
+                - /url: https://developers.google.com/site-policies
+              - text: . Java is a registered trademark of Oracle and/or its affiliates.
+            - paragraph [ref=e590]: Last updated 2026-05-28 UTC.
+      - navigation "Footer links" [ref=e593]:
+        - list [ref=e594]:
+          - listitem [ref=e595]:
+            - heading "Connect" [level=3] [ref=e596]
+            - list [ref=e597]:
+              - listitem [ref=e598]:
+                - link "Blog" [ref=e599] [cursor=pointer]:
+                  - /url: //desenvolvedores.googleblog.com
+              - listitem [ref=e600]:
+                - link "Bluesky" [ref=e601] [cursor=pointer]:
+                  - /url: https://goo.gle/3FReQXN
+              - listitem [ref=e602]:
+                - link "Instagram" [ref=e603] [cursor=pointer]:
+                  - /url: https://www.instagram.com/googlefordevs/
+              - listitem [ref=e604]:
+                - link "LinkedIn" [ref=e605] [cursor=pointer]:
+                  - /url: https://www.linkedin.com/showcase/googledevelopers/
+              - listitem [ref=e606]:
+                - link "X (Twitter)" [ref=e607] [cursor=pointer]:
+                  - /url: //twitter.com/googledevbr
+              - listitem [ref=e608]:
+                - link "YouTube" [ref=e609] [cursor=pointer]:
+                  - /url: //www.youtube.com/channel/UCTspylBf8iNobZHgwUD4PXA
+          - listitem [ref=e610]:
+            - heading "Programs" [level=3] [ref=e611]
+            - list [ref=e612]:
+              - listitem [ref=e613]:
+                - link "Google Developer Program" [ref=e614] [cursor=pointer]:
+                  - /url: /program
+              - listitem [ref=e615]:
+                - link "Google Developer Groups" [ref=e616] [cursor=pointer]:
+                  - /url: /community
+              - listitem [ref=e617]:
+                - link "Google Developer Experts" [ref=e618] [cursor=pointer]:
+                  - /url: /community/experts
+              - listitem [ref=e619]:
+                - link "Accelerators" [ref=e620] [cursor=pointer]:
+                  - /url: /community/accelerators
+              - listitem [ref=e621]:
+                - link "Google Cloud & NVIDIA" [ref=e622] [cursor=pointer]:
+                  - /url: /community/nvidia
+          - listitem [ref=e623]:
+            - heading "Developer consoles" [level=3] [ref=e624]
+            - list [ref=e625]:
+              - listitem [ref=e626]:
+                - link "Google API Console" [ref=e627] [cursor=pointer]:
+                  - /url: //console.developers.google.com
+              - listitem [ref=e628]:
+                - link "Google Cloud Platform Console" [ref=e629] [cursor=pointer]:
+                  - /url: //console.cloud.google.com
+              - listitem [ref=e630]:
+                - link "Google Play Console" [ref=e631] [cursor=pointer]:
+                  - /url: //play.google.com/apps/publish
+              - listitem [ref=e632]:
+                - link "Firebase Console" [ref=e633] [cursor=pointer]:
+                  - /url: //console.firebase.google.com
+              - listitem [ref=e634]:
+                - link "Actions on Google Console" [ref=e635] [cursor=pointer]:
+                  - /url: //console.actions.google.com
+              - listitem [ref=e636]:
+                - link "Cast SDK Developer Console" [ref=e637] [cursor=pointer]:
+                  - /url: //cast.google.com/publish
+              - listitem [ref=e638]:
+                - link "Chrome Web Store Dashboard" [ref=e639] [cursor=pointer]:
+                  - /url: //chrome.google.com/webstore/developer/dashboard
+              - listitem [ref=e640]:
+                - link "Google Home Developer Console" [ref=e641] [cursor=pointer]:
+                  - /url: //console.home.google.com
+      - generic [ref=e643]:
+        - navigation "Other Google Developers websites" [ref=e644]:
+          - link "Google Developers" [ref=e645] [cursor=pointer]:
+            - /url: https://developers.google.com/
+            - img "Google Developers" [ref=e647]
+          - list [ref=e648]:
+            - listitem [ref=e649]:
+              - link "Android" [ref=e650] [cursor=pointer]:
+                - /url: //developer.android.com
+            - listitem [ref=e651]:
+              - link "Chrome" [ref=e652] [cursor=pointer]:
+                - /url: //developer.chrome.com/home
+            - listitem [ref=e653]:
+              - link "Firebase" [ref=e654] [cursor=pointer]:
+                - /url: //firebase.google.com
+            - listitem [ref=e655]:
+              - link "Google Cloud Platform" [ref=e656] [cursor=pointer]:
+                - /url: //cloud.google.com
+            - listitem [ref=e657]:
+              - link "Google AI" [ref=e658] [cursor=pointer]:
+                - /url: //ai.google.dev/
+            - listitem [ref=e659]:
+              - link "All products" [ref=e660] [cursor=pointer]:
+                - /url: /products
+        - navigation "Utility links" [ref=e661]:
+          - list [ref=e662]:
+            - listitem [ref=e663]:
+              - link "Terms" [ref=e664] [cursor=pointer]:
+                - /url: /terms/site-terms
+            - listitem [ref=e665]:
+              - text: "|"
+              - link "Privacy" [ref=e666] [cursor=pointer]:
+                - /url: //policies.google.com/privacy
+            - text: "|"
+          - generic "Selecione o idioma de sua preferência." [ref=e667]:
+            - button "Language" [ref=e668] [cursor=pointer]:
+              - img
+              - generic [ref=e669]: Language
+              - img
+      - toolbar "Menu do painel lateral" [ref=e672]:
+        - button "Informações" [ref=e673] [cursor=pointer]:
+          - img [ref=e675]
+          - generic [ref=e678]: Informações
+        - button "Chat" [ref=e679] [cursor=pointer]:
+          - img [ref=e681]
+          - generic [ref=e684]: Chat
+        - button "API" [ref=e685] [cursor=pointer]:
+          - img [ref=e687]
+          - generic [ref=e689]: API

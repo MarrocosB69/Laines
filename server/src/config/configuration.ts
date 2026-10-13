@@ -8,13 +8,14 @@ const cspMode = cspModeRaw === 'enforce' || cspModeRaw === 'off'
   ? cspModeRaw
   : 'report-only';
 const cspReportEndpoint = process.env.CSP_REPORT_URI || '/csp-report';
+const cspConnectExtra = !isProd ? ' http://localhost:4000 http://127.0.0.1:4000' : '';
 const cspDefaultPolicy = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' http://localhost:4000 http://127.0.0.1:4000 https://api.laines.app ws: wss:",
+  `connect-src 'self'${cspConnectExtra} ws: wss:`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -97,7 +98,11 @@ export default () => ({
     accessTokenExpiresIn: process.env.AUTH_ACCESS_TOKEN_EXPIRES_IN || '20m',
     refreshTokenFormat: process.env.AUTH_REFRESH_TOKEN_FORMAT || 'opaque',
     refreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'laines_refresh_token',
-    refreshCookiePath: process.env.AUTH_REFRESH_COOKIE_PATH || '/auth',
+    // O cliente fala com a API sob o prefixo /api (proxy do Vite em dev, mesmo
+    // caminho em producao via VITE_API_URL=/api). Cookie com path=/auth nunca
+    // e enviado para /api/auth/refresh — o navegador casa por prefixo — e o
+    // efeito era recarregar a pagina deslogar o usuario.
+    refreshCookiePath: process.env.AUTH_REFRESH_COOKIE_PATH || '/',
     refreshCookieDomain: process.env.AUTH_REFRESH_COOKIE_DOMAIN || '',
     refreshCookieSameSite: process.env.AUTH_REFRESH_COOKIE_SAMESITE || 'lax',
     refreshCookieSecure: process.env.AUTH_REFRESH_COOKIE_SECURE === undefined
@@ -126,5 +131,14 @@ export default () => ({
   realtime: {
     broadcastRoles: process.env.REALTIME_BROADCAST_ROLES
       || 'admin,coordenacao,presidente,vice,coord_atendimento,diretoria_marketing,diretoria_ensino,diretoria_pesquisa,diretoria_extensao,professor,profissional,pesquisador,colaborador,tecnico'
+  },
+  mail: {
+    enabled: process.env.MAIL_ENABLED === 'true',
+    smtpHost: process.env.MAIL_SMTP_HOST || 'smtp.gmail.com',
+    smtpPort: parseInt(process.env.MAIL_SMTP_PORT || '587', 10),
+    smtpUser: process.env.MAIL_SMTP_USER || '',
+    smtpPass: process.env.MAIL_SMTP_PASS || '',
+    from: process.env.MAIL_FROM || 'LAINES <noreply@laines.ufrn.br>',
+    appUrl: process.env.APP_URL || 'https://laines.facisa.ufrn.br'
   }
 });

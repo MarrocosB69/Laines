@@ -44,6 +44,20 @@ export const getEvaluationStatusTone = (value) => {
   return STATUS_META[key]?.tone || 'neutral';
 };
 
+// Glossário do WI-013 para a faixa de disponibilidade energética, com os
+// mesmos textos de ROTULO_CLASSIFICACAO_DE (triagem-reds-normalizer.ts). O
+// token gravado não muda; valor fora do mapa volta como veio.
+export const ENERGY_AVAILABILITY_LABELS = Object.freeze({
+  otima: 'Disponibilidade energética adequada',
+  risco_relativo: 'Disponibilidade energética reduzida',
+  reds_estabelecido: 'Baixa disponibilidade energética'
+});
+
+export const formatEnergyAvailabilityClassification = (value) => {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  return ENERGY_AVAILABILITY_LABELS[normalizeToken(value)] || value;
+};
+
 // ─── module metrics ─────────────────────────────────────────────────────────
 
 const EVAL_METRIC_SPECS = {
@@ -113,9 +127,9 @@ const EVAL_METRIC_SPECS = {
     { label: 'Conduta',      unit: '',  keys: ['conduta'] },
   ],
   triagem_reds: [
-    { label: 'Classif. DE', unit: '', keys: ['classificacaoDE', 'disponibilidadeEnergetica'] },
+    { label: 'Classif. DE', unit: '', keys: ['classificacaoDE', 'disponibilidadeEnergetica'], format: formatEnergyAvailabilityClassification },
     { label: 'Score LEAF-Q', unit: '', keys: ['scoreLeafQ', 'score_leafq'] },
-    { label: 'Risco RED-S',  unit: '', keys: ['riscoReds', 'risco_reds', 'classificacaoReds'] },
+    { label: 'Risco Disp. Energetica',  unit: '', keys: ['riscoReds', 'risco_reds', 'classificacaoReds'] },
   ],
   carga_treino: [
     { label: 'ACWR',        unit: '', keys: ['acwr'] },
@@ -164,7 +178,8 @@ export const getModuleMetrics = (tipo, evaluation) => {
   if (!specs) return [];
   return specs
     .map((spec) => {
-      const value = _readEvalValue(evaluation, spec.keys);
+      const raw = _readEvalValue(evaluation, spec.keys);
+      const value = spec.format ? spec.format(raw) : raw;
       const formatted = _fmtMetric(value, spec.unit);
       return formatted ? { label: spec.label, formatted } : null;
     })

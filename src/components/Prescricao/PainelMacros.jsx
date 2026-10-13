@@ -3,7 +3,13 @@ import MacroRosca from './MacroRosca.jsx';
 import { n } from './formato.js';
 
 /** Apresentacional. */
-export default function PainelMacros({ dia, metas, distribuicao, cores }) {
+export default function PainelMacros({ dia, metas, distribuicao, cores, macros = [] }) {
+  const porNutriente = Object.fromEntries(macros.map((linha) => [linha.nutriente, linha]));
+  const semDado = (chave) => porNutriente[chave]?.valor === null;
+  const parcial = (chave) => !semDado(chave)
+    && Number.isFinite(porNutriente[chave]?.cobertura)
+    && porNutriente[chave].cobertura < 1;
+  const composicaoIncompleta = ['kcal', 'cho', 'ptn', 'lip'].some((chave) => semDado(chave) || parcial(chave));
   const linhas = [
     { k: 'cho', rotulo: 'Carboidrato', valor: dia.cho, meta: metas.cho, cor: cores.cho },
     { k: 'ptn', rotulo: 'Proteína', valor: dia.ptn, meta: metas.ptn, cor: cores.ptn },
@@ -11,28 +17,33 @@ export default function PainelMacros({ dia, metas, distribuicao, cores }) {
   ];
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-3 max-[999px]:flex max-[999px]:items-center max-[999px]:gap-4">
-      <div className="flex justify-center">
-        <MacroRosca dia={dia} metas={metas} distribuicao={distribuicao} cores={cores} />
+    <div className="pp-cartao pp-macros">
+      <div className="pp-macros__rosca">
+        <MacroRosca dia={dia} metas={metas} distribuicao={distribuicao} cores={cores}
+          energia={porNutriente.kcal} composicaoIncompleta={composicaoIncompleta} />
       </div>
-      <div className="mt-2 max-[999px]:mt-0 max-[999px]:flex-1">
+      <div className="pp-macros__linhas">
         {linhas.map((l) => (
-          <div key={l.k} className="flex items-baseline border-t border-stone-200 py-1 text-xs">
-            <span className="flex-1 text-stone-700">
+          <div key={l.k} className="pp-macros__linha">
+            <span className="pp-macros__rotulo">
               <span
-                className="mr-2 inline-block h-2 w-2 rounded-sm align-middle"
+                className="pp-macros__cor"
                 style={{ background: l.cor }}
+                aria-hidden="true"
               />
               {l.rotulo}
             </span>
-            <span className="text-stone-500">
-              {n(l.valor)} / {n(l.meta)} g
+            <span className="pp-macros__valor">
+              {semDado(l.k) ? '—' : n(l.valor)}{parcial(l.k) && <span aria-hidden="true">*</span>} / {n(l.meta)} g
               {/* Sem peso cadastrado nao ha g/kg: dividir por nulo daria
                   Infinity, e a regra e mostrar travessao, nao numero falso. */}
-              {' · '}{metas.peso ? `${n(l.valor / metas.peso, 1)} g/kg` : '— g/kg'}
+              {' · '}{metas.peso && !semDado(l.k) ? `${n(l.valor / metas.peso, 1)} g/kg` : '— g/kg'}
             </span>
           </div>
         ))}
+        {composicaoIncompleta && (
+          <p className="pp-nota">* Subtotal conhecido; — indica composição ausente. Confira a cobertura na tabela de adequação. A rosca usa apenas os nutrientes conhecidos.</p>
+        )}
       </div>
     </div>
   );

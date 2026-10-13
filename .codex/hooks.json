@@ -1,0 +1,63 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --import tsx node_modules/phasegate/scripts/harness/main.ts hook session-start",
+            "statusMessage": "phasegate: loading session context"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --import tsx node_modules/phasegate/scripts/harness/main.ts hook user-prompt-submit",
+            "statusMessage": "phasegate: refreshing status"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --import tsx node_modules/phasegate/scripts/harness/main.ts hook pre-tool-use",
+            "statusMessage": "phasegate: pre-tool-use check"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --import tsx node_modules/phasegate/scripts/harness/main.ts hook post-tool-use",
+            "statusMessage": "phasegate: post-tool-use lint"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --import tsx node_modules/phasegate/scripts/harness/main.ts hook stop",
+            "statusMessage": "phasegate: completion check",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

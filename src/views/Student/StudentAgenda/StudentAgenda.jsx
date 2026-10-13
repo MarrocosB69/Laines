@@ -499,33 +499,42 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
 
 
 
+  // Carregando e erro ficam dentro da raiz `.student-agenda` só para o CSS
+  // escopado alcançá-los; o conteúdo é o mesmo de antes.
   if (loading) {
     return (
-      <div className="agenda-loading laines-feedback-state" role="status" aria-live="polite">
-        <Loader2 size={20} className="spin" />
-        <span>Carregando agenda...</span>
+      <div className="student-agenda">
+        <div className="agenda-loading laines-feedback-state" role="status" aria-live="polite">
+          <Loader2 size={20} className="spin" aria-hidden="true" />
+          <span>Carregando agenda...</span>
+        </div>
       </div>
     );
   }
 
   if (loadError) {
     return (
-      <div className="agenda-empty agenda-empty--error laines-feedback-state laines-feedback-state--error">
-        <ClipboardList size={32} />
-        <p>{loadError}</p>
-        <button type="button" className="agenda-empty-action" onClick={loadAgendamentos}>
-          Tentar novamente
-        </button>
+      <div className="student-agenda">
+        <div className="agenda-empty agenda-empty--error laines-feedback-state laines-feedback-state--error">
+          <ClipboardList size={32} aria-hidden="true" />
+          <p>{loadError}</p>
+          <button type="button" className="agenda-empty-action" onClick={loadAgendamentos}>
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }
+
+  // Só marca o dia de hoje na lista de dias (aria-current e o anel do CSS).
+  const todayKey = toLocalDateInputValue(new Date());
 
   return (
     <>
       <div className="student-agenda">
         <header className="agenda-header">
           <div className="agenda-title">
-            <div className="agenda-icon">
+            <div className="agenda-icon" aria-hidden="true">
               <CalendarClock size={20} />
             </div>
             <div>
@@ -553,7 +562,7 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
               onClick={handleRefresh}
               disabled={isRefreshing}
             >
-              {isRefreshing ? <Loader2 size={14} className="spin" /> : <RefreshCcw size={14} />}
+              {isRefreshing ? <Loader2 size={14} className="spin" aria-hidden="true" /> : <RefreshCcw size={14} aria-hidden="true" />}
               <span>{isRefreshing ? 'Atualizando...' : 'Atualizar agenda'}</span>
             </button>
           </div>
@@ -580,14 +589,15 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
 
         <section className="agenda-filters">
           <div className="filter-group">
-            <span>Período</span>
-            <div className="filter-buttons">
+            <span id="agenda-filtro-periodo">Período</span>
+            <div className="filter-buttons" role="group" aria-labelledby="agenda-filtro-periodo">
               {['today', 'week', 'month', 'all'].map((item) => (
                 <button
                   key={item}
                   type="button"
                   className={`filter-btn ${rangeFilter === item ? 'active' : ''}`}
                   onClick={() => setRangeFilter(item)}
+                  aria-pressed={rangeFilter === item}
                 >
                   {item === 'today' ? 'Hoje' : item === 'week' ? 'Semana' : item === 'month' ? 'Mês' : 'Tudo'}
                 </button>
@@ -595,14 +605,15 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
             </div>
           </div>
           <div className="filter-group">
-            <span>Status</span>
-            <div className="filter-buttons">
+            <span id="agenda-filtro-status">Status</span>
+            <div className="filter-buttons" role="group" aria-labelledby="agenda-filtro-status">
               {['all', 'agendada', 'realizada', 'remarcada', 'falta'].map((item) => (
                 <button
                   key={item}
                   type="button"
                   className={`filter-btn ${statusFilter === item ? 'active' : ''}`}
                   onClick={() => setStatusFilter(item)}
+                  aria-pressed={statusFilter === item}
                 >
                   {item === 'all' ? 'Todos' : STATUS_LABELS[item]}
                 </button>
@@ -610,14 +621,15 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
             </div>
           </div>
           <div className="filter-group">
-            <span>Tipo</span>
-            <div className="filter-buttons">
+            <span id="agenda-filtro-tipo">Tipo</span>
+            <div className="filter-buttons" role="group" aria-labelledby="agenda-filtro-tipo">
               {['all', 'primeira_consulta', 'retorno'].map((item) => (
                 <button
                   key={item}
                   type="button"
                   className={`filter-btn ${typeFilter === item ? 'active' : ''}`}
                   onClick={() => setTypeFilter(item)}
+                  aria-pressed={typeFilter === item}
                 >
                   {item === 'all' ? 'Todos' : APPOINTMENT_TYPE_LABELS[item]}
                 </button>
@@ -658,8 +670,8 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
             </button>
           </div>
           <div className="filter-group">
-            <span>Dia</span>
-            <div className="filter-buttons day-buttons">
+            <span id="agenda-filtro-dia">Dia</span>
+            <div className="filter-buttons day-buttons" role="group" aria-labelledby="agenda-filtro-dia">
               {availableDays.length === 0 ? (
                 <span className="empty-day">Sem agenda</span>
               ) : (
@@ -669,6 +681,8 @@ const StudentAgenda = ({ onSelectPatient = null, initialState = null, onStateCha
                     type="button"
                     className={`filter-btn ${selectedDay === day ? 'active' : ''}`}
                     onClick={() => setSelectedDay(day)}
+                    aria-pressed={selectedDay === day}
+                    aria-current={day === todayKey ? 'date' : undefined}
                   >
                     {formatDate(convertFirebaseDate(day))}
                   </button>

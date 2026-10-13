@@ -18,6 +18,7 @@ import { User } from '../users/user.entity';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { ADMIN_ROLES, SOLICITACAO_STATUS, UserRole } from '../common/domain/access.constants';
 import { NotificacoesService } from '../notificacoes/notificacoes.service';
+import { MailService } from '../mail/mail.service';
 
 type RequestLimitState = {
   count: number;
@@ -38,6 +39,7 @@ export class SolicitacoesService {
     private realtime: RealtimeGateway,
     private readonly usersService: UsersService,
     private readonly notificacoesService: NotificacoesService,
+    private readonly mailService: MailService,
     private readonly config: ConfigService
   ) {
     this.maxAttemptsPerWindow = Math.max(Number(this.config.get('abuseProtection.accessRequestMaxAttempts') || 5), 1);
@@ -303,7 +305,7 @@ export class SolicitacoesService {
     const previousStatus = this.normalizeRole(solicitacao.status);
     const status = this.normalizeText(dto.status)?.toLowerCase();
     const normalizedStatus = status
-      ? (SOLICITACAO_STATUS.includes(status as any) ? status : undefined)
+      ? SOLICITACAO_STATUS.find((candidate) => candidate === status)
       : undefined;
     if (status && !normalizedStatus) {
       throw new BadRequestException('Status de solicitacao invalido.');
@@ -313,7 +315,7 @@ export class SolicitacoesService {
       status: normalizedStatus || solicitacao.status,
       diretoria: this.normalizeText(dto.diretoria),
       projetoNome: this.normalizeText(dto.projetoNome)
-    } as any);
+    });
     const saved = await this.repo.save(merged);
     this.realtime.emit('solicitacoes-acesso.updated', saved);
 
@@ -386,10 +388,10 @@ export class SolicitacoesService {
 
       const userExistedBeforeApproval = !!existingUser;
       let createdUserId = existingUser?.id || null;
-      let tempPassword: string | null = null;
 
       if (!existingUser) {
         const payload: CreateUserDto = {
+          email,
           name: this.normalizeText(solicitacao.nome) || 'Usuario',
           role,
           cpf: this.normalizeText(solicitacao.cpf),
@@ -403,9 +405,8 @@ export class SolicitacoesService {
           conselhoNumero: this.normalizeText(solicitacao.conselhoNumero),
           status: 'ativo'
         };
-        const result = await this.usersService.createWithTempPassword(payload);
+        const result = await this.usersService.createWithTempPassword(payload, { manager, deferInvitation: true });
         createdUserId = result.user.id;
-        tempPassword = result.tempPassword;
         existingUser = await userRepo.findOne({ where: { id: createdUserId } });
       }
 
@@ -431,18 +432,22 @@ export class SolicitacoesService {
         becameApprovedNow,
         user: {
           id: createdUserId,
+          email: existingUser?.email,
           existed: userExistedBeforeApproval,
           role
-        },
-        tempPassword
+        }
       };
     });
 
     if (result?.solicitacao?.status === 'aprovado' && result?.becameApprovedNow) {
       await this.notifyRequestDecisionToUser(result.solicitacao, 'aprovado');
-    }
 
-    return result;
+    }
+    const activation = result.becameApprovedNow && !result.user.existed && result.user.id
+      ? await this.usersService.sendActivationLink(result.user.id)
+      : undefined;
+
+    return { ...result, activation };
   }
 
   async remove(id: string) {

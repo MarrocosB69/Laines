@@ -1,0 +1,367 @@
+/* LAINES, landing v2, direção A2: "Pista em movimento".
+   Página, painel do estádio, pista e coreografia de entrada.
+   O formulário e o modal ficam em formulario.css. */
+
+:root {
+  /* Paleta (contraste em contraste.cjs) */
+  --noite:   #1c2150; /* fundo do estádio. Cal sobre noite 15,19:1 */
+  --nevoa:   #c3c8e6; /* texto secundário sobre a noite, 9,20:1 */
+  --pista:   #2560a8; /* raias, links, foco. 6,33:1 sobre cal */
+  --gramado: #3d8c2a; /* só gráfico */
+  --largada: #2d7a1a; /* botão Entrar, cal por cima 5,37:1 */
+  --tinta:   #262947; /* texto sobre cal, 14,09:1 */
+  --apoio:   #555c78; /* texto secundário sobre cal, 6,59:1 */
+  --cal:     #ffffff;
+  --luz:     #c9f7b0; /* a luz de ritmo, só gráfico */
+
+  --letra: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --letra-placar: 'Sofia Sans Extra Condensed', 'Arial Narrow', sans-serif-condensed, sans-serif;
+
+  --t-13: 0.8125rem;
+  --t-15: 0.9375rem;
+  --t-16: 1rem;
+  --t-17: 1.0625rem;
+  --t-22: 1.375rem;
+  --t-28: 1.75rem;
+
+  --raio-painel: 24px;
+  --margem: clamp(1.25rem, 5vw, 3.25rem);
+
+  /* A largada: tudo na coreografia se mede a partir daqui. */
+  --curva-suave: cubic-bezier(.6, 0, .2, 1);
+  --curva-assenta: cubic-bezier(.34, 1.5, .5, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--cal);
+  color: var(--tinta);
+  font-family: var(--letra);
+  font-size: var(--t-16);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+[hidden] { display: none !important; }
+.inteiro { white-space: nowrap; }
+
+/* ── Grade ─────────────────────────────────────────────────────────────
+   Ordem no DOM: título, curva, acesso, áreas, rodapé. No celular é a
+   ordem visual. No desktop a grade leva as áreas para o alto do painel,
+   ao lado do título, e o acesso para a coluna da direita. */
+.pagina {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "titulo"
+    "curva"
+    "acesso"
+    "areas"
+    "rodape";
+}
+.titulo { grid-area: titulo; }
+.curva  { grid-area: curva; }
+.acesso { grid-area: acesso; }
+.areas  { grid-area: areas; }
+.rodape { grid-area: rodape; }
+
+/* O painel do estádio é um elemento próprio, atrás do título e da curva.
+   A luz do refletor vem do alto, à direita, onde fica a curva. */
+.estadio {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  border-radius: 0 0 28px 28px;
+  background:
+    radial-gradient(120% 70% at 85% 0%, rgba(120, 150, 255, .16), transparent 60%),
+    radial-gradient(90% 60% at 0% 100%, rgba(10, 14, 40, .5), transparent 70%),
+    var(--noite);
+}
+
+/* ── Título ─────────────────────────────────────────────────────────── */
+.titulo {
+  position: relative;
+  padding: 1.25rem var(--margem) 0;
+  color: var(--cal);
+}
+.titulo h1 {
+  font-family: var(--letra-placar);
+  font-weight: 800;
+  font-size: clamp(2.25rem, 1.5rem + 3.1vw, 3.75rem);
+  line-height: .95;
+  letter-spacing: .004em;
+}
+.titulo h1 span { display: block; white-space: nowrap; }
+.titulo__instituicao {
+  margin-top: .75rem;
+  color: var(--nevoa);
+  font-size: var(--t-15);
+  font-weight: 600;
+  text-wrap: balance;
+}
+.titulo__frase {
+  margin-top: .5rem;
+  color: var(--nevoa);
+  font-size: var(--t-16);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+/* ── A curva ────────────────────────────────────────────────────────── */
+.curva {
+  position: relative;
+  height: 184px;
+  margin-top: .25rem;
+  overflow: hidden;
+  border-radius: 0 0 28px 28px;
+}
+.pista {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.chao__pista { fill: var(--pista); }
+
+.raia-linha {
+  fill: none;
+  stroke: var(--cal);
+  stroke-width: 2;
+  stroke-opacity: .92;
+}
+.raia-linha--meio-fio { stroke-width: 4.5; stroke-opacity: 1; }
+
+.marca {
+  stroke: var(--cal);
+  stroke-width: 3.2;
+}
+.numero-raia {
+  fill: var(--cal);
+  font-family: var(--letra-placar);
+  font-weight: 800;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* A luz: um traço de comprimento d num caminho normalizado para 1.000.
+   Deslocamento inicial d (ponta no começo), final d - 1.310 (ponta além
+   do fim, fora de vista). Valores literais por camada: com var() dentro
+   de @keyframes o Chrome interpola de forma discreta e a luz salta. */
+.luz { opacity: 0; }
+.luz__traco { fill: none; stroke-linecap: round; }
+.luz__traco--clarao { stroke: #c9f7b0; stroke-width: 46; stroke-opacity: .32; stroke-dasharray: 70 2000; stroke-dashoffset: -1240; }
+.luz__traco--rastro { stroke: #8fe868; stroke-width: 2.5; stroke-opacity: .55; stroke-dasharray: 260 2000; stroke-dashoffset: -1050; }
+.luz__traco--halo   { stroke: #a6f184; stroke-width: 16; stroke-dasharray: 80 2000; stroke-dashoffset: -1230; }
+.luz__traco--nucleo { stroke: #f4fff0; stroke-width: 4; stroke-dasharray: 34 2000; stroke-dashoffset: -1276; }
+
+.anel {
+  fill: none;
+  stroke: var(--cal);
+  stroke-width: 2;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.emblema {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ── Coreografia de entrada ──────────────────────────────────────────────
+   Só com a classe .animar, que animacao.js põe no <html> antes da primeira
+   pintura e só se a pessoa não pediu movimento reduzido. Sem ela, a página
+   nasce no estado final. Tudo termina em cerca de 3 s; nada se repete.
+   Propriedades animadas: opacity, transform e stroke-dashoffset.
+   Preenchimento "backwards": ao terminar, cada elemento volta ao estilo
+   estático (idêntico ao último quadro) e solta a camada de composição, para
+   que o estado final seja o mesmo, pixel a pixel, do estado sem movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  /* 0–600 ms: as luzes acendem. */
+  .animar .chao { animation: acender 600ms ease-out backwards; }
+  .animar .chao__refletor { animation: acender 900ms 200ms ease-out backwards; }
+
+  /* 150–1.150 ms: as raias se desenham, de dentro para fora. */
+  .animar .raia-linha {
+    animation: tracar 820ms calc(150ms + var(--i) * 45ms) var(--curva-suave) backwards;
+  }
+
+  /* 1.000–1.400 ms: às suas marcas, raia a raia. */
+  .animar .marca,
+  .animar .numero-raia {
+    animation: marcar 260ms calc(1000ms + var(--i) * 40ms) ease-out backwards;
+  }
+  .animar .raia__numero {
+    animation: acender-numero 420ms calc(1000ms + var(--i) * 40ms) ease-out backwards;
+  }
+
+  /* 1.350–2.750 ms: a volta. As três camadas têm a mesma ponta. Arranca
+     como quem sai do bloco e segue em ritmo constante pela curva. */
+  .animar .luz { animation: luz-visivel 1400ms 1350ms linear; }
+  .animar .luz__traco { animation: 1400ms 1350ms cubic-bezier(.4, 0, .6, 1) backwards; }
+  .animar .luz__traco--clarao { animation-name: volta-clarao; }
+  .animar .luz__traco--rastro { animation-name: volta-rastro; }
+  .animar .luz__traco--halo   { animation-name: volta-halo; }
+  .animar .luz__traco--nucleo { animation-name: volta-nucleo; }
+
+  /* 2.050–2.750 ms: chegada. Quando a luz deixa a curva, o emblema pousa
+     no centro dela e o anel se abre uma vez (até ~3,05 s). */
+  .animar .emblema { animation: assentar 700ms 2050ms ease-out backwards; }
+  .animar .anel { animation: abrir-anel 800ms 2250ms ease-out; }
+}
+
+@keyframes acender { from { opacity: 0; } to { opacity: 1; } }
+/* O tracejado só existe durante o traçado; depois a linha é contínua. */
+@keyframes tracar {
+  from { stroke-dasharray: 100 100; stroke-dashoffset: 100; }
+  to   { stroke-dasharray: 100 100; stroke-dashoffset: 0; }
+}
+@keyframes marcar { from { opacity: 0; } to { opacity: 1; } }
+@keyframes acender-numero { from { opacity: .25; } to { opacity: 1; } }
+@keyframes luz-visivel { 0%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes volta-clarao { from { stroke-dashoffset: 70; }  to { stroke-dashoffset: -1240; } }
+@keyframes volta-rastro { from { stroke-dashoffset: 260; } to { stroke-dashoffset: -1050; } }
+@keyframes volta-halo   { from { stroke-dashoffset: 80; }  to { stroke-dashoffset: -1230; } }
+@keyframes volta-nucleo { from { stroke-dashoffset: 34; }  to { stroke-dashoffset: -1276; } }
+/* Opaco cedo, para não passar por um fantasma translúcido sobre o gramado;
+   pousa de cima, passa um pouco do tamanho e acomoda. */
+@keyframes assentar {
+  0%   { opacity: 0; transform: translateY(-14px) scale(.72); }
+  18%  { opacity: 1; }
+  60%  { transform: translateY(0) scale(1.05); }
+  82%  { transform: scale(.985); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes abrir-anel {
+  from { opacity: .85; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.5); }
+}
+
+/* ── As quatro áreas: quadro de largada ─────────────────────────────── */
+.areas {
+  margin: 2rem .75rem 0;
+  padding: 1.5rem 1.25rem .5rem;
+  border-radius: var(--raio-painel);
+  background: var(--noite);
+  color: var(--cal);
+}
+.areas__titulo {
+  font-size: var(--t-15);
+  font-weight: 600;
+  color: var(--nevoa);
+}
+.raias-lista {
+  margin: .75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.raia {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  align-items: start;
+  padding: .875rem 0;
+  border-top: 1px solid rgba(255, 255, 255, .16);
+}
+.raia__numero {
+  font-family: var(--letra-placar);
+  font-weight: 800;
+  font-size: 2.125rem;
+  line-height: .9;
+  color: var(--cal);
+  font-variant-numeric: tabular-nums;
+}
+/* A linha de largada: um fio branco entre o número e o texto. */
+.raia__texto {
+  padding-left: .875rem;
+  border-left: 3px solid var(--cal);
+}
+/* O nome da área fica na letra de texto: a letra de placar é só do nome
+   da liga e dos números, para a lista não disputar com o título. */
+.raia__nome {
+  font-size: var(--t-17);
+  font-weight: 700;
+  line-height: 1.3;
+}
+.raia__linha {
+  margin-top: .25rem;
+  color: var(--nevoa);
+  font-size: var(--t-15);
+  line-height: 1.4;
+}
+
+/* ── Rodapé ─────────────────────────────────────────────────────────── */
+.rodape {
+  padding: 1.5rem var(--margem) 1.75rem;
+  color: var(--apoio);
+  font-size: var(--t-13);
+}
+.rodape p { text-wrap: balance; }
+
+/* ── Celular pequeno ─────────────────────────────────────────────────
+   Os números pintados na pista ficam com menos de 6 px: viram ruído. */
+@media (max-width: 40rem) {
+  .numero-raia { display: none; }
+}
+
+/* ── Celular baixo (ex.: 375×667) ────────────────────────────────────
+   A faixa da pista e o título encolhem para o botão Entrar caber na
+   primeira tela. */
+@media (max-width: 40rem) and (max-height: 45rem) {
+  .titulo { padding-top: 1rem; }
+  .titulo h1 { font-size: 2rem; }
+  .titulo__instituicao { margin-top: .5rem; font-size: var(--t-13); }
+  .titulo__frase { font-size: var(--t-15); line-height: 1.4; }
+  .curva { height: 128px; }
+}
+
+/* ── Desktop ─────────────────────────────────────────────────────────
+   Painel recuado 12 px, com cantos de 24 px. Título e áreas no alto,
+   a curva embaixo, o formulário à direita sobre o branco. */
+@media (min-width: 64rem) {
+  .pagina {
+    padding: 12px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(24rem, 27.5rem);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "titulo areas acesso"
+      "curva  curva acesso"
+      "curva  curva rodape";
+  }
+  .estadio {
+    grid-column: 1 / 3;
+    grid-row: 1 / 4;
+    border-radius: var(--raio-painel);
+  }
+  .titulo { padding: clamp(2rem, 5.5vh, 3.25rem) 1.25rem 0 3.25rem; }
+  .titulo__frase { max-width: 30ch; }
+
+  .curva {
+    height: auto;
+    min-height: 20rem;
+    margin-top: 0;
+    border-radius: 0 0 var(--raio-painel) var(--raio-painel);
+  }
+
+  .areas {
+    margin: 0;
+    padding: clamp(2rem, 5.5vh, 3.25rem) 3rem 0 .5rem;
+    border-radius: 0;
+    background: none;
+  }
+  .raia { padding: .5rem 0 .625rem; }
+  .raia__linha { margin-top: .125rem; }
+
+  .rodape {
+    padding: 1rem 3rem 1.25rem;
+    align-self: end;
+  }
+}
+
+@media (min-width: 64rem) and (max-height: 46rem) {
+  .titulo, .areas { padding-top: 2rem; }
+  .curva { min-height: 18rem; }
+}

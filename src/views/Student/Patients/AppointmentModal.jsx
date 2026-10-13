@@ -9,7 +9,7 @@ import { getApiErrorMessage } from '../../../services/api';
 import { listEvaluationRegistryByContext } from '../../../constants/evaluationRegistry';
 import './AppointmentModal.css';
 
-const evaluationOptions = listEvaluationRegistryByContext('avaliacaoCompleta')
+const DEFAULT_EVALUATION_OPTIONS = listEvaluationRegistryByContext('avaliacaoCompleta')
   .map((item) => ({
     id: item.type,
     label: item.shortLabel || item.label
@@ -35,6 +35,7 @@ const AppointmentModal = ({
   appointment,
   isReschedule = false,
   lockEvaluations = false,
+  evaluationOptions = DEFAULT_EVALUATION_OPTIONS,
   onSuccess = null
 }) => {
   const { user } = useAuth();
@@ -49,6 +50,28 @@ const AppointmentModal = ({
 
   useModalBodyLock(isOpen);
   useModalFocusTrap(isOpen, modalRef);
+
+  const safeEvaluationOptions = useMemo(() => {
+    const source = Array.isArray(evaluationOptions) && evaluationOptions.length > 0
+      ? evaluationOptions
+      : DEFAULT_EVALUATION_OPTIONS;
+    return source
+      .map((item) => ({
+        id: item.id || item.tipo || item.type,
+        label: item.label || item.shortLabel || item.title || item.id || item.tipo || item.type
+      }))
+      .filter((item) => item.id)
+      .sort((a, b) => String(a.label || '').localeCompare(String(b.label || ''), 'pt-BR'));
+  }, [evaluationOptions]);
+  const safeEvaluationOptionIds = useMemo(
+    () => new Set(safeEvaluationOptions.map((item) => item.id)),
+    [safeEvaluationOptions]
+  );
+
+  useEffect(() => {
+    if (!isOpen || lockEvaluations) return;
+    setSelectedEvaluations((prev) => prev.filter((id) => safeEvaluationOptionIds.has(id)));
+  }, [isOpen, lockEvaluations, safeEvaluationOptionIds]);
 
   const minDate = useMemo(() => {
     const now = new Date();
@@ -94,7 +117,7 @@ const AppointmentModal = ({
     }
     const selectedEvaluationsSafe = lockEvaluations
       ? (appointment?.evaluations || [])
-      : selectedEvaluations;
+      : selectedEvaluations.filter((id) => safeEvaluationOptionIds.has(id));
 
     if (selectedEvaluationsSafe.length === 0) {
       setError('Selecione ao menos uma avaliação.');
@@ -258,10 +281,10 @@ const AppointmentModal = ({
           <div className="evaluations-section">
             <div className="section-title">
               <CheckSquare size={16} />
-              <span>Selecione as avaliações</span>
+              <span id="appointment-evaluations-title">Selecione as avaliações</span>
             </div>
-            <div className="evaluations-grid">
-              {evaluationOptions.map((item) => (
+            <div className="evaluations-grid" role="group" aria-labelledby="appointment-evaluations-title">
+              {safeEvaluationOptions.map((item) => (
                 <label key={item.id} className="evaluation-chip">
                   <input
                     type="checkbox"
@@ -275,7 +298,7 @@ const AppointmentModal = ({
             </div>
           </div>
 
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="form-error" role="alert">{error}</div>}
 
           <div className="actions app-modal-footer">
             <div className="app-modal-actions">
@@ -301,5 +324,3 @@ const AppointmentModal = ({
 };
 
 export default AppointmentModal;
-
-

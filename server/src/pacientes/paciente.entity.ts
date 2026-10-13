@@ -30,6 +30,12 @@ export class Paciente {
   @Column({ length: 20, default: 'nao_informado' })
   genero!: string;
 
+  // Identidade de genero e sexo biologico sao campos distintos: as formulas de
+  // composicao corporal e o questionario de disponibilidade energetica usam o
+  // segundo, nunca o primeiro.
+  @Column({ name: 'sexo_biologico', length: 20, nullable: true })
+  sexoBiologico?: string;
+
   @Column({ length: 20, nullable: true })
   telefone?: string;
 
@@ -84,8 +90,10 @@ export class Paciente {
   @Column({ name: 'comorbidades_pessoais', type: 'jsonb', nullable: true })
   comorbidadesPessoais?: string[];
 
+  // Formato atual: { pai: string[], mae: string[] }.
+  // Registros anteriores a agosto/2026 gravaram string[] — leitores normalizam.
   @Column({ name: 'comorbidades_familiares', type: 'jsonb', nullable: true })
-  comorbidadesFamiliares?: string[];
+  comorbidadesFamiliares?: Record<string, unknown> | string[];
 
   @Column({ name: 'confirmacao_atleta', type: 'jsonb', nullable: true })
   confirmacaoAtleta?: Record<string, unknown>;
@@ -119,6 +127,17 @@ export class Paciente {
   @Column({ name: 'equipe_tecnica_ids', type: 'uuid', array: true, default: () => "'{}'" })
   equipeTecnicaIds!: string[];
 
+  @Column({ name: 'equipe_multi_ids', type: 'uuid', array: true, default: () => "'{}'" })
+  equipeMultiIds!: string[];
+
+  @Column({ name: 'equipe_multiprofissional', type: 'jsonb', nullable: true })
+  equipeProfissional?: Array<{
+    userId: string;
+    userName: string;
+    area: string;
+    papel: string;
+  }>;
+
   @Column({ name: 'atleta_user_id', type: 'uuid', nullable: true })
   atletaUserId?: string;
 
@@ -138,7 +157,7 @@ export class Paciente {
   dataCadastro?: Date;
 
   @Column({ name: 'linked_at', type: 'timestamp', nullable: true })
-  linkedAt?: Date;
+  linkedAt?: Date | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

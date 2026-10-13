@@ -4,7 +4,17 @@ import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import { calculateEvolutionReturnEvaluation } from '../../../services/calculationEngine';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  Campo,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../base';
 import './AvaliacaoEvolucaoRetorno.css';
+
+// Tipo do aviso da base para o tom que condutaStatus já calcula.
+const AVISO_DO_TOM = { risk: 'perigo', warn: 'atencao', ok: 'sucesso' };
 
 const createInitialState = () => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
@@ -161,7 +171,10 @@ const AvaliacaoEvolucaoRetorno = ({
           }
         },
         classificacao: classifications?.prioridadeRetorno || 'sem_classificacao',
-        classificacaoLabel: classifications?.prioridadeRetorno || 'sem_classificacao',
+        // Rótulo legível, no padrão que o servidor já usa ("Prioridade alta").
+        classificacaoLabel: classifications?.prioridadeRetorno
+          ? `Prioridade ${classifications.prioridadeRetorno}`
+          : 'Sem classificação',
         schemaVersion: 1,
         formulaId: 'evolucao_adesao_score_v1',
         formulaVersion: '1.0.0',
@@ -201,8 +214,10 @@ const AvaliacaoEvolucaoRetorno = ({
     if (saveStatusResetRef.current) clearTimeout(saveStatusResetRef.current);
   }, []);
 
+  // Sem nenhum componente de adesão, escore e prioridade são nulos: o escore
+  // aparece "—" e a prioridade "Sem classificação", nunca o código cru.
   const score = calculation?.calculated?.scoreAdesaoGeral;
-  const prioridade = calculation?.classifications?.prioridadeRetorno || 'sem_classificacao';
+  const prioridade = calculation?.classifications?.prioridadeRetorno || null;
   const isPrefilledFromHistory = useMemo(() => {
     if (!moduleSnapshot?.id) return false;
     if (String(moduleSnapshot?.status || '').toLowerCase() !== 'finalizada') return false;
@@ -257,23 +272,6 @@ const AvaliacaoEvolucaoRetorno = ({
     };
   }, [previousEvolution]);
 
-  const latestExames = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'exames_laboratoriais', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const latestTriagemReds = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'triagem_reds', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const redsClassificacao = useMemo(
-    () => resolveFirstToken([
-      latestTriagemReds?.resultados?.classificacaoDE,
-      latestTriagemReds?.resultados?.output?.classificacaoDE,
-      latestTriagemReds?.dados?.classificacaoDE,
-      latestTriagemReds?.classificacao
-    ]).toLowerCase(),
-    [latestTriagemReds]
-  );
   const metasAtivas = objetivosList.length;
 
   const condutaStatus = useMemo(() => {
@@ -285,21 +283,14 @@ const AvaliacaoEvolucaoRetorno = ({
         message: 'Prioridade elevada de acompanhamento. Ajuste plano e monitoramento próximo.'
       };
     }
-    if (!latestExames?.id) {
-      return {
-        tone: 'warn',
-        title: 'Conduta parcial sem exames da sessão',
-        message: 'Registre/valide exames laboratoriais para sustentar decisão clínica final.'
-      };
-    }
     if (Number.isFinite(score) && score < 60) {
       return {
         tone: 'warn',
-        title: 'Adesão baixa para conduta',
-        message: 'Reforçar estratégias de adesão antes de progressão agressiva do plano.'
+        title: 'Aplicação da Dieta baixa para conduta',
+        message: 'Reforçar estratégias de aplicação da dieta antes de progressão agressiva do plano.'
       };
     }
-    if (hasValues) {
+    if (hasValues && Number.isFinite(score)) {
       return {
         tone: 'ok',
         title: 'Evolução consistente para conduta',
@@ -311,7 +302,7 @@ const AvaliacaoEvolucaoRetorno = ({
       title: 'Evolução ainda incompleta',
       message: 'Complete os campos de retorno para fechar a etapa de conduta.'
     };
-  }, [hasValues, latestExames?.id, prioridade, score]);
+  }, [hasValues, prioridade, score]);
 
   const handlePrepareNewEvolution = useCallback(() => {
     const today = toLocalDateInputValue(new Date());
@@ -330,19 +321,16 @@ const AvaliacaoEvolucaoRetorno = ({
   }, []);
 
   return (
-    <div className={`eval-card avaliacao-evolucao-retorno${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <RefreshCcw size={22} />
-        </div>
-        <div>
-          <h3 className="eval-title">Evolução e retorno</h3>
-          <p className="eval-subtitle">Adesão, sinais de progresso e prioridade de acompanhamento.</p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card avaliacao-evolucao-retorno${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Evolução e retorno"
+      descricao="Aplicação da Dieta, sinais de progresso e prioridade de acompanhamento."
+      icone={<RefreshCcw size={22} />}
+    >
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
 
       {isPrefilledFromHistory && (
-        <div className="avaliacao-evolucao-retorno__prefill-note">
+        <AvisoAvaliacao tipo="info" className="avaliacao-evolucao-retorno__prefill-note">
           <p>
             Pré-preenchimento inteligente ativo: usando dados da última evolução ({formatDateBr(prefillSourceDate)}).
             Revise os campos e registre o novo ciclo.
@@ -356,203 +344,211 @@ const AvaliacaoEvolucaoRetorno = ({
               Nova evolução mantendo objetivos
             </Button>
           )}
-        </div>
+        </AvisoAvaliacao>
       )}
 
-      <div className={`avaliacao-evolucao-retorno__conduta-note tone-${condutaStatus.tone}`}>
-        <strong>{condutaStatus.title}</strong>
-        <p>{condutaStatus.message}</p>
-        <small>
-          Contexto: {onboardingResumo.modalidadePrincipal || 'modalidade não informada'}
-          {' | '}
-          Frequência: {Number.isFinite(onboardingResumo.frequenciaSemanal) ? `${onboardingResumo.frequenciaSemanal}x/sem` : 'não informada'}
-          {' | '}
-          Duração: {Number.isFinite(onboardingResumo.duracaoSessao) ? `${onboardingResumo.duracaoSessao} min` : 'não informada'}
-          {' | '}
-          Metas ativas: {metasAtivas}
-          {' | '}
-          Exames: {latestExames?.id ? 'registrados' : 'pendentes'}
-          {' | '}
-          RED-S: {redsClassificacao || 'não avaliada'}
-        </small>
-      </div>
+      {/* Os três indicadores que entram no score, com a data em que foram
+          colhidos. */}
+      <AvaliacaoSecao id="evolucao-adesao" titulo="Indicadores de adesão">
+        <div className="eval-grid">
+          <Campo rotulo="Data da consulta" className="eval-field">
+            <input
+              type="date"
+              className="eval-input"
+              value={formData.dataAvaliacao}
+              onChange={handleChange('dataAvaliacao')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Aplicação da Dieta (%)" className="eval-field">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              className="eval-input"
+              value={formData.adesaoPlanoAlimentar}
+              onChange={handleChange('adesaoPlanoAlimentar')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Adesão à atividade física (%)" className="eval-field">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              className="eval-input"
+              value={formData.adesaoAtividadeFisica}
+              onChange={handleChange('adesaoAtividadeFisica')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Resposta percebida (1-5)" className="eval-field">
+            <input
+              type="number"
+              min="1"
+              max="5"
+              step="1"
+              className="eval-input"
+              value={formData.respostaPercebida}
+              onChange={handleChange('respostaPercebida')}
+              disabled={readOnly}
+            />
+          </Campo>
+        </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-grid">
-        <div className="eval-field">
-          <label className="eval-label">Data da consulta</label>
-          <input
-            type="date"
-            className="eval-input"
-            value={formData.dataAvaliacao}
-            onChange={handleChange('dataAvaliacao')}
-            disabled={readOnly}
-          />
+      {/* O que aconteceu desde a última consulta, a conduta e o próximo
+          encontro. */}
+      <AvaliacaoSecao id="evolucao-registro" titulo="Registro da consulta">
+        <div className="eval-grid">
+          <Campo rotulo="Objetivos em acompanhamento (um por linha)" className="eval-field eval-field-full">
+            <textarea
+              className="eval-textarea"
+              rows="3"
+              value={formData.objetivos}
+              onChange={handleChange('objetivos')}
+              disabled={readOnly}
+              placeholder="Ex.: reduzir gordura corporal"
+            />
+          </Campo>
+          <Campo rotulo="Intercorrências" className="eval-field eval-field-full">
+            <textarea
+              className="eval-textarea"
+              rows="3"
+              value={formData.intercorrencias}
+              onChange={handleChange('intercorrencias')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Sintomas novos ou recorrentes" className="eval-field eval-field-full">
+            <textarea
+              className="eval-textarea"
+              rows="3"
+              value={formData.sintomas}
+              onChange={handleChange('sintomas')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Conduta da consulta" className="eval-field eval-field-full">
+            <textarea
+              className="eval-textarea"
+              rows="3"
+              value={formData.conduta}
+              onChange={handleChange('conduta')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Próxima avaliação" className="eval-field">
+            <input
+              type="date"
+              className="eval-input"
+              value={formData.proximaAvaliacao}
+              onChange={handleChange('proximaAvaliacao')}
+              disabled={readOnly}
+            />
+          </Campo>
         </div>
-        <div className="eval-field">
-          <label className="eval-label">Próxima avaliação</label>
-          <input
-            type="date"
-            className="eval-input"
-            value={formData.proximaAvaliacao}
-            onChange={handleChange('proximaAvaliacao')}
-            disabled={readOnly}
-          />
-        </div>
-        <div className="eval-field">
-          <label className="eval-label">Adesão ao plano alimentar (%)</label>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            className="eval-input"
-            value={formData.adesaoPlanoAlimentar}
-            onChange={handleChange('adesaoPlanoAlimentar')}
-            disabled={readOnly}
-          />
-        </div>
-        <div className="eval-field">
-          <label className="eval-label">Adesão à atividade física (%)</label>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            className="eval-input"
-            value={formData.adesaoAtividadeFisica}
-            onChange={handleChange('adesaoAtividadeFisica')}
-            disabled={readOnly}
-          />
-        </div>
-        <div className="eval-field">
-          <label className="eval-label">Resposta percebida (1-5)</label>
-          <input
-            type="number"
-            min="1"
-            max="5"
-            step="1"
-            className="eval-input"
-            value={formData.respostaPercebida}
-            onChange={handleChange('respostaPercebida')}
-            disabled={readOnly}
-          />
-        </div>
-        <div className="eval-field eval-field-full">
-          <label className="eval-label">Objetivos em acompanhamento (um por linha)</label>
-          <textarea
-            className="eval-textarea"
-            rows="3"
-            value={formData.objetivos}
-            onChange={handleChange('objetivos')}
-            disabled={readOnly}
-            placeholder="Ex.: reduzir gordura corporal"
-          />
-        </div>
-        <div className="eval-field eval-field-full">
-          <label className="eval-label">Intercorrências</label>
-          <textarea
-            className="eval-textarea"
-            rows="3"
-            value={formData.intercorrencias}
-            onChange={handleChange('intercorrencias')}
-            disabled={readOnly}
-          />
-        </div>
-        <div className="eval-field eval-field-full">
-          <label className="eval-label">Sintomas novos ou recorrentes</label>
-          <textarea
-            className="eval-textarea"
-            rows="3"
-            value={formData.sintomas}
-            onChange={handleChange('sintomas')}
-            disabled={readOnly}
-          />
-        </div>
-        <div className="eval-field eval-field-full">
-          <label className="eval-label">Conduta da consulta</label>
-          <textarea
-            className="eval-textarea"
-            rows="3"
-            value={formData.conduta}
-            onChange={handleChange('conduta')}
-            disabled={readOnly}
-          />
-        </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Resumo calculado</h4>
+      {/* Resultados, a leitura da conduta (antes no alto do formulário) e o
+          comparativo com a evolução anterior, juntos. */}
+      <AvaliacaoSecao id="evolucao-resumo" titulo="Resumo calculado" className="eval-section">
         <div className="eval-summary-grid">
-          <SummaryCard label="Score de adesão" value={score} unit="%" />
-          <SummaryCard label="Prioridade de retorno" value={prioridade} />
+          <SummaryCard label="Score de Aplicação da Dieta" value={score} unit="%" />
+          <SummaryCard label="Prioridade de retorno" value={prioridade || 'Sem classificação'} />
           <SummaryCard label="Objetivos mapeados" value={calculation?.calculated?.resumoObjetivos?.length || 0} />
         </div>
         {calculation?.warnings?.[0] && (
-          <div className="eval-note" style={{ marginTop: '0.75rem' }}>
+          <AvisoAvaliacao tipo="info">
             {calculation.warnings[0]}
-          </div>
+          </AvisoAvaliacao>
         )}
-      </div>
 
-      {prevScores && (
-        <div className="eval-section evolucao-comparativo">
-          <h4 className="eval-section-title">
-            Comparativo com evolução anterior
-            {prevScores.data && (
-              <span className="evolucao-comparativo__date">
-                {' '}— {formatDateBr(prevScores.data)}
-              </span>
+        <AvisoAvaliacao
+          tipo={AVISO_DO_TOM[condutaStatus.tone] || 'info'}
+          titulo={condutaStatus.title}
+          className={`avaliacao-evolucao-retorno__conduta-note tone-${condutaStatus.tone}`}
+        >
+          <p>{condutaStatus.message}</p>
+          <small>
+            Contexto: {onboardingResumo.modalidadePrincipal || 'modalidade não informada'}
+            {' | '}
+            Frequência: {Number.isFinite(onboardingResumo.frequenciaSemanal) ? `${onboardingResumo.frequenciaSemanal}x/sem` : 'não informada'}
+            {' | '}
+            Duração: {Number.isFinite(onboardingResumo.duracaoSessao) ? `${onboardingResumo.duracaoSessao} min` : 'não informada'}
+            {' | '}
+            Metas ativas: {metasAtivas}
+          </small>
+        </AvisoAvaliacao>
+
+        {prevScores && (
+          <AvaliacaoSecao
+            className="eval-section evolucao-comparativo"
+            titulo={(
+              <>
+                Comparativo com evolução anterior
+                {prevScores.data && (
+                  <span className="evolucao-comparativo__date">
+                    {' '}— {formatDateBr(prevScores.data)}
+                  </span>
+                )}
+              </>
             )}
-          </h4>
-          <div className="evolucao-comparativo__grid">
-            <DeltaRow
-              label="Adesão ao plano alimentar"
-              current={parseNumeric(formData.adesaoPlanoAlimentar)}
-              previous={prevScores.adesaoPlano}
-              unit="%"
-            />
-            <DeltaRow
-              label="Adesão à atividade física"
-              current={parseNumeric(formData.adesaoAtividadeFisica)}
-              previous={prevScores.adesaoAF}
-              unit="%"
-            />
-            <DeltaRow
-              label="Resposta percebida"
-              current={parseNumeric(formData.respostaPercebida)}
-              previous={prevScores.resposta}
-              unit="/5"
-            />
-            <DeltaRow
-              label="Score de adesão geral"
-              current={Number.isFinite(score) ? score : null}
-              previous={prevScores.score}
-              unit="%"
-              highlight
-            />
-          </div>
-        </div>
-      )}
+          >
+            <div className="evolucao-comparativo__grid">
+              <DeltaRow
+                label="Aplicação da Dieta"
+                current={parseNumeric(formData.adesaoPlanoAlimentar)}
+                previous={prevScores.adesaoPlano}
+                unit="%"
+              />
+              <DeltaRow
+                label="Adesão à atividade física"
+                current={parseNumeric(formData.adesaoAtividadeFisica)}
+                previous={prevScores.adesaoAF}
+                unit="%"
+              />
+              <DeltaRow
+                label="Resposta percebida"
+                current={parseNumeric(formData.respostaPercebida)}
+                previous={prevScores.resposta}
+                unit="/5"
+              />
+              <DeltaRow
+                label="Score de adesão geral"
+                current={Number.isFinite(score) ? score : null}
+                previous={prevScores.score}
+                unit="%"
+                highlight
+              />
+            </div>
+          </AvaliacaoSecao>
+        )}
+      </AvaliacaoSecao>
 
-      {error && <div className="form-error-message">{error}</div>}
-      {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
-
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={() => dispatchSave(false)} disabled={readOnly} loading={saveStatus === 'saving'}>
           <Save size={18} /> Salvar avaliação
         </Button>
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="form-error-message">{error}</AvisoAvaliacao>}
+    </AvaliacaoModulo>
   );
 };
 
-const SummaryCard = ({ label, value, unit = '' }) => (
-  <div className="eval-summary-item">
-    <span>{label}</span>
-    <strong>
-      {Number.isFinite(value) ? `${value}${unit ? ` ${unit}` : ''}` : (value || 'Não informado')}
-    </strong>
-  </div>
-);
+// Sem valor: "—", lido como "sem valor", como no resultado da base.
+const SummaryCard = ({ label, value, unit = '' }) => {
+  let conteudo;
+  if (Number.isFinite(value)) conteudo = `${value}${unit ? ` ${unit}` : ''}`;
+  else if (value) conteudo = value;
+  else conteudo = <><span aria-hidden="true">—</span><span className="av-sr">sem valor</span></>;
+  return (
+    <div className="eval-summary-item">
+      <span>{label}</span>
+      <strong>{conteudo}</strong>
+    </div>
+  );
+};
 
 const DeltaRow = ({ label, current, previous, unit = '', highlight = false }) => {
   const hasCurrent = Number.isFinite(current);
@@ -607,24 +603,6 @@ export default AvaliacaoEvolucaoRetorno;
 
 function normalizeType(value) {
   return String(value || '').trim().toLowerCase().replace(/-/g, '_');
-}
-
-function findLatestEvaluationByType(history, tipo, sessaoId) {
-  const normalizedType = normalizeType(tipo);
-  if (!Array.isArray(history)) return null;
-  const scoped = history.filter((item) => normalizeType(item?.tipo) === normalizedType);
-  if (!scoped.length) return null;
-  const normalizedSession = String(sessaoId || '').trim();
-  if (!normalizedSession) return scoped[0];
-  return scoped.find((item) => String(item?.sessaoId || '').trim() === normalizedSession) || scoped[0];
-}
-
-function resolveFirstToken(values = []) {
-  for (const value of values) {
-    const token = String(value || '').trim();
-    if (token) return token;
-  }
-  return '';
 }
 
 function formatDateBr(value) {

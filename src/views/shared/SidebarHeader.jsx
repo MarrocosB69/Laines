@@ -1,11 +1,11 @@
 import React from 'react';
-import LogoLaines from '../../assets/LogoLaines.webp';
+import LogoLainesSidebar from '../../assets/LogoLainesSidebar.png';
 
 const SidebarHeader = ({ roleLabel, isCollapsed = false }) => (
   <>
     <div className="sb-header__brand-row">
       <div className="sb-header__logo-box">
-        <img src={LogoLaines} alt="LAINES Logo" style={{ width: '18px', height: '18px', objectFit: 'contain' }} />
+        <img className="sb-header__logo-img" src={LogoLainesSidebar} alt="LAINES Logo" />
       </div>
       {!isCollapsed && (
         <div className="sb-header__brand-text">

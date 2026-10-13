@@ -1,93 +1,760 @@
-﻿.settings-page {
-  --set-surface: color-mix(in srgb, var(--admin-surface, #ffffff) 94%, #f8fbff 6%);
-  --set-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #f3f8fd) 90%, #ffffff 10%);
-  --set-border: color-mix(in srgb, var(--admin-border, rgba(20, 53, 84, 0.14)) 84%, transparent);
-  --set-text: var(--admin-text, #143554);
-  --set-muted: var(--admin-muted, #5a728b);
-  --set-shadow: var(--admin-shadow-soft, 0 18px 42px -34px rgba(20, 53, 84, 0.45));
-  --set-shadow-strong: 0 28px 54px -36px rgba(20, 53, 84, 0.4);
-  --set-focus: rgba(47, 111, 166, 0.24);
+/* Configurações do sistema (SettingsPage.jsx e, dentro dela,
+   settings/SettingsTabContent.jsx e settings/ToggleSetting.jsx), na
+   direção "Energia e velocidade" da landing (docs/design/
+   landing-guia-visual.md, seção "Direção vigente"; docs/implementacao/
+   telas-v2/change-intent.md, onda D1). Mesmo desenho das Áreas
+   (Areas.css) e das peças da Visão geral (src/components/painel/):
+   cartões brancos com --lt-radius-card, título na voz de campanha, campos
+   de 48 px no padrão da inscrição, interruptores e opções de 44 px com o
+   estado escrito, foco com --lt-focus-ring e o salvar no degradê de
+   largada. Todo texto fica sobre superfície própria, então o contraste
+   vale também com o modo escuro do portal, que só escurece o fundo.
 
-  max-width: 1440px;
-  margin: 0 auto;
+   Tudo escopado em `.settings-page`. Armadilhas globais redeclaradas
+   (src/index.css e src/styles/theme.css, que a onda A muda em paralelo):
+   h1…h6 com fonte e cor próprias, `p` com entrelinha 1,6, `button
+   { white-space: nowrap; display: inline-flex }`, `*:focus-visible`,
+   `.setting-input`, `.setting-select` e `.setting-item label` globais e
+   `input:not([type=checkbox]):not([type=radio])` com especificidade 0,2,1
+   (que também pega o campo de intervalo).
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs. Nenhum tom
+   novo: só tokens --lt-*.
+
+   As fontes vêm aqui pelo mesmo motivo de painel.css: ao recarregar direto
+   num portal, a folha da landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.settings-page {
+  --set-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --set-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+  --set-trilho: #e7ecf3; /* trilho do interruptor desligado; o limite vem da borda de campo */
+
   display: flex;
   flex-direction: column;
-  gap: clamp(0.9rem, 1.8vw, 1.3rem);
-  color: var(--set-text);
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.admin-view.dark-mode .settings-page {
-  --set-surface: color-mix(in srgb, var(--admin-surface, #17273a) 95%, transparent 5%);
-  --set-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #1d3046) 92%, transparent 8%);
-  --set-border: color-mix(in srgb, var(--admin-border, rgba(148, 163, 184, 0.24)) 85%, transparent);
-  --set-shadow: 0 20px 40px -32px rgba(2, 12, 24, 0.8);
-  --set-shadow-strong: 0 30px 58px -40px rgba(2, 12, 24, 0.9);
-  --set-focus: rgba(127, 197, 232, 0.26);
-}
-
-.settings-page .settings-header {
-  border-radius: 1.18rem;
-  border: 1px solid var(--set-border);
-  background: linear-gradient(150deg, var(--set-surface) 0%, var(--set-surface-soft) 100%);
-  box-shadow: var(--set-shadow);
-  padding: clamp(0.9rem, 2vw, 1.3rem);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.84rem;
-  flex-wrap: wrap;
-}
-
-.settings-page .header-left h1 {
+/* Reset dos globais de título e parágrafo; cada peça abaixo dá o resto. */
+.settings-page :is(h2, h3, h4) {
   margin: 0;
-  font-size: clamp(1.2rem, 2.1vw, 1.58rem);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--set-text);
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.settings-page p { margin: 0; line-height: var(--lt-leading-normal); }
+
+/* ── Cabeçalho: título na voz de campanha e as duas ações ───────────── */
+.settings-page .settings-header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  margin: 0;
+  padding: var(--set-respiro) var(--set-respiro) calc(var(--set-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--set-sombra);
+}
+
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.settings-page .settings-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.settings-page .header-left { flex: 1 1 20rem; min-width: 0; }
+
+.settings-page .header-left h2 {
+  position: relative;
+  padding: 0 0.1em 0 0.32em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o gesto de .painel-cabecalho__titulo::before. */
+.settings-page .header-left h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.settings-page .header-left p,
+.settings-page .header-left .settings-meta {
+  display: block;
+  margin-top: var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
 }
 
 .settings-page .header-left p {
-  margin: 0.24rem 0 0;
-  color: var(--set-muted);
-  font-size: 0.87rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
+
+/* Última gravação (e "Alterações pendentes"): apoio sobre branco, 6,59:1. */
+.settings-page .header-left .settings-meta {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
 }
 
 .settings-page .header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
-.settings-page .action-btn {
-  min-height: 38px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  padding: 9px 20px;
+/* ── Botões: salvar no degradê de largada; restaurar em contorno ─────
+   48 px, como o primário das Áreas. Branco sobre o degradê: 4,82:1 no
+   topo e 6,20:1 na base. Restaurar: azul sobre branco, 6,33:1.
+   Desabilitado: sai o sólido (o motivo vem no title e no aviso de só
+   leitura). */
+.settings-page .header-actions .action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--lt-space-5);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
 }
 
-.settings-page .action-btn.primary {
-  background: var(--color-green);
-  color: #ffffff;
-  box-shadow: var(--shadow-sm);
+.settings-page .header-actions .action-btn svg { flex: none; }
+
+.settings-page .header-actions .action-btn.primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
 }
 
-.settings-page .action-btn.primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: var(--color-green-dark);
+.settings-page .header-actions .action-btn.secondary {
+  border-color: var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
 }
 
-.settings-page .action-btn.secondary,
+@media (hover: hover) {
+  .settings-page .header-actions .action-btn.primary:hover:not(:disabled) { box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
+  .settings-page .header-actions .action-btn.secondary:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+/* Apoio mais claro sobre campo (5,24:1): legível, mas sem ar de ação. */
+.settings-page .header-actions .action-btn:disabled {
+  border-color: var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  color: var(--lt-color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* ── Mensagens de estado: sempre escritas; o ícone e a cor acompanham ─
+   Sucesso 6,81:1, erro 5,91:1 e informação (carregando, só leitura) em
+   tinta sobre --lt-color-track-tint, 12,39:1. */
+.settings-page .status-message {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.settings-page .status-message svg { flex: none; }
+.settings-page .status-message.info svg { color: var(--lt-color-brand-blue); }
+
+.settings-page .status-message.success {
+  background: var(--lt-color-success-bg);
+  box-shadow: inset 0 0 0 1px rgba(22, 101, 52, 0.28);
+  color: var(--lt-color-success-text);
+}
+
+.settings-page .status-message.error {
+  background: var(--lt-color-danger-bg);
+  box-shadow: inset 0 0 0 1px rgba(185, 28, 28, 0.28);
+  color: var(--lt-color-danger-text);
+}
+
+/* ── Duas colunas: seções à esquerda, conteúdo à direita ───────────── */
+.settings-page .settings-container {
+  display: grid;
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+.settings-page .settings-sidebar,
+.settings-page .settings-content {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--set-sombra);
+}
+
+.settings-page .settings-sidebar { padding: var(--lt-space-3); }
+.settings-page .settings-content { padding: var(--set-respiro); }
+
+.settings-page .sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin: 0 0 var(--lt-space-2);
+  padding: var(--lt-space-2) var(--lt-space-2) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+}
+
+.settings-page .sidebar-header svg { flex: none; color: var(--lt-color-brand-blue); }
+
+.settings-page .sidebar-header h3 {
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+/* Seções: linhas de 44 px. A aberta tem fundo claro, texto em tinta
+   (12,39:1) e o traço azul à esquerda, além do aria-current. */
+.settings-page .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  margin: 0;
+  padding: 0;
+}
+
+.settings-page .sidebar-nav .sidebar-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3) var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text-muted); /* 6,59:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, color 160ms;
+}
+
+@media (hover: hover) {
+  .settings-page .sidebar-nav .sidebar-nav-item:hover { background: var(--lt-color-surface-field); color: var(--lt-color-text); }
+}
+
+.settings-page .sidebar-nav .sidebar-nav-item.active {
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.settings-page .nav-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--lt-color-brand-blue);
+}
+
+.settings-page .nav-label { flex: 1 1 auto; min-width: 0; text-align: left; overflow-wrap: anywhere; }
+
+/* O traço da seção aberta, inclinado como a raia das listas. Só gráfico. */
+.settings-page .nav-indicator {
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.3125rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-12deg);
+}
+
+/* ── Seção de conteúdo: título, descrição e campos ──────────────────── */
+.settings-page .settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+.settings-page .settings-section > h3 {
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.settings-page .settings-section > .section-description {
+  margin-top: calc(-1 * var(--lt-space-3));
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.settings-page .settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+.settings-page .setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+}
+
+/* O rótulo, como .ip-label da inscrição: tinta 700 a 15 px, ícone azul.
+   0,2,0 vence `.setting-item label` de theme.css (0,1,1). */
+.settings-page .setting-item .setting-label {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.settings-page .setting-item .setting-label svg { flex: none; color: var(--lt-color-brand-blue); }
+
+/* Campo de 48 px no padrão da inscrição: borda --lt-color-border-field
+   (3,91:1, WCAG 1.4.11) e texto a 16 px, que evita o zoom do iOS. 0,3,0
+   vence `input:not(...):not(...)` de theme.css (0,2,1). */
+.settings-page .setting-item .setting-input,
+.settings-page .setting-item .setting-select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  text-overflow: ellipsis;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o hex fica igual ao de inscricao-campos.css. */
+.settings-page .setting-item .setting-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+
+.settings-page .setting-item .setting-input:focus,
+.settings-page .setting-item .setting-select:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Só leitura (perfil sem permissão): fundo de campo e texto de apoio
+   (5,24:1), ainda legível; a borda fica neutra. */
+.settings-page .setting-item .setting-input:disabled,
+.settings-page .setting-item .setting-select:disabled {
+  border-color: var(--lt-color-border);
+  background-color: var(--lt-color-surface-field);
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* ── Tema: duas opções de 48 px ───────────────────────────────────────
+   A escolhida tem borda azul dupla, fundo claro (tinta 12,39:1) e o
+   visto desenhado depois do texto: o estado não depende só da cor. */
+.settings-page .toggle-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.settings-page .toggle-group .toggle-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+.settings-page .toggle-group .toggle-option svg { flex: none; color: var(--lt-color-brand-blue); }
+
+@media (hover: hover) {
+  .settings-page .toggle-group .toggle-option:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+.settings-page .toggle-group .toggle-option.active {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--lt-color-brand-blue);
+  font-weight: 700;
+}
+
+.settings-page .toggle-group .toggle-option.active::after {
+  content: '';
+  flex: none;
+  width: 0.375rem;
+  height: 0.75rem;
+  margin: -0.125rem 0 0 var(--lt-space-1);
+  border: solid var(--lt-color-brand-blue);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.settings-page .toggle-group .toggle-option:disabled { cursor: not-allowed; }
+.settings-page .toggle-group .toggle-option:disabled:not(.active) { color: var(--lt-color-text-subtle); }
+
+/* ── Listas de interruptores (Notificações, Segurança, Aparência) ──── */
+.settings-page .settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Cada linha no fundo de campo; sem espaço, o interruptor desce para
+   baixo do texto em vez de espremê-lo. O campo de intervalo (Segurança)
+   ganha a mesma linha. */
+.settings-page .settings-list .toggle-setting,
+.settings-page .settings-list > .setting-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-3) var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.settings-page .settings-list > .setting-item { flex-direction: column; align-items: stretch; }
+
+.settings-page .toggle-setting .toggle-info { flex: 1 1 14rem; min-width: 0; }
+
+.settings-page .toggle-setting .toggle-info h4 {
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* Descrição: apoio sobre campo, 6,17:1. */
+.settings-page .toggle-setting .toggle-info p {
+  margin-top: 0.125rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* ── Interruptor: alvo de 44 px com o estado escrito ao lado ──────────
+   A caixa de marcar cobre o rótulo inteiro (transparente), então o clique
+   em qualquer ponto liga e desliga e o foco aparece no trilho. O trilho
+   tem contorno de campo (3,66:1 sobre o fundo de campo, WCAG 1.4.11).
+   "Ligado" e "Desligado" vêm do CSS, porque ToggleSetting.jsx está fora
+   desta onda: o texto alternativo vazio (`/ ''`) evita leitura em dobro,
+   já que o leitor de tela ouve o estado da própria caixa de marcar. Azul
+   sobre campo 5,93:1; apoio sobre campo 6,17:1. 0,3,0 vence `label` de
+   theme.css. */
+.settings-page .toggle-setting .toggle-switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  min-width: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 4.75rem 0 0;
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  cursor: pointer;
+}
+
+.settings-page .toggle-setting .toggle-switch input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.settings-page .toggle-setting .toggle-switch input:disabled { cursor: not-allowed; }
+
+.settings-page .toggle-setting .toggle-slider {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--set-trilho);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-border-field);
+}
+
+/* O botão do trilho: branco, com contorno quando desligado. */
+.settings-page .toggle-setting .toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-border-field);
+}
+
+.settings-page .toggle-setting .toggle-slider::after {
+  content: 'Desligado';
+  content: 'Desligado' / '';
+  position: absolute;
+  top: 50%;
+  left: calc(100% + var(--lt-space-2));
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.settings-page .toggle-setting .toggle-switch input:checked + .toggle-slider {
+  background: var(--lt-color-brand-blue);
+  box-shadow: none;
+}
+
+.settings-page .toggle-setting .toggle-switch input:checked + .toggle-slider::before {
+  box-shadow: none;
+  transform: translateX(1.25rem);
+}
+
+.settings-page .toggle-setting .toggle-switch input:checked + .toggle-slider::after {
+  content: 'Ligado';
+  content: 'Ligado' / '';
+  color: var(--lt-color-brand-blue);
+}
+
+/* Só leitura: o trilho perde o contraste de campo, mas o estado escrito
+   fica inteiro (opacidade no trilho também apagaria o texto). */
+.settings-page .toggle-setting .toggle-switch input:disabled:not(:checked) + .toggle-slider { box-shadow: inset 0 0 0 1.5px var(--lt-color-border); }
+
+.settings-page .toggle-setting .toggle-switch input:focus-visible + .toggle-slider { box-shadow: var(--lt-focus-ring); }
+
+/* ── Tempo de sessão: trilho nativo em azul, valor num selo ───────────
+   0,3,0 tira borda, recuo, largura e fundo de `input:not(...):not(...)`
+   (theme.css), que também pega o campo de intervalo. */
+.settings-page .range-setting {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  min-height: 48px;
+}
+
+.settings-page .range-setting .range-input {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: auto;
+  min-width: 0;
+  height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  box-shadow: none;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: pointer;
+}
+
+.settings-page .range-setting .range-input:disabled { cursor: not-allowed; }
+
+/* O valor escrito: tinta sobre branco, 14,09:1. */
+.settings-page .range-setting .range-value {
+  flex: none;
+  min-width: 4.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Foco visível: o anel da landing ──────────────────────────────── */
+.settings-page .header-actions .action-btn:focus-visible,
+.settings-page .sidebar-nav .sidebar-nav-item:focus-visible,
+.settings-page .toggle-group .toggle-option:focus-visible,
+.settings-page .range-setting .range-input:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Telas médias: as seções viram uma faixa acima do conteúdo ─────── */
+@media (max-width: 67.5rem) {
+  .settings-page .settings-container { grid-template-columns: minmax(0, 1fr); }
+
+  .settings-page .sidebar-nav { flex-direction: row; flex-wrap: wrap; }
+  .settings-page .sidebar-nav .sidebar-nav-item { flex: 1 1 9rem; width: auto; }
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 40rem) {
+  .settings-page .header-actions { width: 100%; }
+  .settings-page .header-actions .action-btn { flex: 1 1 12rem; }
+}
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com `prefers-reduced-motion: no-preference` e só transform: a marca
+   de largada se desenha uma vez, o botão do interruptor desliza e o ícone
+   de "Salvando..." gira enquanto a gravação dura. */
+@media (prefers-reduced-motion: no-preference) {
+  .settings-page .header-left h2::before { animation: set-largada 420ms var(--lt-ease-out) 120ms backwards; }
+  .settings-page .toggle-setting .toggle-slider::before { transition: transform 160ms var(--lt-ease-out); }
+  .settings-page .spinner { animation: set-girar 0.9s linear infinite; }
+
+  @keyframes set-largada { from { transform: skewX(-12deg) scaleY(0); } }
+  @keyframes set-girar { to { transform: rotate(360deg); } }
+}
+
+/* ══ LEGADO SEM CONSUMIDOR: início ═════════════════════════════════════
+   Copiado de tmp/telas-v1/src/views/admin/AdminView/SettingsPage.css,
+   só com os seletores de `.action-btn.outline` (a regra de antes os
+   listava junto com `.secondary`, que continua viva e está acima). Nenhum
+   botão desta tela usa a classe `outline` (busca por token exato em
+   29/09/2026). Remover código morto depende de aprovação
+   (telas-v2/change-intent.md, "Não objetivos"). As variáveis --set-*
+   antigas e a regra de `.admin-view.dark-mode` que só as redefinia caíram
+   com o resto do visual antigo: nenhuma regra nova as lê. */
 .settings-page .action-btn.outline {
   border-color: var(--color-navy);
   border-width: 1.5px;
@@ -95,416 +762,8 @@
   color: var(--color-navy);
 }
 
-.settings-page .action-btn.secondary:hover:not(:disabled),
 .settings-page .action-btn.outline:hover:not(:disabled) {
   border-color: var(--color-navy);
   background: rgba(16, 51, 85, 0.05);
 }
-
-.settings-page .action-btn:disabled {
-  opacity: 0.56;
-  cursor: not-allowed;
-}
-
-.settings-page .setting-input:disabled,
-.settings-page .setting-select:disabled,
-.settings-page .range-input:disabled {
-  opacity: 0.64;
-  cursor: not-allowed;
-}
-
-.settings-page .spinner {
-  animation: settings-spin 1s linear infinite;
-}
-
-@keyframes settings-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.settings-page .status-message {
-  border-radius: 0.92rem;
-  border: 1px solid transparent;
-  padding: 0.58rem 0.72rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  width: fit-content;
-  max-width: 100%;
-}
-
-.settings-page .status-message.success {
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.24);
-  background: rgba(34, 197, 94, 0.12);
-}
-
-.settings-page .status-message.error {
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.24);
-  background: rgba(239, 68, 68, 0.12);
-}
-
-.settings-page .status-message.info {
-  color: #1d4f79;
-  border-color: rgba(47, 111, 166, 0.24);
-  background: rgba(47, 111, 166, 0.12);
-}
-
-.settings-page .settings-container {
-  display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-  gap: 0.7rem;
-  min-height: 620px;
-}
-
-.settings-page .settings-sidebar,
-.settings-page .settings-content {
-  border: 1px solid var(--set-border);
-  border-radius: 1.1rem;
-  background: var(--set-surface);
-  box-shadow: var(--set-shadow-strong);
-}
-
-.settings-page .settings-sidebar {
-  overflow: hidden;
-}
-
-.settings-page .sidebar-header {
-  border-bottom: 1px solid var(--set-border);
-  padding: 0.82rem 0.88rem;
-  display: flex;
-  align-items: center;
-  gap: 0.42rem;
-}
-
-.settings-page .sidebar-header svg {
-  color: #2f6fa6;
-}
-
-.settings-page .sidebar-header h3 {
-  margin: 0;
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: var(--set-text);
-}
-
-.settings-page .sidebar-nav {
-  padding: 0.58rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.26rem;
-}
-
-.settings-page .sidebar-nav-item {
-  min-height: 2.3rem;
-  border-radius: 0.74rem;
-  border: 1px solid transparent;
-  background: transparent;
-  color: color-mix(in srgb, var(--set-text) 75%, transparent);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0 0.56rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  position: relative;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
-}
-
-.settings-page .sidebar-nav-item:hover {
-  border-color: var(--set-border);
-  background: var(--set-surface-soft);
-  color: var(--set-text);
-}
-
-.settings-page .sidebar-nav-item.active {
-  border-color: color-mix(in srgb, var(--set-border) 70%, #2f6fa6 30%);
-  background: color-mix(in srgb, #2f6fa6 10%, transparent);
-  color: var(--set-text);
-}
-
-.settings-page .nav-icon {
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.settings-page .nav-label {
-  flex: 1;
-  text-align: left;
-}
-
-.settings-page .nav-indicator {
-  width: 3px;
-  height: 15px;
-  border-radius: 999px;
-  background: #2f6fa6;
-}
-
-.settings-page .settings-content {
-  padding: 0.88rem;
-}
-
-.settings-page .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.72rem;
-}
-
-.settings-page .settings-section h3 {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--set-text);
-}
-
-.settings-page .section-description {
-  margin: -0.3rem 0 0.1rem;
-  font-size: 0.8rem;
-  color: var(--set-muted);
-}
-
-.settings-page .settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.62rem;
-}
-
-.settings-page .setting-item {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.settings-page .setting-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.73rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--set-muted) 86%, transparent);
-}
-
-.settings-page .setting-input,
-.settings-page .setting-select,
-.settings-page .range-setting,
-.settings-page .toggle-group {
-  min-height: 2.54rem;
-}
-
-.settings-page .setting-input,
-.settings-page .setting-select,
-.settings-page .setting-input {
-  width: 100%;
-  border-radius: 0.78rem;
-  border: 1px solid var(--set-border);
-  background: var(--set-surface-soft);
-  color: var(--set-text);
-  font-size: 0.82rem;
-  font-weight: 500;
-  padding: 0.52rem 0.7rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.settings-page .setting-input::placeholder {
-  color: color-mix(in srgb, var(--set-muted) 82%, transparent);
-}
-
-.settings-page .setting-input:focus,
-.settings-page .setting-select:focus,
-.settings-page .toggle-option:focus-visible,
-.settings-page .action-btn:focus-visible,
-.settings-page .sidebar-nav-item:focus-visible,
-.settings-page .range-input:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--set-focus);
-}
-
-.settings-page .setting-input:focus,
-.settings-page .setting-select:focus {
-  border-color: color-mix(in srgb, var(--set-border) 62%, #2f6fa6 38%);
-}
-
-.settings-page .setting-select {
-  appearance: none;
-}
-
-.settings-page .toggle-group {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.3rem;
-}
-
-.settings-page .toggle-option {
-  border-radius: 0.74rem;
-  border: 1px solid var(--set-border);
-  background: var(--set-surface-soft);
-  color: color-mix(in srgb, var(--set-text) 75%, transparent);
-  font-size: 0.76rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.26rem;
-  cursor: pointer;
-}
-
-.settings-page .toggle-option:disabled {
-  opacity: 0.58;
-  cursor: not-allowed;
-}
-
-.settings-page .toggle-option.active {
-  border-color: color-mix(in srgb, var(--set-border) 68%, #2f6fa6 32%);
-  background: color-mix(in srgb, #2f6fa6 10%, transparent);
-  color: var(--set-text);
-}
-
-.settings-page .settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.44rem;
-}
-
-.settings-page .toggle-setting {
-  border: 1px solid var(--set-border);
-  border-radius: 0.86rem;
-  background: var(--set-surface-soft);
-  padding: 0.56rem 0.62rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.58rem;
-}
-
-.settings-page .toggle-info h4 {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: var(--set-text);
-}
-
-.settings-page .toggle-info p {
-  margin: 0.1rem 0 0;
-  font-size: 0.72rem;
-  color: color-mix(in srgb, var(--set-muted) 86%, transparent);
-}
-
-.settings-page .toggle-switch {
-  position: relative;
-  width: 2.6rem;
-  height: 1.48rem;
-  flex-shrink: 0;
-}
-
-.settings-page .toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.settings-page .toggle-switch input:disabled + .toggle-slider {
-  opacity: 0.58;
-}
-
-.settings-page .toggle-slider {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--set-muted) 36%, #d1dae5 64%);
-  transition: background 0.2s ease;
-}
-
-.settings-page .toggle-slider::before {
-  content: '';
-  position: absolute;
-  width: 1.14rem;
-  height: 1.14rem;
-  border-radius: 999px;
-  top: 0.17rem;
-  left: 0.16rem;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.22);
-  transition: transform 0.2s ease;
-}
-
-.settings-page .toggle-switch input:checked + .toggle-slider {
-  background: #2f6fa6;
-}
-
-.settings-page .toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(1.14rem);
-}
-
-.settings-page .range-setting {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.settings-page .range-input {
-  flex: 1;
-  height: 0.36rem;
-  border-radius: 999px;
-  accent-color: #2f6fa6;
-  cursor: pointer;
-}
-
-.settings-page .range-value {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: var(--set-text);
-  min-width: 52px;
-}
-
-@media (max-width: 1080px) {
-  .settings-page .settings-container {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
-  .settings-page .sidebar-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .settings-page .sidebar-nav-item {
-    flex: 1 1 180px;
-  }
-}
-
-@media (max-width: 760px) {
-  .settings-page {
-    gap: 0.78rem;
-  }
-
-  .settings-page .settings-header {
-    padding: 0.8rem;
-  }
-
-  .settings-page .header-actions {
-    width: 100%;
-  }
-
-  .settings-page .action-btn {
-    width: 100%;
-  }
-
-  .settings-page .settings-content {
-    padding: 0.72rem;
-  }
-
-  .settings-page .settings-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* ══ LEGADO SEM CONSUMIDOR: fim ═════════════════════════════════════ */

@@ -1,0 +1,646 @@
+/* Peças da "Visão geral" (Painel.jsx), na direção "Energia e velocidade" da
+   landing (docs/design/landing-guia-visual.md, seção "Direção vigente").
+   Contrato: docs/implementacao/visao-geral-v2/contrato-painel.md.
+
+   Tudo escopado em `.painel`. `stat-card` e `stat-card-action` nos
+   indicadores são só classes de compatibilidade (capture-tcc-figures.mjs
+   procura `.stat-card-action`): os seletores dos indicadores têm três
+   classes para vencer `.stat-card` (theme.css, fundo, sombra e hover que
+   sobe 1px) e `.professor-view .stat-card-action` (ProfessorView.css) em
+   qualquer ordem de carregamento, sem mexer nessas regras globais.
+
+   Armadilhas globais de src/index.css e src/styles/theme.css, declaradas
+   de volta em cada peça: h1…h6 em Poppins e com cor, degradê recortado no
+   texto do h1, `p` com entrelinha 1,6, `button { white-space: nowrap;
+   display: inline-flex }` e `*:focus-visible` com contorno verde.
+
+   Todo texto fica sobre superfície branca (cabeçalho, indicadores e seções
+   são cartões): assim o contraste vale também com o modo escuro dos
+   portais, que escurece o fundo mas não estas peças.
+
+   As fontes vêm aqui porque a landing, que também as carrega, é um trecho
+   separado: ao recarregar direto num portal, ela não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../views/landing/landing-tokens.css';
+
+/* ── Raiz e grade ────────────────────────────────────────────────────── */
+.painel {
+  /* Tons sem par em --lt-*. Contraste pela fórmula WCAG 2.2 de
+     scripts/test-landing-tokens.cjs; scripts/test-painel.cjs mede de novo. */
+  --painel-atencao-texto: #9a3412;  /* 7,31:1 sobre branco · 6,88:1 sobre --painel-atencao-fundo · 6,42:1 sobre --lt-color-track-tint */
+  --painel-atencao-fundo: #fff7ed;
+  --painel-atencao-traco: #c2410c;  /* gráfico, não texto: 5,18:1 sobre branco (piso 3:1) */
+  --painel-positivo-fundo: #ecf6e8; /* ícone --lt-color-brand-green-text sobre ele: 4,84:1 */
+  --painel-esqueleto: #e7ecf3;
+  --painel-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-4);
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Seções em uma coluna até 72rem e em duas acima (1280px com a sidebar
+   aberta deixa ~990px úteis). Media query, não container query: um
+   contêiner de tamanho vira bloco de contenção de `position: fixed`, e os
+   painéis ainda têm modais sem portal dentro deles. */
+@media (min-width: 72rem) {
+  .painel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--lt-space-5);
+  }
+  .painel > :not(.painel-secao) { grid-column: 1 / -1; }
+  /* A seção que sobra sozinha na última linha ocupa a largura toda. */
+  .painel > .painel-secao:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+.painel .painel-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Cabeçalho: saudação na voz de campanha ──────────────────────────── */
+.painel .painel-cabecalho {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  padding: var(--lt-space-5) var(--lt-space-5) calc(var(--lt-space-5) + 3px);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--painel-sombra);
+}
+
+/* A raia no pé do cabeçalho: azul e verde da marca, como a que acende sob
+   o campo do login. Só gráfico. */
+.painel .painel-cabecalho::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.painel .painel-cabecalho__texto { flex: 1 1 18rem; min-width: 0; }
+
+.painel .painel-cabecalho__titulo {
+  position: relative;
+  margin: 0;
+  padding: 0 0.1em 0 0.32em;
+  /* Reset do h1 global: sem as quatro linhas abaixo, o degradê recortado
+     no texto vence `color` e o título some (mesmo defeito da landing). */
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o mesmo gesto de .lp-titulo__linha::before. */
+.painel .painel-cabecalho__titulo::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.painel .painel-cabecalho__apoio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
+  margin: var(--lt-space-2) 0 0;
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
+
+.painel .painel-cabecalho__papel { color: var(--lt-color-text); font-weight: 700; }
+
+/* Separador papel · data: um ponto desenhado, fora do texto lido. */
+.painel .painel-cabecalho__papel ~ .painel-cabecalho__data::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 0.625rem;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--lt-color-brand-green);
+}
+
+.painel .painel-cabecalho__acoes { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+/* ── Faixa de indicadores: 1, 2 ou 4 colunas ─────────────────────────── */
+.painel .painel-indicadores { min-width: 0; }
+
+.painel .painel-indicadores__lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.painel .painel-indicadores__item { display: flex; min-width: 0; margin: 0; padding: 0; }
+
+/* Duas colunas a partir de 360px; com número ímpar de itens, o último
+   ocupa a linha inteira em vez de ficar sozinho numa coluna. */
+@media (min-width: 22.5rem) {
+  .painel .painel-indicadores__lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .painel .painel-indicadores__item:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+/* Faixa larga: uma coluna por item, até 4 (--painel-colunas vem do JSX). */
+@media (min-width: 64rem) {
+  .painel .painel-indicadores__lista { grid-template-columns: repeat(var(--painel-colunas, 4), minmax(0, 1fr)); }
+  .painel .painel-indicadores__item:last-child:nth-child(odd) { grid-column: auto; }
+}
+
+/* Três classes: vence `.stat-card` e `.stat-card:hover` globais e
+   `.professor-view .stat-card-action` sem depender da ordem das folhas. */
+.painel .painel-indicadores .painel-indicador {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.125rem;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--painel-sombra);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  white-space: normal;
+  transform: none;
+  transition: background-color 160ms, box-shadow 160ms;
+}
+
+/* O acento do tom: uma marca curta e inclinada na borda de cima. Muda só
+   o acento, nunca o fundo; o estado "atenção" também vem escrito. */
+.painel .painel-indicadores .painel-indicador::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-5);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--painel-tom, var(--lt-color-brand-blue));
+  transform: skewX(-20deg);
+}
+
+.painel .painel-indicador--neutro { --painel-tom: var(--lt-color-brand-blue); }
+.painel .painel-indicador--atencao { --painel-tom: var(--painel-atencao-traco); }
+.painel .painel-indicador--positivo { --painel-tom: var(--lt-color-brand-green); }
+
+.painel .painel-indicador__topo {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-height: 2.25rem;
+  margin-bottom: var(--lt-space-2);
+}
+
+.painel .painel-indicador__icone {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.painel .painel-indicador--atencao .painel-indicador__icone {
+  background: var(--painel-atencao-fundo);
+  color: var(--painel-atencao-texto);
+}
+
+.painel .painel-indicador--positivo .painel-indicador__icone {
+  background: var(--painel-positivo-fundo);
+  color: var(--lt-color-brand-green-text);
+}
+
+.painel .painel-indicador__marcas {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin-left: auto;
+}
+
+.painel .painel-indicador__seta { flex: none; color: var(--lt-color-brand-blue); }
+
+/* O número na voz de campanha. Abaixo do h1 (--lt-text-xl) para não
+   disputar com ele, acima do título das seções. */
+.painel .painel-indicador__valor {
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.875rem, 2.6vw, 2.375rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.painel .painel-indicador__rotulo {
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text);
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  overflow-wrap: anywhere;
+}
+
+.painel .painel-indicador__detalhe {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.painel .painel-indicadores .painel-indicador--acao { cursor: pointer; }
+
+@media (hover: hover) {
+  .painel .painel-indicadores .painel-indicador--acao:hover {
+    background: var(--lt-color-track-tint);
+    box-shadow: 0 0 0 1.5px var(--lt-color-brand-blue), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  }
+}
+
+.painel .painel-indicadores .painel-indicador--acao:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Seção: painel branco, título Sofia 700 e ação em link azul ─────── */
+.painel .painel-secao {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--painel-sombra);
+  color: var(--lt-color-text);
+}
+
+.painel .painel-secao__cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+}
+
+.painel .painel-secao__titulos { flex: 1 1 14rem; min-width: 0; }
+
+.painel .painel-secao__titulo {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.painel .painel-secao__descricao {
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Link azul com alvo de 44px; a margem negativa alinha o texto ao título
+   sem abrir a linha do cabeçalho (a técnica de .lp-link). */
+.painel .painel-secao__acao {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  min-height: var(--lt-target-min);
+  margin: -0.625rem calc(-1 * var(--lt-space-2)) -0.625rem 0;
+  padding: 0 var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-weight: 700;
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  /* `normal` explícito: o `button { white-space: nowrap }` global faria um
+     rótulo longo passar da borda a 320px. */
+  white-space: normal;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .painel .painel-secao__acao:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+
+.painel .painel-secao__acao:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+.painel .painel-secao__corpo { min-width: 0; }
+
+/* ── Estados: carregando, vazio e erro ──────────────────────────────── */
+.painel .painel-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  text-align: center;
+}
+
+.painel .painel-estado__icone {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+.painel .painel-estado__titulo {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.painel .painel-estado__descricao {
+  max-width: 36rem;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+.painel .painel-estado--erro { background: var(--lt-color-danger-bg); }
+.painel .painel-estado--erro .painel-estado__icone,
+.painel .painel-estado--erro .painel-estado__titulo { color: var(--lt-color-danger-text); }
+
+.painel .painel-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  min-height: var(--lt-target-min);
+  margin-top: var(--lt-space-1);
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+@media (hover: hover) {
+  .painel .painel-botao:hover { background: var(--lt-color-track-tint); border-color: var(--lt-color-brand-blue); }
+}
+
+.painel .painel-botao:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.painel .painel-esqueleto { display: grid; gap: var(--lt-space-3); }
+
+.painel .painel-esqueleto__linha,
+.painel .painel-esqueleto__bloco {
+  display: block;
+  border-radius: var(--lt-radius-control);
+  background: var(--painel-esqueleto);
+}
+
+.painel .painel-esqueleto__linha { height: 2.75rem; }
+.painel .painel-esqueleto__linha:last-child { width: 72%; }
+.painel .painel-esqueleto__bloco--icone { width: 2.25rem; height: 2.25rem; margin-bottom: var(--lt-space-2); border-radius: 50%; }
+.painel .painel-esqueleto__bloco--valor { width: 3.5rem; height: 2rem; }
+.painel .painel-esqueleto__bloco--rotulo { width: 70%; height: 0.875rem; margin-top: var(--lt-space-2); }
+.painel .painel-indicadores .painel-indicador--esqueleto::before { background: var(--painel-esqueleto); }
+
+/* ── Lista: linhas de 44px, clicáveis quando há ação ────────────────── */
+.painel .painel-lista {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.painel .painel-lista__item { min-width: 0; margin: 0; padding: 0; }
+.painel .painel-lista__item + .painel-lista__item { border-top: 1px solid var(--lt-color-border); }
+
+.painel .painel-lista__linha {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-2) var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  white-space: normal;
+}
+
+/* A raia da linha: traço inclinado no tom. Gráfico; "atenção" vem escrito. */
+.painel .painel-lista__linha::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.3125rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--painel-tom);
+  transform: skewX(-12deg);
+}
+
+.painel .painel-lista__linha--neutro { --painel-tom: rgba(37, 96, 168, 0.3); }
+.painel .painel-lista__linha--atencao { --painel-tom: var(--painel-atencao-traco); }
+.painel .painel-lista__linha--positivo { --painel-tom: var(--lt-color-brand-green); }
+
+.painel .painel-lista__icone {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.painel .painel-lista__linha--atencao .painel-lista__icone { background: var(--painel-atencao-fundo); color: var(--painel-atencao-texto); }
+.painel .painel-lista__linha--positivo .painel-lista__icone { background: var(--painel-positivo-fundo); color: var(--lt-color-brand-green-text); }
+
+/* Título e meta dividem a linha; sem espaço, a meta desce para baixo do
+   título em vez de cortar (nada de reticências nesta lista). */
+.painel .painel-lista__corpo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.125rem var(--lt-space-3);
+  min-width: 0;
+}
+
+.painel .painel-lista__texto { display: flex; flex: 1 1 12rem; flex-direction: column; min-width: 0; }
+.painel .painel-lista__titulo { color: var(--lt-color-text); font-weight: 700; overflow-wrap: anywhere; }
+.painel .painel-lista__subtitulo { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); overflow-wrap: anywhere; }
+
+.painel .painel-lista__meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  color: var(--lt-color-text-muted);
+  font-weight: 600;
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.painel .painel-lista__seta { flex: none; color: var(--lt-color-brand-blue); }
+
+.painel .painel-lista__linha--acao { cursor: pointer; transition: background-color 160ms; }
+
+@media (hover: hover) {
+  .painel .painel-lista__linha--acao:hover { background: var(--lt-color-track-tint); }
+}
+
+.painel .painel-lista__linha--acao:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Selo "Atenção": o estado escrito, não só a cor. */
+.painel .painel-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  font-family: var(--lt-font-family);
+  font-weight: 700;
+  font-size: var(--lt-text-2xs);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.painel .painel-tag--atencao { background: var(--painel-atencao-fundo); color: var(--painel-atencao-texto); }
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com `prefers-reduced-motion: no-preference`, só transform/opacity,
+   sem `will-change` e sem laço acima de 5 s: o esqueleto pulsa três vezes
+   (3 × 1,6 s = 4,8 s) e para; a marca de largada se desenha uma vez. Com
+   movimento reduzido, tudo nasce no estado final. */
+@media (prefers-reduced-motion: no-preference) {
+  .painel .painel-esqueleto__linha,
+  .painel .painel-esqueleto__bloco { animation: painel-pulsar 1.6s ease-in-out 3; }
+
+  .painel .painel-cabecalho__titulo::before { animation: painel-largada 420ms var(--lt-ease-out) 120ms backwards; }
+
+  .painel .painel-indicador__seta,
+  .painel .painel-lista__seta,
+  .painel .painel-secao__acao svg { transition: transform 220ms var(--lt-ease-out); }
+
+  @keyframes painel-pulsar { 50% { opacity: 0.5; } }
+  @keyframes painel-largada { from { transform: skewX(-12deg) scaleY(0); } }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .painel .painel-indicador--acao:hover .painel-indicador__seta,
+  .painel .painel-lista__linha--acao:hover .painel-lista__seta,
+  .painel .painel-secao__acao:hover svg { transform: translateX(3px); }
+}
+
+/* Item que abre um detalhe na própria página (prop `expandido`): estado
+   visível, além do aria-expanded. Borda azul e fundo claro, sem sólido. */
+.painel .painel-indicador.painel-indicador--ativo,
+.painel .painel-lista__linha.painel-lista__linha--ativa {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+}

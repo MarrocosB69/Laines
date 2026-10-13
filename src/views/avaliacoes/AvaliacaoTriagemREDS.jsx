@@ -1,48 +1,40 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Activity, Save } from 'lucide-react';
+import { Activity, Save } from 'lucide-react';
 import { Button } from '../../components/ui';
 import EvaluationReadiness from '../../components/Avaliacoes/components/EvaluationReadiness';
 import { toLocalDateInputValue } from '../../utils/dateUtils';
 import '../../components/Avaliacoes/avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../../components/Avaliacoes/base';
 import './AvaliacaoTriagemREDS.css';
+import {
+  LEAF_Q_QUESTIONS,
+  LEA_Q13_QUESTIONS,
+  SINTOMAS_OPTIONS,
+  scoreQuestionnaire
+} from '../../constants/clinicalInstruments';
 
-const LEAF_Q_QUESTIONS = [
-  { key: 'leaf_q1', label: 'Ciclos menstruais irregulares nos últimos 12 meses?' },
-  { key: 'leaf_q2', label: 'Ausência menstrual por 3 meses ou mais?' },
-  { key: 'leaf_q3', label: 'Sangramento menstrual muito reduzido?' },
-  { key: 'leaf_q4', label: 'Dor abdominal recorrente associada ao treino?' },
-  { key: 'leaf_q5', label: 'Desconforto gastrointestinal em treinos intensos?' },
-  { key: 'leaf_q6', label: 'Constipação frequente nas últimas semanas?' },
-  { key: 'leaf_q7', label: 'Sensação de fadiga persistente no dia a dia?' },
-  { key: 'leaf_q8', label: 'Queda de rendimento sem causa aparente?' },
-  { key: 'leaf_q9', label: 'Histórico de fratura por estresse?' },
-  { key: 'leaf_q10', label: 'Dor óssea recorrente durante o treino?' },
-  { key: 'leaf_q11', label: 'Uso de restrição calórica frequente?' },
-  { key: 'leaf_q12', label: 'Dificuldade para recuperar após sessões intensas?' }
-];
+// Só exibição: o tom da conduta (recomendacaoConduta.tone) vira o tipo do aviso.
+const TIPO_AVISO_CONDUTA = { risk: 'perigo', warn: 'atencao', ok: 'sucesso' };
 
-const LEA_Q13_QUESTIONS = [
-  { key: 'lea_q1', label: 'Fadiga persistente sem explicação clínica?' },
-  { key: 'lea_q2', label: 'Queda de performance nas últimas 4 semanas?' },
-  { key: 'lea_q3', label: 'Perda de massa corporal involuntária recente?' },
-  { key: 'lea_q4', label: 'Perda de libido ou queda de interesse sexual?' },
-  { key: 'lea_q5', label: 'Alterações de humor associadas ao treinamento?' },
-  { key: 'lea_q6', label: 'Dificuldade de recuperação entre sessões?' },
-  { key: 'lea_q7', label: 'Infecções recorrentes no último trimestre?' },
-  { key: 'lea_q8', label: 'Dor óssea recorrente ao esforço?' },
-  { key: 'lea_q9', label: 'Histórico de fratura por estresse?' },
-  { key: 'lea_q10', label: 'Sinais de baixa disponibilidade energética?' },
-  { key: 'lea_q11', label: 'Restrição alimentar para controle de peso?' },
-  { key: 'lea_q12', label: 'Sono não reparador na maior parte da semana?' },
-  { key: 'lea_q13', label: 'Dificuldade para manter carga de treino planejada?' }
-];
-
-const SINTOMAS_OPTIONS = [
-  { value: 'fadiga', label: 'Fadiga' },
-  { value: 'queda_performance', label: 'Queda de performance' },
-  { value: 'libido_baixa', label: 'Libido baixa' },
-  { value: 'irritabilidade', label: 'Irritabilidade' }
-];
+// Só exibição (WI-013): o código da faixa de DE segue igual no payload e no
+// CSS; a tela mostra o nome do glossário. A forma curta vai onde o bloco já
+// diz "disponibilidade energética".
+const ROTULO_CLASSIFICACAO_DE = {
+  otima: 'Disponibilidade energética adequada',
+  risco_relativo: 'Disponibilidade energética reduzida',
+  reds_estabelecido: 'Baixa disponibilidade energética'
+};
+const ROTULO_CURTO_CLASSIFICACAO_DE = { otima: 'adequada', risco_relativo: 'reduzida', reds_estabelecido: 'baixa' };
 
 const createQuestionnaireState = (questions) => (
   questions.reduce((acc, item) => {
@@ -50,8 +42,6 @@ const createQuestionnaireState = (questions) => (
     return acc;
   }, {})
 );
-
-const normalizeType = (value) => String(value || '').trim().toLowerCase().replace(/-/g, '_');
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') return null;
@@ -107,30 +97,11 @@ const resolveSexo = (...values) => {
   return '';
 };
 
-const scoreQuestionnaire = (answers = {}) => (
-  Object.values(answers).reduce((sum, value) => (
-    sum + (value === true ? 1 : 0)
-  ), 0)
-);
-
 const classifyDE = (de) => {
   if (!Number.isFinite(de)) return '';
   if (de >= 45) return 'otima';
   if (de >= 30) return 'risco_relativo';
   return 'reds_estabelecido';
-};
-
-const findLatestEvaluationByType = (history, tipo, sessaoId) => {
-  const normalizedTipo = normalizeType(tipo);
-  if (!Array.isArray(history)) return null;
-  const scoped = history.filter((item) => {
-    if (normalizeType(item?.tipo) !== normalizedTipo) return false;
-    if (!sessaoId) return true;
-    return String(item?.sessaoId || '') === String(sessaoId);
-  });
-  if (scoped.length > 0) return scoped[0];
-  if (!sessaoId) return null;
-  return history.find((item) => normalizeType(item?.tipo) === normalizedTipo) || null;
 };
 
 const normalizeQuestionnaireSnapshot = (sourceValue, questions) => {
@@ -169,9 +140,7 @@ const AvaliacaoTriagemREDS = ({
   patient,
   onboardingContext,
   moduleSnapshot,
-  currentSessionId,
-  allEvaluationHistory = [],
-  baselineAnthropometry
+  currentSessionId
 }) => {
   const [dataAvaliacao, setDataAvaliacao] = useState(() => toLocalDateInputValue(new Date()));
   const [ingestaoManual, setIngestaoManual] = useState('');
@@ -191,17 +160,15 @@ const AvaliacaoTriagemREDS = ({
   const loadedSnapshotIdRef = useRef('');
 
   const sexoBiologico = useMemo(() => resolveSexo(
-    baselineAnthropometry?.sexo,
+    moduleSnapshot?.dados?.sexoBiologico,
+    moduleSnapshot?.dados?.sexo,
     patient?.sexoBiologico,
     patient?.sexo,
-    patient?.genero,
-    moduleSnapshot?.dados?.sexoBiologico,
-    moduleSnapshot?.dados?.sexo
+    onboardingContext?.sexoBiologico
   ), [
-    baselineAnthropometry?.sexo,
     moduleSnapshot?.dados?.sexo,
     moduleSnapshot?.dados?.sexoBiologico,
-    patient?.genero,
+    onboardingContext?.sexoBiologico,
     patient?.sexo,
     patient?.sexoBiologico
   ]);
@@ -209,147 +176,14 @@ const AvaliacaoTriagemREDS = ({
   const isFemale = sexoBiologico === 'feminino';
   const isMale = sexoBiologico === 'masculino';
 
-  const latestAlimentar = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'alimentar', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const latestGet = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'gasto_energetico_total', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const latestComposicao = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'composicao_corporal_integrada', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-
-  const autoData = useMemo(() => {
-    const ingestaoKcalR24h = readNumberByAliases(latestAlimentar, [
-      'resultados.ingestaoKcalR24hAuto',
-      'resultados.ingestao_kcal_r24h_auto',
-      'resultados.ingestaoKcalR24h',
-      'resultados.ingestao_kcal_r24h',
-      'resultados.ingestaoKcal',
-      'resultados.caloriasTotal',
-      'resultados.caloriasTotalAuto',
-      'resultados.totalDiario',
-      'resultados.calculated.ingestaoKcalR24hAuto',
-      'resultados.calculated.ingestaoKcalR24h',
-      'resultados.calculated.totalDiario',
-      'dados.ingestaoKcalR24hAuto',
-      'dados.ingestao_kcal_r24h_auto',
-      'dados.ingestaoKcalR24h',
-      'dados.ingestao_kcal_r24h',
-      'dados.ingestaoKcal',
-      'dados.caloriasTotal',
-      'dados.totalDiario',
-      'dados.total_diario',
-      'ingestaoKcalR24hAuto',
-      'ingestao_kcal_r24h_auto',
-      'ingestaoKcalR24h',
-      'ingestao_kcal_r24h',
-      'ingestaoKcal',
-      'caloriasTotal',
-      'totalDiario'
-    ]);
-
-    const gastoSemanal = readNumberByAliases(latestGet, [
-      'resultados.gastoExercicioSemanalAuto',
-      'resultados.gasto_exercicio_semanal_auto',
-      'resultados.gastoExercicioSemanal',
-      'resultados.gastoExercicioSemanalKcal',
-      'resultados.calculated.totalGastoSemanalKcal',
-      'resultados.calculated.gastoExercicioSemanalAuto',
-      'resultados.calculated.gastoExercicioSemanal',
-      'dados.gastoExercicioSemanalAuto',
-      'dados.gasto_exercicio_semanal_auto',
-      'dados.gastoExercicioSemanal',
-      'dados.gastoExercicioSemanalKcal',
-      'dados.resultados_calculados.totalGastoSemanalKcal',
-      'dados.esportivo.totalGastoSemanalKcal',
-      'dados.esportivo.total_gasto_semanal_kcal',
-      'gastoExercicioSemanalAuto',
-      'gasto_exercicio_semanal_auto',
-      'gastoExercicioSemanal',
-      'gastoExercicioSemanalKcal',
-      'totalGastoSemanalKcal'
-    ]);
-    const gastoDiarioDireto = readNumberByAliases(latestGet, [
-      'resultados.gastoExercicioKcalAuto',
-      'resultados.gasto_exercicio_kcal_auto',
-      'resultados.gastoExercicioKcal',
-      'resultados.gastoExercicioKcalDiario',
-      'resultados.gastoExercicioKcalDiarioAuto',
-      'resultados.gastoExercicioDiarioKcal',
-      'resultados.calculated.gastoExercicioKcalAuto',
-      'resultados.calculated.gastoExercicioKcal',
-      'dados.gastoExercicioKcalAuto',
-      'dados.gasto_exercicio_kcal_auto',
-      'dados.gastoExercicioKcal',
-      'dados.gasto_exercicio_kcal',
-      'dados.gastoExercicioKcalDiario',
-      'dados.gastoExercicioDiarioKcal',
-      'gastoExercicioKcalAuto',
-      'gasto_exercicio_kcal_auto',
-      'gastoExercicioKcal',
-      'gastoExercicioKcalDiario',
-      'gastoExercicioDiarioKcal'
-    ]);
-    const gastoExercicioKcal = Number.isFinite(gastoDiarioDireto)
-      ? gastoDiarioDireto
-      : (Number.isFinite(gastoSemanal) ? Number((gastoSemanal / 7).toFixed(2)) : null);
-
-    const massaMagraKg = readNumberByAliases(latestComposicao, [
-      'resultados.massaMagraKgAuto',
-      'resultados.massa_magra_kg_auto',
-      'resultados.massaMagraKg',
-      'resultados.massa_magra_kg',
-      'resultados.massaMagra',
-      'resultados.massa_magra_kg',
-      'resultados.calculated.massaMagraOficialKg',
-      'resultados.calculated.massaMagraKgAuto',
-      'resultados.calculated.massaMagraKg',
-      'dados.massaMagraKgAuto',
-      'dados.massa_magra_kg_auto',
-      'dados.massaMagraKg',
-      'dados.massa_magra_kg',
-      'dados.massaMagra',
-      'dados.massaMagraOficialKg',
-      'dados.massa_magra_oficial_kg',
-      'dados.resultados_calculados.massaMagraOficialKg',
-      'massaMagraKgAuto',
-      'massa_magra_kg_auto',
-      'massaMagraKg',
-      'massa_magra_kg',
-      'massaMagra'
-    ]);
-
-    return {
-      ingestaoKcalR24h,
-      gastoExercicioKcal,
-      massaMagraKg
-    };
-  }, [latestAlimentar, latestComposicao, latestGet]);
-
+  const ingestaoKcalResolvida = toNumber(ingestaoManual);
+  const gastoExercicioResolvido = toNumber(gastoManual);
+  const massaMagraResolvida = toNumber(massaMagraManual);
   const precisaDadosExtras = useMemo(() => ([
-    !Number.isFinite(autoData.ingestaoKcalR24h) ? 'alimentar' : null,
-    !Number.isFinite(autoData.gastoExercicioKcal) ? 'gasto_energetico_total' : null,
-    !Number.isFinite(autoData.massaMagraKg) ? 'composicao_corporal_integrada' : null
-  ].filter(Boolean)), [autoData.gastoExercicioKcal, autoData.ingestaoKcalR24h, autoData.massaMagraKg]);
-
-  const ingestaoKcalResolvida = useMemo(() => {
-    if (Number.isFinite(autoData.ingestaoKcalR24h)) return autoData.ingestaoKcalR24h;
-    return toNumber(ingestaoManual);
-  }, [autoData.ingestaoKcalR24h, ingestaoManual]);
-
-  const gastoExercicioResolvido = useMemo(() => {
-    if (Number.isFinite(autoData.gastoExercicioKcal)) return autoData.gastoExercicioKcal;
-    return toNumber(gastoManual);
-  }, [autoData.gastoExercicioKcal, gastoManual]);
-
-  const massaMagraResolvida = useMemo(() => {
-    if (Number.isFinite(autoData.massaMagraKg)) return autoData.massaMagraKg;
-    return toNumber(massaMagraManual);
-  }, [autoData.massaMagraKg, massaMagraManual]);
+    !Number.isFinite(ingestaoKcalResolvida) ? 'ingestaoKcalR24h' : null,
+    !Number.isFinite(gastoExercicioResolvido) ? 'gastoExercicioKcal' : null,
+    !Number.isFinite(massaMagraResolvida) || massaMagraResolvida <= 0 ? 'massaMagraKg' : null
+  ].filter(Boolean)), [ingestaoKcalResolvida, gastoExercicioResolvido, massaMagraResolvida]);
 
   const disponibilidadeEnergetica = useMemo(() => {
     if (!Number.isFinite(ingestaoKcalResolvida)) return null;
@@ -398,17 +232,6 @@ const AvaliacaoTriagemREDS = ({
     onboardingContext?.modalidadePrincipal
   ]);
 
-  const dadosAutomaticosCobertura = useMemo(() => {
-    const count = [
-      autoData.ingestaoKcalR24h,
-      autoData.gastoExercicioKcal,
-      autoData.massaMagraKg
-    ].filter((value) => Number.isFinite(value)).length;
-    if (count === 3) return { tone: 'ok', label: 'Cobertura automatica completa', count };
-    if (count >= 1) return { tone: 'warn', label: 'Cobertura automatica parcial', count };
-    return { tone: 'risk', label: 'Sem cobertura automatica', count };
-  }, [autoData.gastoExercicioKcal, autoData.ingestaoKcalR24h, autoData.massaMagraKg]);
-
   const recomendacaoConduta = useMemo(() => {
     if (classificacaoDE === 'reds_estabelecido') {
       return {
@@ -434,16 +257,12 @@ const AvaliacaoTriagemREDS = ({
     return {
       tone: 'warn',
       title: 'Conduta com dados incompletos',
-      message: 'Complete os dados faltantes para classificar risco RED-S com seguranca.'
+      message: 'Complete os dados faltantes para classificar a disponibilidade energética com segurança.'
     };
   }, [classificacaoDE]);
 
   const readinessItems = useMemo(() => {
-    const baseInputsCount = [
-      ingestaoKcalResolvida,
-      gastoExercicioResolvido,
-      massaMagraResolvida
-    ].filter((value) => Number.isFinite(value)).length;
+    const baseInputsCount = 3 - precisaDadosExtras.length;
     const classificationStatus = classificacaoDE === 'reds_estabelecido'
       ? 'danger'
       : classificacaoDE === 'risco_relativo'
@@ -475,17 +294,15 @@ const AvaliacaoTriagemREDS = ({
         key: 'classification',
         label: 'Classificacao',
         status: classificationStatus,
-        value: classificacaoDE ? classificacaoDE.replace(/_/g, ' ') : 'pendente'
+        value: ROTULO_CURTO_CLASSIFICACAO_DE[classificacaoDE] || 'pendente'
       }
     ];
   }, [
     classificacaoDE,
     disponibilidadeEnergetica,
-    gastoExercicioResolvido,
-    ingestaoKcalResolvida,
     isFemale,
     isMale,
-    massaMagraResolvida,
+    precisaDadosExtras.length,
     questionnaireStats.answered,
     questionnaireStats.complete,
     questionnaireStats.total
@@ -501,9 +318,6 @@ const AvaliacaoTriagemREDS = ({
     dados: {
       dataAvaliacao,
       sexoBiologico: sexoBiologico || null,
-      ingestaoKcalR24hAuto: Number.isFinite(autoData.ingestaoKcalR24h) ? Number(autoData.ingestaoKcalR24h.toFixed(2)) : null,
-      gastoExercicioKcalAuto: Number.isFinite(autoData.gastoExercicioKcal) ? Number(autoData.gastoExercicioKcal.toFixed(2)) : null,
-      massaMagraKgAuto: Number.isFinite(autoData.massaMagraKg) ? Number(autoData.massaMagraKg.toFixed(2)) : null,
       ingestaoKcalR24hManual: toNumber(ingestaoManual),
       gastoExercicioKcalManual: toNumber(gastoManual),
       massaMagraKgManual: toNumber(massaMagraManual),
@@ -519,12 +333,7 @@ const AvaliacaoTriagemREDS = ({
       historicoFraturaEstresse,
       pressaoParaRestricao,
       sintomas,
-      precisaDadosExtras,
-      fontesAutomaticas: {
-        alimentar: Number.isFinite(autoData.ingestaoKcalR24h),
-        gasto_energetico_total: Number.isFinite(autoData.gastoExercicioKcal),
-        composicao_corporal_integrada: Number.isFinite(autoData.massaMagraKg)
-      }
+      precisaDadosExtras
     },
     resultados: {
       DE: disponibilidadeEnergetica,
@@ -546,12 +355,9 @@ const AvaliacaoTriagemREDS = ({
       }
     },
     classificacao: classificacaoDE || undefined,
-    classificacaoLabel: classificacaoDE ? `Triagem RED-S: ${classificacaoDE}` : undefined,
+    classificacaoLabel: ROTULO_CLASSIFICACAO_DE[classificacaoDE] || undefined,
     sessaoId: moduleSnapshot?.sessaoId || currentSessionId
   }), [
-    autoData.gastoExercicioKcal,
-    autoData.ingestaoKcalR24h,
-    autoData.massaMagraKg,
     classificacaoDE,
     currentSessionId,
     dataAvaliacao,
@@ -605,28 +411,44 @@ const AvaliacaoTriagemREDS = ({
 
   useEffect(() => {
     const snapshotId = moduleSnapshot?.id || '';
-    if (!snapshotId || loadedSnapshotIdRef.current === snapshotId) return;
+    if (loadedSnapshotIdRef.current === snapshotId) return;
+    if (!snapshotId) {
+      setDataAvaliacao(toLocalDateInputValue(new Date()));
+      setIngestaoManual('');
+      setGastoManual('');
+      setMassaMagraManual('');
+      setHistoricoAmenorreia(false);
+      setHistoricoFraturaEstresse(false);
+      setPressaoParaRestricao(false);
+      setSintomas([]);
+      setLeafAnswers(createQuestionnaireState(LEAF_Q_QUESTIONS));
+      setLeaAnswers(createQuestionnaireState(LEA_Q13_QUESTIONS));
+      loadedSnapshotIdRef.current = '';
+      return;
+    }
     const source = moduleSnapshot?.dados || {};
 
     setDataAvaliacao(normalizeDateValue(firstDefined(
       moduleSnapshot?.data,
       source?.dataAvaliacao
     )));
-    setIngestaoManual(toInput(firstDefined(
-      source?.ingestaoKcalR24hManual,
-      source?.ingestaoKcalR24hFallback,
-      source?.ingestaoManualKcal
-    )));
-    setGastoManual(toInput(firstDefined(
-      source?.gastoExercicioKcalManual,
-      source?.gastoManualKcal,
-      source?.gastoExercicioDiarioManual
-    )));
-    setMassaMagraManual(toInput(firstDefined(
-      source?.massaMagraKgManual,
-      source?.massaMagraFallback,
-      source?.massaMagraManual
-    )));
+    // O registro antigo pode guardar apenas campos *Auto. Eles são lidos
+    // como valor histórico inicial, nunca atualizados por outra avaliação.
+    setIngestaoManual(toInput(readNumberByAliases(moduleSnapshot, [
+      'dados.ingestaoKcalR24h', 'dados.ingestaoKcalR24hManual',
+      'dados.ingestaoKcalR24hFallback', 'dados.ingestaoManualKcal',
+      'dados.ingestaoKcalR24hAuto', 'resultados.calculated.ingestaoKcalR24hAuto'
+    ])));
+    setGastoManual(toInput(readNumberByAliases(moduleSnapshot, [
+      'dados.gastoExercicioKcal', 'dados.gastoExercicioKcalManual',
+      'dados.gastoManualKcal', 'dados.gastoExercicioDiarioManual',
+      'dados.gastoExercicioKcalAuto', 'resultados.calculated.gastoExercicioKcalAuto'
+    ])));
+    setMassaMagraManual(toInput(readNumberByAliases(moduleSnapshot, [
+      'dados.massaMagraKg', 'dados.massaMagraKgManual',
+      'dados.massaMagraFallback', 'dados.massaMagraManual',
+      'dados.massaMagraKgAuto', 'resultados.calculated.massaMagraKgAuto'
+    ])));
     setHistoricoAmenorreia(toBool(source?.historicoAmenorreia));
     setHistoricoFraturaEstresse(toBool(source?.historicoFraturaEstresse));
     setPressaoParaRestricao(toBool(source?.pressaoParaRestricao));
@@ -639,7 +461,7 @@ const AvaliacaoTriagemREDS = ({
 
   const validateBeforeSave = useCallback(() => {
     if (!hasInput) {
-      return 'Preencha ao menos um campo para salvar a triagem RED-S.';
+      return 'Preencha ao menos um campo para salvar a triagem de disponibilidade energética.';
     }
     return '';
   }, [hasInput]);
@@ -664,7 +486,7 @@ const AvaliacaoTriagemREDS = ({
       setSaveStatus('saved');
       saveStatusResetRef.current = setTimeout(() => setSaveStatus(null), 3200);
     } catch {
-      if (!auto) setError('Nao foi possivel salvar a triagem RED-S.');
+      if (!auto) setError('Não foi possível salvar a triagem de disponibilidade energética.');
       setSaveStatus('error');
     }
   }, [onAutoSave, onSalvar, payload, validateBeforeSave]);
@@ -686,71 +508,51 @@ const AvaliacaoTriagemREDS = ({
     ));
   };
 
+  // Cada pergunta é um grupo (fieldset/legend) com as mesmas duas opções.
   const renderQuestionnaire = (questions, answers, onChange) => (
     <div className="triagem-reds-questionnaire">
       {questions.map((item) => (
-        <div key={item.key} className="triagem-reds-question">
-          <span>{item.label}</span>
-          <div className="triagem-reds-question-options">
-            <label>
-              <input
-                type="radio"
-                name={item.key}
-                checked={answers[item.key] === true}
-                onChange={() => onChange(item.key, true)}
-                disabled={readOnly}
-              />
-              Sim
-            </label>
-            <label>
-              <input
-                type="radio"
-                name={item.key}
-                checked={answers[item.key] === false}
-                onChange={() => onChange(item.key, false)}
-                disabled={readOnly}
-              />
-              Nao
-            </label>
-          </div>
-        </div>
+        <GrupoOpcoes key={item.key} legenda={item.label} horizontal className="triagem-reds-question">
+          <Opcao
+            rotulo="Sim"
+            name={item.key}
+            checked={answers[item.key] === true}
+            onChange={() => onChange(item.key, true)}
+            disabled={readOnly}
+          />
+          <Opcao
+            rotulo="Nao"
+            name={item.key}
+            checked={answers[item.key] === false}
+            onChange={() => onChange(item.key, false)}
+            disabled={readOnly}
+          />
+        </GrupoOpcoes>
       ))}
     </div>
   );
 
+  // O título do questionário depende do sexo de referência, como antes.
+  const tituloQuestionario = isFemale ? 'LEAF-Q (mulheres)' : isMale ? 'LEA-Q13 (homens)' : 'Questionario de risco';
+  const indiceReds = [
+    { id: 'reds-dados', titulo: 'Dados desta triagem' },
+    { id: 'reds-resultado', titulo: 'Resultado DE' },
+    { id: 'reds-questionario', titulo: tituloQuestionario },
+    { id: 'reds-sinais', titulo: 'Sinais adicionais de risco' }
+  ];
+
+  // O cabeçalho do cartão antigo virou o do módulo (mesmo h3 e subtítulo);
+  // a data e o sexo de referência passaram para "Dados desta triagem".
   return (
-    <div className={`triagem-reds${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-card triagem-reds__header-card">
-        <div className="eval-header">
-          <div className="eval-icon">
-            <Activity size={22} />
-          </div>
-          <div>
-            <h3 className="eval-title">Triagem RED-S</h3>
-            <p className="eval-subtitle">
-              Disponibilidade energetica (DE) com suporte a LEAF-Q / LEA-Q13
-            </p>
-          </div>
-        </div>
+    <AvaliacaoModulo
+      className={`triagem-reds${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Triagem de Disponibilidade Energetica"
+      descricao="Disponibilidade energetica (DE) com suporte a LEAF-Q / LEA-Q13"
+      icone={<Activity size={22} />}
+    >
+      <AvaliacaoIndice itens={indiceReds} />
 
-        <div className="triagem-reds__date-row">
-          <div className="eval-field triagem-reds__date-field">
-            <label className="eval-label">Data da triagem</label>
-            <input
-              type="date"
-              className="eval-input"
-              value={dataAvaliacao}
-              onChange={(event) => setDataAvaliacao(event.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-          <div className="triagem-reds__sex-chip">
-            Sexo biologico de referencia: <strong>{sexoBiologico || 'nao informado'}</strong>
-          </div>
-        </div>
-      </div>
-
-      <div className={`triagem-reds__context-note triagem-reds__context-note--${dadosAutomaticosCobertura.tone}`}>
+      <AvisoAvaliacao tipo="info" className="triagem-reds__context-note">
         <strong>Contexto esportivo:</strong>
         {' '}
         {onboardingResumo.modalidadePrincipal || 'modalidade nao informada'}
@@ -759,48 +561,31 @@ const AvaliacaoTriagemREDS = ({
         {' | '}
         Duracao: {Number.isFinite(onboardingResumo.duracaoSessao) ? `${onboardingResumo.duracaoSessao} min` : 'nao informada'}
         {onboardingResumo.genero ? ` | Genero: ${onboardingResumo.genero}` : ''}
-        <small>
-          {dadosAutomaticosCobertura.label} ({dadosAutomaticosCobertura.count}/3 fontes automaticas)
-        </small>
-      </div>
+      </AvisoAvaliacao>
 
       <EvaluationReadiness items={readinessItems} />
 
-      <div className="eval-card triagem-reds__auto-card">
-        <h4>Dados automaticos da sessao</h4>
-        <div className="triagem-reds__auto-grid">
-          <div>
-            <span>Ingestao kcal (R24h)</span>
-            <strong>{Number.isFinite(autoData.ingestaoKcalR24h) ? `${autoData.ingestaoKcalR24h.toFixed(2)} kcal` : 'Nao disponivel'}</strong>
-          </div>
-          <div>
-            <span>Gasto exercicio (kcal/dia)</span>
-            <strong>{Number.isFinite(autoData.gastoExercicioKcal) ? `${autoData.gastoExercicioKcal.toFixed(2)} kcal` : 'Nao disponivel'}</strong>
-          </div>
-          <div>
-            <span>Massa magra (kg)</span>
-            <strong>{Number.isFinite(autoData.massaMagraKg) ? `${autoData.massaMagraKg.toFixed(2)} kg` : 'Nao disponivel'}</strong>
+      <AvaliacaoSecao id="reds-dados" titulo="Dados desta triagem">
+        <div className="triagem-reds__date-row">
+          <Campo rotulo="Data da triagem" className="eval-field triagem-reds__date-field">
+            <input
+              type="date"
+              className="eval-input"
+              value={dataAvaliacao}
+              onChange={(event) => setDataAvaliacao(event.target.value)}
+              disabled={readOnly}
+            />
+          </Campo>
+          <div className="triagem-reds__sex-chip">
+            Sexo biologico de referencia: <strong>{sexoBiologico || 'nao informado'}</strong>
           </div>
         </div>
-
-        {precisaDadosExtras.length > 0 && (
-          <div className="triagem-reds__missing">
-            <AlertTriangle size={16} />
-            <p>
-              Dados automaticos incompletos: <strong>{precisaDadosExtras.join(', ')}</strong>.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="eval-card triagem-reds__manual-card">
-        <h4>Informar manualmente</h4>
-        <p className="eval-hint">Use quando os módulos correspondentes ainda não foram preenchidos nesta sessão.</p>
-        <div className="triagem-reds__manual-grid">
-          <label className="eval-label">
-            Ingestao kcal R24h (manual)
+        <p className="eval-hint">Informe os valores usados no cálculo de disponibilidade energética. Revise valores recuperados de registros antigos.</p>
+        <div className="av-grade">
+          <Campo rotulo="Ingestão energética (kcal/dia)">
             <input
               type="number"
+              min="0"
               step="0.1"
               className="eval-input"
               value={ingestaoManual}
@@ -808,11 +593,11 @@ const AvaliacaoTriagemREDS = ({
               disabled={readOnly}
               placeholder="Ex.: 2200"
             />
-          </label>
-          <label className="eval-label">
-            Gasto exercicio kcal/dia (manual)
+          </Campo>
+          <Campo rotulo="Gasto de exercício (kcal/dia)">
             <input
               type="number"
+              min="0"
               step="0.1"
               className="eval-input"
               value={gastoManual}
@@ -820,11 +605,11 @@ const AvaliacaoTriagemREDS = ({
               disabled={readOnly}
               placeholder="Ex.: 850"
             />
-          </label>
-          <label className="eval-label">
-            Massa magra kg (manual)
+          </Campo>
+          <Campo rotulo="Massa magra (kg)">
             <input
               type="number"
+              min="0.1"
               step="0.1"
               className="eval-input"
               value={massaMagraManual}
@@ -832,45 +617,65 @@ const AvaliacaoTriagemREDS = ({
               disabled={readOnly}
               placeholder="Ex.: 52"
             />
-          </label>
+          </Campo>
         </div>
-      </div>
+        {precisaDadosExtras.length > 0 && (
+          <AvisoAvaliacao tipo="atencao" anunciar className="triagem-reds__missing">
+            <p>Para calcular, informe: <strong>{precisaDadosExtras.map((field) => ({
+              ingestaoKcalR24h: 'ingestão energética',
+              gastoExercicioKcal: 'gasto de exercício',
+              massaMagraKg: 'massa magra positiva'
+            }[field])).join(', ')}</strong>.</p>
+          </AvisoAvaliacao>
+        )}
+      </AvaliacaoSecao>
 
-      <div className="eval-card triagem-reds__result-card">
-        <h4>Resultado DE</h4>
-        <div className="triagem-reds__result-grid">
-          <div>
-            <span>Disponibilidade Energetica (kcal/kg MLG)</span>
-            <strong>{Number.isFinite(disponibilidadeEnergetica) ? disponibilidadeEnergetica.toFixed(2) : 'Dados insuficientes'}</strong>
-          </div>
-          <div>
-            <span>Classificacao</span>
-            <strong className={`triagem-reds__badge triagem-reds__badge--${classificacaoDE || 'na'}`}>
-              {classificacaoDE || 'nao calculada'}
-            </strong>
-          </div>
-          <div>
-            <span>Score principal</span>
-            <strong>{Number.isFinite(scoreLeafQ) ? scoreLeafQ : 'Nao calculado'}</strong>
-          </div>
+      {/* Mesmos valores e textos de ausência de antes. A faixa de risco da
+          DE vai escrita no selo do resultado (tom de atenção em DE
+          reduzida e de perigo em DE baixa); a conduta, que já
+          acompanhava o resultado, entra na mesma seção com o mesmo tom. */}
+      <AvaliacaoSecao id="reds-resultado" titulo="Resultado DE">
+        <div className="av-resultados">
+          <ResultadoCalculado
+            rotulo="Disponibilidade Energetica (kcal/kg MLG)"
+            valor={Number.isFinite(disponibilidadeEnergetica) ? disponibilidadeEnergetica.toFixed(2) : null}
+            semValor="Dados insuficientes"
+            classificacao={ROTULO_CURTO_CLASSIFICACAO_DE[classificacaoDE] || null}
+            tom={recomendacaoConduta.tone}
+          />
+          <ResultadoCalculado
+            className={`triagem-reds__resultado--texto triagem-reds__badge--${classificacaoDE || 'na'}`}
+            rotulo="Classificacao"
+            valor={ROTULO_CLASSIFICACAO_DE[classificacaoDE] || null}
+            semValor="nao calculada"
+          />
+          <ResultadoCalculado
+            rotulo="Score principal"
+            valor={Number.isFinite(scoreLeafQ) ? scoreLeafQ : null}
+            semValor="Nao calculado"
+          />
         </div>
-      </div>
 
-      <div className={`triagem-reds__conduta-note triagem-reds__conduta-note--${recomendacaoConduta.tone}`}>
-        <strong>{recomendacaoConduta.title}</strong>
-        <p>{recomendacaoConduta.message}</p>
-        <small>
-          Classificacao DE: {classificacaoDE || 'nao calculada'}
-          {' | '}
-          Score principal: {Number.isFinite(scoreLeafQ) ? scoreLeafQ : 'nao calculado'}
-          {' | '}
-          Plano alimentar: {classificacaoDE === 'reds_estabelecido' ? 'requer override justificado' : 'pode prosseguir com criterio clinico'}
-        </small>
-      </div>
+        <AvisoAvaliacao
+          tipo={TIPO_AVISO_CONDUTA[recomendacaoConduta.tone] || 'info'}
+          titulo={recomendacaoConduta.title}
+          className={`triagem-reds__conduta-note triagem-reds__conduta-note--${recomendacaoConduta.tone}`}
+        >
+          <p>{recomendacaoConduta.message}</p>
+          <small>
+            Classificacao DE: {ROTULO_CURTO_CLASSIFICACAO_DE[classificacaoDE] || 'nao calculada'}
+            {' | '}
+            Score principal: {Number.isFinite(scoreLeafQ) ? scoreLeafQ : 'nao calculado'}
+            {' | '}
+            Plano alimentar: {classificacaoDE === 'reds_estabelecido' ? 'requer override justificado' : 'pode prosseguir com criterio clinico'}
+          </small>
+        </AvisoAvaliacao>
+      </AvaliacaoSecao>
 
+      {/* Um só questionário aparece, pelo sexo de referência (mesmas
+          condições de antes); as três versões usam o mesmo id do índice. */}
       {isFemale && (
-        <div className="eval-card triagem-reds__questionnaire-card">
-          <h4>LEAF-Q (mulheres)</h4>
+        <AvaliacaoSecao id="reds-questionario" titulo="LEAF-Q (mulheres)" className="triagem-reds__questionnaire-card">
           {renderQuestionnaire(LEAF_Q_QUESTIONS, leafAnswers, (key, value) => {
             setLeafAnswers((prev) => ({ ...prev, [key]: value }));
           })}
@@ -878,99 +683,93 @@ const AvaliacaoTriagemREDS = ({
             Score LEAF-Q: <strong>{scoreQuestionnaire(leafAnswers)}</strong>
           </p>
           {hasLeafAlert && (
-            <div className="triagem-reds__leaf-alert">
-              <AlertTriangle size={16} />
+            <AvisoAvaliacao tipo="atencao" className="triagem-reds__leaf-alert">
               <p>
-                Risco elevado de RED-S (sensibilidade 78%, especificidade 90%) — Melin et al. 2014
+                Risco elevado de baixa disponibilidade energética (sensibilidade 78%, especificidade 90%) — Melin et al. 2014
               </p>
-            </div>
+            </AvisoAvaliacao>
           )}
-        </div>
+        </AvaliacaoSecao>
       )}
 
       {isMale && (
-        <div className="eval-card triagem-reds__questionnaire-card">
-          <h4>LEA-Q13 (homens)</h4>
+        <AvaliacaoSecao id="reds-questionario" titulo="LEA-Q13 (homens)" className="triagem-reds__questionnaire-card">
           {renderQuestionnaire(LEA_Q13_QUESTIONS, leaAnswers, (key, value) => {
             setLeaAnswers((prev) => ({ ...prev, [key]: value }));
           })}
           <p className="triagem-reds__score-line">
             Score LEA-Q13: <strong>{scoreQuestionnaire(leaAnswers)}</strong>
           </p>
-        </div>
+        </AvaliacaoSecao>
       )}
 
       {!isFemale && !isMale && (
-        <div className="eval-card triagem-reds__questionnaire-card">
-          <h4>Questionario de risco</h4>
-          <p>Sexo biologico nao identificado. Defina no prontuario para habilitar LEAF-Q ou LEA-Q13.</p>
-        </div>
+        <AvaliacaoSecao id="reds-questionario" titulo="Questionario de risco" className="triagem-reds__questionnaire-card">
+          <p className="triagem-reds__questionnaire-empty">Sexo biologico nao identificado. Defina no prontuario para habilitar LEAF-Q ou LEA-Q13.</p>
+        </AvaliacaoSecao>
       )}
 
-      <div className="eval-card triagem-reds__risk-card">
-        <h4>Sinais adicionais de risco</h4>
-        <div className="triagem-reds__risk-grid">
-          <label>
-            <input
-              type="checkbox"
+      {/* As caixas continuam soltas, sem legenda própria: o grupo é
+          rotulado pelo título da seção. */}
+      <AvaliacaoSecao id="reds-sinais" titulo="Sinais adicionais de risco">
+        <div className="triagem-reds__risk" role="group" aria-labelledby="reds-sinais-titulo">
+          <div className="triagem-reds__risk-grid">
+            <Opcao
+              tipo="checkbox"
+              rotulo="Historico de amenorreia"
               checked={historicoAmenorreia}
               onChange={(event) => setHistoricoAmenorreia(event.target.checked)}
               disabled={readOnly}
             />
-            Historico de amenorreia
-          </label>
-          <label>
-            <input
-              type="checkbox"
+            <Opcao
+              tipo="checkbox"
+              rotulo="Historico de fratura por estresse"
               checked={historicoFraturaEstresse}
               onChange={(event) => setHistoricoFraturaEstresse(event.target.checked)}
               disabled={readOnly}
             />
-            Historico de fratura por estresse
-          </label>
-          <label>
-            <input
-              type="checkbox"
+            <Opcao
+              tipo="checkbox"
+              rotulo="Pressao para restricao alimentar"
               checked={pressaoParaRestricao}
               onChange={(event) => setPressaoParaRestricao(event.target.checked)}
               disabled={readOnly}
             />
-            Pressao para restricao alimentar
-          </label>
-        </div>
-        <div className="triagem-reds__symptoms">
-          {SINTOMAS_OPTIONS.map((item) => (
-            <label key={item.value}>
-              <input
-                type="checkbox"
+          </div>
+          <div className="triagem-reds__symptoms">
+            {SINTOMAS_OPTIONS.map((item) => (
+              <Opcao
+                key={item.value}
+                tipo="checkbox"
+                rotulo={item.label}
                 checked={sintomas.includes(item.value)}
                 onChange={() => toggleSintoma(item.value)}
                 disabled={readOnly}
               />
-              {item.label}
-            </label>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </AvaliacaoSecao>
 
       {error && (
-        <p className="triagem-reds__error">{error}</p>
+        <AvisoAvaliacao tipo="perigo" anunciar className="triagem-reds__error">{error}</AvisoAvaliacao>
       )}
 
-      <div className="triagem-reds__actions">
+      <BarraAcoesAvaliacao
+        className="triagem-reds__actions"
+        status={saveStatus}
+        textosStatus={{ saved: 'Salvo com sucesso.', error: 'Falha ao salvar.' }}
+      >
         <Button
           variant="primary"
           onClick={() => dispatchSalvar(false)}
           disabled={readOnly}
         >
           <Save size={16} />
-          Salvar triagem RED-S
+          Salvar disponibilidade energética
         </Button>
-        {saveStatus === 'saving' && <span>Salvando...</span>}
-        {saveStatus === 'saved' && <span>Salvo com sucesso.</span>}
-        {saveStatus === 'error' && <span>Falha ao salvar.</span>}
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+    </AvaliacaoModulo>
   );
 };
 

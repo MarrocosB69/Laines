@@ -1,138 +1,92 @@
-.avaliacao-evolucao-retorno .eval-textarea {
-  min-height: 90px;
-}
+/* Evolução e retorno: só o que é deste formulário. Raiz, cabeçalho,
+   seções, campos, resumo, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .avaliacao-evolucao-retorno. */
 
-.avaliacao-evolucao-retorno__prefill-note {
-  border: 1px solid rgba(86, 173, 219, 0.34);
-  border-radius: 0.74rem;
-  background: rgba(224, 242, 254, 0.84);
-  margin: 0.66rem 0 0.78rem;
-  padding: 0.58rem 0.68rem;
-  display: grid;
-  gap: 0.45rem;
-}
-
-.avaliacao-evolucao-retorno__prefill-note p {
-  margin: 0;
-  font-size: 0.72rem;
-  color: #0c4a6e;
-  line-height: 1.45;
-}
-
-.avaliacao-evolucao-retorno__conduta-note {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.74rem;
-  padding: 0.58rem 0.68rem;
-  background: #f8fafc;
-  margin: 0.66rem 0 0.78rem;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.avaliacao-evolucao-retorno__conduta-note strong {
-  font-size: 0.8rem;
-  color: #0f172a;
-}
-
-.avaliacao-evolucao-retorno__conduta-note p,
-.avaliacao-evolucao-retorno__conduta-note small {
-  margin: 0;
-  font-size: 0.72rem;
-  color: #334155;
-  line-height: 1.4;
-}
-
-.avaliacao-evolucao-retorno__conduta-note.tone-ok {
-  border-color: rgba(34, 197, 94, 0.34);
-  background: rgba(240, 253, 244, 0.84);
-}
-
-.avaliacao-evolucao-retorno__conduta-note.tone-warn {
-  border-color: rgba(245, 158, 11, 0.34);
-  background: rgba(255, 251, 235, 0.86);
-}
-
-.avaliacao-evolucao-retorno__conduta-note.tone-risk {
-  border-color: rgba(239, 68, 68, 0.34);
-  background: rgba(254, 242, 242, 0.85);
-}
-
-
-/* ── Comparativo temporal ── */
-.evolucao-comparativo__date {
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--text-secondary, #64748b);
-}
-
-.evolucao-comparativo__grid {
+/* ── Pré-preenchimento: o texto e o botão "Nova evolução…" ────────────── */
+.av-modulo .avaliacao-evolucao-retorno__prefill-note .av-aviso__texto {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
 }
 
-.evolucao-delta-row {
+.av-modulo .avaliacao-evolucao-retorno__prefill-note p { margin: 0; }
+
+/* ── Leitura da conduta: título, mensagem e a linha de contexto ─────── */
+.av-modulo .avaliacao-evolucao-retorno__conduta-note p { margin: var(--lt-space-1) 0 0; }
+
+.av-modulo .avaliacao-evolucao-retorno__conduta-note small {
+  display: block;
+  margin-top: var(--lt-space-1);
+  font-size: var(--lt-text-xs);
+  overflow-wrap: anywhere;
+}
+
+/* ── Comparativo com a evolução anterior ─────────────────────────────
+   O sinal (+/−) e o "=" dizem a direção; a cor só acompanha. Os quatro
+   indicadores são de adesão: subir é melhora. */
+.av-modulo .evolucao-comparativo__date {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-weight: 400;
+}
+
+.av-modulo .evolucao-comparativo__grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+}
+
+.av-modulo .evolucao-delta-row {
   display: grid;
-  grid-template-columns: 1fr 4rem 1rem 4rem 5rem;
+  grid-template-columns: minmax(8rem, 1fr) repeat(4, auto);
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.evolucao-delta-row--highlight {
-  background: var(--surface-secondary, #f8fafc);
-  border: 1px solid var(--border-color, #e2e8f0);
-  font-weight: 600;
-}
-
-.evolucao-delta-row__label {
-  color: var(--text-primary, #1a202c);
-}
-
-.evolucao-delta-row__prev {
-  text-align: right;
-  color: var(--text-tertiary, #94a3b8);
-}
-
-.evolucao-delta-row__arrow {
-  text-align: center;
-  color: var(--text-tertiary, #94a3b8);
-}
-
-.evolucao-delta-row__current {
-  text-align: right;
-  color: var(--text-primary, #1a202c);
-  font-weight: 500;
-}
-
-.evolucao-delta-row__delta {
-  text-align: right;
-  font-weight: 600;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-2);
+  border-radius: var(--lt-radius-control);
+  font-size: var(--lt-text-sm);
   font-variant-numeric: tabular-nums;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
 }
 
-.delta--up      { color: #16a34a; background: #f0fdf4; }
-.delta--down    { color: #dc2626; background: #fef2f2; }
-.delta--neutral { color: var(--text-tertiary, #94a3b8); }
-
-@media (max-width: 768px) {
-  .avaliacao-evolucao-retorno .eval-grid {
-    grid-template-columns: 1fr !important;
-  }
+.av-modulo .evolucao-delta-row--highlight {
+  background: var(--lt-color-surface-field);
+  font-weight: 700;
 }
 
-@media (max-width: 480px) {
-  .avaliacao-evolucao-retorno {
-    padding: 0.75rem 0.5rem !important;
-  }
-
-  .avaliacao-evolucao-retorno .eval-card,
-  .avaliacao-evolucao-retorno .eval-section {
-    padding: 0.75rem !important;
-  }
+.av-modulo .evolucao-delta-row__label {
+  min-width: 0;
+  color: var(--lt-color-text);
+  overflow-wrap: anywhere;
 }
+
+.av-modulo :is(.evolucao-delta-row__prev, .evolucao-delta-row__arrow) {
+  color: var(--lt-color-text-muted);
+  text-align: right;
+}
+
+.av-modulo .evolucao-delta-row__current {
+  color: var(--lt-color-text);
+  font-weight: 600;
+  text-align: right;
+}
+
+.av-modulo .evolucao-delta-row__delta {
+  min-width: 3.5rem;
+  padding: 0.125rem var(--lt-space-2);
+  border-radius: var(--lt-radius-pill);
+  font-weight: 700;
+  text-align: right;
+}
+
+.av-modulo .evolucao-delta-row__delta.delta--up {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.av-modulo .evolucao-delta-row__delta.delta--down {
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+}
+
+.av-modulo .evolucao-delta-row__delta.delta--neutral { color: var(--lt-color-text-muted); }

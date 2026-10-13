@@ -1,0 +1,340 @@
+- generic [active] [ref=e1]:
+  - list:
+    - listitem:
+      - link "Skip to main content" [ref=e2] [cursor=pointer]:
+        - /url: "#content"
+    - listitem:
+      - link "Skip to search" [ref=e3] [cursor=pointer]:
+        - /url: "#search"
+  - banner [ref=e7]:
+    - navigation [ref=e8]:
+      - link "MDN" [ref=e10] [cursor=pointer]:
+        - /url: /en-US/
+        - img "MDN" [ref=e11]
+      - button "Search the site" [ref=e17] [cursor=pointer]:
+        - img [ref=e18]
+      - button "Toggle navigation" [ref=e21] [cursor=pointer]
+      - text: (external) (external)
+    - generic [ref=e22]:
+      - button "Toggle sidebar" [ref=e25] [cursor=pointer]:
+        - img [ref=e27]
+      - list [ref=e29]:
+        - listitem [ref=e30]:
+          - link "Web" [ref=e31] [cursor=pointer]:
+            - /url: /en-US/docs/Web
+        - listitem [ref=e32]:
+          - link "Web APIs" [ref=e33] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API
+        - listitem [ref=e34]:
+          - link "MediaRecorder" [ref=e35] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaRecorder
+        - listitem [ref=e36]:
+          - link "isTypeSupported()" [ref=e37] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaRecorder/isTypeSupported_static
+      - button "Switch color theme" [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]: Theme
+      - generic [ref=e45]:
+        - button "English (US)" [ref=e46] [cursor=pointer]:
+          - generic [ref=e47]: English (US)
+        - generic: Remember language
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - 'heading "MediaRecorder: isTypeSupported() static method" [level=1] [ref=e52]'
+      - group [ref=e53]:
+        - generic "Baseline Check Baseline Widely available Chrome check Edge check Firefox check Safari check" [ref=e54] [cursor=pointer]:
+          - img "Baseline Check" [ref=e55]
+          - generic [ref=e56]: Baseline Widely available
+          - generic [ref=e57]:
+            - generic "Supported in Chrome and Edge" [ref=e58]:
+              - img "Chrome check" [ref=e59]
+              - img "Edge check" [ref=e60]
+            - generic "Supported in Firefox" [ref=e61]:
+              - img "Firefox check" [ref=e62]
+            - generic "Supported in Safari" [ref=e63]:
+              - img "Safari check" [ref=e64]
+      - paragraph [ref=e67]:
+        - text: The
+        - strong [ref=e68]:
+          - code [ref=e69]: isTypeSupported()
+        - text: static method of the
+        - link "MediaRecorder" [ref=e70] [cursor=pointer]:
+          - /url: /en-US/docs/Web/API/MediaRecorder
+          - code [ref=e71]: MediaRecorder
+        - text: interface returns a
+        - link "Boolean" [ref=e72] [cursor=pointer]:
+          - /url: /en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+          - code [ref=e73]: Boolean
+        - text: which is
+        - code [ref=e74]: "true"
+        - text: if the MIME media type specified is one the user agent should be able to successfully record.
+    - complementary [ref=e75]:
+      - navigation [ref=e76]:
+        - heading "In this article" [level=2] [ref=e77]
+        - list [ref=e78]:
+          - listitem [ref=e79]:
+            - link "Syntax" [ref=e80] [cursor=pointer]:
+              - /url: "#syntax"
+          - listitem [ref=e81]:
+            - link "Examples" [ref=e82] [cursor=pointer]:
+              - /url: "#examples"
+          - listitem [ref=e83]:
+            - link "Specifications" [ref=e84] [cursor=pointer]:
+              - /url: "#specifications"
+          - listitem [ref=e85]:
+            - link "Browser compatibility" [ref=e86] [cursor=pointer]:
+              - /url: "#browser_compatibility"
+          - listitem [ref=e87]:
+            - link "See also" [ref=e88] [cursor=pointer]:
+              - /url: "#see_also"
+    - generic [ref=e89]:
+      - region "Syntax" [ref=e90]:
+        - heading "Syntax" [level=2] [ref=e91]:
+          - link "Syntax" [ref=e92] [cursor=pointer]:
+            - /url: "#syntax"
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - generic [ref=e96]: js
+            - button "Copy" [ref=e99] [cursor=pointer]:
+              - generic [ref=e100]:
+                - generic: Copy
+          - code [ref=e102]: MediaRecorder.isTypeSupported(mimeType)
+      - region "Parameters" [ref=e103]:
+        - heading "Parameters" [level=3] [ref=e104]:
+          - link "Parameters" [ref=e105] [cursor=pointer]:
+            - /url: "#parameters"
+        - generic [ref=e106]:
+          - term [ref=e107]:
+            - link "mimeType" [ref=e108] [cursor=pointer]:
+              - /url: "#mimetype"
+              - code [ref=e109]: mimeType
+          - definition [ref=e110]:
+            - paragraph [ref=e111]: The MIME media type to check.
+      - region "Return value" [ref=e112]:
+        - heading "Return value" [level=3] [ref=e113]:
+          - link "Return value" [ref=e114] [cursor=pointer]:
+            - /url: "#return_value"
+        - paragraph [ref=e115]:
+          - text: A
+          - link "Boolean" [ref=e116] [cursor=pointer]:
+            - /url: /en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean
+            - code [ref=e117]: Boolean
+          - text: ","
+          - code [ref=e118]: "true"
+          - text: if the
+          - link "MediaRecorder" [ref=e119] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaRecorder
+            - code [ref=e120]: MediaRecorder
+          - text: implementation is capable of recording
+          - link "Blob" [ref=e121] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/Blob
+            - code [ref=e122]: Blob
+          - text: objects for the specified MIME type. Recording may still fail if there are insufficient resources to support the recording and encoding process. If the value is
+          - code [ref=e123]: "false"
+          - text: ", the user agent is incapable of recording the specified format."
+      - region "Examples" [ref=e124]:
+        - heading "Examples" [level=2] [ref=e125]:
+          - link "Examples" [ref=e126] [cursor=pointer]:
+            - /url: "#examples"
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - generic [ref=e130]: js
+            - button "Copy" [ref=e133] [cursor=pointer]:
+              - generic [ref=e134]:
+                - generic: Copy
+          - code [ref=e136]:
+            - text: "const types = [ \"video/webm\", \"audio/webm\", \"video/webm;codecs=vp8\", \"video/webm;codecs=daala\", \"video/webm;codecs=h264\", \"audio/webm;codecs=opus\", \"video/mp4\", \"video/mp4;codecs=avc1.64003E,mp4a.40.2\", \"video/mp4;codecs=avc1.64003E,opus\", \"video/mp4;codecs=avc3.64003E,mp4a.40.2\", \"video/mp4;codecs=avc3.64003E,opus\", \"video/mp4;codecs=hvc1.1.6.L186.B0,mp4a.40.2\", \"video/mp4;codecs=hvc1.1.6.L186.B0,opus\", \"video/mp4;codecs=hev1.1.6.L186.B0,mp4a.40.2\", \"video/mp4;codecs=hev1.1.6.L186.B0,opus\", \"video/mp4;codecs=av01.0.19M.08,mp4a.40.2\", \"video/mp4;codecs=av01.0.19M.08,opus\", ]; for (const type of types) { console.log("
+            - generic [ref=e137]:
+              - text: "`Is"
+              - generic [ref=e138]: "${type}"
+              - text: supported?
+              - generic [ref=e139]: "${ MediaRecorder.isTypeSupported(type) ? \"Yes!\" : \"Nope :(\" }"
+              - text: "`"
+            - text: ", ); }"
+      - region "Specifications" [ref=e140]:
+        - heading "Specifications" [level=2] [ref=e141]:
+          - link "Specifications" [ref=e142] [cursor=pointer]:
+            - /url: "#specifications"
+        - table [ref=e143]:
+          - rowgroup [ref=e144]:
+            - row "Specification" [ref=e145]:
+              - columnheader "Specification" [ref=e146]
+          - rowgroup [ref=e147]:
+            - 'row "MediaStream Recording # dom-mediarecorder-istypesupported (external)" [ref=e148]':
+              - 'cell "MediaStream Recording # dom-mediarecorder-istypesupported (external)" [ref=e149]':
+                - 'link "MediaStream Recording # dom-mediarecorder-istypesupported (external)" [ref=e150] [cursor=pointer]':
+                  - /url: https://w3c.github.io/mediacapture-record/#dom-mediarecorder-istypesupported
+                  - text: MediaStream Recording
+                  - text: "# dom-mediarecorder-istypesupported (external)"
+      - region "Browser compatibility" [ref=e151]:
+        - heading "Browser compatibility" [level=2] [ref=e152]:
+          - link "Browser compatibility" [ref=e153] [cursor=pointer]:
+            - /url: "#browser_compatibility"
+        - generic:
+          - paragraph
+      - region "See also" [ref=e154]:
+        - heading "See also" [level=2] [ref=e155]:
+          - link "See also" [ref=e156] [cursor=pointer]:
+            - /url: "#see_also"
+        - list [ref=e157]:
+          - listitem [ref=e158]:
+            - link "MediaStream Recording API" [ref=e159] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaStream_Recording_API
+          - listitem [ref=e160]:
+            - link "Using the MediaStream Recording API" [ref=e161] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaStream_Recording_API/Using_the_MediaStream_Recording_API
+          - listitem [ref=e162]:
+            - link "Guide to media types and formats on the web" [ref=e163] [cursor=pointer]:
+              - /url: /en-US/docs/Web/Media/Guides/Formats
+          - listitem [ref=e164]:
+            - link "Codecs in common media types" [ref=e165] [cursor=pointer]:
+              - /url: /en-US/docs/Web/Media/Guides/Formats/codecs_parameter
+          - listitem [ref=e166]:
+            - link "MediaStreamTrack" [ref=e167] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaStreamTrack
+              - code [ref=e168]: MediaStreamTrack
+          - listitem [ref=e169]:
+            - link "MediaStream" [ref=e170] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaStream
+              - code [ref=e171]: MediaStream
+          - listitem [ref=e172]:
+            - link "MediaCapabilities" [ref=e173] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaCapabilities
+              - code [ref=e174]: MediaCapabilities
+      - region "Help improve MDN" [ref=e175]:
+        - generic [ref=e176]:
+          - img [ref=e177]
+          - heading "Help improve MDN" [level=2] [ref=e184]
+          - group [ref=e186]:
+            - generic [ref=e187]: Was this page helpful to you?
+            - generic [ref=e188]:
+              - button "Yes" [ref=e190] [cursor=pointer]:
+                - img [ref=e192]
+                - generic [ref=e194]:
+                  - generic: "Yes"
+              - button "No" [ref=e196] [cursor=pointer]:
+                - img [ref=e198]
+                - generic [ref=e200]:
+                  - generic: "No"
+          - link "Learn how to contribute" [ref=e201] [cursor=pointer]:
+            - /url: /en-US/docs/MDN/Community/Getting_started
+          - paragraph [ref=e202]:
+            - text: This page was last modified on
+            - time [ref=e203]: May 5, 2025
+            - text: by
+            - link "MDN contributors" [ref=e204] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaRecorder/isTypeSupported_static/contributors.txt
+            - text: .
+          - generic [ref=e205]:
+            - link "View this page on GitHub (external)" [ref=e206] [cursor=pointer]:
+              - /url: https://github.com/mdn/content/blob/main/files/en-us/web/api/mediarecorder/istypesupported_static/index.md?plain=1
+            - text: •
+            - link "Report a problem with this content (external)" [ref=e207] [cursor=pointer]:
+              - /url: https://github.com/mdn/content/issues/new?template=page-report.yml&mdn-url=https%3A%2F%2Fdeveloper.mozilla.org%2Fen-US%2Fdocs%2FWeb%2FAPI%2FMediaRecorder%2FisTypeSupported_static&metadata=%3C%21--+Do+not+make+changes+below+this+line+--%3E%0A%3Cdetails%3E%0A%3Csummary%3EPage+report+details%3C%2Fsummary%3E%0A%0A*+Folder%3A+%60en-us%2Fweb%2Fapi%2Fmediarecorder%2Fistypesupported_static%60%0A*+MDN+URL%3A+https%3A%2F%2Fdeveloper.mozilla.org%2Fen-US%2Fdocs%2FWeb%2FAPI%2FMediaRecorder%2FisTypeSupported_static%0A*+GitHub+URL%3A+https%3A%2F%2Fgithub.com%2Fmdn%2Fcontent%2Fblob%2Fmain%2Ffiles%2Fen-us%2Fweb%2Fapi%2Fmediarecorder%2Fistypesupported_static%2Findex.md%0A*+Last+commit%3A+https%3A%2F%2Fgithub.com%2Fmdn%2Fcontent%2Fcommit%2Fbd9c6885357f0c42e3445cac6a47d04bc35c89e6%0A*+Document+last+modified%3A+2025-05-05T13%3A53%3A57.000Z%0A%0A%3C%2Fdetails%3E
+  - contentinfo [ref=e209]:
+    - generic [ref=e210]:
+      - generic [ref=e211]:
+        - link "MDN logo" [ref=e212] [cursor=pointer]:
+          - /url: /
+          - img "MDN" [ref=e213]
+        - paragraph [ref=e215]: Your blueprint for a better internet.
+      - list [ref=e216]:
+        - listitem [ref=e217]:
+          - link "MDN on GitHub" [ref=e218] [cursor=pointer]:
+            - /url: https://github.com/mdn/
+        - listitem [ref=e219]:
+          - link "MDN on Bluesky" [ref=e220] [cursor=pointer]:
+            - /url: https://bsky.app/profile/developer.mozilla.org
+        - listitem [ref=e221]:
+          - link "MDN on X" [ref=e222] [cursor=pointer]:
+            - /url: https://x.com/mozdevnet
+        - listitem [ref=e223]:
+          - link "MDN on Mastodon" [ref=e224] [cursor=pointer]:
+            - /url: https://mastodon.social/@mdn
+        - listitem [ref=e225]:
+          - link "MDN blog RSS feed" [ref=e226] [cursor=pointer]:
+            - /url: /en-US/blog/rss.xml
+      - generic [ref=e227]:
+        - term [ref=e228]: MDN
+        - definition [ref=e229]:
+          - list [ref=e230]:
+            - listitem [ref=e231]:
+              - link "About" [ref=e232] [cursor=pointer]:
+                - /url: /en-US/about
+            - listitem [ref=e233]:
+              - link "Blog" [ref=e234] [cursor=pointer]:
+                - /url: /en-US/blog/
+            - listitem [ref=e235]:
+              - link "Mozilla careers (external)" [ref=e236] [cursor=pointer]:
+                - /url: https://www.mozilla.org/en-US/careers/listings/
+            - listitem [ref=e237]:
+              - link "Advertise with us" [ref=e238] [cursor=pointer]:
+                - /url: /en-US/advertising
+            - listitem [ref=e239]:
+              - link "MDN Plus" [ref=e240] [cursor=pointer]:
+                - /url: /en-US/plus
+            - listitem [ref=e241]:
+              - link "Product help (external)" [ref=e242] [cursor=pointer]:
+                - /url: https://support.mozilla.org/products/mdn-plus
+      - generic [ref=e243]:
+        - term [ref=e244]: Contribute
+        - definition [ref=e245]:
+          - list [ref=e246]:
+            - listitem [ref=e247]:
+              - link "MDN Community" [ref=e248] [cursor=pointer]:
+                - /url: /en-US/community
+            - listitem [ref=e249]:
+              - link "Community resources" [ref=e250] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Community
+            - listitem [ref=e251]:
+              - link "Writing guidelines" [ref=e252] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Writing_guidelines
+            - listitem [ref=e253]:
+              - link "MDN Discord (external)" [ref=e254] [cursor=pointer]:
+                - /url: /discord
+            - listitem [ref=e255]:
+              - link "MDN on GitHub (external)" [ref=e256] [cursor=pointer]:
+                - /url: https://github.com/mdn
+      - generic [ref=e257]:
+        - term [ref=e258]: Developers
+        - definition [ref=e259]:
+          - list [ref=e260]:
+            - listitem [ref=e261]:
+              - link "Web technologies" [ref=e262] [cursor=pointer]:
+                - /url: /en-US/docs/Web
+            - listitem [ref=e263]:
+              - link "Learn web development" [ref=e264] [cursor=pointer]:
+                - /url: /en-US/docs/Learn_web_development
+            - listitem [ref=e265]:
+              - link "Guides" [ref=e266] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Guides
+            - listitem [ref=e267]:
+              - link "Tutorials" [ref=e268] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Tutorials
+            - listitem [ref=e269]:
+              - link "Glossary" [ref=e270] [cursor=pointer]:
+                - /url: /en-US/docs/Glossary
+            - listitem [ref=e271]:
+              - link "Hacks blog (external)" [ref=e272] [cursor=pointer]:
+                - /url: https://hacks.mozilla.org/
+    - generic [ref=e273]:
+      - link "Mozilla logo" [ref=e274] [cursor=pointer]:
+        - /url: https://www.mozilla.org/
+        - img "Mozilla" [ref=e275]
+      - list [ref=e277]:
+        - listitem [ref=e278]:
+          - link "Website Privacy Notice (external)" [ref=e279] [cursor=pointer]:
+            - /url: https://www.mozilla.org/privacy/websites/
+        - listitem [ref=e280]:
+          - link "Telemetry Settings (external)" [ref=e281] [cursor=pointer]:
+            - /url: https://www.mozilla.org/en-US/privacy/websites/data-preferences/
+        - listitem [ref=e282]:
+          - link "Legal (external)" [ref=e283] [cursor=pointer]:
+            - /url: https://www.mozilla.org/about/legal/terms/mozilla
+        - listitem [ref=e284]:
+          - link "Community Participation Guidelines (external)" [ref=e285] [cursor=pointer]:
+            - /url: https://www.mozilla.org/about/governance/policies/participation/
+      - paragraph [ref=e286]:
+        - text: Portions of this content are ©1998–2026 by individual mozilla.org contributors. Content available under
+        - link "a Creative Commons license" [ref=e287] [cursor=pointer]:
+          - /url: /docs/MDN/Writing_guidelines/Attrib_copyright_license
+        - text: .

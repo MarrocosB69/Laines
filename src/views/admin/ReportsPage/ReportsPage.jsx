@@ -1,17 +1,24 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { MotionConfig, motion } from 'framer-motion';
 import {
   AlertTriangle,
   BarChart3,
   Briefcase,
+  CalendarCheck,
+  ClipboardCheck,
   Cpu,
   GraduationCap,
+  Link2,
+  RotateCcw,
   ShieldCheck,
   TrendingUp,
+  UserPlus,
   Users
 } from 'lucide-react';
 import api from '../../../services/api';
+import { useAuth } from '../../../contexts/AuthContext';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
+import { PainelIndicadores, PainelVisaoGeral } from '../../../components/painel/Painel';
 import StatCard from './components/StatCard';
 import ExportPanel from './components/ExportPanel';
 import QuarterlyPanel from './components/QuarterlyPanel';
@@ -21,8 +28,11 @@ import ReportsInfoFooter from './components/ReportsInfoFooter';
 import UsagePanel from './components/UsagePanel';
 import DriversPanel from './components/DriversPanel';
 import CorrelationDrilldownPanel from './components/CorrelationDrilldownPanel';
+import PerfilAtletasPanel from './components/PerfilAtletasPanel';
+import ProducaoLigaPanel from './components/ProducaoLigaPanel';
+import TaskPerformancePanel from './components/TaskPerformancePanel';
 import useReportsOverview from './hooks/useReportsOverview';
-import { exportOptions, quickFilters } from './config/reportsConfig';
+import { exportOptions, periodOptions, quickFilters } from './config/reportsConfig';
 import { downloadBlobFile, getFilenameFromDisposition } from './utils/exportUtils';
 import './ReportsPage.css';
 
@@ -45,7 +55,64 @@ const exportLabelByType = {
   analytics: 'dados analíticos'
 };
 
+// As mesmas palavras de severityLabel em components/DriversPanel.jsx: o
+// alerta é um driver de severidade alta ou média. Antes a severidade do
+// alerta vinha só na cor; agora vai escrita para o leitor de tela.
+const alertSeverityLabel = {
+  high: 'Alta',
+  medium: 'Média',
+  low: 'Baixa'
+};
+
+// WI-016: ausência (null, campo que não veio, erro de carga) aparece como
+// "—", nunca como 0. Zero só quando o servidor contou e deu zero.
+const hasNumber = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+const formatCount = (value) => (hasNumber(value) ? Number(value).toLocaleString('pt-BR') : '—');
+const formatPercent = (value) => (hasNumber(value) ? `${Number(value).toLocaleString('pt-BR')}%` : '—');
+
+const formatDay = (day) => {
+  const [year, month, date] = String(day || '').split('-');
+  return year && month && date ? `${date}/${month}/${year}` : '';
+};
+
+const formatPeriod = (period) => (
+  period?.startDate && period?.endDate ? `${formatDay(period.startDate)} a ${formatDay(period.endDate)}` : ''
+);
+
+// Tendência só dos indicadores de fluxo, contra o período anterior de mesmo
+// tamanho. A direção vai escrita; sem base (anterior zero ou ausente), não
+// há seta, e a frase diz por quê.
+const formatTrend = (trend) => {
+  if (!trend || typeof trend !== 'object') return undefined;
+  if (!trend.direction) {
+    return {
+      direction: 'none',
+      label: Number(trend.previous) === 0 ? 'Sem base: nenhum registro no período anterior' : 'Sem base de comparação'
+    };
+  }
+  const previous = formatCount(trend.previous);
+  if (trend.direction === 'flat') return { direction: 'flat', label: `Igual ao período anterior (${previous})` };
+  const variacao = `${Math.abs(Number(trend.deltaPercent)).toLocaleString('pt-BR')}%`;
+  return {
+    direction: trend.direction,
+    label: trend.direction === 'up'
+      ? `Alta de ${variacao} sobre o período anterior (${previous})`
+      : `Queda de ${variacao} sobre o período anterior (${previous})`
+  };
+};
+
 const ReportsPage = () => {
+  const { user, capabilities } = useAuth();
+  const canViewTaskPerformance = ['admin', 'coordenacao'].includes(String(user?.role || '').trim().toLowerCase());
+  // Só quem tem leitura detalhada (admin e coordenação) escolhe a
+  // anonimização; para os demais o servidor sempre exporta agregado.
+  const canChooseAnonymize = Boolean(capabilities?.gestao?.relatorios?.detalhado);
+  // A aba abre com relatorios.exportacao ou relatorios.perfilAtletas (WI-016,
+  // decisão de 12/10/2026). Sem a exportação (coord_atendimento), a tela não
+  // pede indicadores, correlações, exportação nem tarefas, que dariam 403, e
+  // mostra só o Perfil dos atletas.
+  const canViewIndicators = Boolean(capabilities?.gestao?.relatorios?.exportacao);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [dateRange, setDateRange] = useState('month');
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,10 +124,19 @@ const ReportsPage = () => {
   const [isExportPanelCollapsed, setIsExportPanelCollapsed] = useState(true);
   const { notify } = useUiFeedback();
 
-  const { overview, correlations, isLoading, autoRefreshIntervalMs, reload } = useReportsOverview({
+  const {
+    overview,
+    correlations,
+    isLoading,
+    loadError,
+    correlationsError,
+    autoRefreshIntervalMs,
+    reload
+  } = useReportsOverview({
     range: dateRange,
     projectId: selectedProjectId,
-    notify
+    notify,
+    habilitado: canViewIndicators
   });
 
   const metricDefinitions = useMemo(() => (
@@ -69,68 +145,112 @@ const ReportsPage = () => {
       : {}
   ), [overview?.metricDefinitions]);
 
+  // A descrição de cada cartão é a definição do servidor (o que o número
+  // conta); o texto local só vale para resposta antiga, sem definição.
   const getMetricDescription = useCallback((key, fallback) => {
-    const definition = metricDefinitions[key];
-    if (!definition || typeof definition !== 'object') return fallback;
-    const description = String(definition.description || '').trim();
-    const formula = String(definition.formula || '').trim();
-    if (!description && !formula) return fallback;
-    if (!formula) return description;
-    return `${description} - ${formula}`;
+    const description = String(metricDefinitions[key]?.description || '').trim();
+    return description || fallback;
   }, [metricDefinitions]);
 
-  const reportsData = useMemo(() => {
+  const periodText = useMemo(() => formatPeriod(overview.period), [overview.period]);
+  const previousPeriodText = useMemo(() => formatPeriod(overview.previousPeriod), [overview.previousPeriod]);
+  const periodLabel = periodOptions.find((option) => option.value === dateRange)?.label || 'Período';
+
+  // Situação atual: o cadastro agora, sem período.
+  const currentCards = useMemo(() => {
     const metrics = overview.metrics || {};
-    return {
-      totalAlunos: {
-        value: Number(metrics.totalAlunos || 0).toLocaleString('pt-BR'),
-        trend: { value: `${Number(metrics.totalAlunos || 0)}`, direction: 'up' },
-        description: getMetricDescription('totalAlunos', 'Membros estudantis ativos')
+    return [
+      {
+        title: 'Alunos com atleta',
+        value: formatCount(metrics.totalAlunos),
+        icon: Users,
+        description: getMetricDescription('totalAlunos', 'Alunos distintos responsáveis por ao menos um atleta do escopo.')
       },
-      professores: {
-        value: Number(metrics.professores || 0).toLocaleString('pt-BR'),
-        trend: { value: `${Number(metrics.professores || 0)}`, direction: 'up' },
-        description: getMetricDescription('professores', 'Supervisores cadastrados')
+      {
+        title: 'Supervisores com atleta',
+        value: formatCount(metrics.professores),
+        icon: GraduationCap,
+        description: getMetricDescription('professores', 'Professores e profissionais distintos que supervisionam ao menos um atleta do escopo.')
       },
-      totalPacientes: {
-        value: Number(metrics.totalPacientes || 0).toLocaleString('pt-BR'),
-        trend: { value: `${Number(metrics.totalPacientes || 0)}`, direction: 'up' },
-        description: getMetricDescription('totalPacientes', 'Pacientes monitorados no escopo')
+      {
+        title: 'Atletas cadastrados',
+        value: formatCount(metrics.totalPacientes),
+        icon: Users,
+        description: getMetricDescription('totalPacientes', 'Atletas cadastrados no escopo, em qualquer situação.')
       },
-      avaliacoes: {
-        value: Number(metrics.avaliacoesPeriodo || 0).toLocaleString('pt-BR'),
-        trend: { value: `${Number(metrics.avaliacoesPeriodo || 0)}`, direction: 'up' },
-        description: getMetricDescription('avaliacoesPeriodo', 'Avaliações registradas no período')
-      },
-      taxaVinculacao: {
-        value: `${Number(metrics.taxaVinculacao || 0)}%`,
-        trend: { value: `${Number(metrics.taxaVinculacao || 0)}%`, direction: 'up' },
-        description: getMetricDescription('taxaVinculacao', 'Pacientes com responsável definido')
-      },
-      integridade: {
-        value: `${Number(metrics.integridade || 0)}%`,
-        trend: { value: `${Number(metrics.integridade || 0)}%`, direction: 'up' },
-        description: getMetricDescription('integridade', 'Avaliações com completude >= 80%')
-      },
-      satisfacao: {
-        value: Number(metrics.satisfacao || 0).toFixed(1),
-        trend: { value: `${Number(metrics.completionRate || 0)}%`, direction: 'up' },
-        description: getMetricDescription('satisfacao', 'Índice calculado a partir de métricas operacionais (0–5). Não representa pesquisa de satisfação com pacientes.')
-      },
-      retencao: {
-        value: `${Number(metrics.retencao || 0)}%`,
-        trend: { value: `${Number(metrics.retencao || 0)}%`, direction: 'up' },
-        description: getMetricDescription('retencao', 'Pacientes com pelo menos 2 avaliações')
+      {
+        title: 'Atletas com aluno responsável',
+        value: formatPercent(metrics.taxaVinculacao),
+        icon: Link2,
+        description: getMetricDescription('taxaVinculacao', 'Parte dos atletas cadastrados que tem aluno responsável definido.')
       }
-    };
+    ];
   }, [getMetricDescription, overview.metrics]);
+
+  // No período: só os dias do filtro. Os quatro primeiros comparam com o
+  // período anterior; as taxas, não.
+  const periodCards = useMemo(() => {
+    const metrics = overview.metrics || {};
+    const trends = overview.trends || {};
+    return [
+      {
+        title: 'Avaliações',
+        value: formatCount(metrics.avaliacoesPeriodo),
+        icon: BarChart3,
+        trend: formatTrend(trends.avaliacoesPeriodo),
+        description: getMetricDescription('avaliacoesPeriodo', 'Avaliações registradas nos dias do período.')
+      },
+      {
+        title: 'Atendimentos realizados',
+        value: formatCount(metrics.atendimentosRealizados),
+        icon: CalendarCheck,
+        trend: formatTrend(trends.atendimentosRealizados),
+        description: getMetricDescription('atendimentosRealizados', 'Consultas do período registradas como realizadas.')
+      },
+      {
+        title: 'Novos atletas',
+        value: formatCount(metrics.novosAtletas),
+        icon: UserPlus,
+        trend: formatTrend(trends.novosAtletas),
+        description: getMetricDescription('novosAtletas', 'Atletas cadastrados nos dias do período.')
+      },
+      {
+        title: 'Retornos',
+        value: formatCount(metrics.retornos),
+        icon: RotateCcw,
+        trend: formatTrend(trends.retornos),
+        description: getMetricDescription('retornos', 'Atletas avaliados no período que já tinham outra avaliação.')
+      },
+      {
+        title: 'Taxa de retorno',
+        value: formatPercent(metrics.retencao),
+        icon: TrendingUp,
+        description: getMetricDescription('retencao', 'Parte dos atletas avaliados no período que eram retorno.')
+      },
+      {
+        // Antes "Qualidade operacional", com a métrica "Satisfação estimada"
+        // (0 a 5): as duas eram a taxa de consultas realizadas. O cartão
+        // agora diz o que mede (WI-016).
+        title: 'Consultas realizadas',
+        value: formatPercent(metrics.completionRate),
+        icon: ClipboardCheck,
+        description: getMetricDescription('completionRate', 'Parte das consultas marcadas para o período que foi realizada.')
+      },
+      {
+        title: 'Avaliações completas',
+        value: formatPercent(metrics.integridade),
+        icon: ShieldCheck,
+        description: getMetricDescription('integridade', 'Parte das avaliações do período com completude de 80% ou mais.')
+      }
+    ];
+  }, [getMetricDescription, overview.metrics, overview.trends]);
 
   const usageData = useMemo(() => {
     const items = Array.isArray(overview.usageByType) ? overview.usageByType : [];
     return items.map((item) => ({
       label: item.label,
-      value: Number(item.percentage || 0),
-      count: Number(item.count || 0),
+      value: hasNumber(item.percentage) ? Number(item.percentage) : null,
+      count: hasNumber(item.count) ? Number(item.count) : null,
       color: item.color || 'progress-gradient-blue'
     }));
   }, [overview.usageByType]);
@@ -150,85 +270,21 @@ const ReportsPage = () => {
   const dataset = useMemo(() => (
     correlations?.dataset && typeof correlations.dataset === 'object'
       ? correlations.dataset
-      : { patients: 0, evaluations: 0, appointments: 0 }
+      : { patients: null, evaluations: null, appointments: null }
   ), [correlations?.dataset]);
-
-  const statCards = useMemo(() => [
-    {
-      title: 'Total de alunos',
-      value: reportsData.totalAlunos.value,
-      icon: Users,
-      color: 'gradient-blue',
-      trend: reportsData.totalAlunos.trend,
-      description: reportsData.totalAlunos.description
-    },
-    {
-      title: 'Professores/Profissionais',
-      value: reportsData.professores.value,
-      icon: GraduationCap,
-      color: 'gradient-emerald',
-      trend: reportsData.professores.trend,
-      description: reportsData.professores.description
-    },
-    {
-      title: 'Total de pacientes',
-      value: reportsData.totalPacientes.value,
-      icon: Users,
-      color: 'gradient-indigo',
-      trend: reportsData.totalPacientes.trend,
-      description: reportsData.totalPacientes.description
-    },
-    {
-      title: 'Avaliações no período',
-      value: reportsData.avaliacoes.value,
-      icon: BarChart3,
-      color: 'gradient-purple',
-      trend: reportsData.avaliacoes.trend,
-      description: reportsData.avaliacoes.description
-    },
-    {
-      title: 'Taxa de vinculação',
-      value: reportsData.taxaVinculacao.value,
-      icon: TrendingUp,
-      color: 'gradient-amber',
-      trend: reportsData.taxaVinculacao.trend,
-      description: reportsData.taxaVinculacao.description
-    },
-    {
-      title: 'Integridade de dados',
-      value: reportsData.integridade.value,
-      icon: ShieldCheck,
-      color: 'gradient-green',
-      trend: reportsData.integridade.trend,
-      description: reportsData.integridade.description
-    },
-    {
-      title: 'Qualidade operacional',
-      value: reportsData.satisfacao.value,
-      icon: TrendingUp,
-      color: 'gradient-rose',
-      trend: reportsData.satisfacao.trend,
-      description: reportsData.satisfacao.description || 'Índice calculado a partir de métricas operacionais (0–5)'
-    },
-    {
-      title: 'Retenção',
-      value: reportsData.retencao.value,
-      icon: TrendingUp,
-      color: 'gradient-cyan',
-      trend: reportsData.retencao.trend,
-      description: reportsData.retencao.description
-    }
-  ], [reportsData]);
 
   const normalizedSearch = searchQuery.trim().toLowerCase();
 
-  const visibleStatCards = useMemo(() => {
-    if (!normalizedSearch) return statCards;
-    return statCards.filter((item) => (
+  const filterCards = useCallback((cards) => {
+    if (!normalizedSearch) return cards;
+    return cards.filter((item) => (
       item.title.toLowerCase().includes(normalizedSearch)
       || item.description.toLowerCase().includes(normalizedSearch)
     ));
-  }, [normalizedSearch, statCards]);
+  }, [normalizedSearch]);
+
+  const visibleCurrentCards = useMemo(() => filterCards(currentCards), [currentCards, filterCards]);
+  const visiblePeriodCards = useMemo(() => filterCards(periodCards), [filterCards, periodCards]);
 
   const visibleUsageData = useMemo(() => {
     if (!normalizedSearch) return usageData;
@@ -286,7 +342,7 @@ const ReportsPage = () => {
           params: {
             range: dateRange,
             projectId: selectedProjectId,
-            anonymize,
+            anonymize: canChooseAnonymize ? anonymize : true,
             format: exportFormatByType[type] || 'csv'
           },
           responseType: 'blob'
@@ -317,25 +373,90 @@ const ReportsPage = () => {
     }
   }, [
     anonymize,
+    canChooseAnonymize,
     dateRange,
     notify,
     projects,
     selectedProjectId
   ]);
 
+  // Atualizar também recarrega o perfil e a produção: a `key` nova remonta os
+  // dois painéis, que pedem os dados de novo.
   const handleRefresh = useCallback(() => {
-    reload();
-  }, [reload]);
+    if (canViewIndicators) reload();
+    setRefreshKey((value) => value + 1);
+  }, [canViewIndicators, reload]);
 
   const isExecutiveView = viewMode === 'all' || viewMode === 'executive';
   const isOperationalView = viewMode === 'all' || viewMode === 'operational';
   const isAnalyticsView = viewMode === 'all' || viewMode === 'analytics';
 
-  const statsSkeleton = Array.from({ length: 8 }).map((_, index) => (
-    <div key={`skeleton-${index}`} className="report-skeleton-card" />
-  ));
+  const renderStatCards = (cards, visibleCards) => (
+    <div className="stats-grid" aria-busy={isLoading || undefined}>
+      {isLoading
+        ? cards.map((card) => (
+          <div key={`skeleton-${card.title}`} className="report-skeleton-card" aria-hidden="true" />
+        ))
+        : visibleCards.map((card, index) => (
+          <motion.div
+            key={card.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+          >
+            <StatCard {...card} />
+          </motion.div>
+        ))}
+      {!isLoading && visibleCards.length === 0 && (
+        <div className="reports-empty-state laines-feedback-state">
+          Nenhum indicador encontrado para a busca atual.
+        </div>
+      )}
+    </div>
+  );
 
+  // Só o perfil dos atletas: período e Atualizar, sem busca, recorte de
+  // projeto (o servidor usa o projeto da pessoa) nem exportação.
+  if (!canViewIndicators) {
+    return (
+      <MotionConfig reducedMotion="user">
+      <div className="reports-container">
+        <ReportsHeader
+          isLoading={false}
+          onRefresh={handleRefresh}
+          subtitle="Perfil agregado dos atletas atendidos, sempre em grupo e nunca por pessoa."
+        />
+
+        <div className="reports-view-switch" role="group" aria-label="Período de análise">
+          {periodOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`view-switch-btn ${dateRange === option.value ? 'active' : ''}`}
+              onClick={() => setDateRange(option.value)}
+              aria-pressed={dateRange === option.value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <PerfilAtletasPanel
+          key={`perfil-${refreshKey}`}
+          range={dateRange}
+          projectId={selectedProjectId}
+          capabilities={capabilities}
+        />
+      </div>
+      </MotionConfig>
+    );
+  }
+
+  // MotionConfig: com "reduzir movimento" no sistema, as entradas do
+  // framer-motion (cabeçalho, indicadores, trimestres, exportação) não
+  // deslocam nada; só a opacidade continua.
   return (
+    <MotionConfig reducedMotion="user">
     <div className="reports-container">
       <ReportsHeader
         isLoading={isLoading}
@@ -348,13 +469,14 @@ const ReportsPage = () => {
         onExportAll={() => handleExport('csv')}
       />
 
-      <div className="reports-view-switch">
+      <div className="reports-view-switch" role="group" aria-label="Modo de leitura">
         {viewOptions.map((option) => (
           <button
             key={option.id}
             type="button"
             className={`view-switch-btn ${viewMode === option.id ? 'active' : ''}`}
             onClick={() => setViewMode(option.id)}
+            aria-pressed={viewMode === option.id}
           >
             <option.icon size={14} />
             {option.label}
@@ -374,32 +496,46 @@ const ReportsPage = () => {
         projects={projects}
         anonymize={anonymize}
         onAnonymizeChange={setAnonymize}
+        canChooseAnonymize={canChooseAnonymize}
         onClose={() => setShowFilters(false)}
       />
 
-      <div className="reports-dataset-strip">
-        <article>
-          <span>Pacientes analisados</span>
-          <strong>{Number(dataset.patients || 0).toLocaleString('pt-BR')}</strong>
-        </article>
-        <article>
-          <span>Avaliações analisadas</span>
-          <strong>{Number(dataset.evaluations || 0).toLocaleString('pt-BR')}</strong>
-        </article>
-        <article>
-          <span>Consultas analisadas</span>
-          <strong>{Number(dataset.appointments || 0).toLocaleString('pt-BR')}</strong>
-        </article>
-      </div>
+      {!isLoading && loadError && (
+        <div className="reports-empty-state laines-feedback-state" role="alert">
+          Não foi possível carregar os indicadores. Os números aparecem como “—” até a próxima atualização.
+        </div>
+      )}
+
+      {/* A base analisada com as peças da Visão geral. Os três números são
+          do mesmo período: atletas com avaliação ou consulta nele, e as
+          avaliações e consultas dele. */}
+      <PainelVisaoGeral className="reports-dataset-strip">
+        <PainelIndicadores
+          rotulo={periodText ? `Base analisada (${periodText})` : 'Base analisada'}
+          itens={[
+            { id: 'patients', rotulo: 'Atletas com atividade no período', valor: formatCount(dataset.patients) },
+            { id: 'evaluations', rotulo: 'Avaliações no período', valor: formatCount(dataset.evaluations) },
+            { id: 'appointments', rotulo: 'Consultas no período', valor: formatCount(dataset.appointments) }
+          ]}
+        />
+      </PainelVisaoGeral>
 
       {visibleAlerts.length > 0 && (
-        <section className="reports-alerts-strip">
+        <section className="reports-alerts-strip" aria-label="Alertas">
           {visibleAlerts.slice(0, 3).map((alert) => (
             <article key={alert.id} className={`reports-alert alert-${alert.severity || 'low'}`}>
               <AlertTriangle size={14} />
               <div>
+                <span className="reports-sr">
+                  {`Severidade ${(alertSeverityLabel[alert.severity] || alertSeverityLabel.low).toLowerCase()}: `}
+                </span>
                 <strong>{alert.title}</strong>
                 <p>{alert.recommendation}</p>
+                {hasNumber(alert.sampleSize) && (
+                  <p className="reports-alert-amostra">
+                    {`n = ${formatCount(alert.sampleSize)}${alert.sampleUnit ? ` ${alert.sampleUnit}` : ''}`}
+                  </p>
+                )}
               </div>
             </article>
           ))}
@@ -409,28 +545,24 @@ const ReportsPage = () => {
       {isExecutiveView && (
         <section className="reports-section">
           <header className="reports-section-header">
-            <h3>Resumo executivo</h3>
-            <p>Indicadores principais para acompanhamento institucional rápido.</p>
+            <h3>Situação atual</h3>
+            <p>O cadastro agora, no escopo do projeto. Não muda com o período escolhido.</p>
           </header>
-          <div className="stats-grid">
-            {isLoading
-              ? statsSkeleton
-              : visibleStatCards.map((card, index) => (
-                <motion.div
-                  key={card.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
-                >
-                  <StatCard {...card} />
-                </motion.div>
-              ))}
-            {!isLoading && visibleStatCards.length === 0 && (
-              <div className="reports-empty-state laines-feedback-state">
-                Nenhum indicador encontrado para a busca atual.
-              </div>
-            )}
-          </div>
+          {renderStatCards(currentCards, visibleCurrentCards)}
+        </section>
+      )}
+
+      {isExecutiveView && (
+        <section className="reports-section">
+          <header className="reports-section-header">
+            <h3>No período</h3>
+            <p>
+              {periodText
+                ? `${periodLabel}: ${periodText}, no horário de Brasília. A tendência compara com ${previousPeriodText}, com o mesmo número de dias.`
+                : `${periodLabel}, no horário de Brasília.`}
+            </p>
+          </header>
+          {renderStatCards(periodCards, visiblePeriodCards)}
         </section>
       )}
 
@@ -438,18 +570,41 @@ const ReportsPage = () => {
         <section className="reports-section">
           <header className="reports-section-header">
             <h3>Análise operacional</h3>
-            <p>Uso por categoria e comportamento temporal para a rotina da equipe.</p>
+            <p>Uso por categoria e trimestres do período, para a rotina da equipe.</p>
           </header>
           <div className="charts-export-grid operational-only-grid">
             <UsagePanel
               dateRange={dateRange}
               onDateRangeChange={setDateRange}
               generatedAt={overview.generatedAt}
+              periodText={periodText}
               visibleUsageData={visibleUsageData}
             />
             <QuarterlyPanel quarterlyData={quarterlyData} />
           </div>
         </section>
+      )}
+
+      {isOperationalView && canViewTaskPerformance && <TaskPerformancePanel />}
+
+      {/* Depois da direção e do atendimento, o perfil dos atletas (direção e
+          atendimento) e a produção da liga (direção). Cada painel confere a
+          própria capacidade e não pede nada sem ela. */}
+      {(isExecutiveView || isOperationalView) && (
+        <PerfilAtletasPanel
+          key={`perfil-${refreshKey}`}
+          range={dateRange}
+          projectId={selectedProjectId}
+          capabilities={capabilities}
+        />
+      )}
+
+      {isExecutiveView && (
+        <ProducaoLigaPanel
+          key={`producao-${refreshKey}`}
+          range={dateRange}
+          capabilities={capabilities}
+        />
       )}
 
       {isAnalyticsView && (
@@ -458,7 +613,7 @@ const ReportsPage = () => {
             <h3>Drivers e tomada de decisão</h3>
             <p>Fatores associados e detalhamento para orientar ações concretas.</p>
           </header>
-          <DriversPanel correlations={correlations} />
+          <DriversPanel correlations={correlations} loadError={correlationsError} />
           <CorrelationDrilldownPanel correlations={correlations} />
         </section>
       )}
@@ -475,6 +630,8 @@ const ReportsPage = () => {
             onExport={handleExport}
             isCollapsed={isExportPanelCollapsed}
             onToggleCollapse={() => setIsExportPanelCollapsed((prev) => !prev)}
+            canChooseAnonymize={canChooseAnonymize}
+            periodText={periodText}
           />
         </div>
       </section>
@@ -485,6 +642,7 @@ const ReportsPage = () => {
         hasAutoRefresh
       />
     </div>
+    </MotionConfig>
   );
 };
 

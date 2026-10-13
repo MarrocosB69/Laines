@@ -1,0 +1,110 @@
+{
+  "version": "0.340.0",
+  "installedAt": "2026-09-12T08:49:24.824Z",
+  "entries": [
+    {
+      "path": "phasegate.config.json",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:e06e10af1aba0f4b1a4d36979452ca023ee696319222ce6f68dcfdf339b41e08",
+      "deployedAt": "2026-09-12T08:49:24.861Z"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:4b61299539176577145c4d1976870a5fdd4b4b3e1ce0658e75d7aa52ae331daf",
+      "deployedAt": "2026-09-12T08:49:24.871Z"
+    },
+    {
+      "path": "AGENTS.md",
+      "mode": "merged",
+      "block": {
+        "start": "<!-- phasegate:managed-section:start -->",
+        "end": "<!-- phasegate:managed-section:end -->",
+        "content": "phasegate AGENTS.md managed section"
+      },
+      "hash": "sha256:43ba0a10d244881fcdc87dd24fab832762d04d0f9ac1175918c41242c54a09d8",
+      "deployedAt": "2026-09-12T08:49:24.877Z"
+    },
+    {
+      "path": "package.json",
+      "mode": "merged",
+      "block": {
+        "start": "phasegate structured merge",
+        "end": "phasegate structured merge",
+        "content": "package-json:package.json"
+      },
+      "hash": "sha256:8e8df1d5cc4499e15114eea83efd7fb88f7a49664a7d89b2432ed6a50d9f52a3",
+      "deployedAt": "2026-09-12T08:49:24.881Z"
+    },
+    {
+      "path": "skills/.harness-version",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:0673bd983e6a2a4e20d4448be0b54049b33fb1f361a7b9393ac2dbba46e6a306",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/cascade-updater",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:04e20e65151f3244d19d9d6cd1fb545d181ee896cc011d8bf3fd59db1196142b",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/codebase-mapper",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:9c5e981e4541a5061fdc38f64230fb535583098bbf428ca14a6f055a7a195de9",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/consistency-checker",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:bb10ababc214d56e729ba90e77b2078db40fac614fd8822876d3d6a1b8e484df",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/doc-health-checker",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:9bf1f47eda552b8d68fc1bb378457e4f0fb001685efe1e9ed73302fd2c4613d6",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/engineering-perspective",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:03d31d841a0de3981dffb8f3aaef3d6ea5a99de014b082b88d241fbad7cfd2fc",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/implementation-readiness-checker",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:17cc0575fbbdc7f8fff93d46e232c2df8b2c8da61a875e387cda2e59c2ca379d",
+      "deployedAt": "2026-09-12T08:49:24.950Z"
+    },
+    {
+      "path": "skills/test-coverage-checker",
+      "mode": "created",
+      "block": null,
+      "hash": "sha256:54462bb22db1f0a620548e38ed5e7b3af618f9be34f540666b677fdafa45f874",
+      "deployedAt": "2026-09-12T08:49:24.951Z"
+    },
+    {
+      "path": ".codex/skills",
+      "mode": "symlink",
+      "block": null,
+      "hash": "sha256:c1aefaccb300698f4b7ae764e1fa857f93c0609ba47b078e4806d926f289c23b",
+      "deployedAt": "2026-09-12T08:49:24.955Z"
+    }
+  ],
+  "installationFlags": {
+    "includeHusky": false,
+    "includeCi": false,
+    "personal": false
+  }
+}

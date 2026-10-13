@@ -5,6 +5,7 @@ import { getAccessToken, subscribeAuthSync } from './sessionToken';
 const listenersByEvent = new Map();
 let socket = null;
 let authSyncUnsubscribe = null;
+let connectedToken = null;
 
 const normalizeBaseUrl = (value) => String(value || '').trim().replace(/\/+$/, '');
 
@@ -87,6 +88,10 @@ const connectSocketIfNeeded = () => {
   }
 
   const activeSocket = ensureSocket();
+  if (connectedToken !== token) {
+    activeSocket.disconnect();
+    connectedToken = token;
+  }
   activeSocket.auth = { token: `Bearer ${token}` };
   if (!activeSocket.connected && !activeSocket.active) {
     activeSocket.connect();

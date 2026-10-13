@@ -12,10 +12,21 @@ import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filte
 import { normalizeDeepUnicode } from './common/text-normalization';
 import { ObservabilityService } from './observability/observability.service';
 
+const isPrivateNetworkHost = (hostname: string) => {
+  if (['localhost', '127.0.0.1', '[::1]'].includes(hostname)) return true;
+  // IPv4 privado (RFC 1918)
+  if (/^10\./.test(hostname)) return true;
+  if (/^192\.168\./.test(hostname)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return true;
+  // IPv6 link-local / ULA
+  if (hostname.startsWith('fe80:') || hostname.startsWith('fd')) return true;
+  return false;
+};
+
 const isLocalhostOrigin = (origin: string) => {
   try {
     const url = new URL(origin);
-    return ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    return isPrivateNetworkHost(url.hostname);
   } catch {
     return false;
   }
@@ -149,7 +160,12 @@ async function bootstrap() {
 
     res.on('finish', () => {
       const elapsedMs = Date.now() - startedAt;
-      const message = `${req.method} ${req.originalUrl || req.url} ${res.statusCode} ${elapsedMs}ms`;
+      const rawPath = req.originalUrl || req.url;
+      const safePath = rawPath.replace(
+        /(\/avaliacoes-imagem\/uploads\/local\/)[^/?#]+/,
+        '$1[REDACTED]',
+      );
+      const message = `${req.method} ${safePath} ${res.statusCode} ${elapsedMs}ms`;
       if (!isHealthProbe) {
         observability.recordRequest({
           method: req.method,
@@ -183,7 +199,26 @@ async function bootstrap() {
     mkdirSync(uploadsDir, { recursive: true });
   }
   if (config.get('uploads.publicAccess')) {
-    app.use('/uploads', express.static(uploadsDir));
+    app.use('/uploads', (req: Request, res: Response, next: NextFunction) => {
+      // Match the decoding performed by static delivery. Fold Windows separators,
+      // case, trailing dots/spaces and ADS names before inspecting path segments.
+      // Reject the private segment even before dot-segment normalization.
+      let requestedPath: string;
+      try {
+        requestedPath = decodeURIComponent(req.path).replace(/\\/g, '/');
+      } catch {
+        res.sendStatus(400);
+        return;
+      }
+      const privatePath = requestedPath.split('/').some((part) => (
+        part.split(':')[0].replace(/[. ]+$/g, '').toLowerCase() === 'avaliacoes-imagem'
+      ));
+      if (privatePath) {
+        res.sendStatus(404);
+        return;
+      }
+      next();
+    }, express.static(uploadsDir));
   }
 
   const port = config.get('port') || 4000;
@@ -218,6 +253,9 @@ async function bootstrap() {
   }
   const displayHost = host === '0.0.0.0' ? 'localhost' : host;
   logger.log(`API running on http://${displayHost}:${port}`);
+  if (host === '0.0.0.0') {
+    logger.log(`LAN access enabled. Use http://<seu-ip-local>:${port} (descubra com "ipconfig")`);
+  }
 }
 
 bootstrap();

@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   Apple,
   Brain,
+  Camera,
   ChevronDown,
   ChevronRight,
   Droplets,
+  Dumbbell,
   FileSpreadsheet,
   FlaskConical,
   HeartPulse,
@@ -13,12 +15,20 @@ import {
   RefreshCcw,
   Ruler,
   Scale,
-  ShieldCheck
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
+import { AvaliacaoImagem } from '../Avaliacoes/avaliacao-imagem/AvaliacaoImagem';
 import { Line, LineChart, ResponsiveContainer } from 'recharts';
-import { EVALUATION_REGISTRY } from '../../constants/evaluationRegistry';
-import { getEvaluationTypeLabel } from '../shared/evaluationSummaryUtils';
+import { EVALUATION_REGISTRY, getVisibleTypesForUser } from '../../constants/evaluationRegistry';
+import {
+  formatEnergyAvailabilityClassification,
+  getEvaluationTypeLabel
+} from '../shared/evaluationSummaryUtils';
+import { formatAcwrZone, formatTrainingPhase } from '../shared/evaluationResultAdapter';
+import { useAuth } from '../../contexts/AuthContext';
 import { FeedbackState } from '../ui';
+import { clinicalDate, eligibleEvaluations } from './prontuarioOverview';
 
 const ICONS_BY_TYPE = {
   bioimpedancia: Scale,
@@ -33,7 +43,17 @@ const ICONS_BY_TYPE = {
   fisioterapia: PersonStanding,
   psicologia: Brain,
   exames_laboratoriais: FlaskConical,
-  evolucao_retorno: RefreshCcw
+  evolucao_retorno: RefreshCcw,
+  composicao_corporal_imagem: Camera,
+  carga_treino: Dumbbell,
+  triagem_reds: Zap,
+};
+
+// Carga semanal 0 é o que o cálculo grava quando não há sessão válida; o
+// próprio formulário a trata como "não calculada". Aqui ela vira ausência.
+const positiveOrNull = (value) => {
+  const numeric = toNumber(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 };
 
 const METRIC_SPECS = {
@@ -98,9 +118,34 @@ const METRIC_SPECS = {
     { label: 'Painel', unit: '', keys: ['painel'] }
   ],
   evolucao_retorno: [
-    { label: 'Score adesao', unit: '%', keys: ['scoreAdesaoGeral', 'score_adesao'] },
+    { label: 'Aplicação da Dieta', unit: '%', keys: ['scoreAdesaoGeral', 'score_adesao'] },
     { label: 'Data', unit: '', keys: ['proximaAvaliacao', 'dataRetorno'] },
     { label: 'Conduta', unit: '', keys: ['conduta'] }
+  ],
+  composicao_corporal_imagem: [
+    { label: 'Gordura estimada', unit: '%', keys: ['percGordura', 'perc_gordura_estimado', 'percentualGordura'] },
+    { label: 'Massa magra estimada', unit: 'kg', keys: ['massaMagra', 'massa_magra_kg'] },
+    { label: 'RCQ estimada', unit: '', keys: ['rcq'] }
+  ],
+  // `format` só traduz o valor gravado em texto; `optional` some sem valor.
+  carga_treino: [
+    { label: 'ACWR', unit: '', keys: ['acwr'], digits: 2 },
+    { label: 'Carga da semana', unit: 'UA', keys: ['cargaSemanaAtual'], format: positiveOrNull },
+    { label: 'Zona do ACWR', unit: '', keys: ['classificacaoAcwr'], format: formatAcwrZone },
+    { label: 'Fase', unit: '', keys: ['faseAtual', 'fase_atual'], format: formatTrainingPhase, optional: true }
+  ],
+  triagem_reds: [
+    {
+      label: 'Disponibilidade energética',
+      unit: 'kcal/kg MLG/dia',
+      keys: ['disponibilidadeEnergetica', 'disponibilidade_energetica', 'DE']
+    },
+    {
+      label: 'Classificação',
+      unit: '',
+      keys: ['classificacaoDE', 'classificacao_de'],
+      format: formatEnergyAvailabilityClassification
+    }
   ]
 };
 
@@ -108,9 +153,21 @@ const PRONTUARIO_SUMMARY_TYPES = Object.freeze({
   CLINICA: 'avaliacao_clinica',
   ANAMNESE: 'anamnese_inicial',
   GET: 'gasto_energetico_total',
+  // Módulo aberto pelo cartão "Composição" enquanto não há avaliação de
+  // composição; com registro, o cartão segue COMPOSICAO_SOURCES.
   COMPOSICAO: 'bioimpedancia',
   PSICOLOGIA: 'psicologia'
 });
+
+// O cartão "Composição" mostra a avaliação mais recente destes tipos, inteira
+// e com a fonte escrita. Não mistura valores de fontes diferentes: cada
+// avaliação é independente (WI-007).
+const COMPOSICAO_SOURCES = Object.freeze([
+  { type: 'bioimpedancia', label: 'Bioimpedância' },
+  { type: 'dobras_cutaneas', label: 'Dobras cutâneas' },
+  { type: 'perimetros', label: 'Perímetros' },
+  { type: 'composicao_corporal_integrada', label: 'Composição corporal integrada' }
+]);
 
 const toToken = (value) => String(value || '').trim().toLowerCase().normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -253,6 +310,17 @@ const resolveLatestByType = (groupedByType, type) => {
   return null;
 };
 
+// Mesma data e mesma ordem dos outros cartões do resumo (createdAt, data,
+// updatedAt). Empate fica com a fonte que vem antes em COMPOSICAO_SOURCES.
+const summaryTime = (row) => toDate(row?.createdAt || row?.data || row?.updatedAt)?.getTime() || 0;
+
+const resolveLatestComposition = (groupedByType) => COMPOSICAO_SOURCES.reduce((latest, source) => {
+  const row = groupedByType.get(source.type)?.[0];
+  if (!row) return latest;
+  if (latest && summaryTime(latest.row) >= summaryTime(row)) return latest;
+  return { ...source, row };
+}, null);
+
 const getEvaluationSources = (evaluation) => ([
   evaluation?.resultados_calculados,
   evaluation?.resultados?.calculated,
@@ -284,11 +352,11 @@ const hasMetricValue = (value) => (
   value !== null && value !== undefined && String(value).trim() !== ''
 );
 
-const renderValue = (value, unit = '') => {
+const renderValue = (value, unit = '', digits) => {
   if (!hasMetricValue(value)) return '--';
   const numeric = toNumber(value);
   if (Number.isFinite(numeric)) {
-    const precision = Math.abs(numeric) >= 1000 ? 0 : 1;
+    const precision = Number.isInteger(digits) ? digits : Math.abs(numeric) >= 1000 ? 0 : 1;
     const formatted = numeric.toLocaleString('pt-BR', {
       minimumFractionDigits: precision,
       maximumFractionDigits: precision
@@ -296,6 +364,16 @@ const renderValue = (value, unit = '') => {
     return unit ? `${formatted} ${unit}` : formatted;
   }
   return String(value);
+};
+
+const readCompositionMetric = (evaluation, keys, paths = []) => {
+  const direct = toNumber(readMetricValue(evaluation, keys));
+  if (Number.isFinite(direct)) return direct;
+  for (const path of paths) {
+    const nested = toNumber(readPath(evaluation, path));
+    if (Number.isFinite(nested)) return nested;
+  }
+  return null;
 };
 
 const computeDelta = (currentValue, previousValue, unit = '') => {
@@ -315,6 +393,7 @@ const computeDelta = (currentValue, previousValue, unit = '') => {
 
 const resolveCardStatus = (evaluation) => {
   if (!evaluation) return 'nao_realizada';
+  if (evaluation?.meta?.aguardandoRevisao) return 'aguardando_revisao';
   const token = toToken(evaluation.status);
   if (['finalizada', 'concluida', 'realizada'].includes(token)) return 'realizada';
   if (token === 'rascunho') return 'rascunho';
@@ -322,24 +401,27 @@ const resolveCardStatus = (evaluation) => {
 };
 
 const statusClassMap = {
-  realizada:    'pron-card-avaliacao--realizada',
-  rascunho:     'pron-card-avaliacao--rascunho',
-  pendente:     'pron-card-avaliacao--pendente',
-  nao_realizada:'pron-card-avaliacao--nao-realizada'
+  realizada:          'pron-card-avaliacao--realizada',
+  aguardando_revisao: 'pron-card-avaliacao--aguardando',
+  rascunho:           'pron-card-avaliacao--rascunho',
+  pendente:           'pron-card-avaliacao--pendente',
+  nao_realizada:      'pron-card-avaliacao--nao-realizada'
 };
 
 const STATUS_BADGE = {
-  realizada:    { cls: 'pron-badge-ok',   label: 'Finalizada' },
-  rascunho:     { cls: 'pron-badge-muted pron-badge--rascunho', label: 'Rascunho' },
-  pendente:     { cls: 'pron-badge-warn', label: 'Pendente' },
-  nao_realizada:{ cls: 'pron-badge-muted',label: 'Não iniciada' },
+  realizada:          { cls: 'pron-badge-ok',   label: 'Finalizada' },
+  aguardando_revisao: { cls: 'pron-badge--info', label: 'Aguardando revisão' },
+  rascunho:           { cls: 'pron-badge-muted pron-badge--rascunho', label: 'Rascunho' },
+  pendente:           { cls: 'pron-badge-warn', label: 'Pendente' },
+  nao_realizada:      { cls: 'pron-badge-muted', label: 'Não iniciada' },
 };
 
 const STATUS_ACTION_LABEL = {
-  realizada:    'Ver detalhes',
-  rascunho:     'Continuar rascunho',
-  pendente:     'Iniciar avaliação',
-  nao_realizada:'Iniciar avaliação',
+  realizada:          'Ver detalhes',
+  aguardando_revisao: 'Ver envio do atleta',
+  rascunho:           'Continuar rascunho',
+  pendente:           'Iniciar avaliação',
+  nao_realizada:      'Iniciar avaliação',
 };
 
 const buildSparklineData = (rows = [], metricKeys = []) => rows
@@ -359,6 +441,11 @@ const buildSparklineData = (rows = [], metricKeys = []) => rows
 
 const AvaliacaoCard = ({ card, formatDate, onOpenEvaluationType }) => {
   const Icon = ICONS_BY_TYPE[card.type] || Activity;
+  const isImageEvaluation = card.type === 'composicao_corporal_imagem';
+  const imageEntry = isImageEvaluation && card.status === 'nao_realizada';
+  const actionLabel = imageEntry
+    ? card.canEdit ? 'Abrir avaliação por imagem' : 'Consultar imagens'
+    : STATUS_ACTION_LABEL[card.status] || 'Ver detalhes';
 
   const handleClick = () => {
     onOpenEvaluationType?.(card.type);
@@ -371,53 +458,59 @@ const AvaliacaoCard = ({ card, formatDate, onOpenEvaluationType }) => {
     }
   };
 
-  const isInteractive = card.status !== 'nao_realizada';
+  const hasRecord = card.status !== 'nao_realizada';
 
   return (
     <article
-      className={`pron-avaliacao-card status-${card.status} ${statusClassMap[card.status] || ''} ${isInteractive ? 'pron-card--interactive' : 'pron-card--static'}`}
+      className={`pron-avaliacao-card status-${card.status} ${statusClassMap[card.status] || ''} pron-card--interactive`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={`${card.label} — ${STATUS_ACTION_LABEL[card.status] || 'Ver detalhes'}`}
+      aria-label={`${card.label} — ${imageEntry ? 'Módulo de imagem' : (STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).label} — ${actionLabel}`}
     >
       <header className="pron-avaliacao-card__header">
         <div className="pron-title-inline">
-          <Icon size={16} />
+          <Icon size={18} aria-hidden="true" />
           <strong>{card.label}</strong>
         </div>
-        <span className={`pron-badge ${(STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).cls}`}>
-          {(STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).label}
-        </span>
+        <div className="pron-avaliacao-card__badges">
+          {card.isAthleteSubmission && (
+            <span className="pron-badge pron-badge--athlete-tag">Atleta</span>
+          )}
+          {isImageEvaluation && <span className="pron-badge pron-badge--image-experimental">Experimental</span>}
+          <span className={`pron-badge ${(STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).cls}`}>
+            {imageEntry ? 'Módulo de imagem' : (STATUS_BADGE[card.status] || STATUS_BADGE.nao_realizada).label}
+          </span>
+        </div>
       </header>
 
-      <div className="pron-avaliacao-metrics">
+      {hasRecord && <div className="pron-avaliacao-metrics">
         {card.metrics.length ? card.metrics.map((metric, index) => (
           <div
             key={`${card.type}-${metric.label}`}
             className={`pron-avaliacao-metric ${index === 0 ? 'pron-avaliacao-metric--primary' : ''} ${!hasMetricValue(metric.value) ? 'is-empty' : ''}`}
           >
             <span>{metric.label}</span>
-            <strong>{renderValue(metric.value, metric.unit)}</strong>
+            <strong>{renderValue(metric.value, metric.unit, metric.digits)}</strong>
           </div>
         )) : (
           <span className="pron-text-muted">Sem indicadores configurados.</span>
         )}
-      </div>
+      </div>}
 
-      <footer className="pron-avaliacao-card__footer">
+      {hasRecord && <footer className="pron-avaliacao-card__footer">
         <span>Última: {card.latestDate ? formatDate(card.latestDate) : '--'}</span>
         {card.delta ? (
           <span className={`pron-delta ${card.delta.tone}`}>{card.delta.label}</span>
         ) : (
-          <span className="pron-text-muted">Sem comparativo anterior</span>
+          <span className="pron-text-muted">{isImageEvaluation ? 'Sem comparação clínica' : 'Sem comparativo anterior'}</span>
         )}
-      </footer>
+      </footer>}
 
       <div className="pron-avaliacao-card__actions">
         <span className="pron-link-btn">
-          {STATUS_ACTION_LABEL[card.status] || 'Ver detalhes'}
+          {actionLabel}
         </span>
       </div>
     </article>
@@ -442,7 +535,11 @@ const ProntuarioResumoCard = ({ card, formatDate, onOpenEvaluationType }) => {
       <header className="pron-prontuario-resumo-card__header">
         <div>
           <h3>{card.title}</h3>
-          <p>{card.subtitle}</p>
+          <p>
+            {card.sourceLabel
+              ? `Fonte: ${card.sourceLabel} · ${card.latestDate ? formatDate(card.latestDate) : 'data não informada'}`
+              : card.subtitle}
+          </p>
         </div>
         <span className={`pron-badge ${card.hasData ? 'pron-badge-ok' : 'pron-badge-muted'}`}>
           {card.hasData ? 'Atualizado' : 'Sem dados'}
@@ -499,14 +596,12 @@ const ProntuarioResumoCard = ({ card, formatDate, onOpenEvaluationType }) => {
 
       {card.kind === 'composicao' && (
         <div className="pron-prontuario-composicao-grid">
-          <div className="pron-prontuario-composicao-metric">
-            <span>%GC atual</span>
-            <strong>{renderValue(card.percentualGordura, '%')}</strong>
-          </div>
-          <div className="pron-prontuario-composicao-metric">
-            <span>Massa magra</span>
-            <strong>{renderValue(card.massaMagra, 'kg')}</strong>
-          </div>
+          {card.metrics.map((metric) => (
+            <div key={metric.key} className="pron-prontuario-composicao-metric">
+              <span>{metric.label}</span>
+              <strong>{renderValue(metric.value, metric.unit, metric.digits)}</strong>
+            </div>
+          ))}
           <div className="pron-prontuario-composicao-diagnostico">
             <span>Diagnóstico nutricional</span>
             <strong>{card.diagnostico || 'Sem classificação'}</strong>
@@ -535,23 +630,61 @@ const ProntuarioResumoCard = ({ card, formatDate, onOpenEvaluationType }) => {
 };
 
 const DashboardAvaliacoes = ({
+  /**
+   * Blocos desligados por padrão.
+   *
+   * "Resumo clínico do prontuário" e "Painel de avaliações" respondiam à mesma
+   * pergunta — o estado atual por tipo — com cartões diferentes, um embaixo do
+   * outro. E "Evolução temporal" repetia os gráficos da aba Evoluções.
+   *
+   * Ficam como opção em vez de serem apagados: se a equipe sentir falta, é uma
+   * prop, não um resgate de código removido.
+   */
+  mostrarResumoClinico = false,
+  mostrarEvolucaoTemporal = false,
+
   patient,
   avaliacoes = [],
+  editableTypes = new Set(),
+  canCreateEvaluation = false,
+  canManagePatient = false,
   consultationStatusSummary = {},
   nextAppointment,
   formatDate,
   onOpenEvaluationType,
-  onCreateEvaluation
+  onCreateEvaluation,
+  openImageRequest = 0,
+  onImageClose
 }) => {
+  const { user } = useAuth();
   const [naoIniciadasExpanded, setNaoIniciadasExpanded] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogStatus, setCatalogStatus] = useState('all');
+  const [avaliacaoImagemOpen, setAvaliacaoImagemOpen] = useState(false);
+
+  useEffect(() => {
+    if (openImageRequest > 0) setAvaliacaoImagemOpen(true);
+  }, [openImageRequest]);
+
+  const handleOpenEvaluationType = useCallback((type) => {
+    if (type === 'composicao_corporal_imagem') {
+      setAvaliacaoImagemOpen(true);
+      return;
+    }
+    onOpenEvaluationType?.(type);
+  }, [onOpenEvaluationType]);
+
+  const canEditType = useCallback((type) => (
+    canManagePatient || (canCreateEvaluation && editableTypes.has(type))
+  ), [canCreateEvaluation, canManagePatient, editableTypes]);
 
   const sortedEvaluations = useMemo(() => (
-    [...avaliacoes].sort((a, b) => {
+    avaliacoes.filter((row) => !row.deletedAt && String(row.pacienteId) === String(patient?.id)).sort((a, b) => {
       const aDate = toDate(a.createdAt || a.data || a.updatedAt)?.getTime() || 0;
       const bDate = toDate(b.createdAt || b.data || b.updatedAt)?.getTime() || 0;
       return bDate - aDate;
     })
-  ), [avaliacoes]);
+  ), [avaliacoes, patient?.id]);
 
   const byType = useMemo(() => {
     const map = new Map();
@@ -564,22 +697,42 @@ const DashboardAvaliacoes = ({
     return map;
   }, [sortedEvaluations]);
 
+  const eligibleByType = useMemo(() => {
+    const map = new Map();
+    eligibleEvaluations(sortedEvaluations, patient?.id).forEach((row) => {
+      const type = toToken(row.tipo);
+      if (!map.has(type)) map.set(type, []);
+      map.get(type).push(row);
+    });
+    return map;
+  }, [patient?.id, sortedEvaluations]);
+
   const lastEvaluationDate = useMemo(
     () => toDate(sortedEvaluations[0]?.createdAt || sortedEvaluations[0]?.data || sortedEvaluations[0]?.updatedAt),
     [sortedEvaluations]
   );
 
-  const cards = useMemo(() => EVALUATION_REGISTRY.map((registryItem) => {
+  const visibleRegistry = useMemo(() => {
+    const visibleTypes = getVisibleTypesForUser(user, patient);
+    return EVALUATION_REGISTRY.filter((e) => visibleTypes.has(e.type));
+  }, [patient, user]);
+
+  const cards = useMemo(() => visibleRegistry.map((registryItem) => {
     const rows = byType.get(registryItem.type) || [];
     const latest = rows[0] || null;
+    if (!latest && !canEditType(registryItem.type) && registryItem.type !== 'composicao_corporal_imagem') return null;
     const previous = rows[1] || null;
     const specs = METRIC_SPECS[registryItem.type] || [];
+    const readSpec = (spec, row) => {
+      const value = readMetricValue(row, spec.keys);
+      return spec.format ? spec.format(value) : value;
+    };
     const metrics = specs.map((spec) => ({
       ...spec,
-      value: readMetricValue(latest, spec.keys),
-      previousValue: readMetricValue(previous, spec.keys)
-    }));
-    const delta = metrics.length > 0
+      value: readSpec(spec, latest),
+      previousValue: readSpec(spec, previous)
+    })).filter((metric) => !metric.optional || hasMetricValue(metric.value));
+    const delta = metrics.length > 0 && registryItem.type !== 'composicao_corporal_imagem'
       ? computeDelta(metrics[0].value, metrics[0].previousValue, metrics[0].unit)
       : null;
     const latestDate = toDate(latest?.createdAt || latest?.data || latest?.updatedAt);
@@ -590,9 +743,13 @@ const DashboardAvaliacoes = ({
       metrics,
       delta,
       latestDate,
-      status: resolveCardStatus(latest)
+      status: resolveCardStatus(latest),
+      canEdit: canEditType(registryItem.type),
+      isAthleteSubmission: Boolean(
+        latest?.meta?.atletaSelfReport || latest?.meta?.origemPreenchimento === 'atleta'
+      )
     };
-  }), [byType]);
+  }).filter(Boolean), [byType, canEditType, visibleRegistry]);
 
   const cardsComDados = useMemo(
     () => cards.filter((card) => card.status !== 'nao_realizada'),
@@ -602,6 +759,16 @@ const DashboardAvaliacoes = ({
     () => cards.filter((card) => card.status === 'nao_realizada'),
     [cards]
   );
+  const normalizedSearch = toToken(catalogSearch);
+  const filteredCards = useMemo(() => cards.filter((card) => {
+    if (catalogStatus === 'com_registro' && card.status === 'nao_realizada') return false;
+    if (catalogStatus === 'nao_iniciadas' && card.status !== 'nao_realizada') return false;
+    return !normalizedSearch || toToken(`${card.label} ${card.type}`).includes(normalizedSearch);
+  }), [cards, catalogStatus, normalizedSearch]);
+  const filteredCardsComDados = filteredCards.filter((card) => card.status !== 'nao_realizada');
+  const filteredCardsNaoIniciados = filteredCards.filter((card) => card.status === 'nao_realizada');
+  const showInactiveResults = naoIniciadasExpanded || cardsComDados.length === 0
+    || Boolean(normalizedSearch) || catalogStatus === 'nao_iniciadas';
 
   const dashboardSummary = useMemo(() => {
     const realizadas = cards.filter((item) => item.status === 'realizada').length;
@@ -618,7 +785,7 @@ const DashboardAvaliacoes = ({
       'perimetros'
     ];
     for (const type of sourcePriority) {
-      const row = (byType.get(type) || [])[0];
+      const row = (eligibleByType.get(type) || [])[0];
       if (!row) continue;
       const massaMagra = toNumber(readMetricValue(row, ['massaMagraOficialKg', 'massa_magra', 'massaMagra']));
       const massaGorda = toNumber(readMetricValue(row, ['massaGordaOficialKg', 'massa_gorda', 'massaGorda']));
@@ -636,7 +803,7 @@ const DashboardAvaliacoes = ({
         const pctGorda = totalMass > 0 ? (massaGorda / totalMass) * 100 : Number.isFinite(percentualGordura) ? percentualGordura : null;
         return {
           sourceType: type,
-          date: toDate(row.createdAt || row.data || row.updatedAt),
+          date: toDate(clinicalDate(row)),
           massaMagra,
           massaGorda,
           pctMagra,
@@ -647,19 +814,51 @@ const DashboardAvaliacoes = ({
       }
     }
     return null;
-  }, [byType]);
+  }, [eligibleByType]);
+
+  const compositionMethods = useMemo(() => {
+    const methods = [
+      { id: 'bioimpedancia', label: 'Bioimpedância', row: eligibleByType.get('bioimpedancia')?.[0] },
+      { id: 'dobras_cutaneas', label: 'Dobras cutâneas', row: eligibleByType.get('dobras_cutaneas')?.[0] },
+      {
+        id: 'dexa', label: 'DEXA',
+        row: [...eligibleByType.values()].flat().find((evaluation) => {
+          const type = toToken(evaluation.tipo);
+          return type.includes('dexa') || type.includes('dxa');
+        })
+      }
+    ];
+    return methods.map(({ id, label, row }) => {
+      if (!row) return null;
+      const percentFat = readCompositionMetric(row,
+        ['percentual_gordura', 'percentualGordura', 'percentFat'],
+        ['dados.dados_brutos.percentFat']);
+      const leanMass = readCompositionMetric(row,
+        ['massa_magra', 'massaMagra', 'massaMagraKg', 'leanMassKg'],
+        ['dados.dados_brutos.leanMassKg']);
+      if (!Number.isFinite(percentFat) && !Number.isFinite(leanMass)) return null;
+      return {
+        id, label, percentFat, leanMass,
+        date: toDate(clinicalDate(row))
+      };
+    }).filter(Boolean);
+  }, [eligibleByType]);
+
+  const clinicalTrendEvaluations = useMemo(() => sortedEvaluations.filter(
+    (row) => row.tipo !== 'composicao_corporal_imagem'
+  ), [sortedEvaluations]);
 
   const weightSparkline = useMemo(
-    () => buildSparklineData(sortedEvaluations, ['peso', 'weight', 'peso_kg']),
-    [sortedEvaluations]
+    () => buildSparklineData(clinicalTrendEvaluations, ['peso', 'weight', 'peso_kg']),
+    [clinicalTrendEvaluations]
   );
   const fatSparkline = useMemo(
-    () => buildSparklineData(sortedEvaluations, ['percentual_gordura', 'percentualGordura', 'percentualGorduraOficial']),
-    [sortedEvaluations]
+    () => buildSparklineData(clinicalTrendEvaluations, ['percentual_gordura', 'percentualGordura', 'percentualGorduraOficial']),
+    [clinicalTrendEvaluations]
   );
   const leanSparkline = useMemo(
-    () => buildSparklineData(sortedEvaluations, ['massa_magra', 'massaMagra', 'massaMagraOficialKg']),
-    [sortedEvaluations]
+    () => buildSparklineData(clinicalTrendEvaluations, ['massa_magra', 'massaMagra', 'massaMagraOficialKg']),
+    [clinicalTrendEvaluations]
   );
 
   const latestWeight = weightSparkline.length ? weightSparkline[weightSparkline.length - 1].y : null;
@@ -768,19 +967,46 @@ const DashboardAvaliacoes = ({
       'lipidioPercentual'
     ]));
 
-    const composicao = resolveLatestByType(byType, PRONTUARIO_SUMMARY_TYPES.COMPOSICAO);
-    const percentualGordura = toNumber(readResultValue(composicao, [
-      'percentualGorduraOficial',
-      'percentual_gordura_oficial',
-      'percentualGordura',
-      'percentual_gordura'
-    ]));
-    const massaMagra = toNumber(readResultValue(composicao, [
-      'massaMagraOficialKg',
-      'massa_magra_oficial_kg',
-      'massaMagraKg',
-      'massa_magra_kg'
-    ]));
+    const composicaoFonte = resolveLatestComposition(byType);
+    const composicao = composicaoFonte?.row || null;
+    // Perímetros não estimam %GC nem massa magra: o cartão mostra o que a
+    // própria avaliação mede, em vez de "--" que pareceria dado faltante.
+    const composicaoMetrics = composicaoFonte?.type === 'perimetros'
+      ? [
+        { key: 'imc', label: 'IMC', unit: '', value: toNumber(readResultValue(composicao, ['imc'])) },
+        { key: 'rcq', label: 'RCQ', unit: '', digits: 2, value: toNumber(readResultValue(composicao, ['rcq'])) }
+      ]
+      : [
+        {
+          key: 'gordura',
+          label: '%GC atual',
+          unit: '%',
+          value: toNumber(readResultValue(composicao, [
+            'percentualGorduraOficial',
+            'percentual_gordura_oficial',
+            'percentualGordura',
+            'percentual_gordura'
+          ]))
+        },
+        {
+          key: 'massa-magra',
+          label: 'Massa magra',
+          unit: 'kg',
+          value: toNumber(readResultValue(composicao, [
+            'massaMagraOficialKg',
+            'massa_magra_oficial_kg',
+            'massaMagraKg',
+            'massa_magra_kg'
+          ]))
+        }
+      ];
+    // Na integrada (registro legado), a fonte oficial escolhida nela vai junto.
+    const fonteOficial = composicaoFonte?.type === 'composicao_corporal_integrada'
+      ? readPath(composicao, 'dados.classificacoes.fonte_oficial')
+      : null;
+    const composicaoSourceLabel = composicaoFonte
+      ? `${composicaoFonte.label}${hasMetricValue(fonteOficial) ? ` (fonte oficial: ${String(fonteOficial).trim()})` : ''}`
+      : '';
     const diagnostico = readResultValue(composicao, [
       'diagnosticoNutricional',
       'diagnostico_nutricional',
@@ -872,12 +1098,12 @@ const DashboardAvaliacoes = ({
         type: PRONTUARIO_SUMMARY_TYPES.COMPOSICAO,
         openType: toToken(composicao?.tipo) || PRONTUARIO_SUMMARY_TYPES.COMPOSICAO,
         kind: 'composicao',
-        title: 'Composição corporal integrada',
-        subtitle: 'Indicadores oficiais da sessão',
+        title: 'Composição corporal',
+        subtitle: 'Avaliação de composição mais recente',
+        sourceLabel: composicaoSourceLabel,
         latestDate: toDate(composicao?.createdAt || composicao?.data || composicao?.updatedAt),
         hasData: Boolean(composicao),
-        percentualGordura,
-        massaMagra,
+        metrics: composicaoMetrics,
         diagnostico: diagnostico ? String(diagnostico) : ''
       },
       {
@@ -945,16 +1171,7 @@ const DashboardAvaliacoes = ({
 
   return (
     <section className="pron-stack">
-      <article className="pron-metrics-grid pron-dashboard-overview">
-        {metricCards.map((item) => (
-          <div key={item.id} className="metric-card">
-            <div className="metric-label">{item.label}</div>
-            <div className="metric-value">{item.value}</div>
-            <div className="metric-sub">{item.sub}</div>
-          </div>
-        ))}
-      </article>
-
+      {mostrarResumoClinico && (
       <article className="pron-card pron-panel pron-prontuario-resumo-panel">
         <header className="pron-panel-header">
           <div>
@@ -968,73 +1185,103 @@ const DashboardAvaliacoes = ({
               key={card.id}
               card={card}
               formatDate={formatDate}
-              onOpenEvaluationType={onOpenEvaluationType}
+              onOpenEvaluationType={handleOpenEvaluationType}
             />
           ))}
         </div>
       </article>
+      )}
 
       <article className="pron-card pron-panel pron-dashboard-panel">
         <header className="pron-panel-header">
           <div>
-            <h2>Dashboard de Avaliações</h2>
-            <p>{patient?.nome || 'Atleta'} — visão por tipo de avaliação.</p>
+            <h2>Instrumentos de avaliação</h2>
+            <p>Localize um instrumento para abrir o registro ou iniciar uma avaliação.</p>
           </div>
-          <div className="pron-dashboard-summary">
-            <span className="pron-badge pron-badge-ok">
-              {dashboardSummary.realizadas} realizad{dashboardSummary.realizadas === 1 ? 'a' : 'as'}
-            </span>
-            {dashboardSummary.pendentes > 0 && (
-              <span className="pron-badge pron-badge-warn">
-                {dashboardSummary.pendentes} pendente{dashboardSummary.pendentes === 1 ? '' : 's'}
-              </span>
-            )}
-            {dashboardSummary.naoRealizadas > 0 && (
-              <span className="pron-badge pron-badge-muted">
-                {dashboardSummary.naoRealizadas} não iniciada{dashboardSummary.naoRealizadas === 1 ? '' : 's'}
-              </span>
-            )}
-          </div>
+          <span className="pron-text-muted">{cardsComDados.length} de {cards.length} instrumentos com registro</span>
         </header>
 
-        {cardsComDados.length > 0 ? (
+        <div className="pron-dashboard-catalog-controls">
+          <input
+            type="search"
+            value={catalogSearch}
+            onChange={(event) => setCatalogSearch(event.target.value)}
+            placeholder="Buscar instrumento..."
+            aria-label="Buscar instrumento de avaliação"
+          />
+          <select
+            value={catalogStatus}
+            onChange={(event) => setCatalogStatus(event.target.value)}
+            aria-label="Filtrar instrumentos por situação"
+          >
+            <option value="all">Todas as situações</option>
+            <option value="com_registro">Com registro</option>
+            <option value="nao_iniciadas">Não iniciadas</option>
+          </select>
+          <span role="status" aria-live="polite">{filteredCards.length} {filteredCards.length === 1 ? 'instrumento encontrado' : 'instrumentos encontrados'}</span>
+        </div>
+
+        {filteredCardsComDados.length > 0 && (
           <div className="avaliacoes-grid pron-dashboard-grid--active">
-            {cardsComDados.map((card) => (
+            {filteredCardsComDados.map((card) => (
               <AvaliacaoCard
                 key={card.type}
                 card={card}
                 formatDate={formatDate}
-                onOpenEvaluationType={onOpenEvaluationType}
+                onOpenEvaluationType={handleOpenEvaluationType}
               />
             ))}
           </div>
-        ) : (
-          <FeedbackState empty size="sm" title="Nenhuma avaliação registrada ainda." description="Inicie pelo botão abaixo." />
         )}
 
-        {cardsNaoIniciados.length > 0 && (
+        {filteredCards.length === 0 && (
+          <FeedbackState
+            empty
+            size="sm"
+            title="Nenhum instrumento encontrado."
+            action="Limpar filtros"
+            onAction={() => { setCatalogSearch(''); setCatalogStatus('all'); }}
+          />
+        )}
+
+        {cardsComDados.length === 0 && cards.length > 0 && catalogStatus === 'all' && !normalizedSearch && (
+          <FeedbackState
+            empty
+            size="sm"
+            title="Nenhuma avaliação registrada ainda."
+            description="Os instrumentos estão disponíveis logo abaixo."
+            action={canCreateEvaluation ? 'Iniciar primeira avaliação' : undefined}
+            onAction={canCreateEvaluation ? onCreateEvaluation : undefined}
+          />
+        )}
+
+        {cards.length === 0 && (
+          <FeedbackState empty size="sm" title="Nenhum instrumento disponível neste caso." />
+        )}
+
+        {filteredCardsNaoIniciados.length > 0 && (
           <div className="pron-dashboard-nao-iniciadas">
-            <button
-              type="button"
-              className="pron-dashboard-nao-iniciadas__toggle"
-              onClick={() => setNaoIniciadasExpanded((prev) => !prev)}
-              aria-expanded={naoIniciadasExpanded}
-            >
-              {naoIniciadasExpanded
-                ? <ChevronDown size={14} />
-                : <ChevronRight size={14} />}
-              <span>
-                {cardsNaoIniciados.length} tipo{cardsNaoIniciados.length !== 1 ? 's' : ''} ainda não iniciado{cardsNaoIniciados.length !== 1 ? 's' : ''}
-              </span>
-            </button>
-            {naoIniciadasExpanded && (
+            {normalizedSearch || catalogStatus === 'nao_iniciadas' || cardsComDados.length === 0 ? (
+              <h3 className="pron-dashboard-nao-iniciadas__heading">Não iniciadas</h3>
+            ) : (
+              <button
+                type="button"
+                className="pron-dashboard-nao-iniciadas__toggle"
+                onClick={() => setNaoIniciadasExpanded((prev) => !prev)}
+                aria-expanded={showInactiveResults}
+              >
+                {showInactiveResults ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
+                <span>{cardsNaoIniciados.length} instrumentos ainda não iniciados</span>
+              </button>
+            )}
+            {showInactiveResults && (
               <div className="avaliacoes-grid pron-dashboard-grid--inactive">
-                {cardsNaoIniciados.map((card) => (
+                {filteredCardsNaoIniciados.map((card) => (
                   <AvaliacaoCard
                     key={card.type}
                     card={card}
                     formatDate={formatDate}
-                    onOpenEvaluationType={onOpenEvaluationType}
+                    onOpenEvaluationType={handleOpenEvaluationType}
                   />
                 ))}
               </div>
@@ -1042,6 +1289,19 @@ const DashboardAvaliacoes = ({
           </div>
         )}
       </article>
+
+      <details className="pron-card pron-panel pron-dashboard-stats">
+        <summary>Indicadores do histórico</summary>
+        <div className="pron-metrics-grid pron-dashboard-overview">
+          {metricCards.map((item) => (
+            <div key={item.id} className="metric-card">
+              <div className="metric-label">{item.label}</div>
+              <div className="metric-value">{item.value}</div>
+              <div className="metric-sub">{item.sub}</div>
+            </div>
+          ))}
+        </div>
+      </details>
 
       {compositionSnapshot ? (
         <article className="pron-card pron-panel pron-dashboard-composition">
@@ -1076,7 +1336,27 @@ const DashboardAvaliacoes = ({
         </article>
       ) : null}
 
-      {(weightSparkline.length >= 2 || fatSparkline.length >= 2 || leanSparkline.length >= 2) ? (
+      {compositionMethods.length >= 2 && (
+        <details className="pron-card pron-panel pron-method-comparison">
+          <summary>Comparar métodos registrados ({compositionMethods.length})</summary>
+          <p>Último registro de cada método, com a data de origem. As medições podem ser de sessões diferentes.</p>
+          <div className="pron-method-comparison__grid">
+            {compositionMethods.map((method) => (
+              <div className="pron-method-comparison__item" key={method.id}>
+                <h3>{method.label}</h3>
+                <span>{method.date ? formatDate(method.date) : 'Data não informada'}</span>
+                <dl>
+                  <div><dt>Gordura</dt><dd>{renderValue(method.percentFat, '%')}</dd></div>
+                  <div><dt>Massa magra</dt><dd>{renderValue(method.leanMass, 'kg')}</dd></div>
+                </dl>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {mostrarEvolucaoTemporal
+        && (weightSparkline.length >= 2 || fatSparkline.length >= 2 || leanSparkline.length >= 2) ? (
         <article className="pron-card pron-panel pron-dashboard-evolution">
           <header className="pron-panel-header">
             <div>
@@ -1137,16 +1417,15 @@ const DashboardAvaliacoes = ({
         </article>
       ) : null}
 
-      {!sortedEvaluations.length ? (
-        <article className="pron-card">
-          <FeedbackState
-            empty
-            title="Nenhuma avaliação registrada para este atleta."
-            action="Iniciar primeira avaliação"
-            onAction={onCreateEvaluation}
-          />
-        </article>
-      ) : null}
+      <AvaliacaoImagem
+        isOpen={avaliacaoImagemOpen}
+        onClose={() => {
+          setAvaliacaoImagemOpen(false);
+          onImageClose?.();
+        }}
+        patient={patient}
+        readOnly={!canEditType('composicao_corporal_imagem')}
+      />
     </section>
   );
 };

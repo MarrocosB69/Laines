@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, ArrowDownWideNarrow, CheckCircle2, Sigma, TrendingUp } from 'lucide-react';
+import { MIN_HIGHLIGHT_SAMPLE, isSmallSample } from '../config/reportsConfig';
 
 const severityLabel = {
   high: 'Alta',
@@ -33,6 +34,7 @@ const renderTopRows = (rows, kind = 'rate') => {
           <span className="detail-meta">
             n={row.sampleSize || 0}
             {typeof row.oddsRatio === 'number' ? ` | OR ${Number(row.oddsRatio).toFixed(2)}` : ''}
+            {isSmallSample(row) && <strong className="detail-small-sample"> · amostra pequena</strong>}
           </span>
         </li>
       ))}
@@ -40,7 +42,7 @@ const renderTopRows = (rows, kind = 'rate') => {
   );
 };
 
-const DriversPanel = ({ correlations }) => {
+const DriversPanel = ({ correlations, loadError = false }) => {
   const drivers = Array.isArray(correlations?.drivers) ? correlations.drivers : [];
   const absenteeism = correlations?.absenteeism || {};
   const completeness = correlations?.completeness || {};
@@ -52,7 +54,10 @@ const DriversPanel = ({ correlations }) => {
       <div className="drivers-header">
         <div>
           <h3>Drivers operacionais</h3>
-          <p>Fatores associados a faltas, completude e retenção.</p>
+          <p>
+            Fatores associados a faltas, completude e retenção. Só vira destaque o grupo com {MIN_HIGHLIGHT_SAMPLE} casos
+            ou mais; os menores ficam no detalhe, marcados como amostra pequena.
+          </p>
         </div>
         <span className="drivers-badge">
           <TrendingUp size={14} />
@@ -62,7 +67,11 @@ const DriversPanel = ({ correlations }) => {
 
       <div className="drivers-grid">
         {drivers.length === 0 && (
-          <div className="reports-empty-state laines-feedback-state">Sem drivers suficientes para o escopo atual.</div>
+          <div className="reports-empty-state laines-feedback-state">
+            {loadError
+              ? 'Não foi possível carregar as correlações agora.'
+              : `Sem grupo com ${MIN_HIGHLIGHT_SAMPLE} casos ou mais para destacar neste recorte.`}
+          </div>
         )}
         {drivers.map((driver) => (
           <article key={driver.id} className="driver-card">
@@ -77,6 +86,11 @@ const DriversPanel = ({ correlations }) => {
             <p>{driver.insight}</p>
             <div className="driver-card-foot">
               <span>{driver.metricLabel}: {driver.metricValue}</span>
+              {Number.isFinite(Number(driver.sampleSize)) && (
+                <span className="driver-sample">
+                  {`n = ${Number(driver.sampleSize).toLocaleString('pt-BR')}${driver.sampleUnit ? ` ${driver.sampleUnit}` : ''}`}
+                </span>
+              )}
               <span>{driver.recommendation}</span>
             </div>
           </article>
@@ -99,9 +113,12 @@ const DriversPanel = ({ correlations }) => {
             <h4>Completude e frequência</h4>
           </header>
           <div className="spearman-box">
-            <strong>{spearman.coefficient === null ? '--' : Number(spearman.coefficient).toFixed(3)}</strong>
+            <strong>{spearman.coefficient === null || spearman.coefficient === undefined ? '--' : Number(spearman.coefficient).toFixed(3)}</strong>
             <span>Spearman</span>
-            <small>{spearman.interpretation || 'Sem dados suficientes.'} | n={spearman.sampleSize || 0}</small>
+            <small>
+              {spearman.interpretation || 'Sem dados suficientes.'} | n={spearman.sampleSize || 0}
+              {Number(spearman.sampleSize || 0) > 0 && isSmallSample(spearman) && ' · amostra pequena'}
+            </small>
           </div>
           {renderTopRows(completeness.byEvaluationType, 'rate')}
         </article>

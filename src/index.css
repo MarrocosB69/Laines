@@ -2,10 +2,18 @@
    CSS GLOBAL MODERNO - LAINESAPP
    ============================================ */
 
-/* Importar fontes do Google */
+/* Fontes. O par Sofia Sans (texto) e Sofia Sans Extra Condensed Italic 900
+   (voz de campanha) é a tipografia de "Energia e velocidade"; vem aqui para
+   valer em qualquer tela, inclusive ao recarregar direto num portal. As
+   telas migradas também o importam, e a URL repetida sai do cache.
+   Inter e Poppins continuam carregadas só porque avaliacoes.css (onda E) e
+   PrescricaoPlanoAlimentar.css (sem rota) ainda as pedem pelo nome; o
+   navegador só baixa o arquivo de uma face quando algum texto a usa. */
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
 
 @import "tailwindcss";
+@import './views/landing/landing-tokens.css';
 @import './styles/modalSystem.css';
 
 /* ============================================
@@ -13,6 +21,10 @@
    ============================================ */
 :root {
   color-scheme: light;
+  --mobile-safe-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-right: env(safe-area-inset-right, 0px);
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-left: env(safe-area-inset-left, 0px);
   /* Cores principais - Paleta LAINES */
   --color-primary: #74A865;
   --color-primary-dark: #5e8f55;
@@ -141,8 +153,27 @@
   --pn-border-strong: rgba(29, 51, 80, 0.24);
   --pn-text-1:        #1D3350;
   --pn-text-2:        #3d5a72;
-  --pn-text-3:        #607b8d;
-  --pn-text-4:        #94a3b8;
+  /* UX-08 (revisão independente): #607b8d media ~4,45:1 sobre branco e
+     ~4,15:1 sobre --pp-fundo (#f5f7fa) — abaixo do piso AA de 4,5:1 — e,
+     pior, ficava MAIS claro que --pn-text-4 (~4,99:1 sobre branco),
+     invertendo a hierarquia: o nível 3 (mais forte) lia como mais fraco
+     que o nível 4. #546b7b mantém o mesmo matiz/saturação (H≈204°, S≈19%,
+     só a luminosidade muda) e mede ~5,58:1 sobre branco, ~5,20:1 sobre
+     --pp-fundo e ~5,09:1 sobre --pn-surface-3 (#f1f5f9, o fundo mais
+     escuro entre os usados nas telas do prontuário) — acima do piso AA e
+     acima de --pn-text-4 nos três fundos, restaurando a ordem monotônica.
+     Ver scripts/test-acessibilidade-tokens.cjs. */
+  --pn-text-3:        #546b7b;
+  /* UX-08: #94a3b8 media ~2,56:1 sobre branco (falha 4,5:1) nos usos reais
+     deste token — rótulos, timestamps, unidades e estados vazios em
+     PatientProntuario.css, RefeicaoBuilder.css, SuplementoCard.css,
+     avaliacoes.css e modalSystem.css, quase todos abaixo de 12px. #5f7188
+     mede ~4,99:1 sobre branco e ~4,65:1 sobre --pp-fundo (#f5f7fa, o fundo
+     de página mais escuro que este token toca em RefeicaoBuilder.css, onde
+     algumas regras usam `background: none` e herdam o fundo da tela) —
+     continua sendo o nível mais fraco da escala: contraste abaixo de
+     --pn-text-3 nos mesmos fundos. Ver scripts/test-acessibilidade-tokens.cjs. */
+  --pn-text-4:        #5f7188;
   --pn-navy:          #1D3350;
   --pn-green:         #74A865;
   --pn-ok:            #16a34a;
@@ -225,25 +256,50 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
+/* Rolagem suave é movimento: só sem preferência por menos movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* Fonte, tinta e fundo nos tokens. Tamanho (14 px) e entrelinha ficam: mudam
+   a altura de toda tela antiga, e as migradas já declaram os seus. O @apply
+   que repetia fonte e cores com as classes do Tailwind saiu. */
 body {
-  @apply bg-[--color-surface] font-inter text-[--color-text-primary];
-  font-family: "Inter", sans-serif;
+  font-family: var(--lt-font-family);
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   min-height: 100vh;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
 }
 
 .input-error {
-  border-color: var(--color-error) !important;
-  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+  border-color: var(--lt-color-danger-text) !important;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.15);
+}
+
+/* Texto só para leitor de tela. Várias telas já usam `sr-only` e contavam
+   com a utilidade do Tailwind ou com cópias locais (AlimentoBuscador.css,
+   RefeicaoBuilder.css); esta é a mesma regra, garantida em todo o app. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: none;
 }
 
 .form-error-message {
@@ -264,18 +320,19 @@ body {
   border-radius: 999px;
 }
 
+/* O estado é o texto ("Salvando...", "Salvo", "Erro ao salvar"). */
 .save-indicator.saving {
-  background: var(--color-surface-alt);
+  background: var(--lt-color-surface-field);
 }
 
 .save-indicator.saved {
-  background: #f0fdf4;
-  color: var(--color-success);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 .save-indicator.error {
-  background: #fef2f2;
-  color: var(--color-error);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
 }
 
 button,
@@ -288,36 +345,49 @@ textarea {
   color: inherit;
 }
 
+button,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Azul da marca, 6,33:1 sobre branco. O verde anterior (#74A865) media
+   2,8:1 e não cruzava os 3:1 de indicador de foco. As telas migradas usam o
+   anel --lt-focus-ring nos próprios controles. */
 *:focus-visible {
-  outline: 2px solid var(--color-green);
+  outline: 2px solid var(--lt-color-brand-blue);
   outline-offset: 2px;
 }
 
 /* ============================================
    TIPOGRAFIA
    ============================================ */
+/* Sofia Sans no lugar de Poppins; peso, entrelinha e tamanhos ficam. O h1
+   deixa de ser degradê recortado no texto (que deixava invisível todo h1
+   com cor própria sobre fundo escuro) e usa a tinta, como h2 e h3. As telas
+   migradas redeclaram fonte e cor dos próprios títulos. A voz de campanha
+   (--lt-font-display) fica para os títulos que a pedem pelo nome de classe. */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-poppins);
+  font-family: var(--lt-font-family);
   font-weight: 700;
   line-height: var(--line-height-snug);
 }
 
 h1 {
   font-size: var(--font-size-6xl);
-  background: var(--color-dark-blue-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--lt-color-text);
 }
 
 h2 {
   font-size: var(--font-size-5xl);
-  color: var(--color-dark-blue);
+  color: var(--lt-color-text);
 }
 
 h3 {
   font-size: var(--font-size-3xl);
-  color: var(--color-dark-blue);
+  color: var(--lt-color-text);
 }
 
 p {
@@ -615,25 +685,53 @@ p {
   height: 10px;
 }
 
+/* Barra neutra: o polegar na borda de campo (3,91:1 sobre branco), no lugar
+   do degradê verde antigo. */
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-alt);
+  background: var(--lt-color-surface-field);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-primary-gradient);
+  background: var(--lt-color-border-field);
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-surface-alt);
+  border: 2px solid var(--lt-color-surface-field);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary-light);
+  background: var(--lt-color-text-muted);
 }
 
 /* ============================================
    RESPONSIVIDADE
    ============================================ */
 @media (max-width: 768px) {
+  body {
+    min-height: 100dvh;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .admin-view,
+  .route-shell {
+    min-height: 100dvh;
+  }
+
+  .content-area {
+    padding-bottom: calc(18px + var(--mobile-safe-bottom));
+  }
+
+  .notifications-panel,
+  .tasks-panel {
+    width: min(360px, calc(100vw - 24px - var(--mobile-safe-left) - var(--mobile-safe-right)));
+    max-height: min(72vh, 520px);
+    overflow: auto;
+  }
+
   h1 {
     font-size: 2rem;
   }
@@ -702,15 +800,16 @@ p {
   gap: clamp(0.9rem, 2vw, 1.5rem);
 }
 
+/* Cabeçalho de página no desenho do cartão branco; padding e quebra ficam. */
 .laines-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  border: 1px solid rgba(20, 53, 84, 0.12);
-  border-radius: 1.3rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f6f9fd 100%);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
   padding: clamp(1rem, 2vw, 1.5rem);
   box-shadow: 0 16px 36px -28px rgba(20, 53, 84, 0.28);
 }
@@ -718,23 +817,25 @@ p {
 .laines-page-title {
   margin: 0;
   font-size: clamp(1.35rem, 2.2vw, 1.9rem);
-  color: var(--color-dark-blue);
-  font-weight: 800;
+  color: var(--lt-color-text);
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 .laines-page-subtitle {
   margin: 0.24rem 0 0;
   font-size: 0.92rem;
-  color: var(--color-text-secondary);
+  color: var(--lt-color-text-muted);
   line-height: 1.5;
 }
 
+/* Áreas (.area-page .area-empty, 0,2,0) redeclara borda, fundo, cor, raio e
+   fonte deste bloco; o resto das telas recebe o mesmo tom de .painel-estado. */
 .laines-feedback-state {
-  border-radius: 1rem;
-  border: 1px dashed rgba(100, 116, 139, 0.32);
-  background: rgba(248, 250, 252, 0.92);
-  color: var(--color-text-secondary);
+  border-radius: var(--lt-radius-control);
+  border: 1px dashed var(--lt-color-border-field);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
   padding: 0.9rem 1rem;
   text-align: center;
   font-size: 0.88rem;
@@ -743,16 +844,16 @@ p {
 
 .laines-feedback-state--error {
   border-style: solid;
-  border-color: rgba(220, 38, 38, 0.28);
-  background: rgba(254, 242, 242, 0.9);
-  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.28);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
 }
 
 .laines-feedback-state--success {
   border-style: solid;
-  border-color: rgba(22, 163, 74, 0.28);
-  background: rgba(240, 253, 244, 0.9);
-  color: #166534;
+  border-color: rgba(22, 101, 52, 0.28);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 /* Tema fixo claro para manter consistência clean em todas as janelas */
@@ -774,12 +875,17 @@ p {
 /* ============================================
    CAMADA CLEAN GLOBAL
    ============================================ */
+/* Tinta herdada pelo conteúdo dos portais. As raízes migradas (.painel,
+   .area-page, .av-modulo, .avaliacao-completa, .prescricao-plano,
+   .research-projects, .dashboard-stats, .prof-visao-geral) declaram a sua.
+   Os campos logo abaixo ficam como estavam: são regra de layout que as
+   telas antigas e as migradas usam como base. */
 .content-area,
 .ui-card,
 .dashboard-stats,
 .professor-dashboard,
 .student-dashboard-container {
-  color: var(--color-text-primary);
+  color: var(--lt-color-text);
 }
 
 .content-area input,
@@ -895,9 +1001,9 @@ p {
   gap: 0.6rem;
   padding: 2.5rem 1.5rem;
   text-align: center;
-  border-radius: var(--radius-md);
-  border: 1px dashed rgba(100, 116, 139, 0.28);
-  background: rgba(248, 250, 252, 0.72);
+  border-radius: var(--lt-radius-control);
+  border: 1px dashed var(--lt-color-border-field);
+  background: var(--lt-color-surface-field);
 }
 
 .empty-state__icon {
@@ -910,13 +1016,13 @@ p {
   margin: 0;
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-dark-blue);
+  color: var(--lt-color-text);
 }
 
 .empty-state__body {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--color-text-secondary);
+  color: var(--lt-color-text-muted);
   line-height: 1.55;
   max-width: 280px;
 }
@@ -991,7 +1097,7 @@ p {
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
-  background: var(--color-background);
+  background: var(--lt-color-bg-app);
 }
 
 .error-boundary-card {
@@ -1003,12 +1109,13 @@ p {
   width: 100%;
   text-align: center;
   padding: 2.5rem 2rem;
-  border-radius: var(--radius-xl);
-  background: var(--color-surface);
-  border: 1px solid rgba(239, 68, 68, 0.16);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  border: 1px solid rgba(185, 28, 28, 0.16);
   box-shadow: var(--shadow-lg);
 }
 
+/* O aviso é o título escrito; o ícone só acompanha, na cor de erro. */
 .error-boundary-card__icon {
   display: inline-flex;
   align-items: center;
@@ -1016,7 +1123,8 @@ p {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
   font-size: 1.5rem;
   line-height: 1;
 }
@@ -1024,8 +1132,8 @@ p {
 .error-boundary-card h2 {
   margin: 0;
   font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--color-dark-blue);
+  font-weight: 700;
+  color: var(--lt-color-text);
   background: none;
   -webkit-text-fill-color: initial;
 }
@@ -1033,7 +1141,7 @@ p {
 .error-boundary-card p {
   margin: 0;
   font-size: 0.84rem;
-  color: var(--color-text-secondary);
+  color: var(--lt-color-text-muted);
   line-height: 1.55;
 }
 

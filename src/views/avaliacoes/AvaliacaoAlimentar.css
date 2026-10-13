@@ -1,483 +1,470 @@
-.avaliacao-alimentar-r24h {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+/* Avaliação alimentar (R24h): só o que é deste formulário. Raiz,
+   cabeçalho, índice, seções, campos, resultados, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .avaliacao-alimentar-r24h; os seletores que precisam
+   vencer a base usam `.av-modulo.avaliacao-alimentar-r24h`. */
+
+/* Cores dos grupos NOVA (barra, bolinhas, botão marcado e selo). Cada uma
+   leva texto branco a 5:1 ou mais e fica a 3:1 ou mais sobre branco. O
+   grupo também está sempre escrito (lista, selo e nome lido no botão). */
+.av-modulo.avaliacao-alimentar-r24h {
+  --r24h-nova-in_natura: var(--lt-color-brand-green-text);   /* 5,37:1 com branco */
+  --r24h-nova-minimamente_processado: #0f766e;                 /* 5,47:1 */
+  --r24h-nova-processado: #b45309;                             /* 5,02:1 */
+  --r24h-nova-ultraprocessado: var(--lt-color-danger-text);    /* 6,47:1 */
+  --r24h-nova-none: var(--lt-color-border-field);              /* só gráfico: 3,91:1 */
 }
 
-.avaliacao-alimentar-r24h__header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.avaliacao-alimentar-r24h__meta {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.avaliacao-alimentar-r24h__counter {
-  border: 1px solid #dfe4eb;
-  border-radius: 10px;
-  background: #f8fbff;
-  min-width: 120px;
-  text-align: center;
-  padding: 0.4rem 0.7rem;
-}
-
-.avaliacao-alimentar-r24h__counter span {
-  display: block;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1e3354;
-}
-
-.avaliacao-alimentar-r24h__counter small {
-  color: #5a6479;
-  font-size: 0.78rem;
-}
-
-/* Grid principal */
-.avaliacao-alimentar-r24h__grid {
+/* ── Duas colunas em telas largas ────────────────────────────────────── */
+.av-modulo .avaliacao-alimentar-r24h__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 1fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-4);
   align-items: start;
-}
-
-/* ── COLUNA ESQUERDA ── */
-.avaliacao-alimentar-r24h__refeicoes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-/* Área de busca única */
-.r24h-add-area {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.r24h-add-area__header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.r24h-add-area__label {
-  font-size: 0.82rem;
-  color: #5a6479;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.r24h-add-area__meal-select {
-  flex: 1;
   min-width: 0;
-  font-size: 0.84rem;
-  padding: 0.35rem 0.6rem;
-  border: 1px solid #d6dde8;
-  border-radius: 8px;
-  background: #fff;
-  color: #1d2637;
-  cursor: pointer;
 }
 
-/* Cards de refeição */
-.r24h-meal {
-  border-left: 3px solid transparent;
-  transition: border-color 0.15s;
+@media (min-width: 901px) {
+  .av-modulo .avaliacao-alimentar-r24h__grid {
+    grid-template-columns: minmax(0, 1.55fr) minmax(16.25rem, 1fr);
+  }
 }
 
-.r24h-meal--selected {
-  border-left-color: #3b82f6;
-}
-
-.avaliacao-alimentar-r24h__meal-header {
+.av-modulo :is(.avaliacao-alimentar-r24h__refeicoes, .avaliacao-alimentar-r24h__summary) {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  min-width: 0;
 }
 
-.avaliacao-alimentar-r24h__meal-header h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #1d2637;
-}
-
-.avaliacao-alimentar-r24h__meal-stats {
+/* ── Data e contador de alimentos ─────────────────────────────────────── */
+.av-modulo .avaliacao-alimentar-r24h__meta {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-3) var(--lt-space-4);
 }
 
-.avaliacao-alimentar-r24h__meal-stats span {
-  font-size: 0.78rem;
-  color: #5b667f;
+.av-modulo .avaliacao-alimentar-r24h__meta > .av-campo { flex: 1 1 12rem; }
+
+.av-modulo .avaliacao-alimentar-r24h__counter {
+  display: flex;
+  align-items: baseline;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--av-controle-altura);
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
 }
 
-.avaliacao-alimentar-r24h__meal-kcal {
-  background: #ecfdf5;
-  color: #065f46;
-  font-size: 0.73rem !important;
+.av-modulo .avaliacao-alimentar-r24h__counter span {
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-title);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .avaliacao-alimentar-r24h__counter small {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  border-radius: 5px;
-  padding: 1px 7px;
 }
 
-.r24h-meal__target-btn {
-  border: 1px solid #c7d4e8;
-  background: #f0f5ff;
-  color: #1d3a66;
-  border-radius: 6px;
-  font-size: 0.73rem;
-  padding: 0.15rem 0.5rem;
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 1.5;
-}
-
-.r24h-meal__target-btn:hover {
-  background: #dde8f8;
-}
-
-.r24h-meal__active-tag {
-  background: #eff6ff;
-  color: #2563eb;
-  border-radius: 5px;
-  font-size: 0.72rem !important;
-  font-weight: 600;
-  padding: 1px 6px;
-}
-
-.avaliacao-alimentar-r24h__empty {
-  border: 1px dashed #d6dce7;
-  border-radius: 8px;
-  background: #fafcff;
-  padding: 0.5rem 0.7rem;
-  color: #7a8499;
-  font-size: 0.82rem;
-}
-
-.avaliacao-alimentar-r24h__items {
-  list-style: none;
-  margin: 0.4rem 0 0;
-  padding: 0;
+/* ── Busca: um painel claro dentro do recordatório ───────────────────── */
+.av-modulo .r24h-add-area {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
 }
 
-.avaliacao-alimentar-r24h__items li {
-  border: 1px solid #e5e9f1;
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
+/* ── Refeições (subseções) ────────────────────────────────────────────
+   A refeição que recebe a busca ganha fundo; o selo "selecionada" diz o
+   mesmo por escrito. */
+.av-modulo.avaliacao-alimentar-r24h .r24h-meal--selected {
+  padding: var(--lt-space-3);
+  border-top-color: transparent;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__meal-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.av-modulo :is(.avaliacao-alimentar-r24h__meal-kcal, .avaliacao-alimentar-r24h__item-kcal, .r24h-meal__active-tag) {
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .r24h-meal__active-tag { background: var(--lt-color-surface); color: var(--lt-color-brand-blue); }
+
+.av-modulo.avaliacao-alimentar-r24h .r24h-meal__target-btn { padding: 0 var(--lt-space-3); }
+
+.av-modulo .avaliacao-alimentar-r24h__empty {
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 1.5px dashed var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.av-modulo .avaliacao-alimentar-r24h__items li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__item-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--lt-space-2);
 }
 
-.avaliacao-alimentar-r24h__item-info {
-  flex: 1;
+.av-modulo .avaliacao-alimentar-r24h__item-info {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
 }
 
-.avaliacao-alimentar-r24h__items strong {
-  display: block;
-  font-size: 0.84rem;
-  color: #1d2637;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.avaliacao-alimentar-r24h__items small {
-  color: #5a6479;
-  font-size: 0.71rem;
-}
-
-.avaliacao-alimentar-r24h__item-right {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-shrink: 0;
-}
-
-.avaliacao-alimentar-r24h__item-kcal {
-  font-size: 0.73rem;
+.av-modulo .avaliacao-alimentar-r24h__item-info strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
   font-weight: 700;
-  color: #065f46;
-  background: #ecfdf5;
-  border-radius: 5px;
-  padding: 1px 6px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
-.avaliacao-alimentar-r24h__remove-btn {
-  border: 0;
-  background: #fff3f3;
-  color: #ad1f1f;
-  border-radius: 6px;
-  padding: 0.25rem;
+.av-modulo .avaliacao-alimentar-r24h__item-info small {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__item-right {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+
+/* Botões só com ícone (remover alimento e suplemento): alvo de 44 px. */
+.av-modulo :is(.avaliacao-alimentar-r24h__remove-btn, .avaliacao-alimentar-r24h__icon-btn) {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .av-modulo :is(.avaliacao-alimentar-r24h__remove-btn, .avaliacao-alimentar-r24h__icon-btn):hover {
+    border-color: var(--lt-color-danger-text);
+  }
+}
+
+/* Barra de kcal da refeição (decorativa: o número está escrito no título). */
+.av-modulo .r24h-meal__kcal-bar {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-mist);
+}
+
+.av-modulo .r24h-meal__kcal-bar-fill {
+  min-width: 3px;
+  height: 100%;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-brand-green); /* 3,24:1 sobre --lt-color-mist */
+}
+
+/* ── Seletor NOVA de cada alimento ───────────────────────────────────── */
+.av-modulo .r24h-nova-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-2);
+}
+
+.av-modulo .r24h-nova-selector__label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.av-modulo .r24h-nova-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  box-sizing: border-box;
+  min-width: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
   line-height: 1;
+  cursor: pointer;
 }
 
-.avaliacao-alimentar-r24h__remove-btn:hover {
-  background: #ffe0e0;
+.av-modulo .r24h-nova-btn:disabled { cursor: default; }
+
+@media (hover: hover) {
+  .av-modulo .r24h-nova-btn:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); }
 }
 
-/* Sticky save */
-.avaliacao-alimentar-r24h__sticky-save {
+/* Botão marcado e selo: cor do grupo com texto branco. */
+.av-modulo :is(.r24h-nova-btn--in_natura, .r24h-nova-label--in_natura) { --r24h-nova: var(--r24h-nova-in_natura); }
+.av-modulo :is(.r24h-nova-btn--minimamente_processado, .r24h-nova-label--minimamente_processado) { --r24h-nova: var(--r24h-nova-minimamente_processado); }
+.av-modulo :is(.r24h-nova-btn--processado, .r24h-nova-label--processado) { --r24h-nova: var(--r24h-nova-processado); }
+.av-modulo :is(.r24h-nova-btn--ultraprocessado, .r24h-nova-label--ultraprocessado) { --r24h-nova: var(--r24h-nova-ultraprocessado); }
+
+.av-modulo .r24h-nova-btn[class*="r24h-nova-btn--"] {
+  border-color: var(--r24h-nova);
+  background: var(--r24h-nova);
+  color: var(--lt-color-text-inverse);
+}
+
+.av-modulo .r24h-nova-label {
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--r24h-nova, var(--lt-color-text-muted));
+  color: var(--lt-color-text-inverse);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+/* ── Resumo nutricional ──────────────────────────────────────────────── */
+.av-modulo .r24h-macros-row,
+.av-modulo .avaliacao-alimentar-r24h__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.av-modulo .avaliacao-alimentar-r24h__micros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+}
+
+.av-modulo .r24h-micros-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--lt-space-1);
+  min-height: var(--lt-target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── Classificação NOVA ─────────────────────────────────────────────── */
+.av-modulo .r24h-nova-hint {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .r24h-nova-bar {
+  display: flex;
+  height: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+}
+
+.av-modulo .r24h-nova-bar__seg { flex-shrink: 0; height: 100%; }
+
+/* Um fio branco separa grupos vizinhos de luminância parecida. */
+.av-modulo .r24h-nova-bar__seg + .r24h-nova-bar__seg { border-left: 2px solid var(--lt-color-surface); }
+
+.av-modulo :is(.r24h-nova-bar__seg--in_natura, .r24h-nova-dot--in_natura) { background: var(--r24h-nova-in_natura); }
+.av-modulo :is(.r24h-nova-bar__seg--minimamente_processado, .r24h-nova-dot--minimamente_processado) { background: var(--r24h-nova-minimamente_processado); }
+.av-modulo :is(.r24h-nova-bar__seg--processado, .r24h-nova-dot--processado) { background: var(--r24h-nova-processado); }
+.av-modulo :is(.r24h-nova-bar__seg--ultraprocessado, .r24h-nova-dot--ultraprocessado) { background: var(--r24h-nova-ultraprocessado); }
+.av-modulo .r24h-nova-bar__seg--none { background: var(--r24h-nova-none); }
+
+.av-modulo .r24h-nova-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+}
+
+.av-modulo .r24h-nova-breakdown__row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .r24h-nova-dot {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+}
+
+.av-modulo .r24h-nova-breakdown__name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+.av-modulo :is(.r24h-nova-breakdown__count, .r24h-nova-breakdown__kcal, .r24h-nova-breakdown__pct) {
+  flex: none;
+  text-align: right;
+}
+
+.av-modulo .r24h-nova-breakdown__count { min-width: 2rem; color: var(--lt-color-text-muted); }
+.av-modulo .r24h-nova-breakdown__kcal { min-width: 4.5rem; font-weight: 700; }
+.av-modulo .r24h-nova-breakdown__pct { min-width: 2.5rem; color: var(--lt-color-text-muted); }
+
+/* ── Suplementação ───────────────────────────────────────────────────── */
+.av-modulo.avaliacao-alimentar-r24h .avaliacao-alimentar-r24h__mini-btn { padding: 0 var(--lt-space-4); }
+
+.av-modulo .avaliacao-alimentar-r24h__supp-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__supp-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__supp-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--lt-space-2);
+}
+
+/* O botão de remover alinha com o campo de 48 px, não com o rótulo. */
+.av-modulo .avaliacao-alimentar-r24h__supp-top .avaliacao-alimentar-r24h__icon-btn { margin-bottom: 2px; }
+
+.av-modulo .avaliacao-alimentar-r24h__supp-bottom {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: var(--lt-space-3);
+}
+
+/* ── Adesão e rotina ─────────────────────────────────────────────────── */
+.av-modulo .avaliacao-alimentar-r24h__adherence-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+}
+
+.av-modulo .r24h-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--lt-space-3);
+}
+
+/* Faixa de toque de 44 px de altura; a trilha continua a nativa. */
+.av-modulo .r24h-score-slider {
+  width: 100%;
+  min-width: 0;
+  height: var(--lt-target-min);
+  margin: 0;
+  accent-color: var(--lt-color-brand-green);
+  cursor: pointer;
+}
+
+.av-modulo .r24h-score-slider:disabled { cursor: default; }
+
+.av-modulo .r24h-score-value {
+  min-width: 3.5rem;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .avaliacao-alimentar-r24h__adherence-score {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.av-modulo .avaliacao-alimentar-r24h__adherence-score strong { color: var(--lt-color-text); }
+
+/* ── Salvar: fixo no pé da tela enquanto o módulo está visível ──────── */
+.av-modulo .avaliacao-alimentar-r24h__sticky-save {
   position: sticky;
   bottom: 0;
-  background: var(--color-bg, #fff);
-  border-top: 1px solid var(--color-border, #e2e8f0);
-  padding: 0.6rem 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.6rem;
   z-index: 10;
-  border-radius: 0 0 var(--radius-card, 12px) var(--radius-card, 12px);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-  flex-wrap: wrap;
-}
-
-.r24h-save-error {
-  font-size: 0.78rem;
-  color: #b91c1c;
-  flex: 1;
-  min-width: 0;
-}
-
-/* ── COLUNA DIREITA — Resumo ── */
-.avaliacao-alimentar-r24h__summary {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--lt-space-3);
+  padding: var(--lt-space-3) var(--av-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--av-sombra);
 }
 
-/* Kcal em destaque */
-.r24h-kcal-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.9rem 0.5rem 0.6rem;
-  border-bottom: 1px solid #eef1f6;
-  margin-bottom: 0.75rem;
-}
-
-.r24h-kcal-block__value {
-  font-size: 2.4rem;
-  font-weight: 800;
-  color: #1d2637;
-  line-height: 1;
-}
-
-.r24h-kcal-block__unit {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #3b82f6;
-  margin-top: 0.15rem;
-}
-
-.r24h-kcal-block__label {
-  font-size: 0.74rem;
-  color: #7a8499;
-  margin-top: 0.1rem;
-}
-
-/* Macronutrientes */
-.r24h-macros-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
-}
-
-.r24h-macro-pill {
-  background: #f4f7fc;
-  border: 1px solid #e5e9f1;
-  border-radius: 8px;
-  padding: 0.4rem 0.3rem;
-  text-align: center;
-}
-
-.r24h-macro-pill strong {
-  display: block;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1d2637;
-  line-height: 1.2;
-}
-
-.r24h-macro-pill span {
-  font-size: 0.68rem;
-  color: #5b667f;
-}
-
-/* Micronutrientes toggle */
-.r24h-micros-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: none;
-  border: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #3d4f6a;
-  cursor: pointer;
-  padding: 0;
-  margin-bottom: 0.45rem;
-}
-
-/* Summary grid (micronutrientes) */
-.avaliacao-alimentar-r24h__summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
-.avaliacao-alimentar-r24h__summary-grid div {
-  border: 1px solid #e5e9f1;
-  border-radius: 7px;
-  padding: 0.4rem 0.45rem;
-  background: #fafcff;
-}
-
-.avaliacao-alimentar-r24h__summary-grid span {
-  display: block;
-  font-size: 0.7rem;
-  color: #5b667f;
-}
-
-.avaliacao-alimentar-r24h__summary-grid strong {
-  display: block;
-  margin-top: 0.1rem;
-  font-size: 0.9rem;
-  color: #1d2637;
-}
-
-/* Seções do painel direito */
-.avaliacao-alimentar-r24h__section {
-  border-top: 1px solid #eef1f6;
-  padding-top: 0.7rem;
-  margin-top: 0.7rem;
-}
-
-.avaliacao-alimentar-r24h__summary h4 {
-  margin: 0 0 0.65rem;
-  font-size: 0.88rem;
-}
-
-.avaliacao-alimentar-r24h__section h5 {
-  margin: 0 0 0.5rem;
-  font-size: 0.83rem;
-  color: #21324f;
-}
-
-.avaliacao-alimentar-r24h__section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.avaliacao-alimentar-r24h__mini-btn {
-  border: 1px solid #d8dfeb;
-  background: #f7faff;
-  color: #1d3a66;
-  border-radius: 7px;
-  font-size: 0.73rem;
-  padding: 0.2rem 0.5rem;
-  cursor: pointer;
-}
-
-/* Suplementação */
-.avaliacao-alimentar-r24h__supp-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.avaliacao-alimentar-r24h__supp-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
-  gap: 0.3rem;
-  align-items: center;
-}
-
-.avaliacao-alimentar-r24h__icon-btn {
-  border: 1px solid #f1c3c3;
-  background: #fff5f5;
-  color: #a82727;
-  border-radius: 7px;
-  cursor: pointer;
-  min-width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Adesão */
-.avaliacao-alimentar-r24h__adherence-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.avaliacao-alimentar-r24h__adherence-score {
-  margin-top: 0.5rem;
-  font-size: 0.8rem;
-  color: #44506a;
-}
-
-.avaliacao-alimentar-r24h__adherence-score strong {
-  color: #1d2637;
-}
-
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .avaliacao-alimentar-r24h__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .avaliacao-alimentar-r24h__summary {
-    position: static;
-    max-height: none;
-  }
-
-  .avaliacao-alimentar-r24h__meta {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .r24h-macros-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .avaliacao-alimentar-r24h__supp-row {
-    grid-template-columns: 1fr 1fr auto;
-  }
-
-  .avaliacao-alimentar-r24h__supp-row .eval-input:last-of-type {
-    grid-column: 1 / -1;
-  }
-
-  .avaliacao-alimentar-r24h__adherence-grid {
-    grid-template-columns: 1fr;
-  }
+.av-modulo.avaliacao-alimentar-r24h .avaliacao-alimentar-r24h__sticky-save .av-acoes {
+  padding-top: 0;
+  border-top: 0;
 }

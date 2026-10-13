@@ -1,0 +1,125 @@
+/* Regras responsivas e de movimento reduzido da landing.
+
+   Este arquivo e importado POR ULTIMO, e isso e o que o faz funcionar: media
+   query nao aumenta especificidade, entao uma regra de celular so vence a regra
+   de desktop do mesmo seletor se vier depois dela na cascata. No arquivo unico
+   original este bloco ficava no fim. Quando a folha foi dividida por peca, ele
+   foi parar no arquivo base, carregado antes das pecas - e as regras de desktop
+   do hero, do login e dos modais passaram a anular as de celular (a pagina ficava
+   em duas colunas espremidas a 390px). Nao mova este conteudo para a base. */
+
+/* ── Reduced motion ────────────────────────────────────────────────────────
+   Nada a reduzir aqui: a entrada da cena/titulo/frase/painel ja fica
+   inteiramente fora deste modo (landing-hero.css e landing-base.css so
+   animam sob "prefers-reduced-motion: no-preference"), e os laços de cada
+   peça (ex.: landing-login.css) cuidam da própria redução. */
+
+/* ── Primeira tela em telas baixas ────────────────────────────────────────
+   O mockup falhava a 320×640 (botao "Entrar" a 717px, abaixo da dobra —
+   plano.md, secao 7). Aqui comprimimos os tres maiores custos de altura
+   antes do painel — chao, respiro da marca e tamanho/respiro do titulo —
+   para o topo do painel ficar a ate ~230px a 320×640. O celular alto
+   (390×844) nao precisa disto: os mesmos valores do mockup (sem
+   compressao) ja cabem. */
+/* Limiar de 700px, o mesmo da compactação do formulário (landing-login.css):
+   medido no navegador, 360×740 já cabe sem compressão (base do "Entrar" a
+   535px com ela, sobrando 200px); só 320×640 precisa. O respiro sob o título
+   fica em 1rem — com 0,5rem a última linha encostava na luz do horizonte
+   (defeito 5 do plano do mockup). */
+@media (max-height: 43.75rem) {
+  .lp-primeira { --lp-chao-altura: 4rem; }
+  .lp-marca { --lp-marca-pad-topo: 0.5rem; }
+  .lp-titulo {
+    --lp-titulo-pad-topo: 0.75rem;
+    --lp-titulo-pad-base: 1rem;
+    --lp-titulo-tamanho: 1.625rem;
+  }
+  .lp-painel {
+    --lp-painel-pad-topo: 0.75rem;
+    --lp-painel-pad-base: 1.25rem;
+  }
+}
+
+/* ── Celular estreito ──────────────────────────────────────────────────── */
+@media (max-width: 22.5rem) {
+  .lp-marca__inst { font-size: var(--lt-text-sm); }
+}
+
+/* ── Desktop: a cena ocupa a tela toda, o painel vira coluna ─────────────
+   docs/design/landing-v2/a2-energia/index.html, `@media (min-width: 64rem)`.
+   `.lp-painel` reaparece aqui porque no mockup a moldura muda de forma
+   inteira (recorte vertical em vez de diagonal-de-cima, sombra lateral em
+   vez de superior) — nao e so um ajuste dos --lp-* comprimiveis acima. */
+@media (min-width: 64rem) {
+  .lp-primeira {
+    grid-template-columns: minmax(0, 1fr) clamp(26rem, 36vw, 33rem);
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      "marca  painel"
+      "titulo painel"
+      "frase  painel"
+      ".      painel";
+    min-height: 100vh;
+    min-height: 100svh;
+  }
+
+  .lp-cena {
+    grid-row: 1 / -1;
+    --lp-horizonte: 60%;
+    --lp-fuga-x: 61%;
+    --lp-prof: 340px;
+    --lp-raia: 124px;
+    --lp-pista-x: -560px;
+  }
+
+  .lp-marca { padding-top: 2rem; }
+  .lp-marca__emblema { width: 52px; height: 52px; }
+  .lp-marca__sigla { font-size: 1.875rem; }
+  .lp-marca__inst {
+    margin-left: 0.25rem;
+    padding-left: 0.875rem;
+    border-left: 1.5px solid rgba(214, 227, 245, .35);
+  }
+
+  .lp-titulo {
+    padding-top: clamp(2rem, 7vh, 4.5rem);
+    padding-bottom: 0;
+    font-size: clamp(3.5rem, 1rem + 4.6vw, 5.75rem);
+  }
+
+  .lp-frase {
+    padding-top: 1.75rem;
+    padding-right: 2rem;
+    background: none;
+    max-width: 34rem;
+  }
+
+  .lp-painel {
+    --lp-painel-inclinacao: 5.5rem;
+    margin: 0 0 0 -5.5rem;
+    clip-path: polygon(var(--lp-painel-inclinacao) 0, 100% 0, 100% 100%, 0 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2.5rem var(--lt-page-margin) 2.5rem calc(var(--lp-painel-inclinacao) + 2.5rem);
+    filter: drop-shadow(-22px 0 40px rgba(4, 18, 48, .45));
+  }
+}
+
+/* ── Grades dos modais (nao sao minhas — landing-modais.css) ──────────────
+   Preservadas do arquivo anterior: AccessRequestModal.jsx e
+   PasswordRecoveryModal.jsx colapsam para 1 coluna abaixo de 860px de
+   largura de janela (independente da largura maxima do proprio modal).
+   `.entry-grid`, `.workflow-grid`, `.faq-grid` e as regras de
+   `.landing-topbar`/`.landing-hero__grid`/`.landing-login-panel` que
+   estavam aqui nao tem mais consumidor (secoes antigas removidas nesta
+   rodada) e sairam. */
+@media (max-width: 860px) {
+  .request-grid, .recovery-grid { grid-template-columns: 1fr; }
+  .request-actions { justify-content: stretch; }
+  .request-actions button { flex: 1; }
+}
+
+@media (max-width: 600px) {
+  .request-modal { border-radius: 1.1rem; }
+}

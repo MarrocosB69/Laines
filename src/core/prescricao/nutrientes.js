@@ -49,7 +49,7 @@ export function cargaGlicemicaItem(item) {
 
 /** Soma que ignora ausências. Tudo ausente devolve null, não zero. */
 export function somaOuNull(itens, fn) {
-  const validos = itens.map(fn).filter((v) => v !== null);
+  const validos = itens.map(fn).filter(Number.isFinite);
   return validos.length === 0 ? null : validos.reduce((a, b) => a + b, 0);
 }
 
@@ -59,8 +59,12 @@ export function somaOuNull(itens, fn) {
  * do plano" — duas conclusões clínicas diferentes.
  */
 export function cobertura(itens, nutriente) {
+  if (!itens.length) return 0;
   const total = itens.reduce((a, i) => a + (valorNutriente(i, 'kcal') ?? 0), 0);
-  if (total === 0) return 1;
+  // Sem energia completa, usar proporção de itens; desconhecidos não desaparecem do denominador.
+  if (total === 0 || itens.some((i) => valorNutriente(i, 'kcal') === null)) {
+    return itens.filter((i) => valorNutriente(i, nutriente) !== null).length / itens.length;
+  }
   const comDado = itens
     .filter((i) => valorNutriente(i, nutriente) !== null)
     .reduce((a, i) => a + (valorNutriente(i, 'kcal') ?? 0), 0);

@@ -18,6 +18,8 @@ import { usePacientes } from '../../../contexts/PacienteContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { isStudentMemberRole, normalizeRole } from '../../../constants/roles';
+import { estadoDoProntuario } from '../../../core/prontuario/estado';
+import { buildClinicalSnapshot, buildProntuarioOverview } from '../../../components/Prontuario/prontuarioOverview';
 import { useModalBodyLock } from '../../../hooks/useModalBodyLock';
 import {
   uploadPatientAttachment,
@@ -25,26 +27,37 @@ import {
   deletePatientAttachment
 } from '../../../services/storage';
 import api, { getApiErrorMessage } from '../../../services/api';
+import { enviarAvaliacaoParaRevisao } from '../../../services/supervisao';
 import {
   getEvaluationStatusLabel,
   getEvaluationTypeLabel
 } from '../../../components/shared/evaluationSummaryUtils';
-import { listEvaluationRegistryByContext } from '../../../constants/evaluationRegistry';
+import {
+  getEditableTypesForUser,
+  listEvaluationRegistryByContext,
+  getVisibleTypesForUser,
+  normalizeAreaToken
+} from '../../../constants/evaluationRegistry';
 import { ATHLETE_SELF_EVALUATION_CONFIGS } from '../../Athlete/athleteSelfEvaluations';
 import { buildEvaluationTimelineSummary } from '../../../components/shared/evaluationResultAdapter';
 import AppointmentModal from './AppointmentModal';
 import ProntuarioHeader from '../../../components/Prontuario/ProntuarioHeader';
 import ProntuarioTabs from '../../../components/Prontuario/ProntuarioTabs';
 import ResumoClinico from '../../../components/Prontuario/ResumoClinico';
+import PainelDivergencias from '../../../components/Prontuario/PainelDivergencias';
 import DashboardAvaliacoes from '../../../components/Prontuario/DashboardAvaliacoes';
 import VisaoGeral from '../../../components/Prontuario/VisaoGeral';
 import TimelineConsultas from '../../../components/Prontuario/TimelineConsultas';
-import PainelSituacaoClinica from '../../../components/Prontuario/PainelSituacaoClinica';
 import PainelAnexos from '../../../components/Prontuario/PainelAnexos';
 import PainelMensagens from '../../../components/Prontuario/PainelMensagens';
-import ProximasConsultas from '../../../components/Prontuario/ProximasConsultas';
 import ProntuarioPendencias from '../../../components/Prontuario/ProntuarioPendencias';
+import ProntuarioAssessmentSidebar from '../../../components/Prontuario/ProntuarioAssessmentSidebar';
 import PainelRevisaoAtleta from '../../../components/Prontuario/PainelRevisaoAtleta';
+import EvolucaoAnalytics from '../../../components/Prontuario/EvolucaoAnalytics';
+
+// A avaliacao pesa ~460 kB: so carrega quando um modulo e aberto de fato.
+const AvaliacaoCompleta = React.lazy(() => import('../../AvaliacaoCompleta'));
+import { FeedbackState } from '../../../components/ui';
 
 const APPOINTMENT_STATUS_LABELS = {
   agendada: 'Agendada',
@@ -62,8 +75,6 @@ const ATTACHMENT_EDITOR_ROLES = new Set([
   'coordenacao',
   'presidente',
   'vice',
-  'coord_atendimento',
-  'diretoria_extensao',
   'professor',
   'profissional',
   'aluno'
@@ -71,14 +82,53 @@ const ATTACHMENT_EDITOR_ROLES = new Set([
 
 const PROJECT_LINK_EDITOR_ROLES = new Set([
   'admin',
-  'coordenacao',
-  'presidente',
-  'vice',
-  'coord_atendimento',
-  'diretoria_extensao',
+  'coordenacao'
+]);
+
+const PATIENT_MANAGER_ROLES = PROJECT_LINK_EDITOR_ROLES;
+
+const SUPERVISION_ROLES = new Set([
   'professor',
   'profissional'
 ]);
+
+const normalizeId = (value) => String(value || '').trim();
+
+const normalizeEvaluationKey = (value) => (
+  String(value || '').trim().toLowerCase().replace(/-/g, '_')
+);
+
+const EVALUATION_MODULE_ID_BY_KEY = listEvaluationRegistryByContext('avaliacaoCompleta')
+  .reduce((map, item) => {
+    const moduleId = item.moduleId || item.type;
+    map.set(normalizeEvaluationKey(item.type), moduleId);
+    map.set(normalizeEvaluationKey(moduleId), moduleId);
+    return map;
+  }, new Map());
+
+const resolveEvaluationModuleId = (value, fallback = 'anamnese-inicial') => {
+  const raw = String(value || '').trim();
+  const key = normalizeEvaluationKey(raw || fallback);
+  return EVALUATION_MODULE_ID_BY_KEY.get(key) || raw || fallback;
+};
+
+const getEvaluationClinicalDate = (evaluation, convertDate) => (
+  convertDate(
+    evaluation?.measuredAt
+    || evaluation?.data
+    || evaluation?.dataAvaliacao
+    || evaluation?.createdAt
+  )
+);
+
+const isPatientActiveStatus = (status) => {
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  return normalized === 'ativo' || normalized === 'ativa';
+};
 
 const normalizeStringArray = (value) => {
   if (Array.isArray(value)) {
@@ -92,15 +142,90 @@ const normalizeStringArray = (value) => {
       .map((item) => item.trim())
       .filter(Boolean);
   }
+  if (value && typeof value === 'object') {
+    return Object.values(value)
+      .flatMap((item) => normalizeStringArray(item))
+      .filter(Boolean);
+  }
   return [];
+};
+
+const asPlainObject = (value) => (
+  value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+);
+
+const firstFilled = (...values) => values.find((value) => {
+  if (value === null || value === undefined) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value).length > 0;
+  return String(value).trim().length > 0;
+});
+
+const reportedValue = (value) => value === 'nao_informado' ? undefined : value;
+
+const formatListValue = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (item && typeof item === 'object') {
+          return Object.values(item)
+            .map((entry) => String(entry || '').trim())
+            .filter(Boolean)
+            .join(' - ');
+        }
+        return String(item || '').trim();
+      })
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (value && typeof value === 'object') {
+    return Object.entries(value)
+      .map(([key, item]) => {
+        if (Array.isArray(item)) {
+          const text = item.map((entry) => String(entry || '').trim()).filter(Boolean).join(', ');
+          return text ? `${key}: ${text}` : '';
+        }
+        const text = String(item || '').trim();
+        return text ? `${key}: ${text}` : '';
+      })
+      .filter(Boolean)
+      .join(' | ');
+  }
+  return value;
+};
+
+const formatFamilyHistoryValue = (value) => {
+  if (Array.isArray(value)) return formatListValue(value);
+  const record = asPlainObject(value);
+  const groups = [
+    ['pai', 'Pai'],
+    ['mae', 'Mae'],
+    ['legado', 'Historico']
+  ];
+  return groups
+    .map(([key, label]) => {
+      const list = normalizeStringArray(record[key]);
+      return list.length ? `${label}: ${list.join(', ')}` : '';
+    })
+    .filter(Boolean)
+    .join(' | ');
+};
+
+const getPublicTriageData = (confirmation) => {
+  const publicInscricao = asPlainObject(confirmation?.inscricaoPublica);
+  return asPlainObject(publicInscricao.dados);
 };
 
 const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', originTab = '' }) => {
   const [avaliacoes, setAvaliacoes] = useState([]);
+  const [loadingEvaluations, setLoadingEvaluations] = useState(true);
+  const [evaluationsError, setEvaluationsError] = useState('');
+  const [planState, setPlanState] = useState({ patientId: '', loading: true, items: [], error: '' });
+  const evaluationRequestRef = useRef(0);
   const [isEditingSummary, setIsEditingSummary] = useState(false);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [appointments, setAppointments] = useState([]);
-  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [isRefreshingAppointments, setIsRefreshingAppointments] = useState(false);
   const [appointmentsLastSyncedAt, setAppointmentsLastSyncedAt] = useState(null);
   const [appointmentsError, setAppointmentsError] = useState('');
@@ -147,7 +272,13 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isReleasingEbia, setIsReleasingEbia] = useState(false);
   const [togglingAthleteFormType, setTogglingAthleteFormType] = useState(null);
+  const [athleteFormReleasesOverride, setAthleteFormReleasesOverride] = useState(null);
   const [isMarkingReviewedId, setIsMarkingReviewedId] = useState(null);
+  // UPD-17: formulario inline de "enviar para revisao" no historico de
+  // avaliacoes — um item aberto por vez, sem modal.
+  const [activeReviewRequestId, setActiveReviewRequestId] = useState(null);
+  const [reviewRequestNote, setReviewRequestNote] = useState('');
+  const [isSendingReviewRequest, setIsSendingReviewRequest] = useState(false);
   const [projectLink, setProjectLink] = useState({
     id: '',
     nome: ''
@@ -155,24 +286,45 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   const consultationHistoryRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { isProfessor, user } = useAuth();
+  const { user } = useAuth();
   const {
     getAvaliacoesByPacientePaged,
     formatDate,
     convertFirebaseDate,
     updatePaciente
   } = usePacientes();
-  const { notify } = useUiFeedback();
+  const { notify, confirm } = useUiFeedback();
 
   useModalBodyLock(isProjectModalOpen);
 
   const moduleConfig = useMemo(() => {
-    return listEvaluationRegistryByContext('prontuario').map((item) => ({
-      id: item.moduleId || item.type,
-      label: item.shortLabel || item.label,
-      tipo: item.type
-    }));
-  }, []);
+    const visibleTypes = getVisibleTypesForUser(user, patient);
+    return listEvaluationRegistryByContext('prontuario')
+      .filter((item) => visibleTypes.has(item.type))
+      .map((item) => ({
+        id: item.moduleId || item.type,
+        label: item.shortLabel || item.label,
+        tipo: item.type,
+        group: item.macroStageLabel || item.groupLabel || 'Instrumentos'
+      }));
+  }, [patient, user]);
+  const appointmentEvaluationOptions = useMemo(
+    () => moduleConfig.map((item) => ({ id: item.tipo, label: item.label })),
+    [moduleConfig]
+  );
+  /**
+   * Areas ja presentes na equipe deste caso.
+   *
+   * Instrumento restrito a uma area (psicologia, fisioterapia) so vira "nao
+   * aplicavel" quando o caso ja tem equipe registrada sem ninguem daquela
+   * area — nunca por falta de dado. Vem do cadastro de equipe que o caso já
+   * tem; nenhum campo novo.
+   */
+  const patientTeamAreas = useMemo(() => new Set(
+    (Array.isArray(patient?.equipeProfissional) ? patient.equipeProfissional : [])
+      .map((member) => normalizeAreaToken(member?.area))
+      .filter(Boolean)
+  ), [patient?.equipeProfissional]);
   const comorbidadesOptions = [
     { id: 'diabetes', label: 'Diabetes Mellitus - Tipo 1 ou 2' },
     { id: 'hipertensao', label: 'Hipertensão - Pressão alta' },
@@ -185,22 +337,72 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   ];
 
   const normalizedUserRole = normalizeRole(user?.role);
-  const currentUserId = user?.uid || user?.id || '';
+  const currentUserId = normalizeId(user?.uid || user?.id);
+  const isPatientManager = PATIENT_MANAGER_ROLES.has(normalizedUserRole);
   const isPatientResponsible = Boolean(
     currentUserId
-    && (patient?.alunoResponsavelId === currentUserId || patient?.alunoResponsavel?.id === currentUserId)
+    && (normalizeId(patient?.alunoResponsavelId) === currentUserId || normalizeId(patient?.alunoResponsavel?.id) === currentUserId)
   );
   const isPatientTeamMember = Boolean(
     currentUserId
-    && Array.isArray(patient?.equipeTecnicaIds)
-    && patient.equipeTecnicaIds.includes(currentUserId)
+    && (
+      (Array.isArray(patient?.equipeTecnicaIds) && patient.equipeTecnicaIds.some((id) => normalizeId(id) === currentUserId))
+      || (Array.isArray(patient?.equipeMultiIds) && patient.equipeMultiIds.some((id) => normalizeId(id) === currentUserId))
+      || (
+        Array.isArray(patient?.equipeProfissional)
+        && patient.equipeProfissional.some((member) => normalizeId(member?.userId) === currentUserId)
+      )
+    )
   );
-  const canManagePatientFlow = isStudentMemberRole(normalizedUserRole) && (isPatientResponsible || isPatientTeamMember);
+  const isPatientSupervisor = Boolean(
+    currentUserId
+    && SUPERVISION_ROLES.has(normalizedUserRole)
+    && (
+      normalizeId(patient?.professorSupervisorId) === currentUserId
+      || normalizeId(patient?.professorSupervisor?.id) === currentUserId
+      || (
+        Array.isArray(patient?.equipeProfissional)
+        && patient.equipeProfissional.some((member) => (
+          normalizeId(member?.userId) === currentUserId
+          && String(member?.papel || '').toLowerCase().includes('super')
+        ))
+      )
+    )
+  );
+  /**
+   * Tipos que este usuario pode preencher neste caso.
+   *
+   * A decisao e do servidor (`capacidadesDoCaso`, UPD-12): a mesma regra que
+   * barra a criacao em `assertCaseAreaEditAccess`. O calculo local so cobre
+   * resposta de API antiga, para a tela nao ficar sem acao; quando o servidor
+   * fala, o cliente nao rediscute.
+   */
+  const editableEvaluationTypes = useMemo(() => {
+    const doServidor = patient?.capacidadesDoCaso?.tiposEditaveis;
+    if (Array.isArray(doServidor)) return new Set(doServidor);
+    return getEditableTypesForUser(user, patient);
+  }, [patient, user]);
+  const isStudentLinkedToPatient = isStudentMemberRole(normalizedUserRole) && (isPatientResponsible || isPatientTeamMember);
+  const hasScopedClinicalAccess = isPatientResponsible || isPatientTeamMember || isPatientSupervisor;
+  const canCreateEvaluation = isPatientManager || (isStudentLinkedToPatient && editableEvaluationTypes.size > 0);
+  const canCreateAppointment = canCreateEvaluation;
+  const canManageAthleteForms = isPatientManager || isPatientSupervisor;
+  const canReviewAthleteSubmissions = isPatientManager || hasScopedClinicalAccess;
+  const canEditClinicalSummary = isPatientManager
+    || isPatientSupervisor
+    || (isStudentLinkedToPatient && editableEvaluationTypes.has('anamnese_inicial'));
+  const canWriteSupervisorMessage = isPatientManager || isPatientSupervisor;
+  const canCreateMealPlan = isPatientManager
+    || editableEvaluationTypes.has('alimentar')
+    || editableEvaluationTypes.has('gasto_energetico_total');
   const canLinkProject = PROJECT_LINK_EDITOR_ROLES.has(normalizedUserRole);
-  const podeEditarAvaliacoes = canManagePatientFlow;
-  const podeEditarResumo = canManagePatientFlow;
-  const podeEnviarAnexo = ATTACHMENT_EDITOR_ROLES.has(user?.role);
-  const podeRemoverAnexo = ATTACHMENT_EDITOR_ROLES.has(user?.role);
+  const podeEditarAvaliacoes = canCreateEvaluation;
+  const podeEditarResumo = canEditClinicalSummary;
+  // UPD-17: envio para revisao segue o mesmo vinculo que o servidor aceita
+  // (responsavel/equipe/gestao) — supervisor revisa, nao envia pelo aluno.
+  const podeEnviarParaRevisao = isPatientManager || isPatientResponsible || isPatientTeamMember;
+  const podeEnviarAnexo = canManageAthleteForms && ATTACHMENT_EDITOR_ROLES.has(normalizedUserRole);
+  const podeRemoverAnexo = (isPatientManager || isPatientSupervisor) && ATTACHMENT_EDITOR_ROLES.has(normalizedUserRole);
   const patientInitials = useMemo(() => {
     const name = patient?.nome || '';
     const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -217,14 +419,42 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age -= 1;
     return age;
   }, [convertFirebaseDate, patient?.dataNascimento]);
-  const patientLastUpdate = useMemo(
-    () => convertFirebaseDate(patient?.updatedAt || patient?.createdAt || patient?.dataCadastro),
-    [convertFirebaseDate, patient?.createdAt, patient?.dataCadastro, patient?.updatedAt]
-  );
   const athleteConfirmation = useMemo(() => (
     patient?.confirmacaoAtleta || {}
   ), [patient?.confirmacaoAtleta]);
-  const athleteHasLogin = Boolean(athleteConfirmation?.completed);
+  const athleteRegistrationCompleted = Boolean(athleteConfirmation?.completed);
+  const hasAthleteAccount = Boolean(
+    patient?.atletaUserId
+    || athleteConfirmation?.atletaUserId
+    || athleteConfirmation?.userId
+    || athleteConfirmation?.uid
+  );
+  const athleteLoginEmail = patient?.email || athleteConfirmation?.email || '';
+
+  /**
+   * Consentimento para pesquisa, pronto para o cabeçalho.
+   *
+   * O dado sempre existiu na resposta da API e não aparecia em lugar nenhum do
+   * prontuário — só no modal de cadastro. Quem decide usar o caso em pesquisa
+   * decide aqui, e precisa do fato aqui.
+   */
+  const consentimentoResumo = useMemo(() => {
+    const bruto = String(patient?.consentimentoPesquisa || '').trim().toLowerCase();
+    const versao = patient?.consentimentoVersao ? `v${patient.consentimentoVersao}` : '';
+    const data = patient?.consentimentoData ? formatDate(patient.consentimentoData) : '';
+    const detalhe = [versao, data].filter(Boolean).join(' · ');
+
+    if (bruto === 'aceito' || bruto === 'assinado' || bruto === 'sim') {
+      return { tom: 'ok', rotulo: 'Consentido', detalhe };
+    }
+    if (bruto === 'recusado' || bruto === 'nao') {
+      return { tom: 'warn', rotulo: 'Recusado', detalhe };
+    }
+    if (!bruto) return { tom: 'muted', rotulo: 'Não registrado', detalhe: '' };
+    return { tom: 'warn', rotulo: 'Pendente', detalhe };
+  }, [patient?.consentimentoPesquisa, patient?.consentimentoVersao, patient?.consentimentoData, formatDate]);
+  const isPatientActive = isPatientActiveStatus(patient?.status);
+  const patientStatusLabel = patient?.status || (isPatientActive ? 'Ativo' : 'Sem status');
   const ebiaSelfFormRelease = useMemo(() => (
     athleteConfirmation?.ebiaSelfForm || {}
   ), [athleteConfirmation?.ebiaSelfForm]);
@@ -237,35 +467,74 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     () => convertFirebaseDate(ebiaSelfFormRelease?.consumedAt),
     [convertFirebaseDate, ebiaSelfFormRelease?.consumedAt]
   );
+
+  useEffect(() => {
+    setAthleteFormReleasesOverride(null);
+  }, [athleteConfirmation?.formulariosLiberados, patient?.id]);
+
   const athleteFormReleases = useMemo(
-    () => athleteConfirmation?.formulariosLiberados || {},
-    [athleteConfirmation?.formulariosLiberados]
+    () => athleteFormReleasesOverride || athleteConfirmation?.formulariosLiberados || {},
+    [athleteConfirmation?.formulariosLiberados, athleteFormReleasesOverride]
   );
   const dadosGeraisFields = useMemo(() => {
-    const athleteInitialData = athleteConfirmation?.dados || {};
+    const publicTriageData = getPublicTriageData(athleteConfirmation);
+    const athleteInitialData = {
+      ...publicTriageData,
+      ...asPlainObject(athleteConfirmation?.dados)
+    };
+    const ebiaSummary = (() => {
+      const respostas = Array.isArray(athleteInitialData.ebia?.respostas)
+        ? athleteInitialData.ebia.respostas
+        : [];
+      if (!respostas.length) return '';
+      const positivas = respostas.filter((item) => String(item?.resposta || '').toLowerCase() === 'sim').length;
+      return `${positivas}/${respostas.length} respostas positivas`;
+    })();
+    const redsSummary = athleteInitialData.redsScore !== undefined && athleteInitialData.redsScore !== null
+      ? `${athleteInitialData.redsScore} ponto(s)${athleteInitialData.redsInstrumento ? ` - ${athleteInitialData.redsInstrumento}` : ''}`
+      : '';
     return [
-    { label: 'Nome completo', value: athleteInitialData.nomeCompleto || patient?.nome || '', group: 'identificacao' },
-    { label: 'Data de nascimento', value: athleteInitialData.dataNascimento || patient?.dataNascimento || '', group: 'identificacao' },
+    { label: 'Nome completo', value: firstFilled(athleteInitialData.nomeCompleto, athleteInitialData.nome, patient?.nome, ''), group: 'identificacao' },
+    { label: 'Data de nascimento', value: firstFilled(athleteInitialData.dataNascimento, patient?.dataNascimento, ''), group: 'identificacao' },
+    { label: 'Genero', value: firstFilled(athleteInitialData.genero, patient?.genero, ''), group: 'identificacao' },
+    { label: 'Sexo biologico', value: firstFilled(athleteInitialData.sexoBiologico, patient?.sexoBiologico, ''), group: 'identificacao' },
+    { label: 'Telefone', value: firstFilled(athleteInitialData.telefone, patient?.telefone, ''), group: 'identificacao' },
+    { label: 'Cidade/UF', value: [firstFilled(athleteInitialData.cidade, patient?.cidade), firstFilled(athleteInitialData.estado, patient?.estado)].filter(Boolean).join(' / '), group: 'identificacao' },
     { label: 'Pessoas na casa', value: athleteInitialData.pessoasCasa, group: 'socioeconomico' },
-    { label: 'Renda média (SM)', value: athleteInitialData.rendaMediaSm, group: 'socioeconomico' },
+    { label: 'Profissao', value: athleteInitialData.profissao, group: 'socioeconomico' },
+    { label: 'Renda familiar', value: firstFilled(athleteInitialData.rendaMensal, athleteInitialData.rendaMediaSm), group: 'socioeconomico' },
     { label: 'Escolaridade', value: athleteInitialData.escolaridade, group: 'socioeconomico' },
-    { label: 'Motivo do atendimento', value: athleteInitialData.motivoAtendimento, group: 'clinico' },
+    { label: 'Motivo do atendimento', value: firstFilled(athleteInitialData.motivoAtendimento, athleteInitialData.queixaPrincipal, athleteInitialData.objetivo, reportedValue(patient?.objetivo)), group: 'clinico' },
     { label: 'Usa medicamento/suplemento', value: athleteInitialData.usaMedicamentoSuplemento, group: 'clinico' },
-    { label: 'Detalhes do medicamento', value: athleteInitialData.medicamentoDetalhes, group: 'clinico' },
-    { label: 'Diagnósticos pessoais', value: athleteInitialData.diagnosticosPessoais, group: 'clinico' },
-    { label: 'Histórico familiar', value: athleteInitialData.historicoFamiliar, group: 'clinico' },
+    { label: 'Detalhes do medicamento', value: firstFilled(athleteInitialData.medicamentoDetalhes, formatListValue(athleteInitialData.medicamentos)), group: 'clinico' },
+    { label: 'Suplementos', value: firstFilled(athleteInitialData.suplementoNoDia, formatListValue(athleteInitialData.suplementos)), group: 'clinico' },
+    { label: 'Diagnosticos pessoais', value: firstFilled(athleteInitialData.diagnosticosPessoais, formatListValue(athleteInitialData.comorbidadesPessoais), formatListValue(athleteInitialData.patologias)), group: 'clinico' },
+    { label: 'Historico familiar', value: firstFilled(athleteInitialData.historicoFamiliar, formatFamilyHistoryValue(athleteInitialData.comorbidadesFamiliares)), group: 'clinico' },
+    { label: 'Sinais relatados', value: formatListValue(athleteInitialData.sinaisClinicos), group: 'clinico' },
     { label: 'Condições gastrointestinais', value: athleteInitialData.condicaoGastrointestinal, group: 'clinico' },
-    { label: 'Alergia/intolerância', value: athleteInitialData.alergiaIntolerancia, group: 'clinico' },
+    { label: 'Alergia/intolerancia', value: firstFilled(athleteInitialData.alergiaIntolerancia, athleteInitialData.alergias), group: 'clinico' },
+    { label: 'Exames informados', value: formatListValue(athleteInitialData.examesRealizados), group: 'clinico' },
     { label: 'Não gosta de comer', value: athleteInitialData.naoGostaComer, group: 'alimentar' },
-    { label: 'Ingestão de água', value: athleteInitialData.ingestaoAgua, group: 'alimentar' },
-    { label: 'Litros de água/dia', value: athleteInitialData.litrosAguaDia, group: 'alimentar' },
+    { label: 'Ingestão de água', value: firstFilled(athleteInitialData.ingestaoAgua, athleteInitialData.hidratacao ? `${athleteInitialData.hidratacao} L/dia` : ''), group: 'alimentar' },
+    { label: 'Litros de água/dia', value: firstFilled(athleteInitialData.litrosAguaDia, athleteInitialData.hidratacao), group: 'alimentar' },
+    { label: 'Bristol', value: athleteInitialData.bristol ? `Tipo ${athleteInitialData.bristol}` : '', group: 'alimentar' },
+    { label: 'Urina', value: [athleteInitialData.urinaPrimeira ? `primeira: ${athleteInitialData.urinaPrimeira}` : '', athleteInitialData.urinaUltima ? `ultima: ${athleteInitialData.urinaUltima}` : ''].filter(Boolean).join(' | '), group: 'alimentar' },
     { label: 'Prepara refeições', value: athleteInitialData.preparaRefeicoes, group: 'alimentar' },
     { label: 'Quem prepara', value: athleteInitialData.quemPrepara, group: 'alimentar' },
     { label: 'Temperos usados', value: athleteInitialData.temperos, group: 'alimentar' },
     { label: 'Óleos e gorduras', value: athleteInitialData.oleosGorduras, group: 'alimentar' },
     { label: 'Equipamentos em casa', value: athleteInitialData.equipamentosCasa, group: 'alimentar' },
     { label: 'Bebida alcoólica', value: athleteInitialData.bebidaAlcoolica, group: 'alimentar' },
-    { label: 'Atividade física (horário/frequência)', value: athleteInitialData.atividadeFisica, group: 'rotina' },
+    { label: 'Atividade física (horário/frequência)', value: firstFilled(athleteInitialData.atividadeFisica, patient?.modalidadePrincipal), group: 'rotina' },
+    { label: 'Frequencia semanal', value: firstFilled(athleteInitialData.frequenciaSemanal, patient?.frequenciaSemanal), group: 'rotina' },
+    { label: 'Duracao da sessão', value: firstFilled(athleteInitialData.duracaoSessao, patient?.duracaoSessao), group: 'rotina' },
+    // Coletados no cadastro do atleta e que paravam antes da tela. Tempo de
+    // prática é idade de treino — muda a leitura de qualquer marcador de
+    // adaptação; tipo de treino muda a prescrição.
+    { label: 'Tempo de prática', value: firstFilled(athleteInitialData.tempoPratica, patient?.tempoPratica), group: 'rotina' },
+    { label: 'Tipo de treino', value: firstFilled(athleteInitialData.tipoTreino, reportedValue(patient?.tipoTreino)), group: 'rotina' },
+    { label: 'Intensidade percebida', value: firstFilled(athleteInitialData.intensidade, reportedValue(patient?.intensidade)), group: 'rotina' },
+    { label: 'Outras modalidades', value: firstFilled(athleteInitialData.outrasModalidades, formatListValue(patient?.outrasModalidades)), group: 'rotina' },
     { label: 'Fuma atualmente', value: athleteInitialData.fuma, group: 'rotina' },
     { label: 'Frequência de delivery', value: athleteInitialData.deliveryFrequencia, group: 'rotina' },
     { label: 'Dificuldade para dormir', value: athleteInitialData.dificuldadeDormir, group: 'rotina' },
@@ -273,33 +542,92 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     { label: 'Rotina tarde', value: athleteInitialData.rotinaTarde, group: 'rotina' },
     { label: 'Rotina noite', value: athleteInitialData.rotinaNoite, group: 'rotina' },
     { label: 'Horário que dorme', value: athleteInitialData.horarioDormir, group: 'rotina' },
-    { label: 'Horário que acorda', value: athleteInitialData.horarioAcordar, group: 'rotina' }
+    { label: 'Horário que acorda', value: athleteInitialData.horarioAcordar, group: 'rotina' },
+    { label: 'Avaliacoes solicitadas', value: formatListValue(athleteInitialData.avaliacaoSolicitada), group: 'triagem' },
+    { label: 'Rastreio de disponibilidade energética', value: redsSummary, group: 'triagem' },
+    { label: 'Rastreamento EBIA', value: ebiaSummary, group: 'triagem' },
+    { label: 'Como conheceu a LAINES', value: athleteInitialData.comoSoube, group: 'triagem' },
+    { label: 'Responsavel legal', value: [athleteInitialData.nomeResponsavel, athleteInitialData.cpfResponsavel ? `CPF: ${athleteInitialData.cpfResponsavel}` : ''].filter(Boolean).join(' | '), group: 'triagem' },
+    { label: 'Observacoes da inscricao', value: athleteInitialData.observacoes, group: 'triagem' }
     ];
-  }, [athleteConfirmation?.dados, patient?.dataNascimento, patient?.nome]);
+  }, [
+    athleteConfirmation,
+    patient?.cidade,
+    patient?.dataNascimento,
+    patient?.duracaoSessao,
+    patient?.estado,
+    patient?.frequenciaSemanal,
+    patient?.genero,
+    patient?.modalidadePrincipal,
+    patient?.tempoPratica,
+    patient?.tipoTreino,
+    patient?.intensidade,
+    patient?.outrasModalidades,
+    patient?.nome,
+    patient?.objetivo,
+    patient?.sexoBiologico,
+    patient?.telefone
+  ]);
 
   const loadAvaliacoes = useCallback(async () => {
+    const requestId = ++evaluationRequestRef.current;
     if (!patient?.id) {
       setAvaliacoes([]);
+      setLoadingEvaluations(false);
       return;
     }
+    setLoadingEvaluations(true);
+    setEvaluationsError('');
     try {
-      const { items } = await getAvaliacoesByPacientePaged(patient.id, null, pageSize);
-      setAvaliacoes(items || []);
+      const allItems = [];
+      let cursor = null;
+      let pagesRead = 0;
+      do {
+        const { items, lastDoc } = await getAvaliacoesByPacientePaged(patient.id, cursor, pageSize);
+        allItems.push(...(items || []));
+        cursor = lastDoc;
+        pagesRead += 1;
+      } while (cursor !== null && pagesRead < 10);
+      if (requestId !== evaluationRequestRef.current) return;
+      setAvaliacoes(allItems);
+      if (cursor !== null) setEvaluationsError('Histórico parcial: não foi possível carregar todas as avaliações.');
     } catch (error) {
+      if (requestId !== evaluationRequestRef.current) return;
       console.error('Erro ao carregar avaliações:', error);
       const message = getApiErrorMessage(error, 'Não foi possível carregar as avaliações.');
       setAvaliacoes([]);
+      setEvaluationsError(message);
       notify({
         type: 'error',
         title: 'Erro ao carregar avaliações',
         message
       });
     }
+    finally {
+      if (requestId === evaluationRequestRef.current) setLoadingEvaluations(false);
+    }
   }, [getAvaliacoesByPacientePaged, notify, pageSize, patient?.id]);
 
   useEffect(() => {
     loadAvaliacoes();
+    return () => { evaluationRequestRef.current += 1; };
   }, [loadAvaliacoes]);
+
+  useEffect(() => {
+    if (!patient?.id) return undefined;
+    let active = true;
+    const patientId = patient.id;
+    setPlanState({ patientId, loading: true, items: [], error: '' });
+    api.get('/planos-alimentares', { params: { pacienteId: patientId, status: 'ativo', limit: 100 } })
+      .then(({ data }) => {
+        if (!Array.isArray(data)) throw new Error('Resposta de planos inválida.');
+        if (active) setPlanState({ patientId, loading: false, items: data, error: '' });
+      })
+      .catch((error) => {
+        if (active) setPlanState({ patientId, loading: false, items: [], error: getApiErrorMessage(error, 'Não foi possível consultar a conduta vigente.') });
+      });
+    return () => { active = false; };
+  }, [patient?.id]);
 
   const loadAppointments = useCallback(async ({ preserveCurrent = false } = {}) => {
     if (!patient?.id) {
@@ -353,23 +681,41 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   }, [loadAppointments]);
 
   useEffect(() => {
-    const athleteInitialData = athleteConfirmation?.dados || {};
-    const observacoes = patient?.observacoes || athleteInitialData?.observacoes || '';
-    const historicoSaude = patient?.historicoSaude || athleteInitialData?.historicoSaude || '';
+    if (isEditingSummary) return;
+    const publicTriageData = getPublicTriageData(athleteConfirmation);
+    const athleteInitialData = {
+      ...publicTriageData,
+      ...asPlainObject(athleteConfirmation?.dados)
+    };
+    const observacoes = firstFilled(
+      patient?.observacoes,
+      athleteInitialData?.observacoes,
+      athleteInitialData?.queixaPrincipal,
+      athleteInitialData?.motivoAtendimento,
+      ''
+    );
+    const historicoSaude = firstFilled(
+      patient?.historicoSaude,
+      athleteInitialData?.historicoSaude,
+      athleteInitialData?.historicoFamiliar,
+      ''
+    );
     const comorbidadesPessoais = normalizeStringArray(
-      (patient?.comorbidadesPessoais || []).length
+      normalizeStringArray(patient?.comorbidadesPessoais).length
         ? patient?.comorbidadesPessoais
-        : athleteInitialData?.comorbidadesPessoais
+        : firstFilled(athleteInitialData?.comorbidadesPessoais, athleteInitialData?.patologias, [])
     );
     const comorbidadesFamiliares = normalizeStringArray(
-      (patient?.comorbidadesFamiliares || []).length
+      normalizeStringArray(patient?.comorbidadesFamiliares).length
         ? patient?.comorbidadesFamiliares
         : athleteInitialData?.comorbidadesFamiliares
     );
     setSummaryDraft({ observacoes, historicoSaude, comorbidadesPessoais, comorbidadesFamiliares });
     setSummarySaved({ observacoes, historicoSaude, comorbidadesPessoais, comorbidadesFamiliares });
   }, [
+    athleteConfirmation,
     athleteConfirmation?.dados,
+    isEditingSummary,
     patient?.comorbidadesFamiliares,
     patient?.comorbidadesPessoais,
     patient?.historicoSaude,
@@ -411,6 +757,10 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
 
   useEffect(() => {
     setActiveTab('visao-geral');
+    setModuloEmbutido(null);
+    setAvaliacaoEmbutidaId(null);
+    setIsEditingSummary(false);
+    setSummaryError('');
   }, [patient?.id]);
 
   useEffect(() => {
@@ -465,8 +815,8 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
 
   const avaliacoesOrdenadas = useMemo(() => {
     return [...avaliacoes].sort((a, b) => {
-      const aDate = convertFirebaseDate(a.createdAt || a.data) || 0;
-      const bDate = convertFirebaseDate(b.createdAt || b.data) || 0;
+      const aDate = getEvaluationClinicalDate(a, convertFirebaseDate) || 0;
+      const bDate = getEvaluationClinicalDate(b, convertFirebaseDate) || 0;
       return bDate - aDate;
     });
   }, [avaliacoes, convertFirebaseDate]);
@@ -596,92 +946,69 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     const key = String(status || '').toLowerCase();
     return APPOINTMENT_STATUS_LABELS[key] || (key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : 'Sem status');
   }, []);
-  const lastEvaluation = useMemo(() => {
-    if (!avaliacoesOrdenadas.length) return null;
-    const item = avaliacoesOrdenadas[0];
-    return convertFirebaseDate(item.createdAt || item.data) || null;
-  }, [avaliacoesOrdenadas, convertFirebaseDate]);
+  /**
+   * Estado do prontuário, calculado uma vez.
+   *
+   * A faixa de indicadores dizia "16 pendências clínicas" contando módulos sem
+   * avaliação finalizada, enquanto o painel de Pendências listava nove itens
+   * vindos do backend. Dois números, dois significados, o mesmo rótulo.
+   *
+   * Aqui a faixa passa a medir o que ela sabe medir com exatidão — o estado
+   * das avaliações — e deixa a palavra "pendência" para o painel que a define.
+   */
+  const estadoProntuario = useMemo(() => estadoDoProntuario({
+    avaliacoes: avaliacoesOrdenadas,
+    agendamentos: appointments,
+    paciente: patient,
+    // O autorrelato vive na confirmacao do atleta; o registro, no paciente.
+    declarado: {
+      ...getPublicTriageData(athleteConfirmation),
+      ...asPlainObject(athleteConfirmation?.dados)
+    }
+  }), [avaliacoesOrdenadas, appointments, patient, athleteConfirmation]);
 
-  const pendingModules = useMemo(() => {
-    const completed = new Set(
-      avaliacoesOrdenadas
-        .filter((item) => item.status === 'finalizada')
-        .map((item) => item.tipo)
-    );
-    return moduleConfig.filter((mod) => !completed.has(mod.tipo));
-  }, [avaliacoesOrdenadas, moduleConfig]);
+  /**
+   * Pendências do backend, buscadas uma vez pelo container.
+   *
+   * O painel buscava por conta própria e o selo da aba contava outra coisa —
+   * daí "Pendências 16" no selo e nove itens na lista. Uma requisição, um
+   * número: o selo e o painel leem a mesma resposta.
+   */
+  const [pendenciasRemotas, setPendenciasRemotas] = useState(null);
+  const [loadingPendencias, setLoadingPendencias] = useState(true);
+  const [pendenciasError, setPendenciasError] = useState('');
 
-  const prontuarioSignals = useMemo(() => {
-    const consultasRealizadas = consultationStatusSummary.realizada || 0;
-    const consultasAgendadas = consultationStatusSummary.agendada || 0;
-    const consultasFalta = consultationStatusSummary.falta || 0;
+  useEffect(() => {
+    if (!patient?.id) { setPendenciasRemotas(null); return undefined; }
+    let vivo = true;
+    setLoadingPendencias(true);
+    setPendenciasError('');
+    api.get(`/avaliacoes/pendencias/${patient.id}`)
+      .then((res) => { if (vivo) setPendenciasRemotas(Array.isArray(res.data) ? res.data : null); })
+      .catch(() => { if (vivo) { setPendenciasRemotas(null); setPendenciasError('Não foi possível consultar as pendências do atendimento.'); } })
+      .finally(() => { if (vivo) setLoadingPendencias(false); });
+    return () => { vivo = false; };
+  }, [patient?.id]);
 
-    return [
-      {
-        id: 'cadastro',
-        label: 'Cadastro inicial',
-        value: athleteHasLogin ? 'Confirmado' : 'Pendente',
-        tone: athleteHasLogin ? 'ok' : 'warning'
-      },
-      {
-        id: 'pendencias',
-        label: 'Pendências clínicas',
-        value: `${pendingModules.length} módulo(s)`,
-        tone: pendingModules.length === 0 ? 'ok' : pendingModules.length <= 2 ? 'attention' : 'warning'
-      },
-      {
-        id: 'consultas-realizadas',
-        label: 'Consultas realizadas',
-        value: `${consultasRealizadas}`,
-        tone: consultasRealizadas > 0 ? 'ok' : 'neutral'
-      },
-      {
-        id: 'consultas-agendadas',
-        label: 'Consultas agendadas',
-        value: `${consultasAgendadas}`,
-        tone: consultasAgendadas > 0 ? 'attention' : 'neutral'
-      },
-      {
-        id: 'faltas',
-        label: 'Faltas registradas',
-        value: `${consultasFalta}`,
-        tone: consultasFalta > 0 ? 'warning' : 'ok'
-      },
-      {
-        id: 'anexos',
-        label: 'Anexos clínicos',
-        value: `${attachments.length} arquivo(s)`,
-        tone: attachments.length > 0 ? 'ok' : 'neutral'
-      },
-      {
-        id: 'mensagens',
-        label: 'Mensagens do professor',
-        value: `${professorMessages.length} registro(s)`,
-        tone: professorMessages.length > 0 ? 'attention' : 'neutral'
-      },
-      {
-        id: 'ultima-avaliacao',
-        label: 'Última avaliação',
-        value: lastEvaluation ? formatDate(lastEvaluation) : 'Sem registros',
-        tone: lastEvaluation ? 'ok' : 'warning'
-      }
-    ];
-  }, [
-    athleteHasLogin,
-    attachments.length,
-    consultationStatusSummary.agendada,
-    consultationStatusSummary.falta,
-    consultationStatusSummary.realizada,
-    formatDate,
-    lastEvaluation,
-    pendingModules.length,
-    professorMessages.length
-  ]);
-
-  const pendingModulesSummary = useMemo(() => {
-    if (!pendingModules.length) return 'Sem pendências de avaliação abertas.';
-    return pendingModules.map((item) => item.label).join(' • ');
-  }, [pendingModules]);
+  const planLoading = planState.patientId !== patient?.id || planState.loading;
+  const overviewLoading = loadingEvaluations || loadingAppointments || loadingPendencias;
+  const overviewError = evaluationsError || appointmentsError || pendenciasError;
+  const snapshot = useMemo(() => buildClinicalSnapshot(avaliacoesOrdenadas, patient?.id), [avaliacoesOrdenadas, patient?.id]);
+  const overview = useMemo(() => buildProntuarioOverview({
+    avaliacoes: avaliacoesOrdenadas, agendamentos: appointments, modules: moduleConfig, patientId: patient?.id,
+    planos: planState.items, planLoading, planError: planState.error,
+    pendencias: pendenciasRemotas || [], loading: overviewLoading, error: overviewError,
+    canCreateEvaluation, canCreateAppointment, canCreateMealPlan, canReview: canReviewAthleteSubmissions,
+    editableTypes: editableEvaluationTypes, teamAreas: patientTeamAreas,
+  }), [avaliacoesOrdenadas, appointments, moduleConfig, patient?.id, planState, planLoading, pendenciasRemotas,
+    overviewLoading, overviewError, canCreateEvaluation, canCreateAppointment, canCreateMealPlan,
+    canReviewAthleteSubmissions, editableEvaluationTypes, patientTeamAreas]);
+  const decisionAlerts = useMemo(() => [
+    ...(overviewError ? [{ id: 'dados-indisponiveis', text: overviewError }] : []),
+    ...(planState.error ? [{ id: 'conduta-indisponivel', text: 'Conduta vigente indisponível. Consulte os detalhes antes de preparar um plano.' }] : []),
+    ...(overview.tasks.some((item) => item.tipo === 'revisao') ? [{ id: 'revisao', text: 'Há envio aguardando revisão; ele ainda não compõe a síntese clínica.' }] : []),
+    ...(estadoProntuario.divergencias.length ? [{ id: 'divergencias', text: 'Há divergências entre autorrelato e cadastro. Confira em Dados clínicos.' }] : []),
+  ], [overviewError, planState.error, overview.tasks, estadoProntuario.divergencias.length]);
 
   const timelineEvents = useMemo(() => {
     const evaluationEvents = avaliacoesOrdenadas.map((item) => {
@@ -699,8 +1026,16 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
           responsible
         ].filter(Boolean).join(' • '),
         status: item.status || 'rascunho',
-        date: convertFirebaseDate(item.createdAt || item.data),
-        meta: { ...(item.meta || {}), tipo: item.tipo },
+        // A data que importa clinicamente e a da medicao, nao a do registro.
+        // Tres bioimpedancias de marco, maio e agosto apareciam todas com a data
+        // em que foram digitadas — a leitura longitudinal sumia na propria lista.
+        date: convertFirebaseDate(item.measuredAt || item.data || item.dataAvaliacao || item.createdAt),
+        meta: {
+          ...(item.meta || {}),
+          tipo: item.tipo,
+          avaliacaoId: item.id,
+          moduleId: resolveEvaluationModuleId(item.tipo)
+        },
         searchText: `${typeLabel} ${statusLabel} ${responsible}`.toLowerCase()
       };
     });
@@ -724,12 +1059,12 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
 
     const professorMessageEvents = professorMessages.map((message, index) => {
       const text = String(message.texto || '').trim();
-      const professorName = message.professorNome || 'Professor';
+      const professorName = message.supervisorNome || message.professorNome || 'Supervisão';
       const safeText = text || 'Mensagem sem conteúdo';
       return {
         id: `observacao-professor-${message.id || `${safeText.slice(0, 24)}-${index}`}`,
         type: 'observacao',
-        title: `Observação do professor`,
+        title: 'Observação da supervisão',
         description: `${professorName}: ${safeText}`,
         status: 'registrado',
         date: convertFirebaseDate(message.createdAt),
@@ -774,30 +1109,88 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   const visibleAttachments = Math.min(attachments.length, attachmentsVisibleCount);
   const attachmentsHasMore = attachmentsVisibleCount < attachments.length;
 
-  const handleOpenAvaliacaoTab = useCallback((startTab = 'bioimpedancia') => {
+  // Modulo aberto dentro do prontuario. Null = a aba mostra o historico.
+  const [moduloEmbutido, setModuloEmbutido] = useState(null);
+  const [sidebarActiveModule, setSidebarActiveModule] = useState(null);
+  const [sidebarRequest, setSidebarRequest] = useState(null);
+  const [imageOpenRequest, setImageOpenRequest] = useState(0);
+  const sidebarRequestSequence = useRef(0);
+
+  const requestSidebarAction = useCallback((action, moduleId = null) => {
+    sidebarRequestSequence.current += 1;
+    setSidebarRequest({ sequence: sidebarRequestSequence.current, action, moduleId });
+  }, []);
+
+  const handleTabChange = useCallback((nextTab) => {
+    if (nextTab !== 'avaliacoes' && activeTab === 'avaliacoes' && moduloEmbutido) {
+      requestSidebarAction('tab', nextTab);
+      return;
+    }
+    setActiveTab(nextTab);
+    if (nextTab === 'avaliacoes') setTimelineFilterType('avaliacao');
+  }, [activeTab, moduloEmbutido, requestSidebarAction]);
+
+  // 126px de nome, foto e etiquetas estao certos quando se chega e errados
+  // quando se esta digitando. Sentinela observada em vez de listener de scroll:
+  // funciona independente de qual container rola.
+  const [cabecalhoCompacto, setCabecalhoCompacto] = useState(false);
+  const sentinelaTopo = useRef(null);
+
+  useEffect(() => {
+    const alvo = sentinelaTopo.current;
+    if (!alvo || typeof IntersectionObserver === 'undefined') return undefined;
+    const obs = new IntersectionObserver(
+      ([entrada]) => setCabecalhoCompacto(!entrada.isIntersecting),
+      { threshold: 0 }
+    );
+    obs.observe(alvo);
+    return () => obs.disconnect();
+  }, []);
+  const [avaliacaoEmbutidaId, setAvaliacaoEmbutidaId] = useState(null);
+
+  const handleFecharModulo = useCallback(() => {
+    setModuloEmbutido(null);
+    setAvaliacaoEmbutidaId(null);
+    setSidebarActiveModule(null);
+    setSidebarRequest(null);
+  }, []);
+
+  const handleOpenAvaliacaoTab = useCallback((startTab = 'anamnese-inicial', avaliacaoId = null) => {
+    if (!patient?.id) return;
+    // Antes isto navegava para /avaliacao/:id e tirava a pessoa do prontuario.
+    // O formulario agora abre na propria aba de Avaliacoes.
+    const moduleId = resolveEvaluationModuleId(startTab);
+    setModuloEmbutido(moduleId);
+    setSidebarActiveModule(moduleId);
+    setSidebarRequest(null);
+    setAvaliacaoEmbutidaId(avaliacaoId || null);
+    setActiveTab('avaliacoes');
+  }, [patient?.id]);
+
+  const handleNovaAvaliacao = useCallback(() => {
+    const firstEditable = moduleConfig.find((item) => isPatientManager || editableEvaluationTypes.has(item.tipo));
+    if (firstEditable) handleOpenAvaliacaoTab(firstEditable.id);
+  }, [editableEvaluationTypes, handleOpenAvaliacaoTab, isPatientManager, moduleConfig]);
+
+  const handleCreateMealPlan = useCallback(() => {
     if (!patient?.id) return;
     const returnTo = originPath || `${location.pathname}${location.search || ''}` || '/aluno';
-    navigate(`/avaliacao/${patient.id}`, {
+    navigate(`/prescricao-plano/${patient.id}`, {
       state: {
         returnTo,
-        startTab,
-        returnView: originView || 'dashboard',
+        returnView: originView || 'prontuario',
         returnTab: originTab || 'patients'
       }
     });
   }, [
+    location.pathname,
+    location.search,
     navigate,
     originPath,
     originTab,
     originView,
-    patient?.id,
-    location.pathname,
-    location.search
+    patient?.id
   ]);
-
-  const handleNovaAvaliacao = useCallback(() => {
-    handleOpenAvaliacaoTab('bioimpedancia');
-  }, [handleOpenAvaliacaoTab]);
 
   const handleLoadMoreTimeline = () => {
     setTimelineVisibleCount((prev) => prev + 8);
@@ -825,11 +1218,11 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   }, []);
 
   const handleOpenHistory = useCallback(() => {
-    setActiveTab('consultas');
+    handleTabChange('evolucao');
     window.requestAnimationFrame(() => {
       scrollToSection(consultationHistoryRef);
     });
-  }, [scrollToSection]);
+  }, [handleTabChange, scrollToSection]);
 
   const handleOpenProjectModal = useCallback(() => {
     if (!canLinkProject) {
@@ -878,8 +1271,8 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   }, [isSavingProject, notify, patient?.id, projects, selectedProjectId, updatePaciente]);
 
   const handleReleaseEbiaToAthlete = useCallback(async () => {
-    if (!patient?.id || isReleasingEbia || !podeEditarAvaliacoes) return;
-    if (!athleteHasLogin) {
+    if (!patient?.id || isReleasingEbia || !canManageAthleteForms) return;
+    if (!athleteRegistrationCompleted) {
       notify({
         type: 'warning',
         title: 'Atleta sem cadastro inicial',
@@ -895,45 +1288,58 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
       return `ebia-${Date.now()}`;
     };
 
+    const willEnable = !ebiaSelfFormEnabled;
     setIsReleasingEbia(true);
     try {
       await updatePaciente(patient.id, {
         confirmacaoAtleta: {
-          ...athleteConfirmation,
           ebiaSelfForm: {
             ...ebiaSelfFormRelease,
-            enabled: true,
-            releaseId: ebiaSelfFormRelease?.releaseId || generateReleaseId(),
-            releasedAt: new Date().toISOString(),
-            releasedById: user?.uid || user?.id || '',
-            releasedByName: user?.name || user?.email || '',
-            consumedAt: null,
-            consumedByAvaliacaoId: null
+            enabled: willEnable,
+            ...(willEnable
+              ? {
+                releaseId: ebiaSelfFormEnabled
+                  ? ebiaSelfFormRelease?.releaseId || generateReleaseId()
+                  : generateReleaseId(),
+                releasedAt: new Date().toISOString(),
+                releasedById: user?.uid || user?.id || '',
+                releasedByName: user?.name || user?.email || '',
+                disabledAt: null,
+                consumedAt: null,
+                consumedByAvaliacaoId: null
+              }
+              : {
+                disabledAt: new Date().toISOString(),
+                disabledById: user?.uid || user?.id || '',
+                disabledByName: user?.name || user?.email || ''
+              })
           }
         }
       });
       notify({
         type: 'success',
-        title: 'EBIA liberado',
-        message: 'O atleta ja pode preencher o formulario EBIA no portal.'
+        title: willEnable ? 'EBIA liberado' : 'EBIA suspenso',
+        message: willEnable
+          ? 'O atleta ja pode preencher o formulario EBIA no portal.'
+          : 'O formulario EBIA foi removido do portal do atleta.'
       });
     } catch (error) {
       notify({
         type: 'error',
-        title: 'Erro ao liberar EBIA',
-        message: getApiErrorMessage(error, 'Não foi possível liberar o formulário EBIA para o atleta.')
+        title: 'Erro ao alterar EBIA',
+        message: getApiErrorMessage(error, 'Não foi possível atualizar o acesso ao formulário EBIA.')
       });
     } finally {
       setIsReleasingEbia(false);
     }
   }, [
-    athleteHasLogin,
-    athleteConfirmation,
+    athleteRegistrationCompleted,
+    canManageAthleteForms,
+    ebiaSelfFormEnabled,
     ebiaSelfFormRelease,
     isReleasingEbia,
     notify,
     patient?.id,
-    podeEditarAvaliacoes,
     updatePaciente,
     user?.email,
     user?.id,
@@ -942,33 +1348,53 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   ]);
 
   const handleToggleAthleteFormAccess = useCallback(async (type) => {
-    if (!patient?.id || !podeEditarAvaliacoes || !athleteHasLogin || togglingAthleteFormType) return;
+    if (!patient?.id || !canManageAthleteForms || togglingAthleteFormType) return;
     const currentRelease = athleteFormReleases[type] || {};
     const willEnable = !currentRelease.enabled;
+    const nextRelease = {
+      ...currentRelease,
+      enabled: willEnable,
+      ...(willEnable
+        ? {
+          releasedAt: new Date().toISOString(),
+          releasedById: user?.uid || user?.id || '',
+          releasedByName: user?.name || user?.email || '',
+          disabledAt: null
+        }
+        : {
+          disabledAt: new Date().toISOString(),
+          enabled: false
+        })
+    };
+    const nextFormReleases = {
+      ...athleteFormReleases,
+      [type]: nextRelease
+    };
     setTogglingAthleteFormType(type);
     try {
-      await updatePaciente(patient.id, {
+      const updatedPatient = await updatePaciente(patient.id, {
         confirmacaoAtleta: {
-          ...athleteConfirmation,
-          formulariosLiberados: {
-            ...athleteFormReleases,
-            [type]: {
-              ...currentRelease,
-              enabled: willEnable,
-              ...(willEnable
-                ? { releasedAt: new Date().toISOString(), releasedById: user?.uid || user?.id || '', releasedByName: user?.name || user?.email || '', disabledAt: null }
-                : { disabledAt: new Date().toISOString(), enabled: false })
-            }
-          }
+          formulariosLiberados: nextFormReleases
         }
       });
-      notify({ type: 'success', title: willEnable ? 'Formulário liberado' : 'Acesso suspenso', message: willEnable ? 'O atleta pode preencher este formulário no portal.' : 'O formulário foi removido do portal do atleta.' });
+      setAthleteFormReleasesOverride(
+        updatedPatient?.confirmacaoAtleta?.formulariosLiberados || nextFormReleases
+      );
+      notify({
+        type: 'success',
+        title: willEnable ? 'Formulário liberado' : 'Acesso suspenso',
+        message: willEnable
+          ? athleteRegistrationCompleted
+            ? 'O atleta pode preencher este formulário no portal.'
+            : 'O formulário ficará disponível quando o atleta concluir o cadastro inicial.'
+          : 'O formulário foi removido do portal do atleta.'
+      });
     } catch (error) {
       notify({ type: 'error', title: 'Erro ao alterar acesso', message: getApiErrorMessage(error, 'Não foi possível atualizar o acesso ao formulário.') });
     } finally {
       setTogglingAthleteFormType(null);
     }
-  }, [athleteConfirmation, athleteFormReleases, athleteHasLogin, notify, patient?.id, podeEditarAvaliacoes, togglingAthleteFormType, updatePaciente, user?.email, user?.id, user?.name, user?.uid]);
+  }, [athleteFormReleases, athleteRegistrationCompleted, canManageAthleteForms, notify, patient?.id, togglingAthleteFormType, updatePaciente, user?.email, user?.id, user?.name, user?.uid]);
 
 
   const getTimelineStatusLabel = useCallback((event) => {
@@ -988,24 +1414,14 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   }, []);
 
   const handleMarkAsReviewed = useCallback(async (avaliacaoId) => {
-    if (!avaliacaoId || isMarkingReviewedId || !podeEditarAvaliacoes) return;
+    if (!avaliacaoId || isMarkingReviewedId || !canReviewAthleteSubmissions) return;
     setIsMarkingReviewedId(avaliacaoId);
     try {
-      const avaliacao = avaliacoes.find((a) => a.id === avaliacaoId);
-      await api.patch(`/avaliacoes/${avaliacaoId}`, {
-        status: 'finalizada',
-        meta: {
-          ...(avaliacao?.meta || {}),
-          aguardandoRevisao: false,
-          revisadoEm: new Date().toISOString(),
-          revisadoPorId: user?.uid || user?.id || '',
-          revisadoPorNome: user?.name || user?.email || ''
-        }
-      });
+      const { data: reviewedEvaluation } = await api.patch(`/avaliacoes/${avaliacaoId}/revisar`);
       notify({ type: 'success', title: 'Revisão registrada', message: 'O envio foi marcado como revisado.' });
       setAvaliacoes((prev) => prev.map((a) =>
         a.id === avaliacaoId
-          ? { ...a, status: 'finalizada', meta: { ...(a.meta || {}), aguardandoRevisao: false } }
+          ? (reviewedEvaluation || { ...a, status: 'finalizada', meta: { ...(a.meta || {}), aguardandoRevisao: false } })
           : a
       ));
     } catch (error) {
@@ -1014,122 +1430,48 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
       setIsMarkingReviewedId(null);
     }
   }, [
-    isMarkingReviewedId, podeEditarAvaliacoes, avaliacoes,
-    notify, user?.uid, user?.id, user?.name, user?.email
+    canReviewAthleteSubmissions, isMarkingReviewedId, notify
   ]);
 
-  const continuityItems = useMemo(() => {
-    const items = [];
-
-    if (!nextAppointment) {
-      items.push({
-        id: 'sem-consulta',
-        level: 'alto',
-        title: 'Sem próxima consulta agendada',
-        description: 'Defina o próximo atendimento para manter o acompanhamento ativo.'
-      });
+  // UPD-17: aluno responsavel/equipe (ou gestao) pede revisao de uma
+  // avaliacao preenchida no atendimento — envio opcional, nao substitui quem
+  // finaliza direto. O servidor e quem decide vinculo e idempotencia; aqui so
+  // repassamos o resultado para a lista local, sem duplicar a regra.
+  const handleSendForReview = useCallback(async (avaliacaoId) => {
+    if (!avaliacaoId || isSendingReviewRequest) return;
+    setIsSendingReviewRequest(true);
+    try {
+      const enviada = await enviarAvaliacaoParaRevisao(avaliacaoId, reviewRequestNote);
+      notify({ type: 'success', title: 'Enviado para revisão', message: 'O supervisor foi avisado e vai revisar em breve.' });
+      setAvaliacoes((prev) => prev.map((a) => (a.id === avaliacaoId ? (enviada || a) : a)));
+      setActiveReviewRequestId(null);
+      setReviewRequestNote('');
+    } catch (error) {
+      notify({ type: 'error', title: 'Erro ao enviar', message: getApiErrorMessage(error, 'Não foi possível enviar para revisão.') });
+    } finally {
+      setIsSendingReviewRequest(false);
     }
+  }, [isSendingReviewRequest, notify, reviewRequestNote]);
 
-    if (pendingModules.length > 0) {
-      items.push({
-        id: 'modulos-pendentes',
-        level: 'medio',
-        title: `${pendingModules.length} módulo(s) de avaliação pendente(s)`,
-        description: pendingModules.slice(0, 3).map((module) => module.label).join(' • ')
-      });
-    }
-
-    if (!projectLink?.id) {
-      items.push({
-        id: 'projeto',
-        level: 'medio',
-        title: 'Atleta sem projeto vinculado',
-        description: 'Vincule o projeto para rastrear indicadores institucionais.'
-      });
-    }
-
-    if (!summarySaved.observacoes?.trim()) {
-      items.push({
-        id: 'observacao',
-        level: 'medio',
-        title: 'Resumo clínico sem queixa principal',
-        description: 'Registre a queixa principal para facilitar continuidade do cuidado.'
-      });
-    }
-
-    if (!athleteHasLogin) {
-      items.push({
-        id: 'cadastro-inicial',
-        level: 'alto',
-        title: 'Cadastro inicial do atleta pendente',
-        description: 'O atleta ainda não confirmou os dados no primeiro acesso.'
-      });
-    }
-
-    if (pendingAthleteSubmissions.length > 0) {
-      items.push({
-        id: 'revisoes-atleta',
-        level: 'medio',
-        title: `${pendingAthleteSubmissions.length} envio(s) do atleta aguardando revisão`,
-        description: 'Abra a aba Dados Clínicos para revisar os formulários enviados.'
-      });
-    }
-
-    if ((consultationStatusSummary.falta || 0) > 0) {
-      items.push({
-        id: 'faltas',
-        level: 'atencao',
-        title: `${consultationStatusSummary.falta} falta(s) registrada(s)`,
-        description: 'Reavalie a estratégia de adesão e remarcações.'
-      });
-    }
-
-    if (items.length === 0) {
-      items.push({
-        id: 'fluxo-ok',
-        level: 'ok',
-        title: 'Fluxo clínico em dia',
-        description: 'Consultas, avaliação e contexto clínico estão atualizados.'
-      });
-    }
-
-    return items;
-  }, [
-    athleteHasLogin,
-    consultationStatusSummary.falta,
-    nextAppointment,
-    pendingAthleteSubmissions,
-    pendingModules,
-    projectLink?.id,
-    summarySaved.observacoes
-  ]);
-
+  // Consultas nao tem aba propria: a consulta e o eixo do tempo da evolucao, e
+  // separa-las obrigava a cruzar duas telas para ler a mesma historia.
   const prontuarioTabs = useMemo(() => ([
-    { id: 'visao-geral', label: 'Visão Geral', enabled: true },
-    { id: 'dados-clinicos', label: 'Dados Clínicos', enabled: true },
+    { id: 'visao-geral', label: 'Visão geral', enabled: true },
+    { id: 'dados-clinicos', label: 'Dados clínicos', enabled: true },
     { id: 'avaliacoes', label: 'Avaliações', enabled: true, count: avaliacoesOrdenadas.length },
-    { id: 'consultas', label: 'Consultas', enabled: true, count: consultationHistory.length },
+    { id: 'evolucao', label: 'Evoluções', enabled: true, count: consultationHistory.length },
     { id: 'anexos', label: 'Anexos', enabled: true, count: attachments.length },
-    { id: 'pendencias', label: 'Pendências', enabled: true, count: pendingModules.length + pendingAthleteSubmissions.length }
-  ]), [avaliacoesOrdenadas.length, attachments.length, consultationHistory.length, pendingModules.length]);
-
-  const headerSubtitle = useMemo(() => {
-    const modalidade = patient?.modalidadePrincipal || patient?.modalidade || 'Modalidade não informada';
-    const updatedLabel = patientLastUpdate ? formatDate(patientLastUpdate) : 'Sem atualização';
-    const vat = patient?.vat || patient?.vaf || patient?.valorAtendimento;
-    const vatLabel = vat ? `VAT ${vat}` : null;
-    const ageLabel = patientAge ? `${patientAge} anos` : null;
-    return [modalidade, ageLabel, vatLabel, `Modificado ${updatedLabel}`].filter(Boolean).join(' · ');
-  }, [
-    formatDate,
-    patient?.modalidade,
-    patient?.modalidadePrincipal,
-    patient?.vaf,
-    patient?.valorAtendimento,
-    patient?.vat,
-    patientAge,
-    patientLastUpdate
+    { id: 'pendencias', label: 'Pendências', enabled: true, count: overviewLoading || overviewError ? undefined : overview.tasks.length }
+  ]), [
+    avaliacoesOrdenadas.length,
+    attachments.length,
+    consultationHistory.length,
+    overviewLoading,
+    overviewError,
+    overview.tasks.length
   ]);
+
+  const headerSubtitle = [patient?.modalidadePrincipal || patient?.modalidade, patientAge ? patientAge + ' anos' : null].filter(Boolean).join(' · ');
 
   const timelineStatusOptionsEvaluation = useMemo(() => {
     const statuses = new Set();
@@ -1262,10 +1604,10 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   };
 
   const handleSaveProfessorMessage = async () => {
-    if (!patient?.id) return;
+    if (!patient?.id || !canWriteSupervisorMessage) return;
     const text = professorMessage.trim();
     if (!text) {
-      setProfessorMessageError('Informe uma mensagem para o aluno.');
+      setProfessorMessageError('Informe uma nota para a equipe.');
       return;
     }
     setProfessorMessageError('');
@@ -1284,7 +1626,7 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   };
 
   const handleUploadAttachment = async (event) => {
-    if (!patient?.id) return;
+    if (!patient?.id || !podeEnviarAnexo) return;
     const file = event.target.files?.[0];
     if (!file) return;
     setAttachmentError('');
@@ -1334,8 +1676,16 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
   };
 
   const handleRemoveAttachment = async (attachment) => {
-    if (!patient?.id || !attachment) return;
+    if (!patient?.id || !attachment || !podeRemoverAnexo) return;
     const currentId = String(attachment.id || attachment.path || attachment.url || '');
+    const accepted = await confirm({
+      title: 'Remover anexo',
+      message: 'O anexo será removido do prontuário. Deseja continuar?',
+      confirmLabel: 'Remover',
+      cancelLabel: 'Cancelar',
+      variant: 'danger'
+    });
+    if (!accepted) return;
     setRemovingAttachmentId(currentId);
     setAttachmentError('');
 
@@ -1359,36 +1709,94 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
     }
   };
 
-  const handleTabChange = useCallback((nextTab) => {
+  const handleSidebarBack = useCallback(() => {
+    if (activeTab === 'avaliacoes' && moduloEmbutido) requestSidebarAction('back');
+    else onBack?.();
+  }, [activeTab, moduloEmbutido, onBack, requestSidebarAction]);
+
+  const handleSidebarPanel = useCallback(() => {
+    if (activeTab === 'avaliacoes' && moduloEmbutido) requestSidebarAction('panel');
+    else {
+      handleFecharModulo();
+      handleTabChange('avaliacoes');
+    }
+  }, [activeTab, handleFecharModulo, handleTabChange, moduloEmbutido, requestSidebarAction]);
+
+  const handleOpenImagePanel = useCallback(() => {
+    handleFecharModulo();
+    handleTabChange('avaliacoes');
+    setImageOpenRequest((request) => request + 1);
+  }, [handleFecharModulo, handleTabChange]);
+
+  const handleLeaveModuleForTab = useCallback((nextTab) => {
+    handleFecharModulo();
     setActiveTab(nextTab);
-    if (nextTab === 'avaliacoes') {
-      setTimelineFilterType('avaliacao');
+    if (nextTab === 'evolucao') {
+      window.requestAnimationFrame(() => scrollToSection(consultationHistoryRef));
     }
-    if (nextTab === 'consultas') {
-      window.requestAnimationFrame(() => {
-        scrollToSection(consultationHistoryRef);
-      });
+  }, [handleFecharModulo, scrollToSection]);
+
+  const handleSidebarModule = useCallback((moduleId) => {
+    const module = moduleConfig.find((item) => item.id === moduleId);
+    if (!module) return;
+    if (module.tipo === 'composicao_corporal_imagem') {
+      if (activeTab === 'avaliacoes' && moduloEmbutido) requestSidebarAction('image');
+      else handleOpenImagePanel();
+      return;
     }
-  }, [scrollToSection]);
+    if (activeTab === 'avaliacoes' && moduloEmbutido) requestSidebarAction('module', moduleId);
+    else handleOpenAvaliacaoTab(moduleId);
+    window.requestAnimationFrame(() => {
+      document.querySelector('.pron-avaliacao-embutida')?.scrollIntoView({ block: 'start' });
+    });
+  }, [activeTab, handleOpenAvaliacaoTab, handleOpenImagePanel, moduleConfig, moduloEmbutido, requestSidebarAction]);
 
   return (
     <>
-      <div className="prontuario-root pron-page">
-        <div className="pron-shell">
+      <div className={`prontuario-root pron-page admin-container${cabecalhoCompacto ? ' is-cabecalho-compacto' : ''}`}>
+        <ProntuarioAssessmentSidebar
+          modules={moduleConfig}
+          activeKey={activeTab === 'avaliacoes'
+            ? (moduloEmbutido ? (sidebarActiveModule ? `assessment:${sidebarActiveModule}` : '') : 'panel')
+            : ''}
+          user={user}
+          patientName={patient?.nome}
+          portal={originPath === '/aluno' ? 'aluno' : originPath === '/professor' ? 'professor' : 'admin'}
+          onBack={handleSidebarBack}
+          onOpenPanel={handleSidebarPanel}
+          onOpenModule={handleSidebarModule}
+        />
+        <main className="pron-shell">
+        <div ref={sentinelaTopo} aria-hidden="true" style={{ height: 1 }} />
+
         <ProntuarioHeader
-          onBack={onBack}
+          onBack={handleSidebarBack}
           patientName={patient?.nome}
           patientInitials={patientInitials}
           prontuarioNumber={patient?.prontuario}
-          athleteLoginEmail={patient?.email || ''}
+          isActive={isPatientActive}
+          statusLabel={patientStatusLabel}
+          athleteLoginEmail={athleteLoginEmail}
+          hasAthleteAccount={hasAthleteAccount}
           projectName={projectLink?.nome}
           subtitle={headerSubtitle}
-          profileIncomplete={!athleteHasLogin}
-          canCreateEvaluation={podeEditarAvaliacoes}
-          canCreateAppointment={podeEditarAvaliacoes}
+          profileIncomplete={!athleteRegistrationCompleted}
           canLinkProject={canLinkProject}
-          onCreateEvaluation={handleNovaAvaliacao}
-          onCreateAppointment={() => setIsAppointmentOpen(true)}
+          careState={overview.state}
+          primaryAction={overview.action}
+          decisionAlerts={decisionAlerts}
+          onPrimaryAction={() => {
+            const action = overview.action;
+            if (action?.kind === 'evaluation') handleOpenAvaliacaoTab(action.type, action.id);
+            else if (action?.kind === 'review') handleTabChange('dados-clinicos');
+            else if (action?.kind === 'plan') handleCreateMealPlan();
+            else if (action?.kind === 'appointment') setIsAppointmentOpen(true);
+            else if (action?.kind === 'history') handleOpenHistory();
+            else if (action?.kind === 'tab') handleTabChange(action.tab);
+          }}
+          alunoResponsavelNome={patient?.alunoResponsavelNome || patient?.alunoResponsavel?.name || ''}
+          professorSupervisorNome={patient?.professorSupervisorNome || patient?.professorSupervisor?.name || ''}
+          consentimento={consentimentoResumo}
           onOpenProject={handleOpenProjectModal}
           onOpenHistory={handleOpenHistory}
         />
@@ -1400,27 +1808,30 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
           onChange={handleTabChange}
         />
 
-        <div className="pron-main-grid">
-          <main className="pron-stack">
+        <div className={`pron-main-grid${moduloEmbutido ? ' is-modulo-aberto' : ''}${activeTab === 'visao-geral' ? ' is-overview' : ''}`}>
+          <div className="pron-stack" id="pron-aba-conteudo" role="tabpanel" aria-labelledby={`pron-aba-${activeTab}`}>
             {activeTab === 'visao-geral' && (
               <VisaoGeral
-                patient={patient}
-                avaliacoes={avaliacoesOrdenadas}
-                moduleConfig={moduleConfig}
-                pendingModules={pendingModules}
-                consultationStatusSummary={consultationStatusSummary}
-                nextAppointment={nextAppointment}
+                snapshot={snapshot}
+                overview={overview}
+                avaliacoes={avaliacoesOrdenadas.filter((item) => String(item.pacienteId) === String(patient?.id))}
                 formatDate={formatDate}
-                podeEditarAvaliacoes={podeEditarAvaliacoes}
+                summaryNote={summarySaved.observacoes}
+                loading={loadingEvaluations}
+                error={evaluationsError}
+                planLoading={planLoading}
+                planError={planState.error}
+                editableTypes={canCreateEvaluation ? editableEvaluationTypes : new Set()}
                 onOpenEvaluationType={handleOpenAvaliacaoTab}
-                onCreateEvaluation={handleNovaAvaliacao}
-                onCreateAppointment={() => setIsAppointmentOpen(true)}
+                onOpenTab={handleTabChange}
+                onOpenAppointment={() => setIsAppointmentOpen(true)}
               />
             )}
 
             {activeTab === 'dados-clinicos' && (
               <>
-                {podeEditarAvaliacoes && (
+                <PainelDivergencias divergencias={estadoProntuario.divergencias} />
+                {canReviewAthleteSubmissions && (
                   <PainelRevisaoAtleta
                     pendingSubmissions={pendingAthleteSubmissions}
                     isMarkingReviewedId={isMarkingReviewedId}
@@ -1432,12 +1843,13 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                 dadosGeraisFields={dadosGeraisFields}
                 formatGeneralValue={formatGeneralValue}
                 formatGeneralDate={formatGeneralDate}
-                athleteHasLogin={athleteHasLogin}
+                athleteHasAccount={hasAthleteAccount}
+                athleteRegistrationCompleted={athleteRegistrationCompleted}
                 ebiaSelfFormEnabled={ebiaSelfFormEnabled}
                 ebiaSelfFormReleasedAt={ebiaSelfFormReleasedAt}
                 ebiaSelfFormConsumedAt={ebiaSelfFormConsumedAt}
                 formatDate={formatDate}
-                podeEditarAvaliacoes={podeEditarAvaliacoes}
+                podeEditarAvaliacoes={canManageAthleteForms}
                 handleReleaseEbiaToAthlete={handleReleaseEbiaToAthlete}
                 isReleasingEbia={isReleasingEbia}
                 athleteSelfEvaluationConfigs={ATHLETE_SELF_EVALUATION_CONFIGS}
@@ -1461,17 +1873,101 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
               </>
             )}
 
-            {activeTab === 'avaliacoes' && (
+            {activeTab === 'evolucao' && (
+              <div className="pron-evolucao-stack">
+                <EvolucaoAnalytics avaliacoes={avaliacoesOrdenadas} />
+  <div ref={consultationHistoryRef}>
+                  <TimelineConsultas
+                    consultationHistory={consultationHistory}
+                    consultationStatusSummary={consultationStatusSummary}
+                    consultationStatusOptions={consultationStatusOptions}
+                    filteredConsultationHistory={filteredConsultationHistory}
+                    visibleConsultationHistory={visibleConsultationHistory}
+                    consultationStatusFilter={consultationStatusFilter}
+                    consultationTypeFilter={consultationTypeFilter}
+                    consultationPeriodFilter={consultationPeriodFilter}
+                    consultationSearch={consultationSearch}
+                    hasConsultationFiltersApplied={hasConsultationFiltersApplied}
+                    consultationHasMore={consultationHasMore}
+                    loadingAppointments={loadingAppointments}
+                    isRefreshingAppointments={isRefreshingAppointments}
+                    appointmentsError={appointmentsError}
+                    appointmentsSyncLabel={appointmentsSyncLabel}
+                    formatDate={formatDate}
+                    getAppointmentTypeLabel={getAppointmentTypeLabel}
+                    getAppointmentStatusLabel={getAppointmentStatusLabel}
+                    onChangeStatusFilter={setConsultationStatusFilter}
+                    onChangeTypeFilter={setConsultationTypeFilter}
+                    onChangePeriodFilter={setConsultationPeriodFilter}
+                    onChangeSearch={setConsultationSearch}
+                    onClearFilters={handleClearConsultationFilters}
+                    onRefresh={handleRefreshAppointments}
+                    onExportCsv={exportConsultationHistoryCsv}
+                    onLoadMore={handleLoadMoreConsultations}
+                    onRetryLoad={loadAppointments}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'avaliacoes' && moduloEmbutido && (
+              <section className="pron-avaliacao-embutida" aria-label="Formulário de avaliação">
+                <React.Suspense fallback={<div className="pron-avaliacao-embutida__carregando" role="status">Carregando módulo…</div>}>
+                  <AvaliacaoCompleta
+                    key={`${moduloEmbutido}-${avaliacaoEmbutidaId || 'novo'}`}
+                    pacienteId={patient?.id}
+                    embutido
+                    moduloInicial={moduloEmbutido}
+                    avaliacaoInicialId={avaliacaoEmbutidaId}
+                    aoSair={handleFecharModulo}
+                    aoVoltar={onBack}
+                    aoAbrirImagem={handleOpenImagePanel}
+                    aoAbrirTab={handleLeaveModuleForTab}
+                    navigationRequest={sidebarRequest}
+                    onActiveModuleChange={setSidebarActiveModule}
+                  />
+                </React.Suspense>
+              </section>
+            )}
+
+            {/* Fechar um modulo caia direto no historico — o que ja foi feito —
+                sem nenhuma porta para os modulos disponiveis. O painel abaixo
+                ja existia no projeto e nunca chegou a ser renderizado. */}
+            {activeTab === 'avaliacoes' && !moduloEmbutido && (
+              <DashboardAvaliacoes
+                patient={patient}
+                avaliacoes={avaliacoesOrdenadas}
+                editableTypes={editableEvaluationTypes}
+                canCreateEvaluation={canCreateEvaluation}
+                canManagePatient={isPatientManager}
+                consultationStatusSummary={consultationStatusSummary}
+                nextAppointment={nextAppointment}
+                formatDate={formatDate}
+                onOpenEvaluationType={handleOpenAvaliacaoTab}
+                onCreateEvaluation={handleNovaAvaliacao}
+                openImageRequest={imageOpenRequest}
+                onImageClose={() => setImageOpenRequest(0)}
+              />
+            )}
+
+            {activeTab === 'avaliacoes' && !moduloEmbutido && (
               <section className="pron-card pron-panel">
                 <header className="pron-panel-header">
                   <div>
-                    <h2>Histórico de Avaliações</h2>
-                    <p>{filteredTimelineEvents.length} evento(s) de avaliação no prontuário.</p>
+                    <h2>Histórico de avaliações</h2>
+                    <p>{filteredTimelineEvents.length === 1 ? '1 evento' : `${filteredTimelineEvents.length} eventos`} de avaliação no prontuário.</p>
                   </div>
                   <div className="pron-inline-actions">
+                    {/* O plano segue `canCreateMealPlan`, nao `podeEditarAvaliacoes`:
+                        quem edita avaliacao nao necessariamente pode prescrever. */}
+                    {canCreateMealPlan && (
+                      <button type="button" className="pron-btn" onClick={handleCreateMealPlan}>
+                        Plano alimentar
+                      </button>
+                    )}
                     {podeEditarAvaliacoes && (
                       <button type="button" className="pron-btn pron-btn-primary" onClick={handleNovaAvaliacao}>
-                        Nova Avaliação
+                        Nova avaliação
                       </button>
                     )}
                   </div>
@@ -1510,11 +2006,21 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
 
                 {/* REMOVIDO — recálculo JP7 e cálculo inline na timeline; agora usa evaluationResultAdapter — 2026-03-31 */}
                 {filteredTimelineEvents.length === 0 ? (
-                  <div className="pron-empty">Nenhuma avaliação encontrada com os filtros aplicados.</div>
+                  <FeedbackState
+                    empty
+                    size="sm"
+                    title="Nenhuma avaliação encontrada com os filtros aplicados."
+                    action="Limpar filtros"
+                    onAction={() => {
+                      setTimelineFilterType('avaliacao');
+                      setTimelineFilterStatus('all');
+                      setTimelineSearch('');
+                    }}
+                  />
                 ) : (
-                  <div className="timeline">
+                  <ol className="timeline">
                     {visibleTimeline.map((event) => (
-                      <article key={event.id} className="timeline-item">
+                      <li key={event.id} className="timeline-item">
                         <div className="timeline-dot" aria-hidden="true" />
                         <div className="timeline-item-head">
                           <strong>{event.title}</strong>
@@ -1526,16 +2032,75 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                         <p className="pron-text-secondary">
                           {formatDate(event.date)}{event.meta?.hora ? ` · ${event.meta.hora}` : ''}
                         </p>
+                        {/* UPD-17: o aluno ve a devolucao (quem, quando, o que foi pedido)
+                            e o envio para revisao no mesmo lugar onde ve o historico —
+                            "aguardando revisao" nunca convive com o botao de enviar de novo. */}
+                        {event.type === 'avaliacao' && (
+                          <div className="pron-stack-xs">
+                            {event.meta?.devolucao ? (
+                              <p className="pron-text-secondary">
+                                Devolvida por {event.meta.devolucao.porNome || 'supervisão'} em {formatDate(event.meta.devolucao.em)}: "{event.meta.devolucao.observacao}"
+                              </p>
+                            ) : null}
+                            {event.meta?.aguardandoRevisao ? (
+                              <span className="pron-badge pron-badge--warn">
+                                Aguardando revisão{event.meta?.submittedAt ? ` desde ${formatDate(event.meta.submittedAt)}` : ''}
+                              </span>
+                            ) : podeEnviarParaRevisao ? (
+                              activeReviewRequestId === event.meta?.avaliacaoId ? (
+                                <div className="pron-stack-xs">
+                                  <textarea
+                                    className="pron-textarea"
+                                    rows="2"
+                                    maxLength={1000}
+                                    value={reviewRequestNote}
+                                    onChange={(inputEvent) => setReviewRequestNote(inputEvent.target.value)}
+                                    placeholder="O que você quer perguntar ao supervisor? (opcional — o aluno vai ler esta pergunta)"
+                                    disabled={isSendingReviewRequest}
+                                  />
+                                  <div className="pron-inline-actions">
+                                    <button
+                                      type="button"
+                                      className="pron-btn pron-btn-primary pron-btn-sm"
+                                      disabled={isSendingReviewRequest}
+                                      onClick={() => handleSendForReview(event.meta.avaliacaoId)}
+                                    >
+                                      {isSendingReviewRequest ? 'Enviando...' : 'Confirmar envio'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="pron-btn pron-btn-secondary pron-btn-sm"
+                                      disabled={isSendingReviewRequest}
+                                      onClick={() => { setActiveReviewRequestId(null); setReviewRequestNote(''); }}
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="pron-link-btn"
+                                  onClick={() => { setActiveReviewRequestId(event.meta.avaliacaoId); setReviewRequestNote(''); }}
+                                  aria-label={`Enviar para revisão: ${event.title}`}
+                                >
+                                  Enviar para revisão
+                                </button>
+                              )
+                            ) : null}
+                          </div>
+                        )}
                         <button
                           type="button"
                           className="pron-link-btn"
-                          onClick={() => handleOpenAvaliacaoTab(event.meta?.tipo)}
+                          onClick={() => handleOpenAvaliacaoTab(event.meta?.moduleId || event.meta?.tipo, event.meta?.avaliacaoId)}
+                          aria-label={`Ver detalhes: ${event.title}`}
                         >
                           Ver detalhes
                         </button>
-                      </article>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                 )}
 
                 {timelineHasMore ? (
@@ -1550,40 +2115,6 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                   </div>
                 ) : null}
               </section>
-            )}
-
-            {activeTab === 'consultas' && (
-              <div ref={consultationHistoryRef}>
-                <TimelineConsultas
-                  consultationHistory={consultationHistory}
-                  consultationStatusSummary={consultationStatusSummary}
-                  consultationStatusOptions={consultationStatusOptions}
-                  filteredConsultationHistory={filteredConsultationHistory}
-                  visibleConsultationHistory={visibleConsultationHistory}
-                  consultationStatusFilter={consultationStatusFilter}
-                  consultationTypeFilter={consultationTypeFilter}
-                  consultationPeriodFilter={consultationPeriodFilter}
-                  consultationSearch={consultationSearch}
-                  hasConsultationFiltersApplied={hasConsultationFiltersApplied}
-                  consultationHasMore={consultationHasMore}
-                  loadingAppointments={loadingAppointments}
-                  isRefreshingAppointments={isRefreshingAppointments}
-                  appointmentsError={appointmentsError}
-                  appointmentsSyncLabel={appointmentsSyncLabel}
-                  formatDate={formatDate}
-                  getAppointmentTypeLabel={getAppointmentTypeLabel}
-                  getAppointmentStatusLabel={getAppointmentStatusLabel}
-                  onChangeStatusFilter={setConsultationStatusFilter}
-                  onChangeTypeFilter={setConsultationTypeFilter}
-                  onChangePeriodFilter={setConsultationPeriodFilter}
-                  onChangeSearch={setConsultationSearch}
-                  onClearFilters={handleClearConsultationFilters}
-                  onRefresh={handleRefreshAppointments}
-                  onExportCsv={exportConsultationHistoryCsv}
-                  onLoadMore={handleLoadMoreConsultations}
-                  onRetryLoad={loadAppointments}
-                />
-              </div>
             )}
 
             {activeTab === 'anexos' && (
@@ -1607,65 +2138,35 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
 
             {activeTab === 'pendencias' && (
               <ProntuarioPendencias
-                avaliacoes={avaliacoesOrdenadas}
-                agendamentos={appointments}
-                paciente={patient}
+                pendenciasExternas={overview.tasks}
+                loading={overviewLoading}
+                error={overviewError}
+                applicabilityNote={overview.applicabilityNote}
+                onReview={() => setActiveTab('dados-clinicos')}
                 onOpenEvaluationType={handleOpenAvaliacaoTab}
                 onOpenAppointment={() => setIsAppointmentOpen(true)}
               />
             )}
-          </main>
+          </div>
 
           <aside className="pron-side-column">
-            <PainelSituacaoClinica
-              prontuarioSignals={prontuarioSignals}
-              pendingModulesSummary={pendingModulesSummary}
-              canCreateEvaluation={podeEditarAvaliacoes}
-              onCreateEvaluation={handleNovaAvaliacao}
-              onOpenHistory={handleOpenHistory}
-            />
-
-            <ProximasConsultas
-              continuityItems={continuityItems}
-              canCreateActions={podeEditarAvaliacoes}
-              canExport={filteredConsultationHistory.length > 0}
-              onOpenAppointmentModal={() => setIsAppointmentOpen(true)}
-              onCreateEvaluation={handleNovaAvaliacao}
-              onOpenHistory={handleOpenHistory}
-              onExportCsv={exportConsultationHistoryCsv}
-            />
-
-            {activeTab !== 'pendencias' && (
-              <ProntuarioPendencias
-                avaliacoes={avaliacoesOrdenadas}
-                agendamentos={appointments}
-                paciente={patient}
-                onOpenEvaluationType={handleOpenAvaliacaoTab}
-                onOpenAppointment={() => setIsAppointmentOpen(true)}
-              />
-            )}
-
-            {activeTab !== 'anexos' && (
-              <PainelAnexos
-                attachments={attachments}
-                visibleAttachments={visibleAttachments}
-                attachmentsHasMore={attachmentsHasMore}
-                podeEnviarAnexo={podeEnviarAnexo}
-                podeRemoverAnexo={podeRemoverAnexo}
-                isUploadingAttachment={isUploadingAttachment}
-                openingAttachmentId={openingAttachmentId}
-                removingAttachmentId={removingAttachmentId}
-                attachmentError={attachmentError}
-                formatDate={formatDate}
-                onUpload={handleUploadAttachment}
-                onOpenAttachment={handleOpenAttachment}
-                onRemoveAttachment={handleRemoveAttachment}
-                onLoadMore={handleLoadMoreAttachments}
-              />
-            )}
-
+            {activeTab === 'visao-geral' ? (
+              <details className="pron-card pron-panel vg-supervision-notes">
+                <summary>Notas da supervisão ({professorMessages.length})</summary>
+                <PainelMensagens
+                  canWriteMessage={canWriteSupervisorMessage}
+                  professorMessages={professorMessages}
+                  professorMessage={professorMessage}
+                  professorMessageError={professorMessageError}
+                  isSavingProfessorMessage={isSavingProfessorMessage}
+                  formatDate={formatDate}
+                  onChangeMessage={setProfessorMessage}
+                  onSaveMessage={handleSaveProfessorMessage}
+                />
+              </details>
+            ) : (
             <PainelMensagens
-              isProfessor={isProfessor}
+              canWriteMessage={canWriteSupervisorMessage}
               professorMessages={professorMessages}
               professorMessage={professorMessage}
               professorMessageError={professorMessageError}
@@ -1674,9 +2175,10 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
               onChangeMessage={setProfessorMessage}
               onSaveMessage={handleSaveProfessorMessage}
             />
+            )}
           </aside>
         </div>
-        </div>
+        </main>
       </div>
       {isProjectModalOpen && typeof document !== 'undefined' && createPortal(
         <div
@@ -1707,10 +2209,10 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                 disabled={isSavingProject}
                 aria-label="Fechar modal de projeto"
               >
-                <X size={15} />
+                <X size={15} aria-hidden="true" />
               </button>
             </div>
-            <div className="project-link-modal__body">
+            <div className="project-link-modal__body app-modal-body">
               <label htmlFor="project-link-select">Projeto</label>
               <select
                 id="project-link-select"
@@ -1747,12 +2249,12 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
                 >
                   {isSavingProject ? (
                     <>
-                      <Loader2 size={14} className="spin" />
+                      <Loader2 size={14} className="spin" aria-hidden="true" />
                       Salvando...
                     </>
                   ) : (
                     <>
-                      <FolderKanban size={14} />
+                      <FolderKanban size={14} aria-hidden="true" />
                       Salvar vínculo
                     </>
                   )}
@@ -1767,6 +2269,7 @@ const PatientProntuario = ({ patient, onBack, originPath = '', originView = '', 
         isOpen={isAppointmentOpen}
         onClose={() => setIsAppointmentOpen(false)}
         patient={patient}
+        evaluationOptions={appointmentEvaluationOptions}
         onSuccess={() => loadAppointments({ preserveCurrent: true })}
       />
     </>

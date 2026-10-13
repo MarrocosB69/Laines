@@ -1,270 +1,213 @@
-/* stylelint-disable selector-class-pattern, no-descending-specificity */
+/* Fisioterapia: só o que é deste formulário. Raiz, cabeçalho, índice,
+   seções, campos, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .avaliacao-fisioterapia, por isso os seletores que
+   precisam vencer a base usam `.av-modulo.avaliacao-fisioterapia`. */
 
-.avaliacao-fisioterapia {
+/* ── Faixa da sessão ─────────────────────────────────────────────────
+   As seções que mudam com a sessão escolhida (abas, inspeção, palpação,
+   perimetria e testes) ficam juntas sobre uma faixa de fundo; escritos e
+   intervenções, que valem para a avaliação inteira, ficam fora dela. */
+.av-modulo .fisio-sessao-grupo {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--lt-space-4);
+  min-width: 0;
+  padding: var(--lt-space-2);
+  border-radius: calc(var(--lt-radius-card) + var(--lt-space-2));
+  background: var(--lt-color-track-tint);
 }
 
-.avaliacao-fisioterapia .eval-section {
-  display: grid;
-  gap: 0.85rem;
-}
+.av-modulo .fisio-sessao-grupo > * { min-width: 0; }
 
-.fisio-session-nav {
+/* ── Abas das sessões e botões de adicionar ──────────────────────────── */
+.av-modulo .fisio-session-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding: 0.2rem 0 0.35rem;
-  scrollbar-width: thin;
+  gap: var(--lt-space-2);
 }
 
-.fisio-session-tab,
-.fisio-session-add,
-.fisio-row-add,
-.fisio-icon-btn {
-  border: 1px solid var(--eval-border);
-  background: var(--eval-surface);
-  color: var(--eval-title);
-  font-weight: 800;
-  cursor: pointer;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-
-.fisio-session-tab,
-.fisio-session-add {
-  min-height: 36px;
-  border-radius: 999px;
-  padding: 0.48rem 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  white-space: nowrap;
-  font-size: 0.74rem;
-}
-
-.fisio-session-tab--active {
-  background: var(--eval-accent-soft, var(--eval-surface-alt));
-  border-color: var(--eval-accent);
-  color: var(--eval-accent-strong);
-  box-shadow: 0 0 0 3px var(--eval-accent-soft, var(--eval-surface-alt));
-}
-
-.fisio-session-add,
-.fisio-row-add {
-  color: var(--eval-accent-strong);
-}
-
-.fisio-session-tab:hover:not(:disabled),
-.fisio-session-add:hover:not(:disabled),
-.fisio-row-add:hover:not(:disabled),
-.fisio-icon-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: var(--eval-accent);
-  box-shadow: var(--eval-shadow-soft);
-}
-
-.fisio-session-tab:disabled,
-.fisio-session-add:disabled,
-.fisio-row-add:disabled,
-.fisio-icon-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-  transform: none;
-  box-shadow: none;
-}
-
-.fisio-table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.fisio-table {
-  width: 100%;
-  min-width: 640px;
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid var(--eval-border);
-  border-radius: 13px;
-  overflow: hidden;
-  background: var(--eval-surface);
-}
-
-.fisio-table th,
-.fisio-table td {
-  border-bottom: 1px solid var(--eval-border);
-  border-right: 1px solid var(--eval-border);
-  padding: 0.55rem;
-  vertical-align: middle;
-  color: var(--eval-title);
-  font-size: 0.78rem;
-}
-
-.fisio-table th {
-  background: var(--eval-surface-alt);
-  font-weight: 800;
-  text-align: left;
-}
-
-.fisio-table tr:last-child th,
-.fisio-table tr:last-child td {
-  border-bottom: 0;
-}
-
-.fisio-table th:last-child,
-.fisio-table td:last-child {
-  border-right: 0;
-}
-
-.fisio-table td .eval-input {
-  min-width: 110px;
-}
-
-.fisio-table__computed {
-  background: var(--eval-surface-alt);
-  font-weight: 800;
-  color: var(--eval-muted);
-  text-align: center;
-}
-
-.fisio-table__empty {
-  text-align: center;
-  color: var(--eval-muted);
-  font-weight: 700;
-  background: var(--eval-surface-alt);
-}
-
-.fisio-row-add {
-  justify-self: flex-start;
-  min-height: 36px;
-  border-radius: 11px;
-  padding: 0.52rem 0.75rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.73rem;
-}
-
-.fisio-icon-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+.av-modulo :is(.fisio-session-tab, .fisio-session-add, .fisio-row-add, .fisio-icon-btn) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.fisio-subsection {
-  display: grid;
-  gap: 0.7rem;
-  padding-top: 0.25rem;
-}
-
-.fisio-subsection + .fisio-subsection {
-  border-top: 1px solid var(--eval-border);
-  padding-top: 0.9rem;
-}
-
-.fisio-subtitle {
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
   margin: 0;
-  color: var(--eval-title);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  border: 1.5px solid var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  cursor: pointer;
+  transition: border-color 160ms, background-color 160ms, color 160ms;
 }
 
-.fisio-two-col {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
+.av-modulo :is(.fisio-session-tab, .fisio-session-add) {
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-pill);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.fisio-checklist-block {
-  min-width: 0;
-  display: grid;
-  gap: 0.65rem;
+/* Adicionar: ação secundária, em azul. */
+.av-modulo :is(.fisio-session-add, .fisio-row-add) {
+  border-color: var(--lt-color-brand-blue);
+  color: var(--lt-color-brand-blue);
 }
 
-.fisio-checklist {
-  display: grid;
-  gap: 0.5rem;
-  max-height: 440px;
-  overflow-y: auto;
-  padding-right: 0.15rem;
+.av-modulo .fisio-row-add {
+  align-self: flex-start;
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
 }
 
-.fisio-checklist__item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid var(--eval-border);
-  border-radius: 12px;
-  background: var(--eval-surface);
-  padding: 0.45rem;
-}
-
-.fisio-checklist__item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--eval-accent);
-}
-
-.fisio-checklist__item--done .eval-input {
-  text-decoration: line-through;
-  color: var(--eval-muted);
-  background: var(--eval-surface-alt);
-}
-
-.fisio-empty {
-  margin: 0;
-  padding: 0.72rem;
-  border: 1px dashed var(--eval-border);
-  border-radius: 12px;
-  color: var(--eval-muted);
-  background: var(--eval-surface-alt);
-  font-size: 0.76rem;
+/* Sessão ativa: cheia, além do ● e do aria-pressed. */
+.av-modulo.avaliacao-fisioterapia .fisio-session-tab--active {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-brand-blue);
+  color: var(--lt-color-text-inverse);
   font-weight: 700;
 }
 
-.fisio-condutas {
-  margin-top: 0.85rem;
+.av-modulo .fisio-icon-btn {
+  width: var(--lt-target-min);
+  padding: 0;
+  border-radius: var(--lt-radius-control);
 }
 
-@media (width <= 900px) {
-  .fisio-two-col {
-    grid-template-columns: 1fr;
-  }
+@media (hover: hover) {
+  .av-modulo :is(.fisio-session-tab, .fisio-session-add, .fisio-row-add):hover:not(:disabled) { border-color: var(--lt-color-brand-blue); }
+  .av-modulo .fisio-icon-btn:hover:not(:disabled) { border-color: var(--lt-color-danger-text); color: var(--lt-color-danger-text); }
 }
 
-@media (width <= 768px) {
-  .avaliacao-fisioterapia .eval-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .fisio-session-nav {
-    align-items: stretch;
-  }
-
-  .fisio-table {
-    min-width: 560px;
-  }
+.av-modulo :is(.fisio-session-tab, .fisio-session-add, .fisio-row-add, .fisio-icon-btn):focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
-@media (width <= 480px) {
-  .avaliacao-fisioterapia {
-    padding: 0.75rem 0.5rem;
-  }
+.av-modulo :is(.fisio-session-tab, .fisio-session-add, .fisio-row-add, .fisio-icon-btn):disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
-  .avaliacao-fisioterapia .eval-section {
-    padding: 0.75rem;
-  }
+/* ── Tabelas (perimetria, amplitude e Y-Balance) ──────────────────────
+   Rolam no próprio invólucro (.fisio-table-wrap, regra da base); a página
+   não ganha rolagem lateral. */
+.av-modulo .fisio-table-wrap {
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+}
 
-  .fisio-session-tab,
-  .fisio-session-add,
-  .fisio-row-add {
-    font-size: 0.68rem;
-  }
+.av-modulo .fisio-table {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .fisio-table :is(th, td) {
+  padding: var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.av-modulo .fisio-table th {
+  background: var(--lt-color-surface-field);
+  font-weight: 700;
+}
+
+.av-modulo .fisio-table tr:last-child :is(th, td) { border-bottom: 0; }
+
+/* O campo da célula tem só rótulo para leitor de tela: sem o espaço do
+   rótulo acima do controle. */
+.av-modulo .fisio-table .av-campo { gap: 0; }
+.av-modulo .fisio-table .av-campo__controle { min-width: 7rem; }
+
+.av-modulo .fisio-table__computed {
+  font-weight: 700;
+  text-align: center;
+}
+
+.av-modulo .fisio-table .fisio-table__computed { background: var(--lt-color-surface-field); }
+
+.av-modulo .fisio-table .fisio-table__empty {
+  color: var(--lt-color-text-muted);
+  text-align: center;
+}
+
+/* ── Duas colunas: função muscular, objetivos e condutas ──────────────── */
+.av-modulo .fisio-two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--lt-space-4) var(--lt-space-5);
+  align-items: start;
+}
+
+/* ── Objetivos (listas com caixa de conclusão) ─────────────────────────── */
+.av-modulo .fisio-checklist-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.av-modulo.avaliacao-fisioterapia .fisio-subtitle {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .fisio-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.av-modulo .fisio-checklist__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-2);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+}
+
+/* A caixa de conclusão fica a 24 px (alvo mínimo da WCAG 2.2). */
+.av-modulo .fisio-checklist__item input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  margin: 0 var(--lt-space-1);
+  accent-color: var(--lt-color-brand-blue);
+}
+
+.av-modulo .fisio-checklist__item .av-campo { gap: 0; }
+
+/* Concluído: riscado, além da caixa marcada. */
+.av-modulo.avaliacao-fisioterapia .fisio-checklist__item--done .eval-input {
+  color: var(--lt-color-text-muted);
+  text-decoration: line-through;
+}
+
+.av-modulo .fisio-empty {
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 1px dashed var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
 }

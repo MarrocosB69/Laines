@@ -1,300 +1,85 @@
-.bioimpedancia-form.bioimpedancia-form--modern {
-  --domain-color: var(--color-accent, #56ADDB);
-  border-radius: var(--radius-xl);
-  border: 1px solid color-mix(in srgb, var(--domain-color) 20%, transparent);
-}
+/* Bioimpedância: só o que é deste formulário. Raiz, seções, campos,
+   checklist, resultados, avisos, tendência e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .bioimpedancia-form, por isso os seletores que precisam
+   da raiz usam `.av-modulo.bioimpedancia-form`. */
 
-.bioimpedancia-form .eval-icon {
-  background: linear-gradient(165deg, color-mix(in srgb, var(--domain-color) 12%, transparent), color-mix(in srgb, var(--domain-color) 6%, transparent));
-  color: var(--domain-color);
-  border-color: color-mix(in srgb, var(--domain-color) 22%, transparent);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--domain-color) 14%, transparent);
-}
-
-.bioimpedancia-form .bia-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.72rem;
-}
-
-.bioimpedancia-form .bia-unit-badge {
-  font-size: 0.62rem;
-  padding: 0.08rem 0.35rem;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.24);
-  color: #1d4ed8;
-  font-weight: 800;
-}
-
-.bioimpedancia-form .bia-input-invalid {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-
-.bioimpedancia-form .bia-input-warning {
-  border-color: #d97706;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
-}
-
-.bioimpedancia-form .bia-shared-hint {
-  margin: 0.55rem 0 0;
-  font-size: 0.7rem;
-  color: #1e40af;
-  font-weight: 700;
-}
-
-.bioimpedancia-form .bia-import-actions {
-  margin-top: 0.5rem;
+/* ── Importação: a caixa de texto e o botão "Aplicar importação" ─────── */
+.av-modulo .bia-import {
   display: flex;
-  justify-content: flex-start;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
-.bioimpedancia-form .bia-checklist-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
-.bioimpedancia-form .bia-check-item {
+.av-modulo .bia-import-actions {
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 38px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.32rem 0.5rem;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
 }
 
-.bioimpedancia-form .bia-check-item span {
-  font-size: 0.72rem;
-  color: #334155;
-  font-weight: 700;
-}
-
-.bioimpedancia-form .bia-precheck-alert {
-  margin-top: 0.64rem;
-  border-radius: 10px;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  background: rgba(254, 249, 195, 0.82);
-  color: #854d0e;
-  padding: 0.5rem 0.56rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
-}
-
-.bioimpedancia-form .bia-precheck-alert strong {
-  display: block;
-  font-size: 0.72rem;
-}
-
-.bioimpedancia-form .bia-precheck-alert ul {
-  margin: 0.28rem 0 0;
-  padding-left: 1rem;
-  font-size: 0.69rem;
-  font-weight: 700;
-}
-
-.bioimpedancia-form .bia-results-grid {
+/* ── Checklist de preparo: as quatro caixas em duas colunas quando cabe ─ */
+.av-modulo .bia-checklist .av-grupo__opcoes {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--lt-space-2) var(--lt-space-3);
 }
 
-.bioimpedancia-form .bia-result-card {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 0.68rem;
-  display: grid;
-  gap: 0.3rem;
+/* Lista dos alertas de pré-teste dentro do aviso. */
+.av-modulo .bia-precheck-alert ul {
+  margin: var(--lt-space-1) 0 0;
+  padding-left: var(--lt-space-5);
 }
 
-.bioimpedancia-form .bia-result-label {
-  font-size: 0.64rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 800;
-}
-
-.bioimpedancia-form .bia-result-card strong {
-  font-size: 0.95rem;
-  color: #0f172a;
-}
-
-.bioimpedancia-form .bia-result-card small {
-  font-size: 0.67rem;
-  color: #64748b;
+/* ── Variação em relação à avaliação anterior, no cartão de resultado ── */
+.av-modulo .bia-delta {
+  font-size: var(--lt-text-sm);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.bioimpedancia-form .bia-status-badge {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  border-radius: 999px;
-  padding: 0.12rem 0.4rem;
-  font-size: 0.62rem;
-  font-weight: 800;
-  border: 1px solid transparent;
+/* O sinal (+/−) é o que diz a direção; a cor só acompanha. */
+.av-modulo.bioimpedancia-form .is-up { color: var(--lt-color-success-text); }
+.av-modulo.bioimpedancia-form .is-down { color: var(--lt-color-danger-text); }
+.av-modulo.bioimpedancia-form .is-flat { color: var(--lt-color-text-muted); }
+
+/* ── Tabelas (longitudinal e comparativo de fontes) ──────────────────
+   Rolam no próprio invólucro (.bia-table-wrap, regra da base); a página
+   não ganha rolagem lateral. */
+.av-modulo .bia-table-wrap {
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
 }
 
-.bioimpedancia-form .bia-tone-success {
-  background: rgba(34, 197, 94, 0.16);
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.bioimpedancia-form .bia-tone-warning {
-  background: rgba(245, 158, 11, 0.2);
-  color: #92400e;
-  border-color: rgba(245, 158, 11, 0.35);
-}
-
-.bioimpedancia-form .bia-tone-danger {
-  background: rgba(239, 68, 68, 0.15);
-  color: #991b1b;
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.bioimpedancia-form .bia-tone-info {
-  background: rgba(14, 165, 233, 0.14);
-  color: #0c4a6e;
-  border-color: rgba(14, 165, 233, 0.3);
-}
-
-.bioimpedancia-form .bia-tone-neutral {
-  background: rgba(148, 163, 184, 0.14);
-  color: #334155;
-  border-color: rgba(148, 163, 184, 0.28);
-}
-
-.bioimpedancia-form .bia-delta {
-  margin: 0;
-  font-size: 0.66rem;
-  font-weight: 800;
-}
-
-.bioimpedancia-form .is-up {
-  color: #047857;
-}
-
-.bioimpedancia-form .is-down {
-  color: #b91c1c;
-}
-
-.bioimpedancia-form .is-flat {
-  color: #475569;
-}
-
-.bioimpedancia-form .bia-comparison {
-  margin-top: 0.75rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.24);
-  padding-top: 0.7rem;
-}
-
-.bioimpedancia-form .bia-table-wrap {
-  overflow-x: auto;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-}
-
-.bioimpedancia-form .bia-table {
+.av-modulo .bia-table {
   width: 100%;
+  min-width: 40rem;
   border-collapse: collapse;
-  min-width: 640px;
+  font-variant-numeric: tabular-nums;
 }
 
-.bioimpedancia-form .bia-table th {
+.av-modulo .bia-table th,
+.av-modulo .bia-table td {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
   text-align: left;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #475569;
-  background: #f1f5f9;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
-  padding: 0.46rem 0.55rem;
 }
 
-.bioimpedancia-form .bia-table td {
-  padding: 0.46rem 0.55rem;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
-  font-size: 0.74rem;
-  color: #1e293b;
-}
-
-.bioimpedancia-form .bia-table tr:last-child td {
-  border-bottom: none;
-}
-
-.bioimpedancia-form .bia-sparkline-card {
-  margin-top: 0.62rem;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.55rem;
-}
-
-.bioimpedancia-form .bia-sparkline-card p {
-  margin: 0 0 0.32rem;
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 800;
-}
-
-.bioimpedancia-form .mini-sparkline {
-  width: 100%;
-  height: 82px;
-}
-
-.bioimpedancia-form .bia-interpretation {
-  margin: 0.55rem 0 0;
-  font-size: 0.72rem;
+.av-modulo .bia-table thead th {
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
   font-weight: 700;
-  color: #14532d;
 }
 
-.bioimpedancia-form .bia-error-note {
-  border-color: rgba(220, 38, 38, 0.3);
-  background: rgba(254, 226, 226, 0.82);
-  color: #991b1b;
+.av-modulo .bia-table tbody th { font-weight: 700; }
+
+.av-modulo .bia-table tbody tr:last-child > * { border-bottom: 0; }
+
+.av-modulo .bia-interpretation {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
 }
-
-@media (max-width: 1024px) {
-  .bioimpedancia-form .bia-results-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 768px) {
-  .bioimpedancia-form .bia-grid,
-  .bioimpedancia-form .bia-results-grid,
-  .bioimpedancia-form .bia-checklist-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .bioimpedancia-form {
-    padding: 0.75rem 0.5rem !important;
-  }
-
-  .bioimpedancia-form .eval-card,
-  .bioimpedancia-form .eval-section,
-  .bioimpedancia-form .bia-section {
-    padding: 0.75rem !important;
-  }
-
-  .bioimpedancia-form .eval-card-header,
-  .bioimpedancia-form .bia-header {
-    padding: 0.75rem 0.75rem 0 !important;
-  }
-}
-
-
-

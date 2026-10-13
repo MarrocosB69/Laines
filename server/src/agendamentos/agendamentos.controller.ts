@@ -25,8 +25,6 @@ import { ADMIN_ROLES, STUDENT_MEMBER_ROLES } from '../common/domain/access.const
 
 const ROLES_EDICAO = [
   ...ADMIN_ROLES,
-  'coord_atendimento',
-  'diretoria_extensao',
   ...STUDENT_MEMBER_ROLES
 ];
 const ROLES_REAGENDAMENTO = [...ROLES_EDICAO, 'atleta'];

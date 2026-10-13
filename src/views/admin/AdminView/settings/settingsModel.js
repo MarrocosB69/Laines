@@ -1,7 +1,7 @@
 ﻿export const SETTINGS_AUDIT_ACTION = 'settings_upsert';
 export const SETTINGS_AUDIT_ENTITY = 'admin_settings';
 export const SETTINGS_AUDIT_SCOPE = 'admin_console';
-export const SETTINGS_ALLOWED_ROLES = new Set(['admin', 'coordenacao', 'presidente', 'vice']);
+export const SETTINGS_ALLOWED_ROLES = new Set(['admin', 'coordenacao']);
 
 export const DEFAULT_SETTINGS = Object.freeze({
   name: 'Coordenação Geral',

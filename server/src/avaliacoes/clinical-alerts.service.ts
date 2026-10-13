@@ -6,6 +6,8 @@ type PacienteCtx = {
   nome?: string;
   alunoResponsavelId?: string | null;
   professorSupervisorNome?: string | null;
+  professorSupervisorId?: string | null;
+  equipeMultiIds?: string[];
 };
 
 type JsonRecord = Record<string, unknown>;
@@ -18,11 +20,14 @@ const toNum = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-const SUPERVISOR_ROLES = ['professor', 'coordenador', 'coord_atendimento'];
-
-// ── RED-S risk tokens that warrant an alert ────────────────────────────────
+// ── Classificações de disponibilidade energética que geram alerta ──────────
+// `reds_estabelecido` (DE < 30, a faixa baixa e mais grave) não contém
+// "risco" e ficava sem alerta enquanto a reduzida (`risco_relativo`) gerava
+// (WI-013, defeito 7). O serviço não tem severidade: as duas geram o mesmo
+// alerta clínico.
 
 const REDS_RISK_TOKENS = new Set([
+  'reds_estabelecido',
   'alto_risco', 'risco_alto', 'alto risco', 'high_risk',
   'moderado', 'moderado_risco', 'risco_moderado', 'moderate',
   'clinico', 'clinico_sub', 'sub_clinico', 'subclinical',
@@ -96,33 +101,36 @@ export class ClinicalAlertsService {
 
     const tipo = String(avaliacao.tipo || '').toLowerCase().trim();
     const atletaNome = paciente?.nome || 'Atleta sem nome';
+    const recipients = [...new Set([paciente?.professorSupervisorId, ...(paciente?.equipeMultiIds || [])])]
+      .filter((id): id is string => !!id);
+    if (recipients.length === 0) return;
 
     try {
       if (tipo === 'triagem_reds') {
-        await this.handleReds(avaliacao, atletaNome);
+        await this.handleReds(avaliacao, atletaNome, recipients);
       } else if (tipo === 'exames_laboratoriais') {
-        await this.handleLab(avaliacao, atletaNome);
+        await this.handleLab(avaliacao, atletaNome, recipients);
       } else if (tipo === 'psicologia') {
-        await this.handlePsicologia(avaliacao, atletaNome);
+        await this.handlePsicologia(avaliacao, atletaNome, recipients);
       }
     } catch {
       // Alertas são best-effort — não interrompem o fluxo principal
     }
   }
 
-  private async handleReds(avaliacao: Avaliacao, atletaNome: string): Promise<void> {
+  private async handleReds(avaliacao: Avaliacao, atletaNome: string, recipients: string[]): Promise<void> {
     const classificacao = extractRedsClassificacao(avaliacao);
     if (!classificacao || !isRedsRisk(classificacao)) return;
 
     const label = classificacao.replace(/_/g, ' ');
-    await this.notificacoes.createForRoles(SUPERVISOR_ROLES, {
-      titulo: `Triagem RED-S — risco identificado`,
-      mensagem: `Atleta ${atletaNome}: triagem RED-S finalizada com classificação "${label}". Revisão clínica indicada.`,
+    await this.notificacoes.createForUsers(recipients, {
+      titulo: `Triagem de Disponibilidade Energetica — risco identificado`,
+      mensagem: 'Há uma triagem que requer revisão. Consulte a fila de pacientes vinculados para verificar os detalhes.',
       tipo: 'alerta_clinico',
     });
   }
 
-  private async handleLab(avaliacao: Avaliacao, atletaNome: string): Promise<void> {
+  private async handleLab(avaliacao: Avaliacao, atletaNome: string, recipients: string[]): Promise<void> {
     const { scoreRisco, alteracoesCount } = extractLabScores(avaliacao);
     const hasRisk = (scoreRisco !== null && scoreRisco >= 40) || (alteracoesCount !== null && alteracoesCount > 0);
     if (!hasRisk) return;
@@ -135,14 +143,14 @@ export class ClinicalAlertsService {
       parts.push(`score de risco ${scoreRisco}%`);
     }
 
-    await this.notificacoes.createForRoles(SUPERVISOR_ROLES, {
+    await this.notificacoes.createForUsers(recipients, {
       titulo: `Exames laboratoriais — achados relevantes`,
-      mensagem: `Atleta ${atletaNome}: exames finalizados com ${parts.join(' e ')}. Avalie antes da próxima conduta.`,
+      mensagem: 'Há exames que requerem revisão. Consulte a fila de pacientes vinculados antes da próxima conduta.',
       tipo: 'alerta_clinico',
     });
   }
 
-  private async handlePsicologia(avaliacao: Avaliacao, atletaNome: string): Promise<void> {
+  private async handlePsicologia(avaliacao: Avaliacao, atletaNome: string, recipients: string[]): Promise<void> {
     const { phq9AboveCutOff, gad7AboveCutOff, phq9Score, gad7Score } = extractPsicologiaFlags(avaliacao);
     if (!phq9AboveCutOff && !gad7AboveCutOff) return;
 
@@ -154,9 +162,9 @@ export class ClinicalAlertsService {
       parts.push(`GAD-7 = ${gad7Score} (acima do ponto de corte)`);
     }
 
-    await this.notificacoes.createForRoles(SUPERVISOR_ROLES, {
+    await this.notificacoes.createForUsers(recipients, {
       titulo: `Avaliação psicológica — atenção necessária`,
-      mensagem: `Atleta ${atletaNome}: ${parts.join(' e ')}. Encaminhamento ou avaliação especializada indicada.`,
+      mensagem: 'Há uma avaliação que requer atenção. Consulte a fila de pacientes vinculados para verificar o encaminhamento.',
       tipo: 'alerta_clinico',
     });
   }

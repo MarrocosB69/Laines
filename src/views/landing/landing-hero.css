@@ -1,0 +1,395 @@
+/* Primeira tela: cena, marca, título e frase (direção "Energia e
+   velocidade" — docs/design/landing-v2/a2-energia/index.html, seções
+   `.cena`, `.marca`, `.titulo`, `.frase`). Porta fielmente as regras do
+   mockup para o vocabulário `--lt-*`; gradientes sem token equivalente
+   (rampas de profundidade da cena) ficam literais, como já é o padrão do
+   projeto para cor sem par documentado.
+
+   A entrada orquestrada destas três superfícies está no fim do arquivo,
+   escopada em `.lp[data-entrada]` + `@media (prefers-reduced-motion:
+   no-preference)`. Só `transform`/`opacity`; nada em laço. */
+
+/* ── A cena: céu, luz do horizonte e chão em perspectiva ──────────────── */
+.lp-cena {
+  grid-column: 1 / -1;
+  grid-row: 1 / 4;
+  position: relative;
+  overflow: hidden;
+  /* Camadas: base → fachada da FACISA (::before) → céu (::after) → luz e
+     chão. `isolation` faz os z-index abaixo valerem só dentro da cena. */
+  isolation: isolate;
+  background: #0a2656;
+  /* No celular, o chão ocupa só a faixa "chao" (--lp-chao-altura, ver
+     .lp-primeira) e um pouco sob a diagonal do painel. O horizonte segue a
+     mesma variável: com 7,5rem fixos aqui, a compressão de telas baixas
+     encolhia o chão mas deixava a luz 56px acima, atrás do título. */
+  --lp-horizonte: calc(100% - var(--lp-chao-altura, 7.5rem));
+  --lp-fuga-x: 84%;
+  --lp-prof: 150px;
+  --lp-raia: 15vw;
+  /* Grão fino (ruído fractal em SVG, rasterizado uma vez): claro e escuro em
+     baixa opacidade, para a superfície não parecer tinta chapada. */
+  --lp-grao: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.05'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='.16'/%3E%3C/svg%3E");
+  --lp-pista-x: -38vw;
+}
+
+/* A fachada da FACISA no fundo do estádio: o prédio de pé sobre o horizonte,
+   como a arquibancada no fim da pista. Altura de 112% do céu (só o topo do
+   telhado sai de quadro), proporção da foto (678×452), alinhada à margem do
+   título; as bordas se dissolvem no céu. Calibrado com o usuário: cobrir o
+   céu inteiro ampliava demais (só janelas); 88% deixava o prédio pequeno.
+   Em preto e branco para o céu azul tingi-la no tom da marca (o vermelho da
+   fachada sob o azul viraria roxo). O desfoque leve esconde o serrilhado da
+   ampliação (o arquivo tem 678px de largura). */
+.lp-cena::before {
+  content: '';
+  position: absolute;
+  left: var(--lt-page-margin);
+  bottom: calc(100% - var(--lp-horizonte));
+  z-index: 0;
+  height: calc(var(--lp-horizonte) * 1.12);
+  aspect-ratio: 678 / 452;
+  max-width: calc(100% - 2 * var(--lt-page-margin));
+  background: url('../../assets/facisa-fachada.webp') center bottom / cover no-repeat;
+  filter: grayscale(1) contrast(1.05) blur(0.6px);
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(180deg, transparent 0, #000 14%);
+  -webkit-mask-composite: source-in;
+          mask-image:
+    linear-gradient(90deg, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(180deg, transparent 0, #000 14%);
+          mask-composite: intersect;
+}
+
+/* O céu do estádio, agora translúcido sobre a foto: mais aberto no alto, onde
+   a fachada aparece, e fechado perto do horizonte, onde ficam a frase e a
+   luz. Stops literais: misturam estádio/pista/gramado em proporções sem
+   token equivalente. O contraste do texto é medido sobre o fundo real
+   renderizado (tmp/landing-v2/verificar.mjs, contrasteReal). */
+.lp-cena::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg,
+    rgba(10, 38, 86, .82) 0%,
+    rgba(13, 46, 94, .82) calc(var(--lp-horizonte) - 200px),
+    rgba(20, 57, 102, .92) calc(var(--lp-horizonte) - 60px),
+    #1c4356 calc(var(--lp-horizonte) - 16px),
+    #2b4e45 var(--lp-horizonte),
+    #284b43 calc(var(--lp-horizonte) + 18px),
+    #254b47 calc(var(--lp-horizonte) + 66px));
+}
+
+.lp-cena__luz,
+.lp-chao { z-index: 1; }
+
+.lp-cena__luz {
+  position: absolute;
+  inset: 0;
+  /* Luz difusa no ponto de fuga, sem a faixa fluorescente do céu anterior. */
+  background:
+    radial-gradient(ellipse 26% 18px at var(--lp-fuga-x) var(--lp-horizonte), rgba(226, 237, 212, .27), rgba(169, 196, 162, .11) 52%, transparent 82%),
+    radial-gradient(ellipse 42% 60px at var(--lp-fuga-x) var(--lp-horizonte), rgba(119, 157, 132, .14), transparent 78%);
+}
+
+/* ── Chão: plano CSS 3D em perspectiva ────────────────────────────────── */
+.lp-chao {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--lp-horizonte);
+  bottom: 0;
+  perspective: var(--lp-prof);
+  perspective-origin: var(--lp-fuga-x) 0;
+  overflow: hidden;
+  /* O fundo da pista se dissolve na luz do horizonte. */
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent 8%, rgba(0, 0, 0, .6) 18%, #000 40%);
+          mask-image: linear-gradient(180deg, transparent 0, transparent 8%, rgba(0, 0, 0, .6) 18%, #000 40%);
+}
+
+/* Reflexo verde discreto perto do ponto de fuga e queda de luz nos cantos:
+   a mesma iluminação alcança céu e piso, dentro da máscara do chão. */
+.lp-chao::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 36% 72% at var(--lp-fuga-x) 0, rgba(147, 193, 125, .10), transparent 76%),
+    radial-gradient(130% 90% at 55% 0%, transparent 55%, rgba(4, 16, 40, .38) 100%);
+  pointer-events: none;
+}
+
+/* O plano do chão: a borda de baixo é a mais próxima da câmera; o topo do
+   elemento vai para o horizonte. --lp-aba: quanto o plano passa de cada
+   lado da tela; --lp-fundo: a profundidade — o custo da entrada (medido no
+   mockup sem GPU: 18 quadros/s a 1280px neste tamanho; acima de 4200px de
+   fundo a rasterização do Chromium quebra). */
+.lp-chao__plano {
+  --lp-aba: 1800px;
+  --lp-fundo: 2400px;
+  position: absolute;
+  left: calc(-1 * var(--lp-aba));
+  width: calc(100% + 2 * var(--lp-aba));
+  bottom: 0;
+  height: var(--lp-fundo);
+  transform-origin: 50% 100%;
+  transform: rotateX(90deg);
+  overflow: hidden;
+  --lp-x0: calc(var(--lp-aba) + var(--lp-pista-x));
+  /* Proporções reais (World Athletics): a linha branca tem 5 cm numa raia de
+     1,22 m, 1/24 da raia. O meio-fio de concreto separa o gramado da raia 1. */
+  --lp-linha: calc(var(--lp-raia) / 24);
+  --lp-meio-fio: calc(var(--lp-linha) * 2.4);
+  background:
+    /* névoa: quanto mais longe, mais a pista some na luz do horizonte */
+    linear-gradient(0deg, transparent 450px, rgba(22, 65, 113, .22) 850px, rgba(25, 61, 79, .54) 1700px, rgba(39, 80, 72, .82) 2350px),
+    /* refletor: poça de luz perto da câmera, caindo com a distância */
+    radial-gradient(ellipse 34% 30% at 50% 100%, rgba(255, 255, 255, .12), transparent 70%),
+    /* linhas das raias, 9 para 8 raias, com a borda suavizada (sem serrilhado) */
+    repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, .86) 1px,
+      rgba(255, 255, 255, .86) calc(var(--lp-linha) - 1px),
+      rgba(255, 255, 255, 0) var(--lp-linha),
+      transparent var(--lp-raia))
+      var(--lp-x0) 0 / calc(8 * var(--lp-raia) + var(--lp-linha)) 100% no-repeat,
+    /* meio-fio de concreto, com a sombra que ele projeta sobre a raia 1 */
+    linear-gradient(90deg, #aeb6bd 0, #dfe4e8 45%, #c3cad0 85%, rgba(8, 24, 56, .45) 85%, transparent 100%)
+      calc(var(--lp-x0) - var(--lp-meio-fio)) 0 / calc(var(--lp-meio-fio) * 1.4) 100% no-repeat,
+    /* grão fino quebra a regularidade das linhas brancas */
+    var(--lp-grao) 0 0 / 180px 180px,
+    /* matiz e profundidade sobre a textura fotografica do piso */
+    linear-gradient(0deg, rgba(35, 100, 166, .24), rgba(10, 39, 86, .42)),
+    /* base do gramado por dentro da raia 1; a textura vem em ::before */
+    repeating-linear-gradient(0deg, #3d6f31 0 220px, #315c2a 220px 440px) 0 0 / calc(var(--lp-x0) - var(--lp-meio-fio)) 100% no-repeat,
+    url('../../assets/landing/pista-borracha-leve.webp') 0 0 / 520px 520px repeat,
+    /* reserva cromatica caso a imagem da pista nao carregue */
+    linear-gradient(0deg, #3274c4 0%, var(--lt-color-brand-blue) 14%, #1f559e 42%, #173f7c 100%);
+}
+
+/* A grama real cobre so a area interna ao meio-fio. O corte continua na
+   mesma posicao da cena anterior, mas a textura e as faixas de luz deixam de
+   formar barras verdes perfeitamente planas. */
+.lp-chao__plano::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--lp-x0) - var(--lp-meio-fio));
+  background:
+    linear-gradient(0deg, rgba(30, 75, 30, .06), rgba(7, 38, 35, .42)),
+    repeating-linear-gradient(0deg, rgba(198, 222, 120, .08) 0 220px, rgba(12, 40, 19, .12) 220px 440px),
+    url('../../assets/landing/gramado-natural-leve.webp') 0 0 / 520px 520px repeat;
+  filter: saturate(.82) brightness(.93);
+  pointer-events: none;
+}
+
+/* Marcas que passam: traços nas linhas das raias, repetidos em
+   profundidade. A camada é mais alta que o plano (--lp-curso) e, em
+   repouso, já está na posição final (a marcação já passou, fora do
+   plano) — a entrada é que a traz de longe. */
+.lp-chao__marcas {
+  position: absolute;
+  left: var(--lp-x0);
+  width: calc(8 * var(--lp-raia) + var(--lp-linha));
+  top: 0;
+  height: calc(100% + var(--lp-curso));
+  --lp-curso: 1680px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='140'%3E%3Crect x='0' y='0' width='20' height='4' fill='white' fill-opacity='.65'/%3E%3C/svg%3E");
+  background-size: var(--lp-raia) 140px;
+  background-position: 1px 0;
+}
+
+/* A linha de largada escalonada: uma barra por raia, cada uma um pouco mais
+   à frente. Perto da câmera no início; em repouso, já saiu de quadro. */
+.lp-chao__largada {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  height: 400px;
+}
+
+.lp-chao__largada i {
+  position: absolute;
+  left: calc(var(--n) * var(--lp-raia) + var(--lp-linha));
+  width: calc(var(--lp-raia) - var(--lp-linha));
+  height: 10px;
+  bottom: calc(var(--n) * 26px);
+  background: var(--lt-color-surface);
+  transform-origin: 0 50%;
+}
+
+/* ── Marca ─────────────────────────────────────────────────────────────── */
+.lp-marca {
+  /* Comprimido em telas baixas (landing-responsivo.css), junto com
+     --lp-chao-altura e --lp-titulo-*: o alvo é o botão "Entrar" caber na
+     primeira dobra do celular. */
+  --lp-marca-pad-topo: 1rem;
+  grid-area: marca;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: var(--lp-marca-pad-topo) var(--lt-page-margin) 0;
+  color: var(--lt-color-text-inverse);
+}
+
+.lp-marca__emblema {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  overflow: hidden;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .14), 0 6px 18px -6px rgba(0, 0, 0, .5);
+}
+
+.lp-marca__emblema img { display: block; width: 100%; height: 100%; }
+
+.lp-marca__sigla {
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 1.625rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.lp-marca__inst {
+  margin-left: auto;
+  color: var(--lt-color-mist);
+  font-size: var(--lt-text-sm);
+}
+
+/* ── Título: a largada escalonada ─────────────────────────────────────────
+   Três linhas em três raias. Cada linha recua em relação à de cima, como
+   os blocos dos 400m. A barra antes de cada linha é a marca de largada da
+   raia; a linha fina embaixo é a linha da raia. */
+.lp-titulo {
+  /* Comprimidos em telas baixas (landing-responsivo.css): tamanho e
+     respiros do título são o segundo maior custo de altura da primeira
+     tela, depois do chão — mesmo alvo de --lp-chao-altura. */
+  --lp-titulo-pad-topo: 1.5rem;
+  --lp-titulo-pad-base: 1.25rem;
+  --lp-titulo-tamanho: clamp(1.75rem, 10.2vw, 2.75rem);
+  grid-area: titulo;
+  position: relative;
+  z-index: 1;
+  /* No celular, o horizonte fica logo abaixo: o respiro de baixo mantém a
+     última linha longe da luz (defeito 5 do plano). */
+  padding: var(--lp-titulo-pad-topo) var(--lt-page-margin) var(--lp-titulo-pad-base);
+  color: var(--lt-color-text-inverse);
+  /* src/index.css pinta todo h1 com um degradê azul-escuro recortado no texto
+     (background-clip: text + text-fill-color transparente). `color` sozinho
+     não desfaz isso: medido no navegador, o título ficava invisível sobre a
+     cena. As quatro linhas abaixo devolvem o preenchimento à cor do texto. */
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  text-transform: uppercase;
+  /* No celular, a maior linha ("Interprofissional de", escalonada) ocupa a
+     largura útil: 10,2vw cabe de 320 a 420px sem cortar. */
+  font-size: var(--lp-titulo-tamanho);
+  line-height: 0.92;
+  letter-spacing: 0.005em;
+  --lp-escalonamento: 0.42em;
+}
+
+.lp-titulo__linha {
+  position: relative;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin-left: calc(var(--i) * var(--lp-escalonamento));
+  padding: 0.06em 0 0.08em 0.3em;
+  white-space: nowrap;
+}
+
+/* A marca de largada atravessa a raia inteira, de linha a linha, como no
+   chão da pista — por isso não se lê como uma barra de texto. */
+.lp-titulo__linha::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -0.02em;
+  bottom: 0;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.lp-titulo__linha::after {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--i) * var(--lp-escalonamento) - var(--lt-page-margin));
+  right: -100vw;
+  bottom: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .12) 60%, transparent);
+}
+
+/* ── Frase sobre a liga ────────────────────────────────────────────────── */
+.lp-frase {
+  grid-area: frase;
+  position: relative;
+  z-index: 1;
+  padding: 2.5rem var(--lt-page-margin) 0;
+  background: var(--lt-color-stadium);
+  color: var(--lt-color-mist);
+  font-size: var(--lt-text-lead);
+  /* Explícita: o `p { line-height }` global de src/index.css (1,6) venceria. */
+  line-height: var(--lt-leading-normal);
+  max-width: 40rem;
+  text-wrap: pretty;
+}
+
+/* ── Entrada: a cena, o título e a frase ───────────────────────────────────
+   Escopo fixo (docs/implementacao/landing-v2/change-intent.md): só corre em
+   `.lp[data-entrada]` sob `prefers-reduced-motion: no-preference`. Cada
+   `@keyframes` define só o `from`, com `animation-fill-mode: backwards` —
+   o CSS em repouso acima já é o estado final, e é o que aparece com
+   movimento reduzido. Nada em laço e sem `will-change`: `data-entrada` fica no
+   DOM a sessão inteira, e o `will-change` prenderia camadas do compositor
+   depois da entrada; o navegador já promove o elemento enquanto anima. */
+@media (prefers-reduced-motion: no-preference) {
+  .lp[data-entrada] .lp-chao__largada i {
+    animation: lp-marcar 220ms var(--lt-ease-out) backwards;
+    /* a última marca termina no instante do disparo (--lt-entrada-disparo) */
+    animation-delay: calc(var(--lt-entrada-marcas) + var(--n) * 24ms);
+  }
+
+  .lp[data-entrada] .lp-chao__marcas {
+    animation: lp-passar 1200ms var(--lt-ease-start) var(--lt-entrada-disparo) backwards;
+  }
+
+  .lp[data-entrada] .lp-cena__luz {
+    animation: lp-acender 500ms ease-out var(--lt-entrada-disparo) backwards;
+  }
+
+  .lp[data-entrada] .lp-titulo__linha {
+    /* A opacidade assenta nos primeiros 280ms (40% do arranque), em animação
+       própria: cada @keyframes só com o `from`. */
+    animation: lp-sair-do-bloco 700ms var(--lt-ease-out) backwards, lp-surgir 280ms var(--lt-ease-out) backwards;
+    /* 80ms de defasagem entre as três linhas, a partir do disparo */
+    animation-delay: calc(var(--lt-entrada-disparo) + var(--i) * 80ms);
+  }
+
+  .lp[data-entrada] .lp-frase {
+    animation: lp-assentar 500ms var(--lt-ease-out) var(--lt-entrada-frase) backwards;
+  }
+
+  @keyframes lp-marcar { from { transform: scaleX(0); } }
+  @keyframes lp-passar { from { transform: translateY(calc(-1 * var(--lp-curso))); } }
+  @keyframes lp-acender { from { opacity: .35; } }
+  @keyframes lp-sair-do-bloco { from { transform: translateX(-14vw) skewX(-16deg); } }
+  @keyframes lp-surgir { from { opacity: 0; } }
+  @keyframes lp-assentar { from { opacity: 0; transform: translateX(-12px); } }
+}

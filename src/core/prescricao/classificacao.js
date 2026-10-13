@@ -1,3 +1,5 @@
+import { nomeParaExibicao } from './nomeAlimento.js';
+
 /**
  * Classificação NOVA e categoria de compra.
  *
@@ -161,7 +163,7 @@ export function listaDeCompras(refeicoes, catalogoPorId) {
     if (!a) return;
     const atual = mapa.get(a.id);
     if (!atual) {
-      mapa.set(a.id, { id: a.id, nome: a.nome, categoria: categoriaDeCompra(a), opcao: ehOpcao });
+      mapa.set(a.id, { id: a.id, nome: a.nomeExibicao || nomeParaExibicao(a), categoria: categoriaDeCompra(a), opcao: ehOpcao });
     } else if (!ehOpcao) {
       // Usado como alimento em alguma refeicao: deixa de ser mera opcao.
       atual.opcao = false;

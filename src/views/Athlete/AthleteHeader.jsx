@@ -18,9 +18,10 @@ const AthleteHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   }, [user]);
 
   const labels = {
-    dashboard: 'Início',
-    agenda: 'Agenda',
-    prontuario: 'Meu dossiê'
+    dashboard: 'Visão Geral',
+    pendencias: 'Minhas pendências',
+    cadastro: 'Meu cadastro',
+    acompanhamento: 'Meu acompanhamento'
   };
   const currentLabel = labels[activeTab] || activeTab;
 

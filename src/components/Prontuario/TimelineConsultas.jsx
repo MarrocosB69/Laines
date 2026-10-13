@@ -45,7 +45,7 @@ const TimelineConsultas = ({
           onClick={onRefresh}
           disabled={loadingAppointments || isRefreshingAppointments}
         >
-          {isRefreshingAppointments ? <Loader2 size={14} className="spin" /> : <RefreshCcw size={14} />}
+          {isRefreshingAppointments ? <Loader2 size={16} className="spin" aria-hidden="true" /> : <RefreshCcw size={16} aria-hidden="true" />}
           {isRefreshingAppointments ? 'Atualizando...' : 'Atualizar'}
         </button>
         <button
@@ -54,7 +54,7 @@ const TimelineConsultas = ({
           onClick={onExportCsv}
           disabled={filteredConsultationHistory.length === 0 || loadingAppointments}
         >
-          <Download size={14} />
+          <Download size={16} aria-hidden="true" />
           Exportar CSV
         </button>
       </div>
@@ -117,7 +117,7 @@ const TimelineConsultas = ({
     </div>
 
     <div className="pron-inline-status" role="status" aria-live="polite">
-      <span>{filteredConsultationHistory.length} de {consultationHistory.length} consulta(s) exibida(s)</span>
+      <span>{filteredConsultationHistory.length} de {consultationHistory.length} {consultationHistory.length === 1 ? 'consulta exibida' : 'consultas exibidas'}</span>
       {hasConsultationFiltersApplied ? (
         <span>Filtros aplicados sobre o histórico completo.</span>
       ) : null}
@@ -128,7 +128,7 @@ const TimelineConsultas = ({
       <Skeleton lines={4} />
     ) : appointmentsError ? (
       <div className="pron-error-block">
-        <p>{appointmentsError}</p>
+        <p role="alert">{appointmentsError}</p>
         <button type="button" className="pron-btn pron-btn-secondary" onClick={onRetryLoad}>
           Recarregar
         </button>
@@ -142,9 +142,9 @@ const TimelineConsultas = ({
           : 'Nenhuma consulta registrada para este atleta.'}
       />
     ) : (
-      <div className="timeline">
+      <ol className="timeline">
         {visibleConsultationHistory.map((item) => (
-          <article key={item.id} className="timeline-item">
+          <li key={item.id} className="timeline-item">
             <div className="timeline-dot" aria-hidden="true" />
             <div className="timeline-item-head">
               <strong>{item.scheduledDate ? formatDate(item.scheduledDate) : '—'}</strong>
@@ -158,9 +158,9 @@ const TimelineConsultas = ({
             <p className="pron-text-secondary">
               {item.professionalName || 'Profissional não informado'}
             </p>
-          </article>
+          </li>
         ))}
-      </div>
+      </ol>
     )}
 
     {consultationHasMore ? (

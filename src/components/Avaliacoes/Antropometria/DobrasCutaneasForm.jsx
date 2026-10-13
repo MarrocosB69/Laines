@@ -1,6 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertTriangle } from 'lucide-react';
-import MiniSparkline from '../../shared/MiniSparkline';
+import { Activity } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
@@ -10,6 +9,20 @@ import {
 } from '../../../services/calculationEngine';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  CampoNumero,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao,
+  Tendencia,
+  Dica
+} from '../base';
 import './DobrasCutaneasForm.css';
 
 const FOLD_FIELDS = [
@@ -58,6 +71,15 @@ const PROTOCOL_CONFIG = {
   }
 };
 
+// Índice "Neste formulário": os mesmos títulos das seções do formulário.
+const DOBRAS_INDICE = [
+  { id: 'dobras-protocolo', titulo: 'Protocolo e identificação' },
+  { id: 'dobras-avaliado', titulo: 'Dados do avaliado' },
+  { id: 'dobras-medidas', titulo: 'Dobras do protocolo' },
+  { id: 'dobras-resultados', titulo: 'Resultados calculados' },
+  { id: 'dobras-comparacao', titulo: 'Comparação longitudinal' }
+];
+
 const createInitialData = () => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
   protocolo: '',
@@ -99,7 +121,6 @@ const DobrasCutaneasForm = ({
   moduleSnapshot,
   currentSessionId,
   moduleHistory = [],
-  allEvaluationHistory = [],
   lockSharedAnthropometry = false,
   readOnly = false
 }) => {
@@ -391,8 +412,6 @@ const DobrasCutaneasForm = ({
   }, [referenceHistory, skinfold]);
 
   const interpretation = useMemo(() => buildDobrasInterpretation(comparisonRows), [comparisonRows]);
-
-  const latestFatFreeMassFromOther = useMemo(() => resolveLatestFatFreeMass(allEvaluationHistory), [allEvaluationHistory]);
 
   const payloadDados = useMemo(() => {
     const selectedBodyFat = skinfold?.percentFat?.selected;
@@ -690,33 +709,32 @@ const DobrasCutaneasForm = ({
   }, [dados.avaliador, dados.equipamento, dados.ladoMedicao, dados.protocolo]);
 
   return (
-    <div className={`eval-card dobras-form dobras-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <Activity size={22} />
-        </div>
-        <div>
-          <h3 className="eval-title">Dobras cutâneas</h3>
-          <p className="eval-subtitle">
-            Protocolos dinâmicos com densidade corporal, % gordura (Siri/Brozek) e comparação evolutiva.
-          </p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card dobras-form dobras-form--modern${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Dobras cutâneas"
+      descricao="Protocolos dinâmicos com densidade corporal, % gordura (Siri/Brozek) e comparação evolutiva."
+      icone={<Activity size={22} />}
+    >
+      <AvaliacaoIndice itens={DOBRAS_INDICE} />
+
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
 
       {onboardingResumo.length > 0 ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
-      <div className="eval-note">
+      <AvisoAvaliacao tipo="info">
         <strong>Status de comparabilidade:</strong> {comparabilidadeColeta}
-      </div>
+      </AvisoAvaliacao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Protocolo e identificação</h4>
-        <div className="dobras-grid">
-          <div className="eval-field">
-            <label className="eval-label">Data da avaliação</label>
+      <AvaliacaoSecao
+        id="dobras-protocolo"
+        titulo="Protocolo e identificação"
+        className="eval-section eval-section--primary"
+      >
+        <div className="av-grade">
+          <Campo rotulo="Data da avaliação" className="eval-field">
             <input
               type="date"
               className="eval-input"
@@ -724,10 +742,9 @@ const DobrasCutaneasForm = ({
               onChange={(event) => updateField(setDados, setHasUserInput, 'dataAvaliacao', event.target.value)}
               disabled={readOnly}
             />
-          </div>
+          </Campo>
 
-          <div className="eval-field">
-            <label className="eval-label">Protocolo</label>
+          <Campo rotulo="Protocolo" className="eval-field">
             <select
               className="eval-input"
               value={dados.protocolo}
@@ -738,18 +755,20 @@ const DobrasCutaneasForm = ({
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
-          </div>
+          </Campo>
 
-          <div className="eval-field">
-            <label className="eval-label">
-              Conversao de % gordura
-              <InlineHelp lines={[
+          <Campo
+            rotulo="Conversao de % gordura"
+            dica={{
+              texto: [
                 'Siri (1956): %G = (495 / DC) - 450  [padrão clínico]',
                 'Brozek (1963): %G = (4.57 / DC - 4.142) x 100',
                 'Para atletas com alta musculatura, Brozek pode ser preferível pois Siri tende a superestimar %G.'
-              ]}
-              />
-            </label>
+              ],
+              rotulo: ROTULO_DICA
+            }}
+            className="eval-field"
+          >
             <select
               className="eval-input"
               value={dados.conversionMethod}
@@ -759,10 +778,9 @@ const DobrasCutaneasForm = ({
               <option value="siri">Siri (padrão clínico)</option>
               <option value="brozek">Brozek (atletas alta musculatura)</option>
             </select>
-          </div>
+          </Campo>
 
-          <div className="eval-field">
-            <label className="eval-label">Avaliador</label>
+          <Campo rotulo="Avaliador" className="eval-field">
             <input
               type="text"
               className="eval-input"
@@ -771,10 +789,9 @@ const DobrasCutaneasForm = ({
               disabled={readOnly}
               placeholder="Nome do tecnico"
             />
-          </div>
+          </Campo>
 
-          <div className="eval-field">
-            <label className="eval-label">Equipamento</label>
+          <Campo rotulo="Equipamento" className="eval-field">
             <input
               type="text"
               className="eval-input"
@@ -783,10 +800,9 @@ const DobrasCutaneasForm = ({
               disabled={readOnly}
               placeholder="Marca/modelo do adipometro"
             />
-          </div>
+          </Campo>
 
-          <div className="eval-field">
-            <label className="eval-label">Lado da medição</label>
+          <Campo rotulo="Lado da medição" className="eval-field">
             <select
               className="eval-input"
               value={dados.ladoMedicao}
@@ -796,24 +812,20 @@ const DobrasCutaneasForm = ({
               <option value="direito">Direito</option>
               <option value="esquerdo">Esquerdo</option>
             </select>
-          </div>
+          </Campo>
 
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Limitação técnica</label>
-            <label className="dobras-toggle">
-              <input
-                type="checkbox"
-                checked={Boolean(dados.esportivo?.limitacaoTecnica)}
-                onChange={(event) => updateDobrasEsportivoField(setDados, setHasUserInput, 'limitacaoTecnica', event.target.checked)}
-                disabled={readOnly}
-              />
-              <span>Houve limitação técnica relevante durante a coleta.</span>
-            </label>
-          </div>
+          <GrupoOpcoes legenda="Limitação técnica" className="eval-field eval-field-full">
+            <Opcao
+              tipo="checkbox"
+              rotulo="Houve limitação técnica relevante durante a coleta."
+              checked={Boolean(dados.esportivo?.limitacaoTecnica)}
+              onChange={(event) => updateDobrasEsportivoField(setDados, setHasUserInput, 'limitacaoTecnica', event.target.checked)}
+              disabled={readOnly}
+            />
+          </GrupoOpcoes>
 
           {Boolean(dados.esportivo?.limitacaoTecnica) && (
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Descrição da limitação técnica</label>
+            <Campo rotulo="Descrição da limitação técnica" className="eval-field eval-field-full">
               <textarea
                 className="eval-textarea"
                 rows={3}
@@ -822,14 +834,13 @@ const DobrasCutaneasForm = ({
                 disabled={readOnly}
                 placeholder="Descreva o motivo da limitação e impacto na medida."
               />
-            </div>
+            </Campo>
           )}
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Dados do avaliado</h4>
-        <div className="dobras-grid">
+      <AvaliacaoSecao id="dobras-avaliado" titulo="Dados do avaliado" className="eval-section">
+        <div className="av-grade">
           <BaseNumericField
             label="Peso"
             unit="kg"
@@ -856,8 +867,7 @@ const DobrasCutaneasForm = ({
             disabled={readOnly || lockSharedAnthropometry}
             placeholder="32"
           />
-          <div className="eval-field">
-            <label className="eval-label">Sexo biologico</label>
+          <Campo rotulo="Sexo biologico" className="eval-field">
             <select
               className="eval-input"
               value={dados.sexo}
@@ -868,68 +878,82 @@ const DobrasCutaneasForm = ({
               <option value="MASCULINO">Masculino</option>
               <option value="FEMININO">Feminino</option>
             </select>
-          </div>
+          </Campo>
         </div>
         {lockSharedAnthropometry && (
-          <p className="dobras-shared-hint">Peso, estatura, idade e sexo estão sincronizados com a ficha base da sessão.</p>
+          <AvisoAvaliacao tipo="info">Peso, estatura, idade e sexo estão sincronizados com a ficha base da sessão.</AvisoAvaliacao>
         )}
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Dobras do protocolo</h4>
+      <AvaliacaoSecao id="dobras-medidas" titulo="Dobras do protocolo" className="eval-section">
         {!dados.protocolo ? (
-          <div className="eval-note">Selecione um protocolo para liberar os campos de dobras.</div>
+          <AvisoAvaliacao tipo="info">Selecione um protocolo para liberar os campos de dobras.</AvisoAvaliacao>
         ) : (
           <>
             <p className="eval-section-subtitle">
               Campos obrigatórios para o protocolo atual: {requiredFoldFields.map(resolveFoldLabel).join(', ') || 'não definidos'}.
             </p>
-            <div className="dobras-grid">
+            <div className="av-grade">
               {displayedFoldFields.map((field) => {
-            const isRequired = requiredFoldFields.includes(field.key);
-            const status = foldValidation[field.key]?.status || 'empty';
-            const showState = submitAttempted || touched[field.key];
-            const message = showState ? (foldValidation[field.key]?.message || '') : '';
-            return (
-              <div key={field.key} className="eval-field">
-                <label className="eval-label">
-                  {field.label}
-                  <span className="dobras-unit-badge">mm</span>
-                  {isRequired ? <span className="dobras-required-dot">*</span> : <span className="dobras-optional-badge">Opcional</span>}
-                  <InlineHelp lines={field.tooltip} />
-                </label>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  className={`eval-input ${showState && status === 'error' ? 'dobras-input-invalid' : ''} ${showState && status === 'warning' ? 'dobras-input-warning' : ''}`}
-                  value={dados[field.key]}
-                  onChange={(event) => updateField(setDados, setHasUserInput, field.key, event.target.value)}
-                  onBlur={() => setTouched((prev) => ({ ...prev, [field.key]: true }))}
-                  disabled={readOnly}
-                  placeholder={isRequired ? 'Obrigatorio' : 'Opcional'}
-                />
-                {message ? <small className={`dobras-field-message ${status === 'error' ? 'is-error' : 'is-warning'}`}>{message}</small> : null}
-              </div>
-            );
-          })}
+                const isRequired = requiredFoldFields.includes(field.key);
+                const status = foldValidation[field.key]?.status || 'empty';
+                const showState = submitAttempted || touched[field.key];
+                const message = showState ? (foldValidation[field.key]?.message || '') : '';
+                // A mensagem é a mesma de antes: o erro vai em `erro` (marca
+                // aria-invalid) e o aviso de faixa fisiológica, em `ajuda`.
+                return (
+                  <Campo
+                    key={field.key}
+                    rotulo={(
+                      <>
+                        {field.label}
+                        {isRequired ? null : <span className="dobras-optional-badge">Opcional</span>}
+                      </>
+                    )}
+                    dica={{ texto: field.tooltip, rotulo: ROTULO_DICA }}
+                    unidade="mm"
+                    obrigatorio={isRequired}
+                    classeObrigatorio="dobras-required-dot"
+                    erro={message && status === 'error' ? message : undefined}
+                    ajuda={message && status !== 'error' ? message : undefined}
+                    className="eval-field"
+                  >
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className={`eval-input ${showState && status === 'error' ? 'dobras-input-invalid' : ''} ${showState && status === 'warning' ? 'dobras-input-warning' : ''}`}
+                      value={dados[field.key]}
+                      onChange={(event) => updateField(setDados, setHasUserInput, field.key, event.target.value)}
+                      onBlur={() => setTouched((prev) => ({ ...prev, [field.key]: true }))}
+                      disabled={readOnly}
+                      placeholder={isRequired ? 'Obrigatorio' : 'Opcional'}
+                    />
+                  </Campo>
+                );
+              })}
             </div>
           </>
         )}
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-results-section">
-        <div className="dobras-section-heading">
-          <InlineHelp
-            lines={[
+      {/* "Resultados calculados" já aparecia aqui, escrito pelo ::after de
+          .eval-results-section (avaliacoes.css); agora é o título da seção. */}
+      <AvaliacaoSecao
+        id="dobras-resultados"
+        titulo="Resultados calculados"
+        acoes={(
+          <Dica
+            rotulo={ROTULO_DICA}
+            texto={[
               `Equacao DC: ${skinfold?.formulas?.densityEquation || 'Não disponível'}`,
               `Referencia protocolo: ${skinfold?.protocol?.reference || 'Não informada'}`,
               `${skinfold?.formulas?.conversionSiri || ''}`,
               `${skinfold?.formulas?.conversionBrozek || ''}`
             ]}
           />
-        </div>
-
-        <div className="dobras-results-grid">
+        )}
+      >
+        <div className="av-resultados">
           <ResultCard
             label="% Gordura"
             value={skinfold?.percentFat?.selected}
@@ -993,26 +1017,29 @@ const DobrasCutaneasForm = ({
         </div>
 
         {baseMissing && (
-          <div className="dobras-warning-box">
-            <AlertTriangle size={16} />
-            <span>{baseMissing}</span>
-          </div>
+          <AvisoAvaliacao tipo="atencao">{baseMissing}</AvisoAvaliacao>
         )}
 
         <div className="dobras-visual-grid">
-          <div className="dobras-radar-card">
-            <h5>Padrão regional (radar)</h5>
+          <figure className="av-tendencia dobras-radar-card">
+            <figcaption className="av-tendencia__rotulo">Padrão regional (radar)</figcaption>
             <SkinfoldRadar series={skinfold?.radarSeries || []} />
-          </div>
-          <div className="dobras-sparkline-card">
-            <h5>Evolução % gordura</h5>
-            <MiniSparkline values={sparklineValues} target={previous?.metrics?.percentual ?? null} width={240} height={82} />
-          </div>
+          </figure>
+          <Tendencia
+            rotulo="Evolução % gordura"
+            valores={sparklineValues}
+            alvo={previous?.metrics?.percentual ?? null}
+            largura={240}
+            altura={82}
+            unidade="%"
+            casas={2}
+            rotuloAlvo="valor anterior"
+            className="dobras-sparkline-card"
+          />
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Comparação longitudinal</h4>
+      <AvaliacaoSecao id="dobras-comparacao" titulo="Comparação longitudinal" className="eval-section">
         <div className="dobras-table-wrap">
           <table className="dobras-table">
             <thead>
@@ -1040,66 +1067,59 @@ const DobrasCutaneasForm = ({
           </table>
         </div>
         <p className="dobras-interpretation">{interpretation}</p>
-      </div>
+      </AvaliacaoSecao>
 
-      {Number.isFinite(latestFatFreeMassFromOther) && !Number.isFinite(skinfold?.bodyComposition?.leanMassKg) && (
-        <div className="eval-note">Massa magra de referencia encontrada no historico: {formatNumber(latestFatFreeMassFromOther, 2)} kg.</div>
-      )}
-
-      {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
-
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={handleSalvar} disabled={readOnly || !canCalculate} loading={saveStatus === 'saving'}>
           Salvar dobras
         </Button>
-      </div>
+      </BarraAcoesAvaliacao>
 
-      {error && <div className="eval-note dobras-error-note">{error}</div>}
-    </div>
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="dobras-error-note">{error}</AvisoAvaliacao>}
+    </AvaliacaoModulo>
   );
 };
 
 const BaseNumericField = ({ label, unit, value, onChange, disabled, placeholder, className = '' }) => (
-  <div className={`eval-field${className ? ` ${className}` : ''}`}>
-    <label className="eval-label">
-      {label}
-      <span className="dobras-unit-badge">{unit}</span>
-    </label>
-    <input
-      type="text"
-      inputMode="decimal"
-      className="eval-input"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      disabled={disabled}
-      placeholder={placeholder}
-    />
-  </div>
+  <CampoNumero
+    rotulo={label}
+    unidade={unit}
+    className={`eval-field${className ? ` ${className}` : ''}`}
+    type="text"
+    inputMode="decimal"
+    inputClassName="eval-input"
+    value={value}
+    onChange={(event) => onChange(event.target.value)}
+    disabled={disabled}
+    placeholder={placeholder}
+  />
 );
 
-const InlineHelp = ({ lines = [] }) => (
-  <span className="dobras-help" tabIndex={0} role="button" aria-label="Abrir informação">
-    ?
-    <span className="dobras-help-tooltip" role="tooltip">
-      {lines.filter(Boolean).map((line, index) => (
-        <span key={`${line}-${index}`}>{line}</span>
-      ))}
-    </span>
-  </span>
-);
+// Nome do botão "?" (o aria-label de antes). A dica agora é da base: um
+// botão de 44 px fora do <label>, com o mesmo texto; as linhas vazias saem,
+// como saíam aqui.
+const ROTULO_DICA = 'Abrir informação';
 
+// A classificação continua escrita ("Sem classificação" quando não há). O tom
+// só acompanha uma classificação de verdade: pintar "Sem classificação" de
+// verde ou laranja seria cor sem significado. A variação em relação à
+// avaliação anterior vai no texto de apoio do cartão (`metodo`), com o mesmo
+// formato de antes.
 const ResultCard = ({ label, value, unit = '', digits = 2, tone = 'neutral', classification = '', delta }) => (
-  <article className="dobras-result-card">
-    <span className="dobras-result-label">{label}</span>
-    <strong>{Number.isFinite(value) ? `${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}` : 'Não calculado'}</strong>
-    <span className={`dobras-status-badge dobras-tone-${tone}`}>{classification || 'Sem classificação'}</span>
-    {delta && Number.isFinite(delta.deltaAbs) ? (
+  <ResultadoCalculado
+    className="dobras-result-card"
+    rotulo={label}
+    valor={Number.isFinite(value) ? formatNumber(value, digits) : null}
+    unidade={unit || undefined}
+    semValor="Não calculado"
+    classificacao={classification || 'Sem classificação'}
+    tom={classification ? tone : 'neutral'}
+    metodo={delta && Number.isFinite(delta.deltaAbs) ? (
       <small className={`dobras-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
         {formatSigned(delta.deltaAbs, unit, unit === '%' ? 'percent' : 'default')}
       </small>
     ) : null}
-  </article>
+  />
 );
 
 const SkinfoldRadar = ({ series = [] }) => {
@@ -1404,34 +1424,5 @@ function resolveDobrasMetrics(record) {
       resultados?.somaSeteDobras
     ))
   };
-}
-
-function resolveLatestFatFreeMass(history = []) {
-  if (!Array.isArray(history)) return null;
-  const sorted = [...history].sort((a, b) => {
-    const aDate = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
-    const bDate = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
-    return bDate - aDate;
-  });
-
-  for (const item of sorted) {
-    const candidates = [
-      item?.dados?.massa_magra,
-      item?.dados?.massaMagra,
-      item?.dados?.resultados_calculados?.massaMagra,
-      item?.dados?.resultados_calculados?.massa_magra,
-      item?.resultados?.massa_magra,
-      item?.resultados?.massaMagra,
-      item?.resultados?.calculated?.massaMagra,
-      item?.resultados?.calculated?.massa_magra
-    ];
-
-    for (const candidate of candidates) {
-      const numeric = parseNumeric(candidate);
-      if (Number.isFinite(numeric)) return numeric;
-    }
-  }
-
-  return null;
 }
 

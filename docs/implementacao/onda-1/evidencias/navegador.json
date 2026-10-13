@@ -1,0 +1,17 @@
+{
+  "passed": 10,
+  "checks": [
+    "Plano e substituições legíveis sem overflow em 320px",
+    "Plano e substituições legíveis sem overflow em 390px",
+    "Plano e substituições legíveis sem overflow em 1280px",
+    "Download solicita expectedVersion exibida e identifica versão no nome",
+    "Conflito 409 recarrega versão atual e não baixa automaticamente",
+    "Ausência de publicação mostra estado vazio sem download",
+    "Falha de API permite nova tentativa",
+    "Resposta multiple não apresenta uma prescrição como vigente",
+    "Resposta missing-projection não apresenta uma prescrição como vigente",
+    "Resposta wrong-patient não apresenta uma prescrição como vigente"
+  ],
+  "pageErrors": [],
+  "scope": "Componente React real, respostas HTTP sintéticas; não valida autorização Nest, cálculo de porções nem conteúdo real do PDF."
+}

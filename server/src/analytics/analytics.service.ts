@@ -18,8 +18,7 @@ import {
 } from '../avaliacoes/evaluation-registry';
 import { isStudentMemberRole } from '../common/domain/access.constants';
 import { ObservabilityService } from '../observability/observability.service';
-import { AuthenticatedUser } from '../auth/access-control';
-import { analyticsProjectScope, assertAnalyticsExport, canReadDetailedAnalytics } from './analytics-access';
+import { AuthenticatedUser, analyticsProjectScope, assertAnalyticsExport, canReadDetailedAnalytics } from '../auth/access-control';
 
 type RangeFilter = 'week' | 'month' | 'quarter' | 'year';
 type ExportFormat = 'csv' | 'json';
@@ -84,12 +83,37 @@ type CachedPayload = {
   expiresAt: number;
 };
 
+// Trimestre do calendário de São Paulo. Fora do período, os números ficam
+// null ("fora do período"), não 0. `meta` fica sempre null: a direção ainda
+// não definiu meta (WI-016, decisão 1); antes era max(realizado, 10).
 type QuarterBucket = {
   period: string;
-  alunos: number;
-  pacientes: number;
-  avaliacoes: number;
-  meta: number;
+  ano: number;
+  trimestre: number;
+  inicio: string | null;
+  fim: string | null;
+  noPeriodo: boolean;
+  parcial: boolean;
+  alunos: number | null;
+  pacientes: number | null;
+  avaliacoes: number | null;
+  atendimentos: number | null;
+  meta: null;
+};
+
+type DayRange = { startDate: string; endDate: string };
+
+export type ReportPeriod = DayRange & {
+  range: RangeFilter;
+  days: number;
+  timeZone: string;
+};
+
+export type MetricTrend = {
+  current: number;
+  previous: number | null;
+  deltaPercent: number | null;
+  direction: 'up' | 'down' | 'flat' | null;
 };
 
 const REPORT_CACHE_TTL_MS = 60 * 1000;
@@ -122,53 +146,188 @@ const OPERATIONAL_BOARD_COLUMNS = [
   { id: 'concluido', title: 'Concluido', subtitle: 'fechamentos recentes', tone: 'success' }
 ] as const;
 
+// WI-016, etapa 1. "situacao_atual" é o cadastro no momento da consulta e
+// não muda com o período; "no_periodo" conta só os dias do período, no
+// horário de Brasília. Taxa sem denominador vem null (sem valor), nunca 0.
+// "Alunos" e "Supervisores" têm um sentido só, com ou sem filtro de
+// projeto: antes, sem filtro, contavam usuários pelo papel.
 const METRIC_DEFINITIONS = {
   totalAlunos: {
-    label: 'Total de alunos',
-    description: 'Quantidade de membros com papel estudantil no escopo selecionado.',
-    formula: 'count(users.role in [aluno, presidente, vice])'
+    label: 'Alunos com atleta',
+    group: 'situacao_atual',
+    description: 'Alunos distintos que hoje são responsáveis por ao menos um atleta do escopo. Tem o mesmo sentido com ou sem filtro de projeto.',
+    formula: 'count(distinct pacientes.alunoResponsavelId) no escopo'
   },
   professores: {
-    label: 'Professores/Profissionais',
-    description: 'Quantidade de supervisores vinculados ao escopo selecionado.',
-    formula: 'count(users.role in [professor, profissional])'
+    label: 'Supervisores com atleta',
+    group: 'situacao_atual',
+    description: 'Professores e profissionais distintos que hoje supervisionam ao menos um atleta do escopo. Tem o mesmo sentido com ou sem filtro de projeto.',
+    formula: 'count(distinct pacientes.professorSupervisorId) no escopo'
   },
   totalPacientes: {
-    label: 'Total de pacientes',
-    description: 'Pacientes cadastrados no escopo atual.',
-    formula: 'count(pacientes)'
-  },
-  avaliacoesPeriodo: {
-    label: 'Avaliacoes no periodo',
-    description: 'Avaliacoes criadas dentro do recorte temporal selecionado.',
-    formula: 'count(avaliacoes where createdAt >= rangeStart)'
+    label: 'Atletas cadastrados',
+    group: 'situacao_atual',
+    description: 'Atletas cadastrados no escopo hoje, em qualquer situação (triagem, espera, ativo ou alta).',
+    formula: 'count(pacientes) no escopo'
   },
   taxaVinculacao: {
-    label: 'Taxa de vinculacao',
-    description: 'Percentual de pacientes com aluno responsavel definido.',
-    formula: '(pacientes com alunoResponsavelId / totalPacientes) * 100'
+    label: 'Atletas com aluno responsável',
+    group: 'situacao_atual',
+    description: 'Parte dos atletas cadastrados que tem aluno responsável definido. Sem atleta cadastrado, fica sem valor.',
+    formula: 'pacientes com alunoResponsavelId / pacientes * 100'
   },
-  integridade: {
-    label: 'Integridade de dados',
-    description: 'Percentual de avaliacoes com completude >= 80.',
-    formula: '(avaliacoes com meta.completude >= 80 / totalAvaliacoes) * 100'
+  avaliacoesPeriodo: {
+    label: 'Avaliações no período',
+    group: 'no_periodo',
+    description: 'Avaliações registradas nos dias do período (data de registro), em qualquer situação: rascunho ou finalizada.',
+    formula: 'count(avaliacoes com dia(createdAt) no periodo)'
   },
-  completionRate: {
-    label: 'Taxa de conclusao',
-    description: 'Percentual de consultas com status realizada.',
-    formula: '(agendamentos status=realizada / totalAgendamentos) * 100'
+  atendimentosRealizados: {
+    label: 'Atendimentos realizados',
+    group: 'no_periodo',
+    description: 'Consultas marcadas para dias do período e registradas como realizadas.',
+    formula: 'count(agendamentos status=realizada com dia(date) no periodo)'
   },
-  satisfacao: {
-    label: 'Satisfacao estimada',
-    description: 'Indicador proxy operacional derivado da taxa de conclusao.',
-    formula: '(completionRate / 100) * 5'
+  novosAtletas: {
+    label: 'Novos atletas',
+    group: 'no_periodo',
+    description: 'Atletas cadastrados nos dias do período (data de cadastro).',
+    formula: 'count(pacientes com dia(dataCadastro) no periodo)'
+  },
+  retornos: {
+    label: 'Retornos',
+    group: 'no_periodo',
+    description: 'Atletas avaliados no período que já tinham outra avaliação antes dessa, de antes ou de dentro do período.',
+    formula: 'count(pacientes com avaliacao no periodo e >= 2 avaliacoes ate o fim do periodo)'
+  },
+  atletasAvaliados: {
+    label: 'Atletas avaliados',
+    group: 'no_periodo',
+    description: 'Atletas distintos com ao menos uma avaliação registrada no período.',
+    formula: 'count(distinct avaliacoes.pacienteId com dia(createdAt) no periodo)'
   },
   retencao: {
-    label: 'Retencao',
-    description: 'Percentual de pacientes com pelo menos duas avaliacoes registradas.',
-    formula: '(pacientes com >=2 avaliacoes / totalPacientes) * 100'
+    label: 'Taxa de retorno',
+    group: 'no_periodo',
+    description: 'Parte dos atletas avaliados no período que eram retorno. Sem atleta avaliado no período, fica sem valor.',
+    formula: 'retornos / atletasAvaliados * 100'
+  },
+  integridade: {
+    label: 'Avaliações completas',
+    group: 'no_periodo',
+    description: 'Parte das avaliações do período com completude de 80% ou mais. Sem avaliação no período, fica sem valor.',
+    formula: 'avaliacoes do periodo com meta.completude >= 80 / avaliacoes do periodo * 100'
+  },
+  completionRate: {
+    label: 'Consultas realizadas',
+    group: 'no_periodo',
+    description: 'Parte das consultas marcadas para o período que foi registrada como realizada; as demais estão agendadas, remarcadas ou com falta. Sem consulta no período, fica sem valor.',
+    formula: 'agendamentos do periodo com status=realizada / agendamentos do periodo * 100'
+  },
+  satisfacao: {
+    label: 'Índice de conclusão (0 a 5)',
+    group: 'no_periodo',
+    description: 'A taxa de consultas realizadas convertida para a escala de 0 a 5. Não é pesquisa de satisfação.',
+    formula: '(completionRate / 100) * 5'
   }
 } as const;
+
+export const REPORT_TIME_ZONE = 'America/Sao_Paulo';
+
+// Grupo mínimo para um driver ou correlação entrar nos destaques e nos
+// alertas. Abaixo disso a linha fica só no detalhe, marcada como amostra
+// pequena (WI-016, decisão 3).
+export const MIN_HIGHLIGHT_SAMPLE = 5;
+
+const QUARTER_LABELS = ['Jan-Mar', 'Abr-Jun', 'Jul-Set', 'Out-Dez'] as const;
+
+const reportDayFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: REPORT_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+});
+
+// Dia (AAAA-MM-DD) no horário de Brasília. Colunas `date` já chegam como
+// AAAA-MM-DD e são o dia do calendário: ficam como estão.
+export const reportDayKey = (value: unknown): string | null => {
+  if (value === null || value === undefined || value === '') return null;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = reportDayFormatter.formatToParts(date);
+  const part = (type: string) => parts.find((item) => item.type === type)?.value || '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+
+const shiftReportDay = (day: string, offset: number) => {
+  const [year, month, date] = day.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, date + offset)).toISOString().slice(0, 10);
+};
+
+const utcDay = (year: number, monthIndex: number, date: number) => (
+  new Date(Date.UTC(year, monthIndex, date)).toISOString().slice(0, 10)
+);
+
+// Períodos do calendário de São Paulo, como o relatório de tarefas e o
+// perfil dos atletas da mesma tela: "week" são os últimos 7 dias; "month",
+// "quarter" e "year" começam no primeiro dia do mês, do trimestre e do ano.
+// Todos terminam hoje (inclusive): consulta marcada para depois de hoje não
+// entra na taxa de realizadas. O período anterior tem o mesmo número de
+// dias e termina na véspera do início.
+export const resolveReportPeriods = (range: RangeFilter, now: Date) => {
+  const endDate = reportDayKey(now) as string;
+  const [year, month, date] = endDate.split('-').map(Number);
+  let startDate = utcDay(year, 0, 1);
+  if (range === 'week') startDate = utcDay(year, month - 1, date - 6);
+  else if (range === 'month') startDate = utcDay(year, month - 1, 1);
+  else if (range === 'quarter') startDate = utcDay(year, Math.floor((month - 1) / 3) * 3, 1);
+  const days = Math.round((Date.parse(`${endDate}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86_400_000) + 1;
+  const current: ReportPeriod = { range, startDate, endDate, days, timeZone: REPORT_TIME_ZONE };
+  const previous: ReportPeriod = {
+    range,
+    startDate: shiftReportDay(startDate, -days),
+    endDate: shiftReportDay(startDate, -1),
+    days,
+    timeZone: REPORT_TIME_ZONE
+  };
+  return { current, previous };
+};
+
+export const isDayInRange = (day: string | null, range: DayRange) => (
+  !!day && day >= range.startDate && day <= range.endDate
+);
+
+// Sem base de comparação (anterior ausente ou zero), não há direção: a tela
+// não desenha seta.
+export const buildMetricTrend = (current: number, previous: number | null): MetricTrend => {
+  if (previous === null || !Number.isFinite(previous) || previous <= 0) {
+    return { current, previous, deltaPercent: null, direction: null };
+  }
+  const deltaPercent = Math.round(((current - previous) / previous) * 100);
+  const direction = current > previous ? 'up' : current < previous ? 'down' : 'flat';
+  return { current, previous, deltaPercent, direction };
+};
+
+const percentOrNull = (part: number, total: number) => (
+  total > 0 ? Math.round((part / total) * 100) : null
+);
+
+// Datas que cada indicador usa (as mesmas na tela, nas correlações e na
+// exportação).
+const avaliacaoDay = (item: { createdAt?: Date | string | null; data?: string | null }) => (
+  reportDayKey(item.createdAt) ?? reportDayKey(item.data)
+);
+
+const pacienteDay = (item: { dataCadastro?: Date | string | null; createdAt?: Date | string | null }) => (
+  reportDayKey(item.dataCadastro) ?? reportDayKey(item.createdAt)
+);
+
+const agendamentoDay = (item: {
+  date?: string | null;
+  scheduledAt?: Date | string | null;
+  createdAt?: Date | string | null;
+}) => reportDayKey(item.date) ?? reportDayKey(item.scheduledAt) ?? reportDayKey(item.createdAt);
 
 @Injectable()
 export class AnalyticsService {
@@ -237,17 +396,9 @@ export class AnalyticsService {
     return normalized === '1' || normalized === 'true' || normalized === 'yes';
   }
 
-  private getRangeStart(range: RangeFilter, now = new Date()) {
-    if (range === 'year') {
-      return new Date(now.getFullYear(), 0, 1);
-    }
-    if (range === 'quarter') {
-      return new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    }
-    if (range === 'week') {
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-    }
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+  // Relógio único dos relatórios; o spec o substitui para fixar "hoje".
+  private clock() {
+    return new Date();
   }
 
   private toDate(value?: string | Date | null) {
@@ -257,12 +408,6 @@ export class AnalyticsService {
     }
     const parsed = new Date(String(value));
     return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  private inRange(value: string | Date | undefined | null, rangeStart: Date) {
-    const date = this.toDate(value);
-    if (!date) return false;
-    return date.getTime() >= rangeStart.getTime();
   }
 
   private getCompleteness(meta: Record<string, unknown> | undefined | null) {
@@ -298,13 +443,49 @@ export class AnalyticsService {
     return cached.payload;
   }
 
-  private createQuarterBuckets() {
-    return [
-      { period: 'Jan-Mar', alunos: 0, pacientes: 0, avaliacoes: 0, meta: 0 },
-      { period: 'Abr-Jun', alunos: 0, pacientes: 0, avaliacoes: 0, meta: 0 },
-      { period: 'Jul-Set', alunos: 0, pacientes: 0, avaliacoes: 0, meta: 0 },
-      { period: 'Out-Dez', alunos: 0, pacientes: 0, avaliacoes: 0, meta: 0 }
-    ] satisfies QuarterBucket[];
+  // Trimestres do calendário de São Paulo: os quatro últimos até o atual
+  // (a tela sempre teve quatro) e mais os anteriores que o período alcançar.
+  // Cada um conta só os dias dentro do período; o que fica fora vem null.
+  private buildQuarterBuckets(period: ReportPeriod): QuarterBucket[] {
+    const quarterIndex = (day: string) => {
+      const [year, month] = day.split('-').map(Number);
+      return year * 4 + Math.floor((month - 1) / 3);
+    };
+    const lastIndex = quarterIndex(period.endDate);
+    const firstIndex = Math.min(quarterIndex(period.startDate), lastIndex - 3);
+    const buckets: QuarterBucket[] = [];
+    for (let index = firstIndex; index <= lastIndex; index += 1) {
+      const ano = Math.floor(index / 4);
+      const quarter = index % 4;
+      const quarterStart = utcDay(ano, quarter * 3, 1);
+      const quarterEnd = utcDay(ano, quarter * 3 + 3, 0);
+      const inicio = quarterStart > period.startDate ? quarterStart : period.startDate;
+      const fim = quarterEnd < period.endDate ? quarterEnd : period.endDate;
+      const noPeriodo = inicio <= fim;
+      buckets.push({
+        period: QUARTER_LABELS[quarter],
+        ano,
+        trimestre: quarter + 1,
+        inicio: noPeriodo ? inicio : null,
+        fim: noPeriodo ? fim : null,
+        noPeriodo,
+        parcial: noPeriodo && (inicio !== quarterStart || fim !== quarterEnd),
+        alunos: noPeriodo ? 0 : null,
+        pacientes: noPeriodo ? 0 : null,
+        avaliacoes: noPeriodo ? 0 : null,
+        atendimentos: noPeriodo ? 0 : null,
+        meta: null
+      });
+    }
+    return buckets;
+  }
+
+  private findQuarterBucket(buckets: QuarterBucket[], day: string | null) {
+    if (!day) return null;
+    return buckets.find((bucket) => (
+      bucket.noPeriodo && bucket.inicio !== null && bucket.fim !== null
+      && day >= bucket.inicio && day <= bucket.fim
+    )) || null;
   }
 
   private mapUsageByType(avaliacoes: Array<Pick<Avaliacao, 'tipo'>>) {
@@ -321,13 +502,13 @@ export class AnalyticsService {
       }
     });
 
-    const total = Math.max(avaliacoes.length, 1);
+    // Sem avaliação no período, a parte de cada tipo fica sem valor (null).
     return registryKeys.map((key) => ({
       key,
       label: AVALIACAO_ANALYTICS_LABELS[key],
       color: AVALIACAO_ANALYTICS_COLORS[key] || 'progress-gradient-blue',
       count: byType[key] || 0,
-      percentage: Math.round(((byType[key] || 0) / total) * 100)
+      percentage: percentOrNull(byType[key] || 0, avaliacoes.length)
     }));
   }
 
@@ -510,6 +691,7 @@ export class AnalyticsService {
           label: this.formatCategoryLabel(category),
           key: category,
           sampleSize: bucket.total,
+          smallSample: bucket.total < MIN_HIGHLIGHT_SAMPLE,
           events: a,
           nonEvents: b,
           eventRate: Number(eventRate.toFixed(1)),
@@ -548,6 +730,7 @@ export class AnalyticsService {
         key: category,
         label: this.formatCategoryLabel(category),
         sampleSize: bucket.total,
+        smallSample: bucket.total < MIN_HIGHLIGHT_SAMPLE,
         averageCompleteness: Number((bucket.sum / Math.max(1, bucket.total)).toFixed(1))
       }))
       .filter((item) => item.sampleSize >= minSampleSize)
@@ -578,6 +761,7 @@ export class AnalyticsService {
       return {
         coefficient: null,
         sampleSize: pairs.length,
+        smallSample: true,
         interpretation: 'Amostra insuficiente para correlacao'
       };
     }
@@ -611,6 +795,7 @@ export class AnalyticsService {
     return {
       coefficient: Number(coefficient.toFixed(3)),
       sampleSize: pairs.length,
+      smallSample: pairs.length < MIN_HIGHLIGHT_SAMPLE,
       interpretation
     };
   }
@@ -621,8 +806,13 @@ export class AnalyticsService {
     completenessByType: Array<Record<string, unknown>>,
     retentionByInterval: Array<Record<string, unknown>>
   ) {
+    // Só grupos com n >= MIN_HIGHLIGHT_SAMPLE viram destaque; os menores
+    // continuam nas listas de detalhe, marcados com smallSample.
+    const eligible = (rows: Array<Record<string, unknown>>) => (
+      rows.filter((row) => Number(row.sampleSize || 0) >= MIN_HIGHLIGHT_SAMPLE)
+    );
     const drivers: Array<Record<string, unknown>> = [];
-    const topTurn = absenteeismByTurn[0];
+    const topTurn = eligible(absenteeismByTurn)[0];
     if (topTurn) {
       const eventRate = Number(topTurn.eventRate || 0);
       drivers.push({
@@ -634,11 +824,13 @@ export class AnalyticsService {
         insight: `Este turno concentra ${eventRate.toFixed(1)}% de faltas no recorte atual.`,
         metricLabel: 'Taxa de falta',
         metricValue: `${eventRate.toFixed(1)}%`,
+        sampleSize: Number(topTurn.sampleSize || 0),
+        sampleUnit: 'consultas',
         recommendation: 'Revisar distribuicao de horarios e reforcar confirmacao no dia anterior.'
       });
     }
 
-    const topLead = absenteeismByLeadTime[0];
+    const topLead = eligible(absenteeismByLeadTime)[0];
     if (topLead) {
       const eventRate = Number(topLead.eventRate || 0);
       drivers.push({
@@ -650,11 +842,14 @@ export class AnalyticsService {
         insight: `Agendamentos nesse intervalo apresentam maior risco de falta.`,
         metricLabel: 'Taxa de falta',
         metricValue: `${eventRate.toFixed(1)}%`,
+        sampleSize: Number(topLead.sampleSize || 0),
+        sampleUnit: 'consultas',
         recommendation: 'Criar protocolo de confirmacao automatica para essa janela de antecedencia.'
       });
     }
 
-    const lowestCompleteness = completenessByType[completenessByType.length - 1];
+    const completenessEligible = eligible(completenessByType);
+    const lowestCompleteness = completenessEligible[completenessEligible.length - 1];
     if (lowestCompleteness) {
       const avg = Number(lowestCompleteness.averageCompleteness || 0);
       drivers.push({
@@ -666,11 +861,14 @@ export class AnalyticsService {
         insight: `A media de completude desse tipo esta em ${avg.toFixed(1)}%.`,
         metricLabel: 'Completude media',
         metricValue: `${avg.toFixed(1)}%`,
+        sampleSize: Number(lowestCompleteness.sampleSize || 0),
+        sampleUnit: 'avaliações',
         recommendation: 'Padronizar checklist minimo e revisar orientacao do responsavel.'
       });
     }
 
-    const lowestRetention = retentionByInterval[retentionByInterval.length - 1];
+    const retentionEligible = eligible(retentionByInterval);
+    const lowestRetention = retentionEligible[retentionEligible.length - 1];
     if (lowestRetention) {
       const rate = Number(lowestRetention.retentionRate || 0);
       drivers.push({
@@ -682,6 +880,8 @@ export class AnalyticsService {
         insight: `Pacientes nessa faixa mantem ${rate.toFixed(1)}% de retencao.`,
         metricLabel: 'Retencao',
         metricValue: `${rate.toFixed(1)}%`,
+        sampleSize: Number(lowestRetention.sampleSize || 0),
+        sampleUnit: 'atletas',
         recommendation: 'Revisar frequencia de retorno e plano de acompanhamento continuo.'
       });
     }
@@ -698,7 +898,9 @@ export class AnalyticsService {
         target: driver.target,
         severity: driver.severity,
         title: driver.title,
-        recommendation: driver.recommendation
+        recommendation: driver.recommendation,
+        sampleSize: driver.sampleSize,
+        sampleUnit: driver.sampleUnit
       }));
   }
 
@@ -883,7 +1085,7 @@ export class AnalyticsService {
         : { projetoId: projectFilter };
 
     let offset = 0;
-    const collection: Array<Pick<Paciente, 'id' | 'nome' | 'status' | 'projetoId' | 'projetoNome' | 'consentimentoPesquisa'>> = [];
+    const collection: Array<Pick<Paciente, 'id' | 'nome' | 'status' | 'projetoId' | 'projetoNome' | 'consentimentoPesquisa' | 'dataCadastro' | 'createdAt'>> = [];
     while (true) {
       const page = await this.pacientesRepo.find({
         where,
@@ -896,6 +1098,7 @@ export class AnalyticsService {
           consentimentoPesquisa: true,
           alunoResponsavelId: true,
           alunoResponsavelNome: true,
+          dataCadastro: true,
           createdAt: true,
           updatedAt: true
         },
@@ -920,7 +1123,7 @@ export class AnalyticsService {
         : { projetoId: projectFilter };
 
     let offset = 0;
-    const collection: Array<Pick<Avaliacao, 'id' | 'pacienteId' | 'projetoId' | 'projetoNome' | 'tipo' | 'status' | 'meta' | 'createdAt' | 'updatedAt'>> = [];
+    const collection: Array<Pick<Avaliacao, 'id' | 'pacienteId' | 'projetoId' | 'projetoNome' | 'tipo' | 'status' | 'meta' | 'data' | 'createdAt' | 'updatedAt'>> = [];
     while (true) {
       const page = await this.avaliacoesRepo.find({
         where,
@@ -932,6 +1135,7 @@ export class AnalyticsService {
           tipo: true,
           status: true,
           meta: true,
+          data: true,
           createdAt: true,
           updatedAt: true
         },
@@ -1044,6 +1248,7 @@ export class AnalyticsService {
           consentimentoPesquisa: true,
           alunoResponsavelId: true,
           alunoResponsavelNome: true,
+          dataCadastro: true,
           createdAt: true,
           updatedAt: true
         },
@@ -1076,6 +1281,7 @@ export class AnalyticsService {
           tipo: true,
           status: true,
           meta: true,
+          data: true,
           createdAt: true,
           updatedAt: true
         },
@@ -1163,7 +1369,10 @@ export class AnalyticsService {
   async getReportsOverview(query: ReportsQuery) {
     const range = this.normalizeRange(query.range);
     const projectFilter = this.normalizeProjectFilter(query.projectId);
-    const cacheKey = this.getCacheKey('reports', range, projectFilter);
+    const now = this.clock();
+    const { current: period, previous: previousPeriod } = resolveReportPeriods(range, now);
+    // O dia final entra na chave: o cache não atravessa a meia-noite.
+    const cacheKey = this.getCacheKey('reports', range, projectFilter, period.endDate);
 
     if (!query.forceRefresh) {
       const cached = this.getCache(cacheKey);
@@ -1178,13 +1387,12 @@ export class AnalyticsService {
       }
     }
 
-    const rangeStart = this.getRangeStart(range);
-
     const [users, scopedPacientes, scopedAvaliacoes, projects] = await Promise.all([
       this.usersRepo.find({
         select: {
           id: true,
           role: true,
+          projetoId: true,
           createdAt: true
         }
       }),
@@ -1204,108 +1412,116 @@ export class AnalyticsService {
     const pacienteIds = scopedPacientes.map((item) => item.id);
     const scopedAgendamentos = await this.getScopedAgendamentos(projectFilter, pacienteIds);
 
-    const alunos = projectFilter === 'all'
-      ? users.filter((item) => isStudentMemberRole(item.role)).length
-      : new Set(
-        scopedPacientes
-          .map((item) => item.alunoResponsavelId)
-          .filter((id): id is string => !!id)
-      ).size;
+    // ── Situação atual: o cadastro agora, sem período ──────────────────
+    const alunos = new Set(
+      scopedPacientes
+        .map((item) => item.alunoResponsavelId)
+        .filter((id): id is string => !!id)
+    ).size;
 
-    const professores = projectFilter === 'all'
-      ? users.filter((item) => {
-        const role = this.normalizeStatus(item.role);
-        return role === 'professor' || role === 'profissional';
-      }).length
-      : new Set(
-        scopedPacientes
-          .map((item) => item.professorSupervisorId)
-          .filter((id): id is string => !!id)
-      ).size;
+    const professores = new Set(
+      scopedPacientes
+        .map((item) => item.professorSupervisorId)
+        .filter((id): id is string => !!id)
+    ).size;
 
     const pacientesVinculados = scopedPacientes.filter((item) => !!item.alunoResponsavelId);
-    const taxaVinculacao = scopedPacientes.length > 0
-      ? Math.round((pacientesVinculados.length / scopedPacientes.length) * 100)
-      : 0;
+    const taxaVinculacao = percentOrNull(pacientesVinculados.length, scopedPacientes.length);
 
-    const avaliacoesPeriodo = scopedAvaliacoes.filter((item) => (
-      this.inRange(item.createdAt || item.data, rangeStart)
-    ));
+    // ── No período: dias do calendário de São Paulo ─────────────────────
+    const avaliacoesComDia = scopedAvaliacoes.map((item) => ({ item, day: avaliacaoDay(item) }));
+    const agendamentosComDia = scopedAgendamentos.map((item) => ({ item, day: agendamentoDay(item) }));
+    const pacientesComDia = scopedPacientes.map((item) => ({ item, day: pacienteDay(item) }));
 
-    const integridade = scopedAvaliacoes.length > 0
-      ? Math.round((
-        scopedAvaliacoes.filter((item) => this.getCompleteness(item.meta) >= 80).length
-        / scopedAvaliacoes.length
-      ) * 100)
-      : 0;
-
-    const completionRate = scopedAgendamentos.length > 0
-      ? Math.round((
-        scopedAgendamentos.filter((item) => this.normalizeStatus(item.status) === 'realizada').length
-        / scopedAgendamentos.length
-      ) * 100)
-      : 0;
-
-    const satisfacao = Number(((completionRate / 100) * 5).toFixed(1));
-
-    const byPaciente = new Map<string, number>();
-    scopedAvaliacoes.forEach((item) => {
-      if (!item.pacienteId) return;
-      byPaciente.set(item.pacienteId, (byPaciente.get(item.pacienteId) || 0) + 1);
+    const evaluationDaysByPatient = new Map<string, string[]>();
+    avaliacoesComDia.forEach(({ item, day }) => {
+      if (!item.pacienteId || !day) return;
+      const days = evaluationDaysByPatient.get(item.pacienteId) || [];
+      days.push(day);
+      evaluationDaysByPatient.set(item.pacienteId, days);
     });
-    const retidos = scopedPacientes.filter((item) => (byPaciente.get(item.id) || 0) >= 2).length;
-    const retencao = scopedPacientes.length > 0
-      ? Math.round((retidos / scopedPacientes.length) * 100)
-      : 0;
 
-    const usageByType = this.mapUsageByType(scopedAvaliacoes);
+    const flowFor = (window: DayRange) => {
+      const avaliacoes = avaliacoesComDia.filter(({ day }) => isDayInRange(day, window)).map(({ item }) => item);
+      const agendamentos = agendamentosComDia.filter(({ day }) => isDayInRange(day, window)).map(({ item }) => item);
+      const realizados = agendamentos.filter((item) => this.normalizeStatus(item.status) === 'realizada');
+      const novosAtletas = pacientesComDia.filter(({ day }) => isDayInRange(day, window)).length;
+      let atletasAvaliados = 0;
+      let retornos = 0;
+      evaluationDaysByPatient.forEach((days) => {
+        if (!days.some((day) => isDayInRange(day, window))) return;
+        atletasAvaliados += 1;
+        if (days.filter((day) => day <= window.endDate).length >= 2) retornos += 1;
+      });
+      return { avaliacoes, agendamentos, realizados, novosAtletas, atletasAvaliados, retornos };
+    };
 
-    const quarters = this.createQuarterBuckets();
-    const currentYear = new Date().getFullYear();
+    const atual = flowFor(period);
+    const anterior = flowFor(previousPeriod);
 
+    const integridade = percentOrNull(
+      atual.avaliacoes.filter((item) => this.getCompleteness(item.meta) >= 80).length,
+      atual.avaliacoes.length
+    );
+    const completionRate = percentOrNull(atual.realizados.length, atual.agendamentos.length);
+    const satisfacao = completionRate === null ? null : Number(((completionRate / 100) * 5).toFixed(1));
+    const retencao = percentOrNull(atual.retornos, atual.atletasAvaliados);
+
+    const usageByType = this.mapUsageByType(atual.avaliacoes);
+
+    // ── Trimestres do período ───────────────────────────────────────────
+    const quarters = this.buildQuarterBuckets(period);
+    const countInQuarter = (day: string | null, field: 'alunos' | 'pacientes' | 'avaliacoes' | 'atendimentos') => {
+      const bucket = this.findQuarterBucket(quarters, day);
+      if (bucket && bucket[field] !== null) bucket[field] = (bucket[field] as number) + 1;
+    };
+
+    // Novos membros estudantis, pelo projeto do próprio cadastro do membro.
+    const inUserScope = (projetoId?: string | null) => {
+      if (projectFilter === 'all') return true;
+      if (projectFilter === 'sem') return !projetoId;
+      return projetoId === projectFilter;
+    };
     users.forEach((item) => {
-      if (!isStudentMemberRole(item.role)) return;
-      const createdAt = this.toDate(item.createdAt);
-      if (!createdAt || createdAt.getFullYear() !== currentYear) return;
-      const quarterIndex = Math.floor(createdAt.getMonth() / 3);
-      quarters[quarterIndex].alunos += 1;
+      if (!isStudentMemberRole(item.role) || !inUserScope(item.projetoId)) return;
+      countInQuarter(reportDayKey(item.createdAt), 'alunos');
     });
-
-    scopedPacientes.forEach((item) => {
-      const dateRef = this.toDate(item.dataCadastro || item.createdAt);
-      if (!dateRef || dateRef.getFullYear() !== currentYear) return;
-      const quarterIndex = Math.floor(dateRef.getMonth() / 3);
-      quarters[quarterIndex].pacientes += 1;
-    });
-
-    scopedAvaliacoes.forEach((item) => {
-      const dateRef = this.toDate(item.createdAt || item.data);
-      if (!dateRef || dateRef.getFullYear() !== currentYear) return;
-      const quarterIndex = Math.floor(dateRef.getMonth() / 3);
-      quarters[quarterIndex].avaliacoes += 1;
-    });
-
-    quarters.forEach((quarter) => {
-      quarter.meta = Math.max(quarter.avaliacoes, 10);
+    pacientesComDia.forEach(({ day }) => countInQuarter(day, 'pacientes'));
+    avaliacoesComDia.forEach(({ day }) => countInQuarter(day, 'avaliacoes'));
+    agendamentosComDia.forEach(({ item, day }) => {
+      if (this.normalizeStatus(item.status) === 'realizada') countInQuarter(day, 'atendimentos');
     });
 
     const response = {
-      generatedAt: new Date().toISOString(),
+      generatedAt: now.toISOString(),
       filters: {
         range,
         projectId: projectFilter
       },
+      period,
+      previousPeriod,
       projects,
       metrics: {
         totalAlunos: alunos,
         professores,
         totalPacientes: scopedPacientes.length,
-        avaliacoesPeriodo: avaliacoesPeriodo.length,
+        avaliacoesPeriodo: atual.avaliacoes.length,
         taxaVinculacao,
         integridade,
         completionRate,
         satisfacao,
-        retencao
+        retencao,
+        atendimentosRealizados: atual.realizados.length,
+        novosAtletas: atual.novosAtletas,
+        retornos: atual.retornos,
+        atletasAvaliados: atual.atletasAvaliados
+      },
+      // Só os indicadores de fluxo comparam com o período anterior.
+      trends: {
+        avaliacoesPeriodo: buildMetricTrend(atual.avaliacoes.length, anterior.avaliacoes.length),
+        atendimentosRealizados: buildMetricTrend(atual.realizados.length, anterior.realizados.length),
+        novosAtletas: buildMetricTrend(atual.novosAtletas, anterior.novosAtletas),
+        retornos: buildMetricTrend(atual.retornos, anterior.retornos)
       },
       metricDefinitions: METRIC_DEFINITIONS,
       usageByType,
@@ -1358,6 +1574,7 @@ export class AnalyticsService {
       'analytics.dashboard.operational_board.find',
       () => Promise.all([
         this.tarefasRepo.find({
+          where: { archivedAt: IsNull() },
           select: {
             id: true,
             title: true,
@@ -1883,9 +2100,10 @@ export class AnalyticsService {
 
   async getCorrelations(query: DashboardQuery) {
     const range = this.normalizeRange(query.range);
-    const rangeStart = this.getRangeStart(range);
+    const now = this.clock();
+    const { current: period } = resolveReportPeriods(range, now);
     const projectFilter = this.normalizeProjectFilter(query.projectId);
-    const cacheKey = this.getCacheKey('analytics', 'correlations', range, projectFilter);
+    const cacheKey = this.getCacheKey('analytics', 'correlations', range, projectFilter, period.endDate);
     if (!query.forceRefresh) {
       const cached = this.getCache(cacheKey);
       if (cached) {
@@ -1899,16 +2117,22 @@ export class AnalyticsService {
       }
     }
 
-    const [pacientes, avaliacoesBase] = await Promise.all([
+    const [pacientesEscopo, avaliacoesBase] = await Promise.all([
       this.getScopedPacientes(projectFilter),
       this.getScopedAvaliacoes(projectFilter)
     ]);
     const agendamentosBase = await this.getScopedAgendamentos(
       projectFilter,
-      pacientes.map((item) => item.id)
+      pacientesEscopo.map((item) => item.id)
     );
-    const avaliacoes = avaliacoesBase.filter((item) => this.inRange(item.createdAt || item.data, rangeStart));
-    const agendamentos = agendamentosBase.filter((item) => this.inRange(item.scheduledAt || item.date || item.createdAt, rangeStart));
+    const avaliacoes = avaliacoesBase.filter((item) => isDayInRange(avaliacaoDay(item), period));
+    const agendamentos = agendamentosBase.filter((item) => isDayInRange(agendamentoDay(item), period));
+    // Base analisada: só atletas com avaliação ou consulta no período, para
+    // os três números da base descreverem o mesmo recorte.
+    const pacientesAtivos = new Set<string>();
+    avaliacoes.forEach((item) => { if (item.pacienteId) pacientesAtivos.add(item.pacienteId); });
+    agendamentos.forEach((item) => { if (item.pacienteId) pacientesAtivos.add(item.pacienteId); });
+    const pacientes = pacientesEscopo.filter((item) => pacientesAtivos.has(item.id));
 
     const patientById = new Map(
       pacientes.map((patient) => [patient.id, patient] as const)
@@ -2073,11 +2297,12 @@ export class AnalyticsService {
     const alerts = this.mapCorrelationAlerts(drivers);
 
     const response = {
-      generatedAt: new Date().toISOString(),
+      generatedAt: now.toISOString(),
       filters: {
         range,
         projectId: projectFilter
       },
+      period,
       dataset: {
         patients: pacientes.length,
         evaluations: avaliacoes.length,
@@ -2125,10 +2350,12 @@ export class AnalyticsService {
       range,
       projectId: projectFilter,
       forceRefresh: false
-    });
+    }) as Extract<Awaited<ReturnType<AnalyticsService['getReportsOverview']>>, { metrics: unknown }>;
+    // O mesmo período da tela (o do resumo, mesmo vindo do cache).
+    const period = overview.period;
 
-    const projects = Array.isArray((overview as Record<string, unknown>).projects)
-      ? ((overview as Record<string, unknown>).projects as Array<{ id: string; nome: string }>)
+    const projects = Array.isArray(overview.projects)
+      ? (overview.projects as Array<{ id: string; nome: string }>)
       : [];
 
     const projectLabel = projectFilter === 'all'
@@ -2140,23 +2367,33 @@ export class AnalyticsService {
     if (!detailed) {
       // Pseudonymous rows are still individual health data. Communication and
       // delegated research access receive an explicitly aggregate projection.
-      const summary = overview as Extract<Awaited<ReturnType<AnalyticsService['getReportsOverview']>>, { metrics: unknown }>;
       const aggregate = {
-        generatedAt: summary.generatedAt,
+        generatedAt: overview.generatedAt,
         filters: { range, projectId: projectFilter, anonymize: true, projection: 'aggregate' },
-        metrics: summary.metrics,
-        usageByType: summary.usageByType,
-        quarterly: summary.quarterly
+        period,
+        metrics: overview.metrics,
+        trends: overview.trends,
+        usageByType: overview.usageByType,
+        quarterly: overview.quarterly
       };
       if (format === 'json') {
         return { filename: `relatorio_${projectLabel}.json`, mimeType: 'application/json', stream: Readable.from([JSON.stringify(aggregate, null, 2)]) };
       }
+      const periodRows = [
+        ['periodo_inicio', period.startDate],
+        ['periodo_fim', period.endDate],
+        ['fuso_horario', period.timeZone]
+      ].map(([indicador, valor]) => this.toCsvLine(['indicador', 'valor'], { indicador, valor }));
       const rows = Object.entries(aggregate.metrics || {}).map(([metric, value]) => this.toCsvLine(['indicador', 'valor'], { indicador: metric, valor: value }));
       return {
         filename: `relatorio_${projectLabel}.csv`, mimeType: 'text/csv; charset=utf-8',
-        stream: Readable.from(['\uFEFFindicador,valor\r\n', rows.join('\r\n'), '\r\n'])
+        stream: Readable.from(['﻿indicador,valor\r\n', [...periodRows, ...rows].join('\r\n'), '\r\n'])
       };
     }
+
+    // Detalhado: avaliações e consultas dos dias do período; atletas
+    // cadastrados no período ou com avaliação/consulta nele.
+    const inPeriod = (day: string | null) => isDayInRange(day, period);
 
     if (format === 'json') {
       const [scopedPacientes, scopedAvaliacoes] = await Promise.all([
@@ -2167,38 +2404,48 @@ export class AnalyticsService {
         projectFilter,
         scopedPacientes.map((item) => item.id)
       );
+      const periodAvaliacoes = scopedAvaliacoes.filter((item) => inPeriod(avaliacaoDay(item)));
+      const periodAgendamentos = scopedAgendamentos.filter((item) => inPeriod(agendamentoDay(item)));
+      const activePatientIds = new Set<string>();
+      periodAvaliacoes.forEach((item) => { if (item.pacienteId) activePatientIds.add(item.pacienteId); });
+      periodAgendamentos.forEach((item) => { if (item.pacienteId) activePatientIds.add(item.pacienteId); });
+      const periodPacientes = scopedPacientes.filter((item) => (
+        inPeriod(pacienteDay(item)) || activePatientIds.has(item.id)
+      ));
 
       const dataset = {
-        generatedAt: (overview as Record<string, unknown>).generatedAt || new Date().toISOString(),
+        generatedAt: overview.generatedAt || new Date().toISOString(),
         projeto: projectLabel,
         filters: {
           range,
           projectId: projectFilter,
           anonymize
         },
-        metrics: (overview as Record<string, unknown>).metrics || {},
-        usageByType: (overview as Record<string, unknown>).usageByType || [],
-        quarterly: (overview as Record<string, unknown>).quarterly || [],
+        period,
+        metrics: overview.metrics || {},
+        trends: overview.trends,
+        usageByType: overview.usageByType || [],
+        quarterly: overview.quarterly || [],
         pacientes: anonymize
-          ? scopedPacientes.map((patient) => ({
+          ? periodPacientes.map((patient) => ({
               id: this.anonymizeString(patient.id),
               anonId: this.anonymizeString(patient.id),
               status: patient.status || '',
               projeto: patient.projetoNome || '',
               consentimentoPesquisa: patient.consentimentoPesquisa || 'pendente'
             }))
-          : scopedPacientes,
+          : periodPacientes,
         avaliacoes: anonymize
-          ? scopedAvaliacoes.map((evaluation) => ({
+          ? periodAvaliacoes.map((evaluation) => ({
               id: this.anonymizeString(evaluation.id),
               pacienteId: this.anonymizeString(evaluation.pacienteId || ''),
               projeto: evaluation.projetoNome || '',
               tipo: evaluation.tipo || '',
               status: evaluation.status || ''
             }))
-          : scopedAvaliacoes,
+          : periodAvaliacoes,
         agendamentos: anonymize
-          ? scopedAgendamentos.map((appointment) => ({
+          ? periodAgendamentos.map((appointment) => ({
               ...appointment,
               id: this.anonymizeString(appointment.id || ''),
               pacienteId: this.anonymizeString(appointment.pacienteId || ''),
@@ -2206,7 +2453,7 @@ export class AnalyticsService {
               alunoId: this.anonymizeString(appointment.alunoId || ''),
               alunoNome: ''
             }))
-          : scopedAgendamentos
+          : periodAgendamentos
       };
 
       return {
@@ -2238,10 +2485,14 @@ export class AnalyticsService {
     ];
     const csvGenerator = async function* generateCsv(service: AnalyticsService) {
       // UTF-8 BOM keeps accented text readable in spreadsheet tools (Excel/LibreOffice).
-      yield '\uFEFF';
+      yield '﻿';
       yield `${headers.join(',')}\n`;
 
+      // Todos os atletas do escopo entram na consulta (nome, projeto e o
+      // recorte das consultas por atleta); as linhas saem só para os do
+      // período, depois de saber quem teve avaliação ou consulta nele.
       const scopedPacienteIds: string[] = [];
+      const scopedPatients: Array<Pick<Paciente, 'id' | 'nome' | 'status' | 'projetoId' | 'projetoNome' | 'consentimentoPesquisa' | 'alunoResponsavelId' | 'alunoResponsavelNome' | 'dataCadastro' | 'createdAt' | 'updatedAt'>> = [];
       const patientLookup = new Map<string, {
         nome: string;
         projetoId: string;
@@ -2252,6 +2503,7 @@ export class AnalyticsService {
       for await (const patientsPage of service.iteratePacientesForExport(projectFilter)) {
         for (const patient of patientsPage) {
           scopedPacienteIds.push(patient.id);
+          scopedPatients.push(patient);
           patientLookup.set(patient.id, {
             nome: patient.nome || '',
             projetoId: patient.projetoId || '',
@@ -2259,126 +2511,111 @@ export class AnalyticsService {
             responsavelId: patient.alunoResponsavelId || '',
             responsavelNome: patient.alunoResponsavelNome || ''
           });
-          const row = {
-            tipo_registro: 'paciente',
-            id: anonymize ? service.anonymizeString(patient.id) : patient.id,
-            paciente_id: anonymize ? service.anonymizeString(patient.id) : patient.id,
-            paciente_nome: anonymize ? '' : (patient.nome || ''),
-            paciente_anon_id: anonymize ? service.anonymizeString(patient.id) : '',
-            projeto_id: patient.projetoId || '',
-            projeto_nome: patient.projetoNome || '',
-            status: patient.status || '',
-            responsavel_id: anonymize ? service.anonymizeString(patient.alunoResponsavelId || '') : (patient.alunoResponsavelId || ''),
-            responsavel_nome: anonymize ? '' : (patient.alunoResponsavelNome || ''),
-            consulta_data: '',
-            consulta_hora: '',
-            consulta_tipo: '',
-            avaliacao_tipo: '',
-            avaliacao_completude: '',
-            consentimento_pesquisa: patient.consentimentoPesquisa || '',
-            criado_em: patient.createdAt ? new Date(patient.createdAt).toISOString() : '',
-            atualizado_em: patient.updatedAt ? new Date(patient.updatedAt).toISOString() : ''
-          };
-          yield `${service.toCsvLine(headers, row)}\n`;
         }
       }
 
+      const periodEvaluations: Array<Pick<Avaliacao, 'id' | 'pacienteId' | 'projetoId' | 'projetoNome' | 'tipo' | 'status' | 'meta' | 'data' | 'createdAt' | 'updatedAt'>> = [];
       for await (const evaluationsPage of service.iterateAvaliacoesForExport(projectFilter)) {
-        for (const evaluation of evaluationsPage) {
-          const patient = evaluation.pacienteId ? patientLookup.get(evaluation.pacienteId) : null;
-          const completeness = service.getNumericCompleteness(
-            (evaluation.meta as Record<string, unknown> | undefined)?.completude
-          );
-          const row = {
-            tipo_registro: 'avaliacao',
-            id: anonymize ? service.anonymizeString(evaluation.id) : evaluation.id,
-            paciente_id: anonymize ? service.anonymizeString(evaluation.pacienteId || '') : (evaluation.pacienteId || ''),
-            paciente_nome: anonymize ? '' : (patient?.nome || ''),
-            paciente_anon_id: anonymize ? service.anonymizeString(evaluation.pacienteId || '') : '',
-            projeto_id: evaluation.projetoId || patient?.projetoId || '',
-            projeto_nome: evaluation.projetoNome || patient?.projetoNome || '',
-            status: evaluation.status || '',
-            responsavel_id: anonymize
-              ? service.anonymizeString(patient?.responsavelId || '')
-              : (patient?.responsavelId || ''),
-            responsavel_nome: anonymize ? '' : (patient?.responsavelNome || ''),
-            consulta_data: '',
-            consulta_hora: '',
-            consulta_tipo: '',
-            avaliacao_tipo: evaluation.tipo || '',
-            avaliacao_completude: completeness === null ? '' : String(completeness),
-            consentimento_pesquisa: '',
-            criado_em: evaluation.createdAt ? new Date(evaluation.createdAt).toISOString() : '',
-            atualizado_em: evaluation.updatedAt ? new Date(evaluation.updatedAt).toISOString() : ''
-          };
-          yield `${service.toCsvLine(headers, row)}\n`;
+        periodEvaluations.push(...evaluationsPage.filter((item) => inPeriod(avaliacaoDay(item))));
+      }
+
+      const periodAppointments: Array<Pick<Agendamento, 'id' | 'pacienteId' | 'pacienteNome' | 'status' | 'date' | 'time' | 'appointmentType' | 'scheduledAt' | 'alunoId' | 'alunoNome' | 'createdAt' | 'updatedAt'>> = [];
+      const appointmentPages = projectFilter === 'all'
+        ? service.iterateAgendamentosForExportAll()
+        : (scopedPacienteIds.length > 0 ? service.iterateAgendamentosForExportByPacienteIds(scopedPacienteIds) : null);
+      if (appointmentPages) {
+        for await (const appointmentsPage of appointmentPages) {
+          periodAppointments.push(...appointmentsPage.filter((item) => inPeriod(agendamentoDay(item))));
         }
       }
 
-      if (projectFilter === 'all') {
-        for await (const appointmentsPage of service.iterateAgendamentosForExportAll()) {
-          for (const appointment of appointmentsPage) {
-            const patient = appointment.pacienteId ? patientLookup.get(appointment.pacienteId) : null;
-            const scheduledAt = service.toDate(appointment.scheduledAt || appointment.date);
-            const row = {
-              tipo_registro: 'consulta',
-              id: anonymize ? service.anonymizeString(appointment.id) : appointment.id,
-              paciente_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : (appointment.pacienteId || ''),
-              paciente_nome: anonymize ? '' : (appointment.pacienteNome || patient?.nome || ''),
-              paciente_anon_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : '',
-              projeto_id: patient?.projetoId || '',
-              projeto_nome: patient?.projetoNome || '',
-              status: appointment.status || '',
-              responsavel_id: anonymize
-                ? service.anonymizeString(appointment.alunoId || patient?.responsavelId || '')
-                : (appointment.alunoId || patient?.responsavelId || ''),
-              responsavel_nome: anonymize ? '' : (appointment.alunoNome || patient?.responsavelNome || ''),
-              consulta_data: appointment.date || (scheduledAt ? scheduledAt.toISOString().slice(0, 10) : ''),
-              consulta_hora: appointment.time || (scheduledAt
-                ? scheduledAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                : ''),
-              consulta_tipo: appointment.appointmentType || '',
-              avaliacao_tipo: '',
-              avaliacao_completude: '',
-              consentimento_pesquisa: '',
-              criado_em: appointment.createdAt ? new Date(appointment.createdAt).toISOString() : '',
-              atualizado_em: appointment.updatedAt ? new Date(appointment.updatedAt).toISOString() : ''
-            };
-            yield `${service.toCsvLine(headers, row)}\n`;
-          }
-        }
-      } else if (scopedPacienteIds.length > 0) {
-        for await (const appointmentsPage of service.iterateAgendamentosForExportByPacienteIds(scopedPacienteIds)) {
-          for (const appointment of appointmentsPage) {
-            const patient = appointment.pacienteId ? patientLookup.get(appointment.pacienteId) : null;
-            const scheduledAt = service.toDate(appointment.scheduledAt || appointment.date);
-            const row = {
-              tipo_registro: 'consulta',
-              id: anonymize ? service.anonymizeString(appointment.id) : appointment.id,
-              paciente_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : (appointment.pacienteId || ''),
-              paciente_nome: anonymize ? '' : (appointment.pacienteNome || patient?.nome || ''),
-              paciente_anon_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : '',
-              projeto_id: patient?.projetoId || '',
-              projeto_nome: patient?.projetoNome || '',
-              status: appointment.status || '',
-              responsavel_id: anonymize
-                ? service.anonymizeString(appointment.alunoId || patient?.responsavelId || '')
-                : (appointment.alunoId || patient?.responsavelId || ''),
-              responsavel_nome: anonymize ? '' : (appointment.alunoNome || patient?.responsavelNome || ''),
-              consulta_data: appointment.date || (scheduledAt ? scheduledAt.toISOString().slice(0, 10) : ''),
-              consulta_hora: appointment.time || (scheduledAt
-                ? scheduledAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-                : ''),
-              consulta_tipo: appointment.appointmentType || '',
-              avaliacao_tipo: '',
-              avaliacao_completude: '',
-              consentimento_pesquisa: '',
-              criado_em: appointment.createdAt ? new Date(appointment.createdAt).toISOString() : '',
-              atualizado_em: appointment.updatedAt ? new Date(appointment.updatedAt).toISOString() : ''
-            };
-            yield `${service.toCsvLine(headers, row)}\n`;
-          }
-        }
+      const activePatientIds = new Set<string>();
+      periodEvaluations.forEach((item) => { if (item.pacienteId) activePatientIds.add(item.pacienteId); });
+      periodAppointments.forEach((item) => { if (item.pacienteId) activePatientIds.add(item.pacienteId); });
+
+      for (const patient of scopedPatients) {
+        if (!inPeriod(pacienteDay(patient)) && !activePatientIds.has(patient.id)) continue;
+        const row = {
+          tipo_registro: 'paciente',
+          id: anonymize ? service.anonymizeString(patient.id) : patient.id,
+          paciente_id: anonymize ? service.anonymizeString(patient.id) : patient.id,
+          paciente_nome: anonymize ? '' : (patient.nome || ''),
+          paciente_anon_id: anonymize ? service.anonymizeString(patient.id) : '',
+          projeto_id: patient.projetoId || '',
+          projeto_nome: patient.projetoNome || '',
+          status: patient.status || '',
+          responsavel_id: anonymize ? service.anonymizeString(patient.alunoResponsavelId || '') : (patient.alunoResponsavelId || ''),
+          responsavel_nome: anonymize ? '' : (patient.alunoResponsavelNome || ''),
+          consulta_data: '',
+          consulta_hora: '',
+          consulta_tipo: '',
+          avaliacao_tipo: '',
+          avaliacao_completude: '',
+          consentimento_pesquisa: patient.consentimentoPesquisa || '',
+          criado_em: patient.createdAt ? new Date(patient.createdAt).toISOString() : '',
+          atualizado_em: patient.updatedAt ? new Date(patient.updatedAt).toISOString() : ''
+        };
+        yield `${service.toCsvLine(headers, row)}\n`;
+      }
+
+      for (const evaluation of periodEvaluations) {
+        const patient = evaluation.pacienteId ? patientLookup.get(evaluation.pacienteId) : null;
+        const completeness = service.getNumericCompleteness(
+          (evaluation.meta as Record<string, unknown> | undefined)?.completude
+        );
+        const row = {
+          tipo_registro: 'avaliacao',
+          id: anonymize ? service.anonymizeString(evaluation.id) : evaluation.id,
+          paciente_id: anonymize ? service.anonymizeString(evaluation.pacienteId || '') : (evaluation.pacienteId || ''),
+          paciente_nome: anonymize ? '' : (patient?.nome || ''),
+          paciente_anon_id: anonymize ? service.anonymizeString(evaluation.pacienteId || '') : '',
+          projeto_id: evaluation.projetoId || patient?.projetoId || '',
+          projeto_nome: evaluation.projetoNome || patient?.projetoNome || '',
+          status: evaluation.status || '',
+          responsavel_id: anonymize
+            ? service.anonymizeString(patient?.responsavelId || '')
+            : (patient?.responsavelId || ''),
+          responsavel_nome: anonymize ? '' : (patient?.responsavelNome || ''),
+          consulta_data: '',
+          consulta_hora: '',
+          consulta_tipo: '',
+          avaliacao_tipo: evaluation.tipo || '',
+          avaliacao_completude: completeness === null ? '' : String(completeness),
+          consentimento_pesquisa: '',
+          criado_em: evaluation.createdAt ? new Date(evaluation.createdAt).toISOString() : '',
+          atualizado_em: evaluation.updatedAt ? new Date(evaluation.updatedAt).toISOString() : ''
+        };
+        yield `${service.toCsvLine(headers, row)}\n`;
+      }
+
+      for (const appointment of periodAppointments) {
+        const patient = appointment.pacienteId ? patientLookup.get(appointment.pacienteId) : null;
+        const scheduledAt = service.toDate(appointment.scheduledAt || appointment.date);
+        const row = {
+          tipo_registro: 'consulta',
+          id: anonymize ? service.anonymizeString(appointment.id) : appointment.id,
+          paciente_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : (appointment.pacienteId || ''),
+          paciente_nome: anonymize ? '' : (appointment.pacienteNome || patient?.nome || ''),
+          paciente_anon_id: anonymize ? service.anonymizeString(appointment.pacienteId || '') : '',
+          projeto_id: patient?.projetoId || '',
+          projeto_nome: patient?.projetoNome || '',
+          status: appointment.status || '',
+          responsavel_id: anonymize
+            ? service.anonymizeString(appointment.alunoId || patient?.responsavelId || '')
+            : (appointment.alunoId || patient?.responsavelId || ''),
+          responsavel_nome: anonymize ? '' : (appointment.alunoNome || patient?.responsavelNome || ''),
+          consulta_data: appointment.date || (scheduledAt ? scheduledAt.toISOString().slice(0, 10) : ''),
+          consulta_hora: appointment.time || (scheduledAt
+            ? scheduledAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            : ''),
+          consulta_tipo: appointment.appointmentType || '',
+          avaliacao_tipo: '',
+          avaliacao_completude: '',
+          consentimento_pesquisa: '',
+          criado_em: appointment.createdAt ? new Date(appointment.createdAt).toISOString() : '',
+          atualizado_em: appointment.updatedAt ? new Date(appointment.updatedAt).toISOString() : ''
+        };
+        yield `${service.toCsvLine(headers, row)}\n`;
       }
     };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, User, Mail, Lock, Shield, GraduationCap,
-  Briefcase, AlertCircle, Save, Key
+  Briefcase, AlertCircle, Save, Copy, CheckCircle2
 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../../services/api';
 import { isValidCpf, isValidEmail, isPastDate, normalizeCpf } from '../../../utils/validation';
@@ -13,6 +13,7 @@ import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { useModalBodyLock } from '../../../hooks/useModalBodyLock';
 import { useModalFocusTrap } from '../../../hooks/useModalFocusTrap';
 import { normalizeUserList, normalizeUserRecord, getUserDisplayName } from '../../../utils/userAdapter';
+import { normalizeRole } from '../../../constants/roles';
 import './UserModal.css';
 
 const createEmptyFormData = () => ({
@@ -22,6 +23,7 @@ const createEmptyFormData = () => ({
   matricula: '',
   periodo: '',
   supervisorId: '',
+  profissionalId: '',
   diretoria: '',
   curso: '',
   projetoId: '',
@@ -29,9 +31,9 @@ const createEmptyFormData = () => ({
   crn: '',
   conselhoTipo: '',
   conselhoNumero: '',
-  coordAtendimento: false,
   lideranca: '',
-  email: ''
+  email: '',
+  recoveryEmail: ''
 });
 
 const USER_FIELD_IDS = Object.freeze({
@@ -41,10 +43,10 @@ const USER_FIELD_IDS = Object.freeze({
   matriculaAluno: 'user-matricula-aluno',
   periodo: 'user-periodo',
   supervisorId: 'user-supervisor-id',
+  profissionalId: 'user-profissional-id',
   curso: 'user-curso',
   diretoria: 'user-diretoria',
   lideranca: 'user-lideranca',
-  coordAtendimento: 'user-coord-atendimento',
   funcao: 'user-funcao',
   conselhoTipo: 'user-conselho-tipo',
   conselhoNumero: 'user-conselho-numero',
@@ -52,27 +54,71 @@ const USER_FIELD_IDS = Object.freeze({
   projetoId: 'user-projeto-id'
 });
 
+const SUPERVISOR_FETCH_PAGE_SIZE = 200;
+
+const isCredentialedSupervisor = (item) => {
+  const itemRole = String(item?.role || '').toLowerCase();
+  if (itemRole === 'professor') return true;
+  if (itemRole === 'profissional') {
+    return Boolean(String(item?.conselhoNumero || item?.crn || '').trim());
+  }
+  return false;
+};
+
+const normalizeSelectToken = (value) => String(value || '')
+  .toLowerCase()
+  .trim()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^\w\s-]/g, '')
+  .replace(/[\s-]+/g, '_')
+  .replace(/_+/g, '_')
+  .replace(/^_+|_+$/g, '');
+
+const normalizeCursoValue = (curso) => {
+  const normalized = normalizeSelectToken(curso);
+  if (!normalized) return '';
+  if (normalized.includes('fisioterap')) return 'fisioterapia';
+  if (normalized.includes('psicolog')) return 'psicologia';
+  if (normalized.includes('nutri')) return 'nutricao';
+  return normalized;
+};
+
+const normalizePeriodoValue = (periodo) => {
+  const raw = String(periodo || '').trim();
+  const match = raw.match(/\d+/);
+  return match ? `${Number(match[0])}º` : raw;
+};
+
 const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [role, setRole] = useState('aluno');
   const [formData, setFormData] = useState(createEmptyFormData);
 
   const [professores, setProfessores] = useState([]);
+  const [profissionais, setProfissionais] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingProfs, setLoadingProfs] = useState(false);
   const [error, setError] = useState('');
+  const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
   const modalRef = useRef(null);
   const { user } = useAuth();
   const { notify } = useUiFeedback();
   const isStaffRole = role === 'professor' || role === 'profissional';
-  const allowedStudentCreatorRoles = ['admin', 'coordenacao', 'presidente', 'vice'];
-  const canCreateAluno = allowedStudentCreatorRoles.includes(user?.role);
+  const isEditingStudent = Boolean(initialData) && role === 'aluno';
+  const allowedStudentCreatorRoles = ['admin', 'coordenacao'];
+  const canCreateAluno = allowedStudentCreatorRoles.includes(normalizeRole(user?.role));
 
   useModalBodyLock(isOpen);
   useModalFocusTrap(isOpen, modalRef);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setCreatedCredentials(null);
+      setCopiedField(null);
+      return;
+    }
     if (initialData) {
       const userRecord = normalizeUserRecord(initialData);
       const rawRole = String(userRecord?.role || 'aluno').toLowerCase();
@@ -85,17 +131,18 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
         dataNascimento: userRecord?.dataNascimento || '',
         cpf: userRecord?.cpf || '',
         matricula: userRecord?.matricula || '',
-        periodo: userRecord?.periodo || '',
+        periodo: normalizePeriodoValue(userRecord?.periodo),
         supervisorId: userRecord?.supervisorId || '',
+        profissionalId: userRecord?.profissionalId || '',
         diretoria: userRecord?.diretoria || '',
-        curso: userRecord?.curso || '',
+        curso: normalizeCursoValue(userRecord?.curso),
         projetoId: userRecord?.projetoId || '',
         projetoNome: userRecord?.projetoNome || '',
         crn: userRecord?.crn || '',
         conselhoTipo: userRecord?.conselhoTipo || '',
         conselhoNumero: userRecord?.conselhoNumero || '',
-        coordAtendimento: !!userRecord?.coordAtendimento,
         lideranca: isLeadershipRole ? rawRole : '',
+        recoveryEmail: userRecord?.recoveryEmail || '',
         email: generateInstitutionalEmail(userRecord?.name || '') || userRecord?.email || ''
       });
     } else {
@@ -106,25 +153,51 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
   }, [isOpen, initialData]);
 
   useEffect(() => {
-    const fetchProfessors = async () => {
+    const fetchSupervisores = async () => {
       if (role !== 'aluno') return;
       setLoadingProfs(true);
+      setProfessores([]);
+      setProfissionais([]);
       try {
-        const { data } = await api.get('/users');
-        const profList = normalizeUserList(data)
-          .filter((item) => String(item.role || '').toLowerCase() === 'professor')
-          .map((item) => ({
-            id: item.id,
-            nome: item.name
-          }));
-        setProfessores(profList);
+        const loadSupervisorsFromUsers = async () => {
+          const users = [];
+          let offset = 0;
+
+          while (true) {
+            const { data } = await api.get('/users', {
+              params: {
+                limit: SUPERVISOR_FETCH_PAGE_SIZE,
+                offset
+              }
+            });
+            const page = normalizeUserList(data);
+            users.push(...page);
+
+            if (page.length < SUPERVISOR_FETCH_PAGE_SIZE) break;
+            offset += SUPERVISOR_FETCH_PAGE_SIZE;
+          }
+
+          return users;
+        };
+
+        const normalized = await loadSupervisorsFromUsers();
+        const supervisores = normalized.filter(isCredentialedSupervisor);
+        setProfessores(
+          supervisores
+            .map((item) => ({ id: item.id, nome: item.name }))
+        );
+        setProfissionais(
+          supervisores
+            .filter((item) => String(item.role || '').toLowerCase() === 'profissional' && isCredentialedSupervisor(item))
+            .map((item) => ({ id: item.id, nome: item.name }))
+        );
       } catch (err) {
-        console.error('Erro ao buscar professores', err);
+        console.error('Erro ao buscar supervisores', err);
       } finally {
         setLoadingProfs(false);
       }
     };
-    fetchProfessors();
+    fetchSupervisores();
   }, [role, isOpen]);
 
   useEffect(() => {
@@ -174,13 +247,13 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
     setFormData((prev) => ({
       ...prev,
       supervisorId: nextRole === 'aluno' ? prev.supervisorId : '',
+      profissionalId: nextRole === 'aluno' ? prev.profissionalId : '',
       periodo: nextRole === 'aluno' ? prev.periodo : '',
       curso: nextRole === 'aluno' ? prev.curso : '',
       matricula: nextRole === 'aluno' || nextRole === 'professor' ? prev.matricula : '',
       conselhoTipo: nextRole === 'profissional' ? prev.conselhoTipo : '',
       conselhoNumero: nextRole === 'profissional' ? prev.conselhoNumero : '',
       diretoria: nextRole === 'aluno' ? prev.diretoria : '',
-      coordAtendimento: nextRole === 'aluno' ? prev.coordAtendimento : false,
       lideranca: nextRole === 'aluno' ? prev.lideranca : '',
       projetoId: keepVinculos ? prev.projetoId : '',
       projetoNome: keepVinculos ? prev.projetoNome : '',
@@ -212,17 +285,17 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
     });
   };
 
-  const handleCoordAtendimentoChange = (event) => {
-    const { checked } = event.target;
-    setFormData((prev) => ({ ...prev, coordAtendimento: checked }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      const initialUserRecord = initialData ? normalizeUserRecord(initialData) : null;
+      const initialCpf = normalizeCpf(initialUserRecord?.cpf || '');
+      const currentCpf = normalizeCpf(formData.cpf);
+      const shouldValidateCpf = !initialUserRecord || currentCpf !== initialCpf;
+
       if (!formData.nome || !formData.cpf || !formData.dataNascimento) {
         throw new Error('Preencha os campos obrigatórios.');
       }
@@ -230,7 +303,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
       if (!resolvedEmail || !isValidEmail(resolvedEmail)) {
         throw new Error('E-mail institucional inválido.');
       }
-      if (!isValidCpf(normalizeCpf(formData.cpf))) {
+      if (shouldValidateCpf && !isValidCpf(currentCpf)) {
         throw new Error('CPF inválido.');
       }
       if (!isPastDate(formData.dataNascimento)) {
@@ -240,7 +313,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
         if (!canCreateAluno && !initialData) {
           throw new Error('Seu perfil não possui permissão para cadastrar alunos.');
         }
-        if (!formData.matricula || !formData.supervisorId || !formData.curso || !formData.projetoId) {
+        if (!formData.matricula || !formData.periodo || !formData.supervisorId || !formData.curso || !formData.projetoId) {
           throw new Error('Complete os dados obrigatórios do aluno.');
         }
       }
@@ -256,9 +329,6 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
         if (formData.lideranca === 'presidente' || formData.lideranca === 'vice') {
           return formData.lideranca;
         }
-        if (formData.diretoria === 'diretoria_extensao' && formData.coordAtendimento) {
-          return 'coord_atendimento';
-        }
         return 'aluno';
       })();
 
@@ -266,8 +336,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
         professores.find((prof) => prof.id === formData.supervisorId),
         ''
       );
-
-      const payload = {
+      const basePayload = {
         name: formData.nome,
         role: roleToSave,
         cpf: formData.cpf,
@@ -276,41 +345,81 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
         periodo: formData.periodo,
         supervisorId: formData.supervisorId || null,
         supervisorNome,
+        profissionalId: formData.profissionalId || null,
         diretoria: formData.diretoria,
-        coordAtendimento: formData.coordAtendimento,
         curso: formData.curso,
         projetoId: formData.projetoId || null,
         projetoNome: formData.projetoNome || '',
         conselhoTipo: formData.conselhoTipo || '',
-        conselhoNumero: formData.conselhoNumero || '',
-        status: 'ativo'
+        conselhoNumero: formData.conselhoNumero || ''
       };
 
       if (initialData) {
-        await api.patch(`/users/${initialData.id}`, payload);
+        const editPayload = {};
+        const addIfChanged = (key, value, previousValue, normalize = (item) => String(item || '').trim()) => {
+          if (normalize(value) !== normalize(previousValue)) {
+            editPayload[key] = value;
+          }
+        };
+
+        addIfChanged('recoveryEmail', formData.recoveryEmail, initialUserRecord?.recoveryEmail);
+        addIfChanged('name', basePayload.name, initialUserRecord?.name);
+        addIfChanged('role', basePayload.role, initialUserRecord?.role, normalizeRole);
+        addIfChanged('cpf', basePayload.cpf, initialUserRecord?.cpf, normalizeCpf);
+        addIfChanged('dataNascimento', basePayload.dataNascimento, initialUserRecord?.dataNascimento);
+        addIfChanged('matricula', basePayload.matricula, initialUserRecord?.matricula);
+        addIfChanged('periodo', basePayload.periodo, normalizePeriodoValue(initialUserRecord?.periodo));
+        addIfChanged('supervisorId', basePayload.supervisorId, initialUserRecord?.supervisorId);
+        addIfChanged('profissionalId', basePayload.profissionalId, initialUserRecord?.profissionalId);
+        addIfChanged('diretoria', basePayload.diretoria, initialUserRecord?.diretoria);
+        addIfChanged('curso', basePayload.curso, normalizeCursoValue(initialUserRecord?.curso));
+        addIfChanged('projetoId', basePayload.projetoId, initialUserRecord?.projetoId);
+        addIfChanged('conselhoTipo', basePayload.conselhoTipo, initialUserRecord?.conselhoTipo);
+        addIfChanged('conselhoNumero', basePayload.conselhoNumero, initialUserRecord?.conselhoNumero);
+
+        if (Object.keys(editPayload).length > 0) {
+          await api.patch(`/users/${initialData.id}`, editPayload);
+        }
         notify({
           type: 'success',
           title: 'Usuário atualizado',
-          message: 'Dados atualizados com sucesso.'
+          message: Object.keys(editPayload).length > 0
+            ? 'Dados atualizados com sucesso.'
+            : 'Nenhuma alteração pendente.'
         });
+        onSave();
+        onClose();
       } else {
-        await api.post('/users', payload);
-        notify({
-          type: 'success',
-          title: 'Usuário criado',
-          message: 'A conta foi criada com sucesso e está com credencial provisória ativa.'
-        });
+        const payload = {
+          ...basePayload,
+          email: formData.recoveryEmail,
+          status: 'ativo'
+        };
+        const { data } = await api.post('/users', payload);
+        const institutionalEmail = data?.user?.email || generateEmail(formData.nome);
+        setCreatedCredentials({ email: institutionalEmail, delivery: data?.activation?.delivery });
+        onSave?.({ keepOpen: true });
       }
-
-      onSave();
-      onClose();
     } catch (err) {
       console.error('Erro no cadastro:', err);
-      setError(getApiErrorMessage(err, 'Erro ao criar usuário. Verifique os dados.'));
+      const fallback = initialData
+        ? 'Erro ao atualizar usuário. Verifique os dados.'
+        : 'Erro ao criar usuário. Verifique os dados.';
+      const message = err?.response || err?.request
+        ? getApiErrorMessage(err, fallback)
+        : err?.message || fallback;
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleCopyField = useCallback((field, value) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  }, []);
 
   const handleRequestClose = useCallback(() => {
     if (loading) return;
@@ -330,6 +439,21 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
   }, [isOpen, handleRequestClose]);
   if (!isOpen) return null;
   if (typeof document === 'undefined') return null;
+
+  const hasSupervisorOptions = professores.length > 0;
+  const supervisorPlaceholder = loadingProfs
+    ? 'Carregando supervisores...'
+    : hasSupervisorOptions
+      ? 'Selecione professor ou profissional'
+      : 'Nenhum supervisor credenciado encontrado';
+  const profissionalPlaceholder = loadingProfs
+    ? 'Carregando profissionais...'
+    : profissionais.length === 0
+      ? 'Nenhum profissional cadastrado'
+      : 'Sem profissional complementar';
+  const projectPlaceholder = projects.length === 0
+    ? 'Nenhum projeto disponível'
+    : 'Selecione...';
 
   const modalContent = (
     <div
@@ -352,68 +476,116 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
       >
         <div className="user-modal-header modal-header app-modal-header">
           <div className="header-content app-modal-heading">
-            <h2 id="user-modal-title" className="app-modal-title">{initialData ? 'Editar Usuário' : 'Novo Cadastro Acadêmico'}</h2>
-            <p className="app-modal-subtitle">Preencha os dados institucionais da LAINES</p>
+            <div className="user-modal-heading-line">
+              <div className="user-modal-header-icon app-modal-header-icon" aria-hidden="true">
+                {role === 'aluno' ? <GraduationCap size={20} /> : isStaffRole ? <Briefcase size={20} /> : <Shield size={20} />}
+              </div>
+              <div className="user-modal-heading-copy">
+                <h2 id="user-modal-title" className="app-modal-title">
+                  {isEditingStudent ? 'Vínculos do aluno' : initialData ? 'Editar Usuário' : 'Novo Cadastro Acadêmico'}
+                </h2>
+                <p className="app-modal-subtitle">
+                  {isEditingStudent
+                    ? 'Defina o supervisor credenciado obrigatório e o projeto do aluno.'
+                    : 'Preencha os dados institucionais da LAINES'}
+                </p>
+              </div>
+            </div>
           </div>
           <button type="button" onClick={handleRequestClose} className="app-modal-close" aria-label="Fechar modal de usuário">
             <X size={24} />
           </button>
         </div>
 
-        <div className="role-selector user-role-selector">
+        {createdCredentials && (
+          <div className="app-modal-body user-credentials-result">
+            <div className="user-credentials-result__icon">
+              <CheckCircle2 size={40} />
+            </div>
+            <h3>Conta criada com sucesso!</h3>
+            <p>{createdCredentials.delivery === 'sent'
+              ? 'Enviamos um link de ativacao ao contato cadastrado. O membro define a propria senha.'
+              : 'Conta criada, mas o link nao foi enviado. Confira o contato e o servico de email e use Enviar link de acesso no cadastro.'}</p>
+            <div className="user-credentials-result__fields">
+              <div className="user-credentials-result__field">
+                <span className="user-credentials-result__label">E-mail institucional</span>
+                <div className="user-credentials-result__value">
+                  <Mail size={15} />
+                  <span>{createdCredentials.email}</span>
+                  <button
+                    type="button"
+                    className="user-credentials-result__copy"
+                    onClick={() => handleCopyField('email', createdCredentials.email)}
+                    aria-label="Copiar e-mail"
+                  >
+                    {copiedField === 'email' ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="user-credentials-result__warning">O link de ativacao expira em 15 minutos. Nenhuma senha e exibida pela administracao.</p>
+            <div className="app-modal-footer">
+              <button
+                type="button"
+                className="app-modal-btn app-modal-btn--primary"
+                onClick={() => onClose()}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="role-selector user-role-selector" role="group" aria-label="Tipo de usuário" style={createdCredentials ? { display: 'none' } : undefined}>
           <button
             type="button"
             className={`role-btn ${role === 'aluno' ? 'active' : ''}`}
+            aria-pressed={role === 'aluno'}
             onClick={() => handleRoleChange('aluno')}
             disabled={!!initialData || !canCreateAluno}
-            title={!canCreateAluno ? 'Somente Administração, Coordenação, Presidente ou Vice podem criar alunos.' : undefined}
+            title={!canCreateAluno ? 'Somente Administração ou Coordenação podem criar alunos.' : undefined}
           >
-            <GraduationCap size={20} /> Aluno
+            <GraduationCap size={20} /> <span>Aluno</span>
           </button>
           <button
             type="button"
             className={`role-btn ${isStaffRole ? 'active' : ''}`}
+            aria-pressed={isStaffRole}
             onClick={() => handleRoleChange(isStaffRole ? role : 'professor')}
             disabled={!!initialData}
           >
-            <Briefcase size={20} /> Docente/Profissional
+            <Briefcase size={20} /> <span>Docente/Profissional</span>
           </button>
           <button
             type="button"
             className={`role-btn ${role === 'tecnico' ? 'active' : ''}`}
+            aria-pressed={role === 'tecnico'}
             onClick={() => handleRoleChange('tecnico')}
             disabled={!!initialData}
           >
-            <Shield size={20} /> Equipe
-          </button>
-          <button
-            type="button"
-            className={`role-btn ${role === 'atleta' ? 'active' : ''}`}
-            onClick={() => handleRoleChange('atleta')}
-            disabled={!!initialData}
-          >
-            <User size={20} /> Atleta
+            <Shield size={20} /> <span>Equipe</span>
           </button>
           <button
             type="button"
             className={`role-btn ${role === 'coordenacao' ? 'active' : ''}`}
+            aria-pressed={role === 'coordenacao'}
             onClick={() => handleRoleChange('coordenacao')}
             disabled={!!initialData}
           >
-            <Shield size={20} /> Coordenação
+            <Shield size={20} /> <span>Coordenação</span>
           </button>
           <button
             type="button"
             className={`role-btn ${role === 'admin' ? 'active' : ''}`}
+            aria-pressed={role === 'admin'}
             onClick={() => handleRoleChange('admin')}
             disabled={!!initialData}
           >
-            <Shield size={20} /> Admin
+            <Shield size={20} /> <span>Admin</span>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="user-modal-form app-modal-body">
-          <div className="form-grid app-modal-form-grid">
+        <form onSubmit={handleSubmit} className="user-modal-form app-modal-body" style={createdCredentials ? { display: 'none' } : undefined}>
+          <div className="form-grid app-modal-form-grid user-form-grid">
 
             <div className="form-section app-modal-form-section">
               <h3><User size={18} /> Identificação</h3>
@@ -464,6 +636,9 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                 <div className="form-section app-modal-form-section">
                   <h3><GraduationCap size={18} /> Dados Acadêmicos</h3>
                 </div>
+                <p className="form-section-note full-width">
+                  O vínculo de supervisão é feito no cadastro do aluno: professor ou profissional credenciado é obrigatório.
+                </p>
 
                 <div className="form-group flex flex-col gap-2">
                   <label htmlFor={USER_FIELD_IDS.matriculaAluno}>Matrícula *</label>
@@ -486,6 +661,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                     name="periodo"
                     value={formData.periodo}
                     onChange={handleChange}
+                    required
                   >
                     <option value="">Selecione...</option>
                     {[1,2,3,4,5,6,7,8,9,10].map(p => (
@@ -495,20 +671,43 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                 </div>
 
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
-                  <label htmlFor={USER_FIELD_IDS.supervisorId}>Supervisor (Professor) *</label>
+                  <label htmlFor={USER_FIELD_IDS.supervisorId}>Supervisor credenciado *</label>
                   <select className="user-field-select app-modal-select"
                     id={USER_FIELD_IDS.supervisorId}
                     name="supervisorId"
                     value={formData.supervisorId}
                     onChange={handleChange}
-                    disabled={loadingProfs}
+                    disabled={loadingProfs || !hasSupervisorOptions}
                     required
+                    aria-describedby={!loadingProfs && !hasSupervisorOptions ? 'user-supervisor-hint' : undefined}
                   >
                     <option value="">
-                      {loadingProfs ? 'Carregando...' : 'Selecione o responsável'}
+                      {supervisorPlaceholder}
                     </option>
                     {professores.map(prof => (
                       <option key={prof.id} value={prof.id}>{prof.nome}</option>
+                    ))}
+                  </select>
+                  {!loadingProfs && !hasSupervisorOptions && (
+                    <small className="field-hint user-field-hint" id="user-supervisor-hint">
+                      Cadastre ou ative um professor/profissional credenciado antes de salvar o aluno.
+                    </small>
+                  )}
+                </div>
+                <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
+                  <label htmlFor={USER_FIELD_IDS.profissionalId}>Profissional complementar (opcional)</label>
+                  <select className="user-field-select app-modal-select"
+                    id={USER_FIELD_IDS.profissionalId}
+                    name="profissionalId"
+                    value={formData.profissionalId}
+                    onChange={handleChange}
+                    disabled={loadingProfs || profissionais.length === 0}
+                  >
+                    <option value="">
+                      {profissionalPlaceholder}
+                    </option>
+                    {profissionais.map(p => (
+                      <option key={p.id} value={p.id}>{p.nome}</option>
                     ))}
                   </select>
                 </div>
@@ -538,10 +737,10 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                     onChange={handleChange}
                   >
                     <option value="">Sem diretoria</option>
-                    <option value="diretoria_marketing">Diretoria de Marketing</option>
-                    <option value="diretoria_ensino">Diretoria de Ensino</option>
-                    <option value="diretoria_pesquisa">Diretoria de Pesquisa</option>
-                    <option value="diretoria_extensao">Diretoria de Extensão</option>
+                    <option value="diretoria_marketing">Marketing/Comunicação</option>
+                    <option value="diretoria_ensino">Ensino</option>
+                    <option value="diretoria_pesquisa">Pesquisa</option>
+                    <option value="diretoria_extensao">Extensão</option>
                   </select>
                 </div>
                 <div className="form-group full-width flex flex-col gap-2 md:col-span-2">
@@ -558,18 +757,6 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                     <option value="vice">Vice-presidente</option>
                   </select>
                 </div>
-                {formData.diretoria === 'diretoria_extensao' && (
-                  <label className="form-group full-width user-coord-toggle" htmlFor={USER_FIELD_IDS.coordAtendimento}>
-                    <input
-                      id={USER_FIELD_IDS.coordAtendimento}
-                      type="checkbox"
-                      className="modern-checkbox"
-                      checked={formData.coordAtendimento}
-                      onChange={handleCoordAtendimentoChange}
-                    />
-                    Coord. Atendimentos
-                  </label>
-                )}
               </>
             )}
 
@@ -667,7 +854,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
                     required={role === 'aluno'}
                   >
                     {role === 'aluno' ? (
-                      <option value="">Selecione...</option>
+                      <option value="">{projectPlaceholder}</option>
                     ) : (
                       <option value="">Sem projeto</option>
                     )}
@@ -693,21 +880,18 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
               </div>
             </div>
 
-            {!initialData && (
-              <div className="form-group flex flex-col gap-2">
-                <label>Senha Inicial</label>
-                <div className="readonly-field highlight user-readonly-field user-readonly-field--highlight">
-                  <Key size={16} />
-                  <span className="password-display">Gerada automaticamente no cadastro</span>
-                </div>
-                <small className="field-hint user-field-hint">A senha temporária será exibida apenas após criar o usuário.</small>
-              </div>
-            )}
+            <div className="form-group flex flex-col gap-2">
+              <label htmlFor="user-recovery-email">E-mail de contato para ativacao e recuperacao</label>
+              <input id="user-recovery-email" type="email" value={formData.recoveryEmail}
+                onChange={(event) => setFormData((prev) => ({ ...prev, recoveryEmail: event.target.value }))}
+                required={!initialData} autoComplete="email" aria-describedby="user-recovery-email-hint" />
+              <small className="field-hint user-field-hint" id="user-recovery-email-hint">Confirme com o membro uma caixa de email acessivel. O login institucional acima identifica a conta.</small>
+            </div>
 
           </div>
 
           {error && (
-            <div className="error-message app-modal-inline-message app-modal-inline-message--error">
+            <div className="error-message app-modal-inline-message app-modal-inline-message--error" id="user-modal-error" role="alert">
               <AlertCircle size={18} />
               <span>{error}</span>
             </div>
@@ -718,7 +902,7 @@ const UserModal = ({ isOpen, onClose, onSave, initialData }) => {
               <button type="button" onClick={handleRequestClose} className="app-modal-btn app-modal-btn--secondary">
                 Cancelar
               </button>
-              <button type="submit" className="app-modal-btn app-modal-btn--primary" disabled={loading}>
+              <button type="submit" className="app-modal-btn app-modal-btn--primary" disabled={loading} aria-describedby={error ? 'user-modal-error' : undefined}>
                 {loading ? 'Processando...' : (
                   <>
                     <Save size={18} />

@@ -10,9 +10,10 @@ import { RolesGuard } from '../auth/roles.guard';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { ObservabilityModule } from '../observability/observability.module';
 import { UsersModule } from '../users/users.module';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Paciente, User, Avaliacao, AvaliacaoSessao]), RealtimeModule, ObservabilityModule, UsersModule],
+  imports: [TypeOrmModule.forFeature([Paciente, User, Avaliacao, AvaliacaoSessao]), RealtimeModule, ObservabilityModule, UsersModule, AuditoriaModule],
   providers: [PacientesService, RolesGuard],
   controllers: [PacientesController],
   exports: [PacientesService]

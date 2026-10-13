@@ -9,8 +9,9 @@ import { UsersService } from '../users/users.service';
 import { User } from '../users/user.entity';
 import { Paciente } from '../pacientes/paciente.entity';
 import { RefreshTokensService } from '../auth/refresh-tokens.service';
-import { hasTeamScopedAccess, normalizeRole } from '../auth/access-control';
-import { ADMIN_ROLES, normalizeDiretoria } from '../common/domain/access.constants';
+import { normalizeRole } from '../auth/access-control';
+import { resolveClinicalLink } from '../auth/authorization';
+import { ADMIN_ROLES, USER_ROLES, normalizeDiretoria, roleCanUseDiretoriaPermissions } from '../common/domain/access.constants';
 
 const isLocalOrigin = (origin: string) => {
   try { return ['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname); }
@@ -106,23 +107,24 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnMo
     if (kind === 'tarefas') {
       const target = normalizeRole(data.assignedRole || '');
       if (!target) return false;
-      return (ADMIN_ROLES as readonly string[]).includes(normalizeRole(user.role)) || target === 'todos'
-        || target === normalizeRole(user.role) || target === normalizeDiretoria(user.diretoria)
-        || (target === 'coord_atendimento' && !!user.coordAtendimento);
+      const role = normalizeRole(user.role);
+      const internal = (USER_ROLES as readonly string[]).includes(role) && role !== 'atleta';
+      return (ADMIN_ROLES as readonly string[]).includes(role)
+        || (target === 'todos' && internal)
+        || target === role
+        || (roleCanUseDiretoriaPermissions(role) && target === normalizeDiretoria(user.diretoria))
+        || (target === 'coord_atendimento' && internal && !!user.coordAtendimento);
     }
     if (!['pacientes', 'agendamentos', 'avaliacoes'].includes(kind)) return false;
     const patientId = kind === 'pacientes' ? data.id : data.pacienteId;
     if (!patientId) return false;
     const patient = await this.pacientes.findOne({ where: { id: patientId }, withDeleted: event.endsWith('.deleted') });
     if (!patient) return false;
-    const ids = [patient.alunoResponsavelId, patient.professorSupervisorId, ...(patient.equipeTecnicaIds || []), ...(patient.equipeMultiIds || [])];
-    if (user.role === 'atleta') return kind !== 'avaliacoes' && patient.atletaUserId === user.id;
-    if (ids.includes(user.id)) return true;
-    if (hasTeamScopedAccess(user.role) && patient.alunoResponsavelId) {
-      const student = await this.usersService.findById(patient.alunoResponsavelId);
-      return !!student && !student.deletedAt && (student.supervisorId === user.id || student.profissionalId === user.id);
-    }
-    return false;
+    // Contrato unico (UPD-12). Gestao nao recebe eventos clinicos: recarrega por HTTP autorizado.
+    const link = await resolveClinicalLink(user, patient, (id) => this.usersService.findById(id));
+    if (!link || link === 'gestao') return false;
+    if (link === 'atleta') return kind !== 'avaliacoes';
+    return true;
   }
 
   emit(event: string, data: unknown): Promise<void> {

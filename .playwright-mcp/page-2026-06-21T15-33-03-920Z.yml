@@ -1,0 +1,461 @@
+- generic [ref=e1]:
+  - link "Skip to main page content" [ref=e2] [cursor=pointer]:
+    - /url: "#article-details"
+  - generic [ref=e6]:
+    - img "U.S. flag" [ref=e7]
+    - paragraph [ref=e8]: An official website of the United States government
+    - button "Here's how you know" [ref=e9] [cursor=pointer]
+  - banner [ref=e10]:
+    - generic [ref=e12]:
+      - link "NCBI Logo" [ref=e14] [cursor=pointer]:
+        - /url: https://www.ncbi.nlm.nih.gov/
+        - img "NIH NLM Logo" [ref=e15]
+      - link "Log in" [ref=e17] [cursor=pointer]:
+        - /url: https://account.ncbi.nlm.nih.gov/?back_url=https%3A%2F%2Fpubmed.ncbi.nlm.nih.gov%2F36822238%2F
+  - navigation "access keys":
+    - link "Access keys" [ref=e18] [cursor=pointer]:
+      - /url: https://www.ncbi.nlm.nih.gov/guide/browsers/#ncbi_accesskeys
+    - link "NCBI Homepage" [ref=e19] [cursor=pointer]:
+      - /url: https://www.ncbi.nlm.nih.gov
+    - link "MyNCBI Homepage" [ref=e20] [cursor=pointer]:
+      - /url: /myncbi/
+    - link "Main Content" [ref=e21] [cursor=pointer]:
+      - /url: "#maincontent"
+    - link "Main Navigation" [ref=e22] [cursor=pointer]:
+      - /url: "#"
+  - navigation "Main page content below"
+  - search [ref=e23]:
+    - generic [ref=e24]:
+      - link "Pubmed Logo" [ref=e25] [cursor=pointer]:
+        - /url: /
+        - img "pubmed logo" [ref=e26]
+      - search [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: "Search:"
+          - generic [ref=e30]:
+            - combobox "Search:" [active] [ref=e31]
+            - status [ref=e32]
+          - button "Search" [ref=e33] [cursor=pointer]
+      - generic [ref=e34]:
+        - link "Advanced" [ref=e36] [cursor=pointer]:
+          - /url: /advanced/
+        - navigation "User guide" [ref=e37]:
+          - link "User Guide" [ref=e38] [cursor=pointer]:
+            - /url: /help/
+  - generic [ref=e39]:
+    - generic [ref=e42]:
+      - region "save, email, send to" [ref=e44]:
+        - button "Save" [ref=e45] [cursor=pointer]
+        - button "Email" [ref=e46] [cursor=pointer]
+        - button "Send to" [ref=e48] [cursor=pointer]
+      - region [ref=e49]:
+        - button "Display options" [ref=e50] [cursor=pointer]:
+          - generic [ref=e51]: Display options
+    - generic: "* * * *"
+  - generic [ref=e52]:
+    - complementary [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e56]:
+          - heading "Full text links" [level=3] [ref=e57]
+          - generic [ref=e58]:
+            - link "Elsevier Science full text link" [ref=e59] [cursor=pointer]:
+              - /url: https://linkinghub.elsevier.com/retrieve/pii/S0002-9165(23)04098-4
+              - img "Elsevier Science full text link" [ref=e60]
+            - link "Free full text at PubMed Central" [ref=e61] [cursor=pointer]:
+              - /url: https://pmc.ncbi.nlm.nih.gov/articles/pmid/36822238/
+        - generic [ref=e62]:
+          - heading "Actions" [level=3] [ref=e63]
+          - generic [ref=e64]:
+            - button "Open dialog with citation text in different styles" [ref=e65] [cursor=pointer]: Cite
+            - button "Save article in MyNCBI collections." [ref=e67] [cursor=pointer]: Collections
+            - button "Permalink" [ref=e69] [cursor=pointer]
+        - navigation "Page navigation" [ref=e70]:
+          - generic [ref=e71]:
+            - heading "Page navigation" [level=3] [ref=e72]
+            - list [ref=e73]:
+              - listitem [ref=e74]:
+                - link "navigate to Title & authors section" [ref=e75] [cursor=pointer]:
+                  - /url: "#heading"
+                  - text: Title & authors
+              - listitem [ref=e76]:
+                - link "navigate to Abstract section" [ref=e77] [cursor=pointer]:
+                  - /url: "#abstract"
+                  - text: Abstract
+              - listitem [ref=e78]:
+                - link "navigate to Figures section" [ref=e79] [cursor=pointer]:
+                  - /url: "#figures"
+                  - text: Figures
+              - listitem [ref=e80]:
+                - link "navigate to References section" [ref=e81] [cursor=pointer]:
+                  - /url: "#references"
+                  - text: References
+              - listitem [ref=e82]:
+                - link "navigate to Publication types section" [ref=e83] [cursor=pointer]:
+                  - /url: "#publication-types"
+                  - text: Publication types
+              - listitem [ref=e84]:
+                - link "navigate to MeSH terms section" [ref=e85] [cursor=pointer]:
+                  - /url: "#mesh-terms"
+                  - text: MeSH terms
+              - listitem [ref=e86]:
+                - link "navigate to Associated data section" [ref=e87] [cursor=pointer]:
+                  - /url: "#supplemental-data"
+                  - text: Associated data
+              - listitem [ref=e88]:
+                - link "navigate to Grants and funding section" [ref=e89] [cursor=pointer]:
+                  - /url: "#grants"
+                  - text: Grants and funding
+              - listitem [ref=e90]:
+                - link "navigate to LinkOut - more resources section" [ref=e91] [cursor=pointer]:
+                  - /url: "#linkout"
+                  - text: LinkOut - more resources
+    - main [ref=e92]:
+      - generic [ref=e94]:
+        - generic [ref=e95]:
+          - generic [ref=e96]: Clinical Trial
+          - generic [ref=e97]:
+            - button "Toggle dropdown menu for journal The American journal of clinical nutrition" [ref=e99] [cursor=pointer]: Am J Clin Nutr
+            - text: .
+            - generic [ref=e100]: 2023 Apr;117(4):794-801.
+          - generic [ref=e101]: "doi: 10.1016/j.ajcnut.2023.02.003."
+          - generic [ref=e102]: Epub 2023 Feb 8.
+        - 'heading "Smartphone prediction of skeletal muscle mass: model development and validation in adults" [level=1] [ref=e103]'
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - link "Cassidy McCarthy" [ref=e108] [cursor=pointer]:
+              - /url: /?term=McCarthy+C&cauthor_id=36822238
+            - superscript [ref=e109]:
+              - link "1" [ref=e110] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+            - text: ","
+          - generic [ref=e111]:
+            - link "Grant M Tinsley" [ref=e112] [cursor=pointer]:
+              - /url: /?term=Tinsley+GM&cauthor_id=36822238
+            - superscript [ref=e113]:
+              - link "2" [ref=e114] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e115]:
+            - link "Shengping Yang" [ref=e116] [cursor=pointer]:
+              - /url: /?term=Yang+S&cauthor_id=36822238
+            - superscript [ref=e117]:
+              - link "1" [ref=e118] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+            - text: ","
+          - generic [ref=e119]:
+            - link "Brian A Irving" [ref=e120] [cursor=pointer]:
+              - /url: /?term=Irving+BA&cauthor_id=36822238
+            - superscript [ref=e121]:
+              - link "3" [ref=e122] [cursor=pointer]:
+                - /url: "#full-view-affiliation-3"
+            - text: ","
+          - generic [ref=e123]:
+            - link "Michael C Wong" [ref=e124] [cursor=pointer]:
+              - /url: /?term=Wong+MC&cauthor_id=36822238
+            - superscript [ref=e125]:
+              - link "4" [ref=e126] [cursor=pointer]:
+                - /url: "#full-view-affiliation-4"
+            - text: ","
+          - generic [ref=e127]:
+            - link "Jonathan P Bennett" [ref=e128] [cursor=pointer]:
+              - /url: /?term=Bennett+JP&cauthor_id=36822238
+            - superscript [ref=e129]:
+              - link "4" [ref=e130] [cursor=pointer]:
+                - /url: "#full-view-affiliation-4"
+            - text: ","
+          - generic [ref=e131]:
+            - link "John A Shepherd" [ref=e132] [cursor=pointer]:
+              - /url: /?term=Shepherd+JA&cauthor_id=36822238
+            - superscript [ref=e133]:
+              - link "4" [ref=e134] [cursor=pointer]:
+                - /url: "#full-view-affiliation-4"
+            - text: ","
+          - generic [ref=e135]:
+            - link "Steven B Heymsfield" [ref=e136] [cursor=pointer]:
+              - /url: /?term=Heymsfield+SB&cauthor_id=36822238
+            - superscript [ref=e137]:
+              - link "5" [ref=e138] [cursor=pointer]:
+                - /url: "#full-view-affiliation-5"
+        - generic [ref=e139]:
+          - text: Affiliations
+          - button "Expand" [ref=e140] [cursor=pointer]
+        - list [ref=e141]:
+          - listitem [ref=e142]:
+            - generic [ref=e143]:
+              - text: "PMID:"
+              - strong [ref=e144]: "36822238"
+          - listitem [ref=e145]:
+            - generic [ref=e146]:
+              - text: "PMCID:"
+              - link "PMC10315403" [ref=e147] [cursor=pointer]:
+                - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC10315403/
+          - listitem [ref=e148]:
+            - generic [ref=e149]:
+              - text: "DOI:"
+              - link "external, opens in new tab. 10.1016/j.ajcnut.2023.02.003" [ref=e150] [cursor=pointer]:
+                - /url: https://doi.org/10.1016/j.ajcnut.2023.02.003
+                - text: 10.1016/j.ajcnut.2023.02.003
+      - text: …
+      - generic [ref=e151]:
+        - heading "Abstract" [level=2] [ref=e152]
+        - generic [ref=e153]:
+          - paragraph [ref=e154]:
+            - strong [ref=e155]: "Background:"
+            - text: Skeletal muscle is a large and clinically relevant body component that has been difficult and impractical to quantify outside of specialized facilities. Advances in smartphone technology now provide the opportunity to quantify multiple body surface dimensions such as circumferences, lengths, surface areas, and volumes.
+          - paragraph [ref=e156]:
+            - strong [ref=e157]: "Objectives:"
+            - text: This study aimed to test the hypothesis that anthropometric body measurements acquired with a smartphone application can be used to accurately estimate an adult's level of muscularity.
+          - paragraph [ref=e158]:
+            - strong [ref=e159]: "Methods:"
+            - text: Appendicular lean mass (ALM) measured by DXA served as the reference for muscularity in a sample of 322 adults. Participants also had digital anthropometric dimensions (circumferences, lengths, and regional and total body surface areas and volumes) quantified with a 20-camera 3D imaging system. Least absolute shrinkage and selection operator (LASSO) regression procedures were used to develop the ALM prediction equations in a portion of the sample, and these models were tested in the remainder of the sample. Then, the accuracy of the prediction models was cross-validated in a second independent sample of 53 adults who underwent ALM estimation by DXA and the same digital anthropometric estimates acquired with a smartphone application.
+          - paragraph [ref=e160]:
+            - strong [ref=e161]: "Results:"
+            - text: LASSO models included multiple significant demographic and 3D digital anthropometric predictor variables. Evaluation of the models in the testing sample indicated respective RMSEs in women and men of 1.56 kg and 1.53 kg and R
+            - superscript [ref=e162]: "2"
+            - text: "'s of 0.74 and 0.90, respectively. Cross-validation of the LASSO models in the smartphone application group yielded RMSEs in women and men of 1.78 kg and 1.50 kg and R"
+            - superscript [ref=e163]: "2"
+            - text: "'s of 0.79 and 0.95; no significant differences or bias between measured and predicted ALM values were observed."
+          - paragraph [ref=e164]:
+            - strong [ref=e165]: "Conclusions:"
+            - text: Smartphone image capture capabilities combined with device software applications can now provide accurate renditions of the adult muscularity phenotype outside of specialized laboratory facilities. Am J Clin Nutr 2023;x:xx. This trial was registered at clinicaltrials.gov as
+            - link "NCT03637855" [ref=e166] [cursor=pointer]:
+              - /url: http://clinicaltrials.gov/show/NCT03637855
+            - text: (https://clinicaltrials.gov/ct2/show/NCT03637855),
+            - link "NCT05217524" [ref=e167] [cursor=pointer]:
+              - /url: http://clinicaltrials.gov/show/NCT05217524
+            - text: (https://clinicaltrials.gov/ct2/show/NCT05217524), and
+            - link "NCT03771417" [ref=e168] [cursor=pointer]:
+              - /url: http://clinicaltrials.gov/show/NCT03771417
+            - text: (https://clinicaltrials.gov/ct2/show/NCT03771417).
+        - paragraph [ref=e169]:
+          - strong [ref=e170]: "Keywords:"
+          - text: body composition; malnutrition; nutritional assessment; obesity; optical imaging; sarcopenia.
+      - paragraph [ref=e171]: Copyright © 2023 American Society for Nutrition. Published by Elsevier Inc. All rights reserved.
+      - paragraph [ref=e172]:
+        - link "PubMed Disclaimer" [ref=e173] [cursor=pointer]:
+          - /url: /disclaimer/
+      - generic [ref=e174]:
+        - heading "Figures" [level=2] [ref=e175]
+        - generic [ref=e176]:
+          - figure "FIGURE 1 LASSO regression cross-validation and Bland-Altman analyses for the SS20 evaluations (A, B; n = 36) and the Me360 evaluations (C, D; n = 27) in women. The solid lines in panels A and C are the lines of identity and the regression lines with 95% CI (both, P < 0.001). In panels B and D, the solid horizontal line indicates the mean difference between DXA and predicted ALM, the dashed horizontal lines indicate the 95% limits of agreement (that is, 1.96 times the SD of the difference between DXA and predicted ALM), and the gray shading indicates the 95% CIs for the regression line. ALM, appendicular lean mass; LASSO, Least Absolute Shrinkage and Selection Operator; LOA, limits of agreement; Me360, MeThreeSixty." [ref=e177] [cursor=pointer]:
+            - button "FIGURE 1" [ref=e178]:
+              - img "FIGURE 1" [ref=e179]
+            - generic [ref=e181]:
+              - strong [ref=e182]:
+                - paragraph [ref=e183]: FIGURE 1
+              - paragraph [ref=e185]: LASSO regression cross-validation and Bland-Altman…
+          - figure "FIGURE 2 LASSO regression cross-validation and Bland-Altman analyses for the SS20 evaluations (A, B; n = 29) and the Me360 evaluations (C, D; n = 26) in men. The solid lines in panels A and C are the lines of identity and the regression lines with 95% CI (both, P < 0.001). In panels B and D, the solid horizontal line indicates the mean difference between DXA and predicted ALM, the dashed horizontal lines indicate the 95% limits of agreement (that is, 1.96 times the SD of the difference between DXA and predicted ALM), and the gray shading indicates the 95% CIs for the regression line. ALM, appendicular lean mass; LASSO, Least Absolute Shrinkage and Selection Operator; LOA, limits of agreement; Me360, MeThreeSixty." [ref=e186] [cursor=pointer]:
+            - button "FIGURE 2" [ref=e187]:
+              - img "FIGURE 2" [ref=e188]
+            - generic [ref=e190]:
+              - strong [ref=e191]:
+                - paragraph [ref=e192]: FIGURE 2
+              - paragraph [ref=e194]: LASSO regression cross-validation and Bland-Altman…
+      - generic [ref=e199]:
+        - heading "References" [level=2] [ref=e200]
+        - generic [ref=e202]:
+          - list [ref=e203]:
+            - listitem [ref=e204]:
+              - list [ref=e205]:
+                - listitem [ref=e206]:
+                  - text: Heymsfield S.B., Smith B., Chung E.A., Watts K.L., Gonzalez M.C., Yang S., et al. Phenotypic differences between people varying in muscularity. J. Cachexia Sarcopenia Muscle. 2022;13(2):1100–1112. -
+                  - link "PMC" [ref=e207] [cursor=pointer]:
+                    - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC8978029/
+                  - text: "-"
+                  - link "PubMed" [ref=e208] [cursor=pointer]:
+                    - /url: /35170220/
+            - listitem [ref=e209]:
+              - list [ref=e210]:
+                - listitem [ref=e211]:
+                  - text: "Ng B.K., Sommer M.J., Wong M.C., Pagano I., Nie Y., Fan B., et al. Detailed 3-dimensional body shape features predict body composition, blood metabolites, and functional strength: the Shape UP! studies. Am. J. Clin. Nutr. 2019;110(6):1316–1326. -"
+                  - link "PMC" [ref=e212] [cursor=pointer]:
+                    - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC6885475/
+                  - text: "-"
+                  - link "PubMed" [ref=e213] [cursor=pointer]:
+                    - /url: /31553429/
+            - listitem [ref=e214]:
+              - list [ref=e215]:
+                - listitem [ref=e216]: Matiegka J. The testing of physical efficiency. Am. J. Phys. Anthropol. 1921;4(3):223–230.
+            - listitem [ref=e217]:
+              - list [ref=e218]:
+                - listitem [ref=e219]:
+                  - text: Heymsfield S.B., Hu H.H., Shen W., Carmichael O. Emerging technologies and their applications in lipid compartment measurement. Trends Endocrinol. Metab. 2015;26(12):688–698. -
+                  - link "PMC" [ref=e220] [cursor=pointer]:
+                    - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC4673021/
+                  - text: "-"
+                  - link "PubMed" [ref=e221] [cursor=pointer]:
+                    - /url: /26596676/
+            - listitem [ref=e222]:
+              - list [ref=e223]:
+                - listitem [ref=e224]:
+                  - text: Al-Gindan Y.Y., Hankey C., Govan L., Gallagher D., Heymsfield S.B., Lean M.E. Derivation and validation of simple equations to predict total muscle mass from simple anthropometric and demographic data. Am. J. Clin. Nutr. 2014;100(4):1041–1051. -
+                  - link "PMC" [ref=e225] [cursor=pointer]:
+                    - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC6443297/
+                  - text: "-"
+                  - link "PubMed" [ref=e226] [cursor=pointer]:
+                    - /url: /25240071/
+          - button "Show all 34 references" [ref=e228] [cursor=pointer]
+      - generic [ref=e229]:
+        - heading "Publication types" [level=2] [ref=e230]
+        - list [ref=e231]:
+          - listitem [ref=e232]:
+            - button "Toggle dropdown menu for keyword Clinical Trial" [ref=e234] [cursor=pointer]: Clinical Trial
+          - listitem [ref=e235]:
+            - button "Toggle dropdown menu for keyword Research Support, N.I.H., Extramural" [ref=e237] [cursor=pointer]: Research Support, N.I.H., Extramural
+      - generic [ref=e238]:
+        - heading "MeSH terms" [level=2] [ref=e239]
+        - list [ref=e240]:
+          - listitem [ref=e241]:
+            - button "Toggle dropdown menu for keyword Absorptiometry, Photon / methods" [ref=e243] [cursor=pointer]: Absorptiometry, Photon / methods
+          - listitem [ref=e244]:
+            - button "Toggle dropdown menu for keyword Anthropometry / methods" [ref=e246] [cursor=pointer]: Anthropometry / methods
+          - listitem [ref=e247]:
+            - button "Toggle dropdown menu for keyword Body Composition*" [ref=e249] [cursor=pointer]: Body Composition*
+          - listitem [ref=e250]:
+            - button "Toggle dropdown menu for keyword Female" [ref=e252] [cursor=pointer]: Female
+          - listitem [ref=e253]:
+            - button "Toggle dropdown menu for keyword Humans" [ref=e255] [cursor=pointer]: Humans
+          - listitem [ref=e256]:
+            - button "Toggle dropdown menu for keyword Muscle, Skeletal" [ref=e258] [cursor=pointer]: Muscle, Skeletal
+          - listitem [ref=e259]:
+            - button "Toggle dropdown menu for keyword Smartphone*" [ref=e261] [cursor=pointer]: Smartphone*
+      - generic [ref=e262]:
+        - heading "Associated data" [level=2] [ref=e263]
+        - list [ref=e264]:
+          - listitem [ref=e265]:
+            - button "ClinicalTrials.gov/NCT03637855" [ref=e267] [cursor=pointer]
+          - listitem [ref=e268]:
+            - button "ClinicalTrials.gov/NCT03771417" [ref=e270] [cursor=pointer]
+          - listitem [ref=e271]:
+            - button "ClinicalTrials.gov/NCT05217524" [ref=e273] [cursor=pointer]
+      - generic [ref=e278]:
+        - heading "Grants and funding" [level=2] [ref=e279]
+        - list [ref=e281]:
+          - listitem [ref=e282]:
+            - link "R21 AG058181/AG/NIA NIH HHS/United States" [ref=e283] [cursor=pointer]:
+              - /url: /?term=R21+AG058181%2FAG%2FNIA+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e284]:
+            - link "R01 DK109008/DK/NIDDK NIH HHS/United States" [ref=e285] [cursor=pointer]:
+              - /url: /?term=R01+DK109008%2FDK%2FNIDDK+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e286]:
+            - link "P30 DK072476/DK/NIDDK NIH HHS/United States" [ref=e287] [cursor=pointer]:
+              - /url: /?term=P30+DK072476%2FDK%2FNIDDK+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e288]:
+            - link "P30 DK040561/DK/NIDDK NIH HHS/United States" [ref=e289] [cursor=pointer]:
+              - /url: /?term=P30+DK040561%2FDK%2FNIDDK+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e290]:
+            - link "T32 HL115505/HL/NHLBI NIH HHS/United States" [ref=e291] [cursor=pointer]:
+              - /url: /?term=T32+HL115505%2FHL%2FNHLBI+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+      - generic [ref=e292]:
+        - heading "LinkOut - more resources" [level=2] [ref=e293]
+        - list [ref=e294]:
+          - listitem [ref=e295]:
+            - heading "Full Text Sources" [level=3] [ref=e296]
+            - list [ref=e297]:
+              - listitem [ref=e298]:
+                - link "external, opens in new tab. Elsevier Science" [ref=e299] [cursor=pointer]:
+                  - /url: https://linkinghub.elsevier.com/retrieve/pii/S0002-9165(23)04098-4
+                  - text: Elsevier Science
+              - listitem [ref=e300]:
+                - link "external, opens in new tab. Europe PMC" [ref=e301] [cursor=pointer]:
+                  - /url: https://europepmc.org/abstract/MED/36822238
+                  - text: Europe PMC
+              - listitem [ref=e302]:
+                - link "PubMed Central" [ref=e303] [cursor=pointer]:
+                  - /url: https://pmc.ncbi.nlm.nih.gov/articles/pmid/36822238/
+          - listitem [ref=e304]:
+            - heading "Medical" [level=3] [ref=e305]
+            - list [ref=e306]:
+              - listitem [ref=e307]:
+                - link "ClinicalTrials.gov" [ref=e308] [cursor=pointer]:
+                  - /url: https://clinicaltrials.gov/search?term=AREA%5BReferencePMID%5D36822238
+    - option "AMA"
+    - option "APA"
+    - option "MLA"
+    - option "NLM" [selected]
+  - generic [ref=e309]:
+    - complementary "Links to NCBI Literature Resources" [ref=e310]:
+      - generic [ref=e311]:
+        - paragraph [ref=e312]: NCBI Literature Resources
+        - paragraph [ref=e313]:
+          - link "MeSH" [ref=e314] [cursor=pointer]:
+            - /url: https://www.ncbi.nlm.nih.gov/mesh/
+          - link "PMC" [ref=e315] [cursor=pointer]:
+            - /url: https://www.ncbi.nlm.nih.gov/pmc/
+          - link "Bookshelf" [ref=e316] [cursor=pointer]:
+            - /url: https://www.ncbi.nlm.nih.gov/books
+          - link "Disclaimer" [ref=e317] [cursor=pointer]:
+            - /url: /disclaimer/
+        - paragraph [ref=e318]: The PubMed wordmark and PubMed logo are registered trademarks of the U.S. Department of Health and Human Services (HHS). Unauthorized use of these marks is strictly prohibited.
+    - contentinfo [ref=e319]:
+      - generic [ref=e320]:
+        - generic [ref=e321]: Follow NCBI
+        - generic [ref=e323]:
+          - link "Twitter" [ref=e324] [cursor=pointer]:
+            - /url: https://twitter.com/ncbi
+            - img "Twitter" [ref=e325]
+          - link "Facebook" [ref=e328] [cursor=pointer]:
+            - /url: https://www.facebook.com/ncbi.nlm
+            - img "Facebook" [ref=e329]
+          - link "LinkedIn" [ref=e330] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/ncbinlm
+            - img "LinkedIn" [ref=e331]
+          - link "GitHub" [ref=e332] [cursor=pointer]:
+            - /url: https://github.com/ncbi
+            - img "GitHub" [ref=e333]
+          - link "Blog" [ref=e336] [cursor=pointer]:
+            - /url: https://ncbiinsights.ncbi.nlm.nih.gov/
+            - img [ref=e337]
+      - generic [ref=e340]:
+        - generic [ref=e341]:
+          - generic [ref=e342]:
+            - paragraph [ref=e343]:
+              - link "Connect with NLM" [ref=e344] [cursor=pointer]:
+                - /url: https://www.nlm.nih.gov/socialmedia/index.html
+            - list [ref=e345]:
+              - listitem [ref=e346]:
+                - link "Twitter" [ref=e347] [cursor=pointer]:
+                  - /url: https://twitter.com/NLM_NIH
+                  - img "Twitter" [ref=e348]
+              - listitem [ref=e352]:
+                - link "Facebook" [ref=e353] [cursor=pointer]:
+                  - /url: https://www.facebook.com/nationallibraryofmedicine
+                  - img "SM-Facebook" [ref=e354]
+              - listitem [ref=e359]:
+                - link "Youtube" [ref=e360] [cursor=pointer]:
+                  - /url: https://www.youtube.com/user/NLMNIH
+                  - img "SM-Youtube" [ref=e361]
+          - paragraph [ref=e366]:
+            - text: National Library of Medicine
+            - link "8600 Rockville Pike Bethesda, MD 20894" [ref=e367] [cursor=pointer]:
+              - /url: https://www.google.com/maps/place/8600+Rockville+Pike,+Bethesda,+MD+20894/@38.9959508,-77.101021,17z/data=!3m1!4b1!4m5!3m4!1s0x89b7c95e25765ddb:0x19156f88b27635b8!8m2!3d38.9959508!4d-77.0988323
+              - text: 8600 Rockville Pike
+              - text: Bethesda, MD 20894
+          - paragraph [ref=e369]:
+            - link "Web Policies" [ref=e370] [cursor=pointer]:
+              - /url: https://www.nlm.nih.gov/web_policies.html
+            - link "FOIA" [ref=e371] [cursor=pointer]:
+              - /url: https://www.nih.gov/institutes-nih/nih-office-director/office-communications-public-liaison/freedom-information-act-office
+            - link "HHS Vulnerability Disclosure" [ref=e372] [cursor=pointer]:
+              - /url: https://www.hhs.gov/vulnerability-disclosure-policy/index.html
+          - paragraph [ref=e374]:
+            - link "Help" [ref=e375] [cursor=pointer]:
+              - /url: https://support.nlm.nih.gov/?pagename=pubmed%3Apubmed%3Aabstract%3ANONE
+            - link "Accessibility" [ref=e376] [cursor=pointer]:
+              - /url: https://www.nlm.nih.gov/accessibility.html
+            - link "Careers" [ref=e377] [cursor=pointer]:
+              - /url: https://www.nlm.nih.gov/careers/careers.html
+        - navigation [ref=e380]:
+          - list [ref=e381]:
+            - listitem [ref=e382]:
+              - link "NLM" [ref=e383] [cursor=pointer]:
+                - /url: //www.nlm.nih.gov/
+            - listitem [ref=e384]:
+              - link "NIH" [ref=e385] [cursor=pointer]:
+                - /url: https://www.nih.gov/
+            - listitem [ref=e386]:
+              - link "HHS" [ref=e387] [cursor=pointer]:
+                - /url: https://www.hhs.gov/
+            - listitem [ref=e388]:
+              - link "USA.gov" [ref=e389] [cursor=pointer]:
+                - /url: https://www.usa.gov/

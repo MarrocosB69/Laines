@@ -1,0 +1,430 @@
+/* Formulario do painel de login: direcao "Energia e velocidade"
+   (docs/design/landing-v2/a2-energia/plano.md, docs/design/landing-v2/a2-energia/index.html).
+   Aplica o vocabulario --lt-* de landing-tokens.css. Estiliza so de .lp-form
+   para dentro - a moldura .lp-painel (recorte diagonal, sombra, entrada da
+   pagina) e do agente A (docs/implementacao/landing-v2/change-intent.md).
+   .field-shell e .password-visibility NAO estao aqui: foram para
+   landing-modais.css porque PasswordRecoveryModal.jsx ainda as usa. */
+
+/* ── Corpo do formulario ─────────────────────────────────────────────────── */
+.lp-form {
+  max-width: 24rem;
+}
+
+.lp-form h2 {
+  margin: 0;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 2.25rem;
+  line-height: 1;
+  color: var(--lt-color-text);
+  letter-spacing: 0.005em;
+}
+
+.lp-form__dica {
+  margin: 0.3rem 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-control);
+  line-height: var(--lt-leading-normal);
+}
+
+.lp-form__form {
+  margin-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Campos ──────────────────────────────────────────────────────────────── */
+.lp-campo + .lp-campo { margin-top: 0.875rem; }
+
+.lp-campo label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  color: var(--lt-color-text);
+  transition: color 160ms;
+}
+
+/* O rotulo acompanha o foco do campo - a mesma raia que acende embaixo. */
+.lp-campo:focus-within label { color: var(--lt-color-brand-blue); }
+
+.lp-campo__caixa { position: relative; }
+
+/* Especificidade igualada a input:not([type=checkbox]):not([type=radio])
+   de src/styles/theme.css (0,2,1): sem isso, a regra global desenha borda,
+   fundo e padding por conta propria por cima deste campo (armadilha ja
+   documentada em landing-modais.css, que teve o mesmo problema). */
+.lp-campo__caixa input:not([type="checkbox"]):not([type="radio"]) {
+  display: block;
+  width: 100%;
+  height: 48px;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.lp-campo__caixa input:not([type="checkbox"]):not([type="radio"])::placeholder {
+  color: var(--lt-color-text-subtle);
+}
+
+.lp-campo__caixa input:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: 0 0 0 1px var(--lt-color-brand-blue), 0 0 0 5px rgba(37, 96, 168, 0.16);
+}
+
+.lp-campo__caixa input[aria-invalid="true"] {
+  border-color: var(--lt-color-danger-text);
+  box-shadow: 0 0 0 1px var(--lt-color-danger-text);
+}
+
+.lp-campo__caixa input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 1px var(--lt-color-danger-text), 0 0 0 5px rgba(185, 28, 28, 0.14);
+}
+
+@media (hover: hover) {
+  .lp-campo__caixa input:hover:not(:focus):not([aria-invalid="true"]) {
+    border-color: var(--lt-color-text);
+  }
+}
+
+/* ── Campo de senha: "Esqueci" na linha do rotulo, depois do campo no DOM ──
+   (defeitos 13 e 16 do plano). O grid poe rotulo/esqueci na mesma linha e
+   caixa/erro nas linhas seguintes; a ordem do Tab vem do DOM, nao do grid. */
+.lp-campo--senha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "rotulo esqueci"
+    "caixa  caixa"
+    "erro   erro";
+  align-items: center;
+  column-gap: 0.75rem;
+}
+.lp-campo--senha > label { grid-area: rotulo; margin-bottom: 0.3rem; }
+.lp-campo--senha > .lp-campo__caixa { grid-area: caixa; }
+.lp-campo--senha > .lp-campo__esqueci { grid-area: esqueci; margin-bottom: calc(0.3rem - 12px); }
+.lp-campo--senha > .lp-campo__erro { grid-area: erro; }
+
+.lp-campo__senha input { padding-right: 5.5rem; }
+
+.lp-campo__mostrar {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-weight: 700;
+  font-size: var(--lt-text-sm);
+  cursor: pointer;
+  transition: background-color 160ms;
+}
+
+@media (hover: hover) {
+  .lp-campo__mostrar:hover { background: var(--lt-color-track-tint); }
+}
+
+/* Link "Esqueci minha senha": alvo de 44px via margem negativa, sem abrir
+   a linha do rotulo (a mesma tecnica do porta__seta/link do mockup). */
+.lp-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-weight: 700;
+  font-size: var(--lt-text-sm);
+  text-decoration: none;
+  cursor: pointer;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0 2px;
+  background-position: 0 calc(50% + 0.75em);
+  background-repeat: no-repeat;
+  transition: background-size 220ms var(--lt-ease-out);
+}
+
+@media (hover: hover) {
+  .lp-link:hover { background-size: 100% 2px; }
+}
+
+.lp-link:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+  border-radius: var(--lt-radius-control);
+}
+
+/* Raia que acende sob o campo em foco: azul e verde, so grafico (o verde
+   aqui e um traco de 3px, nao texto - --lt-color-brand-green vale). */
+.lp-campo__raia {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 320ms var(--lt-ease-out);
+  pointer-events: none;
+}
+.lp-campo__caixa input:focus ~ .lp-campo__raia { transform: scaleX(1); }
+.lp-campo__caixa input[aria-invalid="true"] ~ .lp-campo__raia { background: var(--lt-color-danger-text); }
+
+.lp-campo__erro {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin: 0.3rem 0 0;
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+.lp-campo__erro svg { flex-shrink: 0; }
+.lp-campo__erro[hidden] { display: none; }
+
+.lp-inteiro { white-space: nowrap; }
+
+/* ── Botao Entrar: o unico solido do formulario ─────────────────────────── */
+.lp-botao-entrar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 50px;
+  margin-top: 1.25rem;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-weight: 700;
+  font-size: var(--lt-text-control);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 1px 2px rgba(20, 60, 12, 0.3),
+    0 12px 24px -12px rgba(45, 122, 26, 0.75);
+  transition: transform 180ms var(--lt-ease-out), box-shadow 180ms;
+}
+
+.lp-botao-entrar:disabled { cursor: progress; }
+
+/* Brilho: passa uma vez no fim da entrada (escopo .lp[data-entrada] mais
+   abaixo) e uma vez a cada hover. Em repouso, parado a direita e fora do
+   botao - o keyframe define so o "from" (regra da entrada), entao o ponto
+   de chegada da animacao E este estado de repouso. */
+.lp-botao-entrar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.38) 50%, transparent 68%);
+  transform: translateX(120%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Barra de envio: corre na base enquanto isLoading. 1200ms de transicao
+   linear - uma corrida so, nunca em loop; para quando a resposta chega
+   porque aria-busy some do DOM (isLoading volta a false). */
+.lp-botao-entrar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.85);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  opacity: 0;
+}
+.lp-botao-entrar[aria-busy="true"]::before {
+  opacity: 1;
+  transform: scaleX(1);
+  transition: transform 1200ms linear;
+}
+
+.lp-botao-entrar:active { transform: scale(0.98); }
+
+.lp-botao-entrar:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+@media (hover: hover) {
+  .lp-botao-entrar:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 1px 2px rgba(20, 60, 12, 0.3),
+      0 18px 30px -12px rgba(45, 122, 26, 0.85);
+  }
+}
+
+/* ── Erro geral (servidor) ───────────────────────────────────────────────── */
+.landing-error {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-top: 1rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-weight: 600;
+  font-size: var(--lt-text-sm);
+  line-height: 1.4;
+}
+.landing-error svg { flex-shrink: 0; margin-top: 1px; }
+
+/* ── Portas secundarias ──────────────────────────────────────────────────── */
+.lp-portas {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.lp-porta {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  min-height: var(--lt-target-min);
+  padding: 0.55rem 0.875rem 0.55rem 0.75rem;
+  border: 1.5px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: inherit;
+  font-family: var(--lt-font-family);
+  text-align: left;
+  /* A porta de "Solicitar acesso" é um <button>, e o `button { white-space:
+     nowrap }` global de theme.css impedia a pergunta de quebrar: a 320px ela
+     passava da borda. A porta da lista de espera é um <a> e não sofria. */
+  white-space: normal;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+.lp-porta__icone {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.lp-porta__texto { display: grid; gap: 1px; line-height: 1.3; min-width: 0; }
+.lp-porta__pergunta { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+.lp-porta__acao { color: var(--lt-color-brand-blue); font-weight: 700; font-size: var(--lt-text-control); }
+.lp-porta__seta { color: var(--lt-color-brand-blue); transition: transform 220ms var(--lt-ease-out); }
+
+.lp-porta:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+@media (hover: hover) {
+  .lp-porta:hover { background: var(--lt-color-track-tint); border-color: var(--lt-color-brand-blue); }
+}
+
+@media (max-width: 22.5rem) {
+  .lp-porta { grid-template-columns: 36px minmax(0, 1fr) 16px; gap: 0.625rem; padding-left: 0.625rem; }
+  .lp-porta__icone { width: 36px; height: 36px; }
+}
+
+/* ── Movimento: microinteracoes e entrada ─────────────────────────────────
+   Só transform/opacity nos keyframes; o "from" apenas, preenchimento
+   backwards, para o estado de repouso ser sempre o final (mesma regra da
+   entrada da pagina). As duas animacoes de entrada (formulario e brilho)
+   tocam so em .lp[data-entrada] - a marca de "primeira visita da sessao"
+   que LoginPage.jsx poe na raiz (ver change-intent.md). O tranco e o
+   brilho de hover NAO dependem de data-entrada: acontecem toda vez. */
+@keyframes lp-form-assentar {
+  from { opacity: 0; transform: translateX(24px); }
+}
+@keyframes lp-brilho {
+  from { opacity: 1; transform: translateX(-120%); }
+}
+@keyframes lp-tranco {
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp[data-entrada] .lp-form {
+    animation: lp-form-assentar 450ms var(--lt-ease-out) var(--lt-entrada-form) backwards;
+  }
+  .lp[data-entrada] .lp-botao-entrar::after {
+    animation: lp-brilho 450ms ease-in-out var(--lt-entrada-brilho);
+  }
+  /* Tranco: 320ms, disparado via JS (LoginPanel.jsx troca a classe removendo
+     e recolocando, para reiniciar mesmo em erros seguidos). */
+  .lp-tranco { animation: lp-tranco 320ms ease-in-out; }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .lp-botao-entrar:hover:not(:disabled)::after { animation: lp-brilho 600ms ease-in-out; }
+  .lp-porta:hover .lp-porta__seta { transform: translateX(3px); }
+}
+
+/* Com movimento reduzido, cor e borda continuam mudando (transicoes normais
+   nao usam keyframes); so o deslocamento e o tranco saem. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-campo__raia,
+  .lp-porta__seta,
+  .lp-botao-entrar,
+  .lp-link,
+  .lp-campo__caixa input {
+    transition: none;
+  }
+  .lp-botao-entrar[aria-busy="true"]::before { transition: none; }
+  .lp-botao-entrar:active,
+  .lp-botao-entrar:hover { transform: none; }
+}
+
+/* ── Orcamento de altura (celular baixo) ──────────────────────────────────
+   O botao "Entrar" precisa estar na primeira tela a 320x640 (invariante 7
+   do change-intent.md). Encurta respiros sem cortar texto - nenhum destes
+   valores desce abaixo do alvo de 44px nem do texto em si. */
+@media (max-height: 700px) {
+  .lp-form h2 { font-size: 2rem; }
+  .lp-form__dica { margin-top: 0.2rem; }
+  .lp-form__form { margin-top: 0.85rem; }
+  .lp-campo + .lp-campo { margin-top: 0.7rem; }
+  .lp-campo label { margin-bottom: 0.2rem; }
+  .lp-campo--senha > label { margin-bottom: 0.2rem; }
+  .lp-campo--senha > .lp-campo__esqueci { margin-bottom: calc(0.2rem - 12px); }
+  .lp-campo__caixa input:not([type="checkbox"]):not([type="radio"]) { height: 44px; }
+  .lp-botao-entrar { margin-top: 0.85rem; height: 46px; }
+  .lp-portas { margin-top: 1.1rem; padding-top: 1rem; gap: 0.5rem; }
+}

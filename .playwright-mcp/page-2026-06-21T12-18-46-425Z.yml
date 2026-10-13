@@ -1,0 +1,784 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fvchoutas%2Fsmplx
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=vchoutas%2Fsmplx
+            - button "Appearance settings" [ref=e58] [cursor=pointer]:
+              - img
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - link "vchoutas" [ref=e70] [cursor=pointer]:
+            - /url: /vchoutas
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "smplx" [ref=e73] [cursor=pointer]:
+              - /url: /vchoutas/smplx
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Fvchoutas%2Fsmplx
+                - img [ref=e78]
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 392" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Fvchoutas%2Fsmplx
+                - img [ref=e82]
+                - text: Fork
+                - generic "392" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Fvchoutas%2Fsmplx
+                - img [ref=e88]
+                - text: Star
+                - generic "2617 users starred this repository" [ref=e90]: 2.6k
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /vchoutas/smplx
+              - img [ref=e95]
+              - generic [ref=e97]: Code
+          - listitem [ref=e98]:
+            - link "Issues 127" [ref=e99] [cursor=pointer]:
+              - /url: /vchoutas/smplx/issues
+              - img [ref=e100]
+              - generic [ref=e103]: Issues
+              - generic "127" [ref=e104]
+          - listitem [ref=e105]:
+            - link "Pull requests 7" [ref=e106] [cursor=pointer]:
+              - /url: /vchoutas/smplx/pulls
+              - img [ref=e107]
+              - generic [ref=e109]: Pull requests
+              - generic "7" [ref=e110]
+          - listitem [ref=e111]:
+            - link "Actions" [ref=e112] [cursor=pointer]:
+              - /url: /vchoutas/smplx/actions
+              - img [ref=e113]
+              - generic [ref=e115]: Actions
+          - listitem [ref=e116]:
+            - link "Projects" [ref=e117] [cursor=pointer]:
+              - /url: /vchoutas/smplx/projects
+              - img [ref=e118]
+              - generic [ref=e120]: Projects
+          - listitem [ref=e121]:
+            - link "Security and quality" [ref=e122] [cursor=pointer]:
+              - /url: /vchoutas/smplx/security
+              - img [ref=e123]
+              - generic [ref=e125]: Security and quality
+          - listitem [ref=e126]:
+            - link "Insights" [ref=e127] [cursor=pointer]:
+              - /url: /vchoutas/smplx/pulse
+              - img [ref=e128]
+              - generic [ref=e130]: Insights
+    - generic [ref=e143]:
+      - heading "vchoutas/smplx" [level=1] [ref=e145]
+      - generic [ref=e146]:
+        - generic [ref=e149]:
+          - generic [ref=e150]:
+            - generic [ref=e151]:
+              - button "main branch" [ref=e153] [cursor=pointer]:
+                - generic [ref=e154]:
+                  - generic [ref=e156]:
+                    - img [ref=e158]
+                    - generic [ref=e161]: main
+                  - generic:
+                    - img
+              - generic [ref=e162]:
+                - link "Go to Branches page" [ref=e163] [cursor=pointer]:
+                  - /url: /vchoutas/smplx/branches
+                  - img [ref=e164]
+                - link "Go to Tags page" [ref=e166] [cursor=pointer]:
+                  - /url: /vchoutas/smplx/tags
+                  - img [ref=e167]
+            - button "Code" [ref=e170] [cursor=pointer]:
+              - generic [ref=e171]:
+                - generic:
+                  - img
+                - generic [ref=e172]: Code
+                - generic:
+                  - img
+          - generic [ref=e173]:
+            - generic [ref=e174]:
+              - heading "Folders and files" [level=2] [ref=e175]
+              - table "Folders and files" [ref=e176]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message":
+                      - generic "Last commit message"
+                    - columnheader "Last commit date":
+                      - generic "Last commit date"
+                - rowgroup [ref=e177]:
+                  - row "Latest commit History 158 Commits" [ref=e178]:
+                    - cell "Latest commit History 158 Commits" [ref=e179]:
+                      - generic [ref=e180]:
+                        - heading "Latest commit" [level=2] [ref=e181]
+                        - generic [ref=e184]:
+                          - heading "History" [level=2] [ref=e185]
+                          - link "158 Commits" [ref=e186] [cursor=pointer]:
+                            - /url: /vchoutas/smplx/commits/main/
+                            - generic [ref=e187]:
+                              - generic:
+                                - img
+                              - generic [ref=e188]: 158 Commits
+                  - row "config_files, (Directory)" [ref=e189]:
+                    - cell "config_files, (Directory)" [ref=e190]:
+                      - generic [ref=e191]:
+                        - img [ref=e192]
+                        - link "config_files, (Directory)" [ref=e197] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/config_files
+                          - text: config_files
+                    - cell [ref=e198]
+                    - cell [ref=e200]
+                  - row "examples, (Directory)" [ref=e203]:
+                    - cell "examples, (Directory)" [ref=e204]:
+                      - generic [ref=e205]:
+                        - img [ref=e206]
+                        - link "examples, (Directory)" [ref=e211] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/examples
+                          - text: examples
+                    - cell [ref=e212]
+                    - cell [ref=e214]
+                  - row "images, (Directory)" [ref=e217]:
+                    - cell "images, (Directory)" [ref=e218]:
+                      - generic [ref=e219]:
+                        - img [ref=e220]
+                        - link "images, (Directory)" [ref=e225] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/images
+                          - text: images
+                    - cell [ref=e226]
+                    - cell [ref=e228]
+                  - row "smplx, (Directory)" [ref=e231]:
+                    - cell "smplx, (Directory)" [ref=e232]:
+                      - generic [ref=e233]:
+                        - img [ref=e234]
+                        - link "smplx, (Directory)" [ref=e239] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/smplx
+                          - text: smplx
+                    - cell [ref=e240]
+                    - cell [ref=e242]
+                  - row "tools, (Directory)" [ref=e245]:
+                    - cell "tools, (Directory)" [ref=e246]:
+                      - generic [ref=e247]:
+                        - img [ref=e248]
+                        - link "tools, (Directory)" [ref=e253] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/tools
+                          - text: tools
+                    - cell [ref=e254]
+                    - cell [ref=e256]
+                  - row "transfer_data/support_data/github_data, (Directory)" [ref=e259]:
+                    - cell "transfer_data/support_data/github_data, (Directory)" [ref=e260]:
+                      - generic [ref=e261]:
+                        - img [ref=e262]
+                        - link "transfer_data/support_data/github_data, (Directory)" [ref=e267] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/transfer_data/support_data/github_data
+                          - text: transfer_data/support_data/github_data
+                    - cell [ref=e268]
+                    - cell [ref=e270]
+                  - row "transfer_model, (Directory)" [ref=e273]:
+                    - cell "transfer_model, (Directory)" [ref=e274]:
+                      - generic [ref=e275]:
+                        - img [ref=e276]
+                        - link "transfer_model, (Directory)" [ref=e281] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/tree/main/transfer_model
+                          - text: transfer_model
+                    - cell [ref=e282]
+                    - cell [ref=e284]
+                  - row ".gitignore, (File)" [ref=e287]:
+                    - cell ".gitignore, (File)" [ref=e288]:
+                      - generic [ref=e289]:
+                        - img [ref=e290]
+                        - link ".gitignore, (File)" [ref=e295] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/blob/main/.gitignore
+                          - text: .gitignore
+                    - cell [ref=e296]
+                    - cell [ref=e298]
+                  - row "LICENSE, (File)" [ref=e301]:
+                    - cell "LICENSE, (File)" [ref=e302]:
+                      - generic [ref=e303]:
+                        - img [ref=e304]
+                        - link "LICENSE, (File)" [ref=e309] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/blob/main/LICENSE
+                          - text: LICENSE
+                    - cell [ref=e310]
+                    - cell [ref=e312]
+                  - row "README.md, (File)" [ref=e315]:
+                    - cell "README.md, (File)" [ref=e316]:
+                      - generic [ref=e317]:
+                        - img [ref=e318]
+                        - link "README.md, (File)" [ref=e323] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/blob/main/README.md
+                          - text: README.md
+                    - cell [ref=e324]
+                    - cell [ref=e326]
+                  - row "optional-requirements.txt, (File)" [ref=e329]:
+                    - cell "optional-requirements.txt, (File)" [ref=e330]:
+                      - generic [ref=e331]:
+                        - img [ref=e332]
+                        - link "optional-requirements.txt, (File)" [ref=e337] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/blob/main/optional-requirements.txt
+                          - text: optional-requirements.txt
+                    - cell [ref=e338]
+                    - cell [ref=e340]
+                  - row "requirements.txt, (File)" [ref=e343]:
+                    - cell "requirements.txt, (File)" [ref=e344]:
+                      - generic [ref=e345]:
+                        - img [ref=e346]
+                        - link "requirements.txt, (File)" [ref=e351] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/blob/main/requirements.txt
+                          - text: requirements.txt
+                    - cell [ref=e352]
+                    - cell [ref=e354]
+                  - row "setup.py, (File)" [ref=e357]:
+                    - cell "setup.py, (File)" [ref=e358]:
+                      - generic [ref=e359]:
+                        - img [ref=e360]
+                        - link "setup.py, (File)" [ref=e365] [cursor=pointer]:
+                          - /url: /vchoutas/smplx/blob/main/setup.py
+                          - text: setup.py
+                    - cell [ref=e366]
+                    - cell [ref=e368]
+            - generic [ref=e372]:
+              - generic [ref=e373]:
+                - heading "Repository files navigation" [level=2] [ref=e374]
+                - navigation "Repository files" [ref=e375]:
+                  - list [ref=e376]:
+                    - listitem [ref=e377]:
+                      - link "README" [ref=e378] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e380]
+                        - generic [ref=e382]: README
+                    - listitem [ref=e383]:
+                      - link "License" [ref=e384] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e386]
+                        - generic [ref=e388]: License
+                - button "Outline" [ref=e389] [cursor=pointer]:
+                  - img [ref=e390]
+              - article [ref=e393]:
+                - generic [ref=e394]:
+                  - 'heading "SMPL-X: A new joint 3D model of the human body, face and hands together" [level=2] [ref=e395]'
+                  - 'link "Permalink: SMPL-X: A new joint 3D model of the human body, face and hands together" [ref=e396] [cursor=pointer]':
+                    - /url: "#smpl-x--a-new-joint-3d-model-of-the-human-body-face-and-hands-together"
+                    - img [ref=e397]
+                - paragraph [ref=e399]:
+                  - text: "["
+                  - link "Paper Page" [ref=e400] [cursor=pointer]:
+                    - /url: https://smpl-x.is.tue.mpg.de
+                  - text: "] ["
+                  - link "Paper" [ref=e401] [cursor=pointer]:
+                    - /url: https://ps.is.tuebingen.mpg.de/uploads_file/attachment/attachment/497/SMPL-X.pdf
+                  - text: "] ["
+                  - link "Supp. Mat." [ref=e402] [cursor=pointer]:
+                    - /url: https://ps.is.tuebingen.mpg.de/uploads_file/attachment/attachment/498/SMPL-X-supp.pdf
+                  - text: "]"
+                - paragraph [ref=e403]:
+                  - link "SMPL-X Examples" [ref=e404] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/images/teaser_fig.png
+                    - img "SMPL-X Examples" [ref=e405]
+                - generic [ref=e406]:
+                  - heading "Table of Contents" [level=2] [ref=e407]
+                  - 'link "Permalink: Table of Contents" [ref=e408] [cursor=pointer]':
+                    - /url: "#table-of-contents"
+                    - img [ref=e409]
+                - list [ref=e411]:
+                  - listitem [ref=e412]:
+                    - link "License" [ref=e413] [cursor=pointer]:
+                      - /url: "#license"
+                  - listitem [ref=e414]:
+                    - link "Description" [ref=e415] [cursor=pointer]:
+                      - /url: "#description"
+                  - listitem [ref=e416]:
+                    - link "News" [ref=e417] [cursor=pointer]:
+                      - /url: "#news"
+                  - listitem [ref=e418]:
+                    - link "Installation" [ref=e419] [cursor=pointer]:
+                      - /url: "#installation"
+                  - listitem [ref=e420]:
+                    - link "Downloading the model" [ref=e421] [cursor=pointer]:
+                      - /url: "#downloading-the-model"
+                  - listitem [ref=e422]:
+                    - link "Loading SMPL-X, SMPL+H and SMPL" [ref=e423] [cursor=pointer]:
+                      - /url: "#loading-smpl-x-smplh-and-smpl"
+                    - list [ref=e424]:
+                      - listitem [ref=e425]:
+                        - link "SMPL and SMPL+H setup" [ref=e426] [cursor=pointer]:
+                          - /url: "#smpl-and-smplh-setup"
+                      - listitem [ref=e427]:
+                        - link "Model loading" [ref=e428] [cursor=pointer]:
+                          - /url: https://github.com/vchoutas/smplx#model-loading
+                  - listitem [ref=e429]:
+                    - link "MANO and FLAME correspondences" [ref=e430] [cursor=pointer]:
+                      - /url: "#mano-and-flame-correspondences"
+                  - listitem [ref=e431]:
+                    - link "Example" [ref=e432] [cursor=pointer]:
+                      - /url: "#example"
+                  - listitem [ref=e433]:
+                    - link "Modifying the global pose of the model" [ref=e434] [cursor=pointer]:
+                      - /url: "#modifying-the-global-pose-of-the-model"
+                  - listitem [ref=e435]:
+                    - link "Citation" [ref=e436] [cursor=pointer]:
+                      - /url: "#citation"
+                  - listitem [ref=e437]:
+                    - link "Acknowledgments" [ref=e438] [cursor=pointer]:
+                      - /url: "#acknowledgments"
+                  - listitem [ref=e439]:
+                    - link "Contact" [ref=e440] [cursor=pointer]:
+                      - /url: "#contact"
+                - generic [ref=e441]:
+                  - heading "License" [level=2] [ref=e442]
+                  - 'link "Permalink: License" [ref=e443] [cursor=pointer]':
+                    - /url: "#license"
+                    - img [ref=e444]
+                - paragraph [ref=e446]:
+                  - text: Software Copyright License for
+                  - strong [ref=e447]: non-commercial scientific research purposes
+                  - text: . Please read carefully the
+                  - link "terms and conditions" [ref=e448] [cursor=pointer]:
+                    - /url: https://github.com/vchoutas/smplx/blob/master/LICENSE
+                  - text: and any accompanying documentation before you download and/or use the SMPL-X/SMPLify-X model, data and software, (the "Model & Software"), including 3D meshes, blend weights, blend shapes, textures, software, scripts, and animations. By downloading and/or using the Model & Software (including downloading, cloning, installing, and any other use of this github repository), you acknowledge that you have read these terms and conditions, understand them, and agree to be bound by them. If you do not agree with these terms and conditions, you must not download and/or use the Model & Software. Any infringement of the terms of this agreement will automatically terminate your rights under this
+                  - link "License" [ref=e449] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/LICENSE
+                  - text: .
+                - generic [ref=e450]:
+                  - heading "Disclaimer" [level=2] [ref=e451]
+                  - 'link "Permalink: Disclaimer" [ref=e452] [cursor=pointer]':
+                    - /url: "#disclaimer"
+                    - img [ref=e453]
+                - paragraph [ref=e455]: The original images used for the figures 1 and 2 of the paper can be found in this link. The images in the paper are used under license from gettyimages.com. We have acquired the right to use them in the publication, but redistribution is not allowed. Please follow the instructions on the given link to acquire right of usage. Our results are obtained on the 483 × 724 pixels resolution of the original images.
+                - generic [ref=e456]:
+                  - heading "Description" [level=2] [ref=e457]
+                  - 'link "Permalink: Description" [ref=e458] [cursor=pointer]':
+                    - /url: "#description"
+                    - img [ref=e459]
+                - paragraph [ref=e461]:
+                  - emphasis [ref=e462]: SMPL-X
+                  - text: (SMPL eXpressive) is a unified body model with shape parameters trained jointly for the face, hands and body.
+                  - emphasis [ref=e463]: SMPL-X
+                  - text: uses standard vertex based linear blend skinning with learned corrective blend shapes, has N = 10, 475 vertices and K = 54 joints, which include joints for the neck, jaw, eyeballs and fingers. SMPL-X is defined by a function M(θ, β, ψ), where θ is the pose parameters, β the shape parameters and ψ the facial expression parameters.
+                - generic [ref=e464]:
+                  - heading "News" [level=2] [ref=e465]
+                  - 'link "Permalink: News" [ref=e466] [cursor=pointer]':
+                    - /url: "#news"
+                    - img [ref=e467]
+                - list [ref=e469]:
+                  - listitem [ref=e470]:
+                    - text: "3 November 2020: We release the code to transfer between the models in the SMPL family. For more details on the code, go to this"
+                    - link "readme file" [ref=e471] [cursor=pointer]:
+                      - /url: /vchoutas/smplx/blob/main/transfer_model/README.md
+                    - text: . A detailed explanation on how the mappings were extracted can be found
+                    - link "here" [ref=e472] [cursor=pointer]:
+                      - /url: /vchoutas/smplx/blob/main/transfer_model/docs/transfer.md
+                    - text: .
+                  - listitem [ref=e473]: "23 September 2020: A UV map is now available for SMPL-X, please check the Downloads section of the website."
+                  - listitem [ref=e474]: "20 August 2020: The full shape and expression space of SMPL-X are now available."
+                - generic [ref=e475]:
+                  - heading "Installation" [level=2] [ref=e476]
+                  - 'link "Permalink: Installation" [ref=e477] [cursor=pointer]':
+                    - /url: "#installation"
+                    - img [ref=e478]
+                - paragraph [ref=e480]: "To install the model please follow the next steps in the specified order:"
+                - list [ref=e481]:
+                  - listitem [ref=e482]: "To install from PyPi simply run:"
+                - generic [ref=e483]:
+                  - generic [ref=e484]: pip install smplx[all]
+                  - button "Copy code to clipboard" [ref=e486] [cursor=pointer]:
+                    - img [ref=e487]
+                - list [ref=e490]:
+                  - listitem [ref=e491]:
+                    - text: Clone this repository and install it using the
+                    - emphasis [ref=e492]: setup.py
+                    - text: "script:"
+                - generic [ref=e493]:
+                  - generic [ref=e494]: git clone https://github.com/vchoutas/smplx python setup.py install
+                  - button "Copy code to clipboard" [ref=e496] [cursor=pointer]:
+                    - img [ref=e497]
+                - generic [ref=e500]:
+                  - heading "Downloading the model" [level=2] [ref=e501]
+                  - 'link "Permalink: Downloading the model" [ref=e502] [cursor=pointer]':
+                    - /url: "#downloading-the-model"
+                    - img [ref=e503]
+                - paragraph [ref=e505]:
+                  - text: To download the
+                  - emphasis [ref=e506]: SMPL-X
+                  - text: model go to
+                  - link "this project website" [ref=e507] [cursor=pointer]:
+                    - /url: https://smpl-x.is.tue.mpg.de
+                  - text: and register to get access to the downloads section.
+                - paragraph [ref=e508]:
+                  - text: To download the
+                  - emphasis [ref=e509]: SMPL+H
+                  - text: model go to
+                  - link "this project website" [ref=e510] [cursor=pointer]:
+                    - /url: http://mano.is.tue.mpg.de
+                  - text: and register to get access to the downloads section.
+                - paragraph [ref=e511]:
+                  - text: To download the
+                  - emphasis [ref=e512]: SMPL
+                  - text: model go to
+                  - link "this" [ref=e513] [cursor=pointer]:
+                    - /url: http://smpl.is.tue.mpg.de
+                  - text: (male and female models) and
+                  - link "this" [ref=e514] [cursor=pointer]:
+                    - /url: http://smplify.is.tue.mpg.de
+                  - text: (gender neutral model) project website and register to get access to the downloads section.
+                - generic [ref=e515]:
+                  - heading "Loading SMPL-X, SMPL+H and SMPL" [level=2] [ref=e516]
+                  - 'link "Permalink: Loading SMPL-X, SMPL+H and SMPL" [ref=e517] [cursor=pointer]':
+                    - /url: "#loading-smpl-x-smplh-and-smpl"
+                    - img [ref=e518]
+                - generic [ref=e520]:
+                  - heading "SMPL and SMPL+H setup" [level=3] [ref=e521]
+                  - 'link "Permalink: SMPL and SMPL+H setup" [ref=e522] [cursor=pointer]':
+                    - /url: "#smpl-and-smplh-setup"
+                    - img [ref=e523]
+                - paragraph [ref=e525]:
+                  - text: The loader gives the option to use any of the SMPL-X, SMPL+H, SMPL, and MANO models. Depending on the model you want to use, please follow the respective download instructions. To switch between MANO, SMPL, SMPL+H and SMPL-X just change the
+                  - emphasis [ref=e526]: model_path
+                  - text: or
+                  - emphasis [ref=e527]: model_type
+                  - text: parameters. For more details please check the docs of the model classes. Before using SMPL and SMPL+H you should follow the instructions in
+                  - link "tools/README.md" [ref=e528] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/tools/README.md
+                  - text: to remove the Chumpy objects from both model pkls, as well as merge the MANO parameters with SMPL+H.
+                - generic [ref=e529]:
+                  - heading "Model loading" [level=3] [ref=e530]
+                  - 'link "Permalink: Model loading" [ref=e531] [cursor=pointer]':
+                    - /url: "#model-loading"
+                    - img [ref=e532]
+                - paragraph [ref=e534]:
+                  - text: You can either use the
+                  - link "create" [ref=e535] [cursor=pointer]:
+                    - /url: https://github.com/vchoutas/smplx/blob/c63c02b478c5c6f696491ed9167e3af6b08d89b1/smplx/body_models.py#L54
+                  - text: function from
+                  - link "body_models" [ref=e536] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/smplx/body_models.py
+                  - text: or directly call the constructor for the
+                  - link "SMPL" [ref=e537] [cursor=pointer]:
+                    - /url: https://github.com/vchoutas/smplx/blob/c63c02b478c5c6f696491ed9167e3af6b08d89b1/smplx/body_models.py#L106
+                  - text: ","
+                  - link "SMPL+H" [ref=e538] [cursor=pointer]:
+                    - /url: https://github.com/vchoutas/smplx/blob/c63c02b478c5c6f696491ed9167e3af6b08d89b1/smplx/body_models.py#L395
+                  - text: and
+                  - link "SMPL-X" [ref=e539] [cursor=pointer]:
+                    - /url: https://github.com/vchoutas/smplx/blob/c63c02b478c5c6f696491ed9167e3af6b08d89b1/smplx/body_models.py#L628
+                  - text: "model. The path to the model can either be the path to the file with the parameters or a directory with the following structure:"
+                - generic [ref=e540]:
+                  - generic [ref=e541]: models ├── smpl │ ├── SMPL_FEMALE.pkl │ └── SMPL_MALE.pkl │ └── SMPL_NEUTRAL.pkl ├── smplh │ ├── SMPLH_FEMALE.pkl │ └── SMPLH_MALE.pkl ├── mano | ├── MANO_RIGHT.pkl | └── MANO_LEFT.pkl └── smplx ├── SMPLX_FEMALE.npz ├── SMPLX_FEMALE.pkl ├── SMPLX_MALE.npz ├── SMPLX_MALE.pkl ├── SMPLX_NEUTRAL.npz └── SMPLX_NEUTRAL.pkl
+                  - button "Copy code to clipboard" [ref=e543] [cursor=pointer]:
+                    - img [ref=e544]
+                - generic [ref=e547]:
+                  - heading "MANO and FLAME correspondences" [level=2] [ref=e548]
+                  - 'link "Permalink: MANO and FLAME correspondences" [ref=e549] [cursor=pointer]':
+                    - /url: "#mano-and-flame-correspondences"
+                    - img [ref=e550]
+                - paragraph [ref=e552]:
+                  - text: The vertex correspondences between SMPL-X and MANO, FLAME can be downloaded from
+                  - link "the project website" [ref=e553] [cursor=pointer]:
+                    - /url: https://smpl-x.is.tue.mpg.de
+                  - text: . If you have extracted the correspondence data in the folder
+                  - emphasis [ref=e554]: correspondences
+                  - text: ", then use the following scripts to visualize them:"
+                - list [ref=e555]:
+                  - listitem [ref=e556]: "To view MANO correspondences run the following command:"
+                - generic [ref=e557]:
+                  - code [ref=e559]: python examples/vis_mano_vertices.py --model-folder $SMPLX_FOLDER --corr-fname correspondences/MANO_SMPLX_vertex_ids.pkl
+                  - button "Copy code to clipboard" [ref=e561] [cursor=pointer]:
+                    - img [ref=e562]
+                - list [ref=e565]:
+                  - listitem [ref=e566]: "To view FLAME correspondences run the following command:"
+                - generic [ref=e567]:
+                  - code [ref=e569]: python examples/vis_flame_vertices.py --model-folder $SMPLX_FOLDER --corr-fname correspondences/SMPL-X__FLAME_vertex_ids.npy
+                  - button "Copy code to clipboard" [ref=e571] [cursor=pointer]:
+                    - img [ref=e572]
+                - generic [ref=e575]:
+                  - heading "Example" [level=2] [ref=e576]
+                  - 'link "Permalink: Example" [ref=e577] [cursor=pointer]':
+                    - /url: "#example"
+                    - img [ref=e578]
+                - paragraph [ref=e580]:
+                  - text: After installing the
+                  - emphasis [ref=e581]: smplx
+                  - text: package and downloading the model parameters you should be able to run the
+                  - emphasis [ref=e582]: demo.py
+                  - text: script to visualize the results. For this step you have to install the
+                  - link "pyrender" [ref=e583] [cursor=pointer]:
+                    - /url: https://pyrender.readthedocs.io/en/latest/index.html
+                  - text: and
+                  - link "trimesh" [ref=e584] [cursor=pointer]:
+                    - /url: https://trimsh.org/
+                  - text: packages.
+                - paragraph [ref=e585]:
+                  - code [ref=e586]: python examples/demo.py --model-folder $SMPLX_FOLDER --plot-joints=True --gender="neutral"
+                - paragraph [ref=e587]:
+                  - link "SMPL-X Examples" [ref=e588] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/images/example.png
+                    - img "SMPL-X Examples" [ref=e589]
+                - generic [ref=e590]:
+                  - heading "Modifying the global pose of the model" [level=2] [ref=e591]
+                  - 'link "Permalink: Modifying the global pose of the model" [ref=e592] [cursor=pointer]':
+                    - /url: "#modifying-the-global-pose-of-the-model"
+                    - img [ref=e593]
+                - paragraph [ref=e595]:
+                  - text: If you want to modify the global pose of the model, i.e. the root rotation and translation, to a new coordinate system for example, you need to take into account that the model rotation uses the pelvis as the center of rotation. A more detailed description can be found in the following
+                  - link "link" [ref=e596] [cursor=pointer]:
+                    - /url: https://www.dropbox.com/scl/fi/zkatuv5shs8d4tlwr8ecc/Change-parameters-to-new-coordinate-system.paper?dl=0&rlkey=lotq1sh6wzkmyttisc05h0in0
+                  - text: . If something is not clear, please let me know so that I can update the description.
+                - generic [ref=e597]:
+                  - heading "Citation" [level=2] [ref=e598]
+                  - 'link "Permalink: Citation" [ref=e599] [cursor=pointer]':
+                    - /url: "#citation"
+                    - img [ref=e600]
+                - paragraph [ref=e602]: "Depending on which model is loaded for your project, i.e. SMPL-X or SMPL+H or SMPL, please cite the most relevant work below, listed in the same order:"
+                - generic [ref=e603]:
+                  - code [ref=e605]: "@inproceedings{SMPL-X:2019, title = {Expressive Body Capture: 3D Hands, Face, and Body from a Single Image}, author = {Pavlakos, Georgios and Choutas, Vasileios and Ghorbani, Nima and Bolkart, Timo and Osman, Ahmed A. A. and Tzionas, Dimitrios and Black, Michael J.}, booktitle = {Proceedings IEEE Conf. on Computer Vision and Pattern Recognition (CVPR)}, year = {2019} }"
+                  - button "Copy code to clipboard" [ref=e607] [cursor=pointer]:
+                    - img [ref=e608]
+                - generic [ref=e611]:
+                  - code [ref=e613]: "@article{MANO:SIGGRAPHASIA:2017, title = {Embodied Hands: Modeling and Capturing Hands and Bodies Together}, author = {Romero, Javier and Tzionas, Dimitrios and Black, Michael J.}, journal = {ACM Transactions on Graphics, (Proc. SIGGRAPH Asia)}, volume = {36}, number = {6}, series = {245:1--245:17}, month = nov, year = {2017}, month_numeric = {11} }"
+                  - button "Copy code to clipboard" [ref=e615] [cursor=pointer]:
+                    - img [ref=e616]
+                - generic [ref=e619]:
+                  - code [ref=e621]: "@article{SMPL:2015, author = {Loper, Matthew and Mahmood, Naureen and Romero, Javier and Pons-Moll, Gerard and Black, Michael J.}, title = {{SMPL}: A Skinned Multi-Person Linear Model}, journal = {ACM Transactions on Graphics, (Proc. SIGGRAPH Asia)}, month = oct, number = {6}, pages = {248:1--248:16}, publisher = {ACM}, volume = {34}, year = {2015} }"
+                  - button "Copy code to clipboard" [ref=e623] [cursor=pointer]:
+                    - img [ref=e624]
+                - paragraph [ref=e627]:
+                  - text: "This repository was originally developed for SMPL-X / SMPLify-X (CVPR 2019), you might be interested in having a look:"
+                  - link "https://smpl-x.is.tue.mpg.de" [ref=e628] [cursor=pointer]:
+                    - /url: https://smpl-x.is.tue.mpg.de
+                  - text: .
+                - generic [ref=e629]:
+                  - heading "Acknowledgments" [level=2] [ref=e630]
+                  - 'link "Permalink: Acknowledgments" [ref=e631] [cursor=pointer]':
+                    - /url: "#acknowledgments"
+                    - img [ref=e632]
+                - generic [ref=e634]:
+                  - heading "Facial Contour" [level=3] [ref=e635]
+                  - 'link "Permalink: Facial Contour" [ref=e636] [cursor=pointer]':
+                    - /url: "#facial-contour"
+                    - img [ref=e637]
+                - paragraph [ref=e639]:
+                  - text: Special thanks to
+                  - link "Soubhik Sanyal" [ref=e640] [cursor=pointer]:
+                    - /url: https://github.com/soubhiksanyal
+                  - text: for sharing the Tensorflow code used for the facial landmarks.
+                - generic [ref=e641]:
+                  - heading "Contact" [level=2] [ref=e642]
+                  - 'link "Permalink: Contact" [ref=e643] [cursor=pointer]':
+                    - /url: "#contact"
+                    - img [ref=e644]
+                - paragraph [ref=e646]:
+                  - text: The code of this repository was implemented by
+                  - link "Vassilis Choutas" [ref=e647] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/vassilis.choutas@tuebingen.mpg.de
+                  - text: .
+                - paragraph [ref=e648]:
+                  - text: For questions, please contact
+                  - link "smplx@tue.mpg.de" [ref=e649] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/smplx@tue.mpg.de
+                  - text: .
+                - paragraph [ref=e650]:
+                  - text: For commercial licensing (and all related questions for business applications), please contact
+                  - link "ps-licensing@tue.mpg.de" [ref=e651] [cursor=pointer]:
+                    - /url: /vchoutas/smplx/blob/main/ps-licensing@tue.mpg.de
+                  - text: .
+        - generic [ref=e655]:
+          - generic [ref=e658]:
+            - heading "About" [level=2] [ref=e659]
+            - paragraph [ref=e660]: SMPL-X
+            - generic [ref=e661]:
+              - img [ref=e662]
+              - link "smpl-x.is.tue.mpg.de/" [ref=e665] [cursor=pointer]:
+                - /url: https://smpl-x.is.tue.mpg.de/
+            - heading "Resources" [level=3] [ref=e666]
+            - link "Readme" [ref=e668] [cursor=pointer]:
+              - /url: "#readme-ov-file"
+              - img [ref=e669]
+              - text: Readme
+            - heading "License" [level=3] [ref=e671]
+            - link "View license" [ref=e673] [cursor=pointer]:
+              - /url: "#License-1-ov-file"
+              - img [ref=e674]
+              - text: View license
+            - link "Activity" [ref=e677] [cursor=pointer]:
+              - /url: /vchoutas/smplx/activity
+              - img [ref=e678]
+              - text: Activity
+            - heading "Stars" [level=3] [ref=e680]
+            - link "2.6k stars" [ref=e682] [cursor=pointer]:
+              - /url: /vchoutas/smplx/stargazers
+              - img [ref=e683]
+              - strong [ref=e685]: 2.6k
+              - text: stars
+            - heading "Watchers" [level=3] [ref=e686]
+            - link "27 watching" [ref=e688] [cursor=pointer]:
+              - /url: /vchoutas/smplx/watchers
+              - img [ref=e689]
+              - strong [ref=e691]: "27"
+              - text: watching
+            - heading "Forks" [level=3] [ref=e692]
+            - link "392 forks" [ref=e694] [cursor=pointer]:
+              - /url: /vchoutas/smplx/forks
+              - img [ref=e695]
+              - strong [ref=e697]: "392"
+              - text: forks
+            - link "Report repository" [ref=e699] [cursor=pointer]:
+              - /url: /contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Fvchoutas%2Fsmplx&report=vchoutas+%28user%29
+          - generic [ref=e701]:
+            - heading "Releases" [level=2] [ref=e702]:
+              - link "Releases" [ref=e703] [cursor=pointer]:
+                - /url: /vchoutas/smplx/releases
+            - generic [ref=e704]: No releases published
+          - generic [ref=e706]:
+            - heading "Packages" [level=2] [ref=e707]:
+              - link "Packages" [ref=e708] [cursor=pointer]:
+                - /url: /users/vchoutas/packages?repo_name=smplx
+            - generic [ref=e709]: No packages published
+          - generic [ref=e711]:
+            - heading "Contributors 13" [level=2] [ref=e712]:
+              - link "Contributors 13" [ref=e713] [cursor=pointer]:
+                - /url: /vchoutas/smplx/graphs/contributors
+                - text: Contributors
+                - generic "13" [ref=e714]
+            - list [ref=e715]:
+              - listitem [ref=e716]:
+                - link "@vchoutas" [ref=e717] [cursor=pointer]:
+                  - /url: https://github.com/vchoutas
+                  - img "@vchoutas" [ref=e718]
+              - listitem [ref=e719]:
+                - link "@dimtzionas" [ref=e720] [cursor=pointer]:
+                  - /url: https://github.com/dimtzionas
+                  - img "@dimtzionas" [ref=e721]
+              - listitem [ref=e722]:
+                - link "@gngdb" [ref=e723] [cursor=pointer]:
+                  - /url: https://github.com/gngdb
+                  - img "@gngdb" [ref=e724]
+              - listitem [ref=e725]:
+                - link "@otaheri" [ref=e726] [cursor=pointer]:
+                  - /url: https://github.com/otaheri
+                  - img "@otaheri" [ref=e727]
+              - listitem [ref=e728]:
+                - link "@MarilynKeller" [ref=e729] [cursor=pointer]:
+                  - /url: https://github.com/MarilynKeller
+                  - img "@MarilynKeller" [ref=e730]
+              - listitem [ref=e731]:
+                - link "@JingLi513" [ref=e732] [cursor=pointer]:
+                  - /url: https://github.com/JingLi513
+                  - img "@JingLi513" [ref=e733]
+              - listitem [ref=e734]:
+                - link "@Okaerikoto" [ref=e735] [cursor=pointer]:
+                  - /url: https://github.com/Okaerikoto
+                  - img "@Okaerikoto" [ref=e736]
+              - listitem [ref=e737]:
+                - link "@AndresCasado" [ref=e738] [cursor=pointer]:
+                  - /url: https://github.com/AndresCasado
+                  - img "@AndresCasado" [ref=e739]
+              - listitem [ref=e740]:
+                - link "@nkolot" [ref=e741] [cursor=pointer]:
+                  - /url: https://github.com/nkolot
+                  - img "@nkolot" [ref=e742]
+              - listitem [ref=e743]:
+                - link "@mohamedhassanmus" [ref=e744] [cursor=pointer]:
+                  - /url: https://github.com/mohamedhassanmus
+                  - img "@mohamedhassanmus" [ref=e745]
+              - listitem [ref=e746]:
+                - link "@sha2nkt" [ref=e747] [cursor=pointer]:
+                  - /url: https://github.com/sha2nkt
+                  - img "@sha2nkt" [ref=e748]
+              - listitem [ref=e749]:
+                - link "@sharonhezy" [ref=e750] [cursor=pointer]:
+                  - /url: https://github.com/sharonhezy
+                  - img "@sharonhezy" [ref=e751]
+              - listitem [ref=e752]:
+                - link "@SlimeVRX" [ref=e753] [cursor=pointer]:
+                  - /url: https://github.com/SlimeVRX
+                  - img "@SlimeVRX" [ref=e754]
+          - generic [ref=e756]:
+            - heading "Languages" [level=2] [ref=e757]
+            - list [ref=e761]:
+              - listitem [ref=e762]:
+                - link "Python 100.0%" [ref=e763] [cursor=pointer]:
+                  - /url: /vchoutas/smplx/search?l=python
+                  - img [ref=e764]
+                  - generic [ref=e766]: Python
+                  - generic [ref=e767]: 100.0%
+  - contentinfo [ref=e769]:
+    - heading "Footer" [level=2] [ref=e770]
+    - generic [ref=e771]:
+      - generic [ref=e772]:
+        - link "GitHub Homepage" [ref=e773] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e774]
+        - generic [ref=e776]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e777]:
+        - heading "Footer navigation" [level=3] [ref=e778]
+        - list "Footer navigation" [ref=e779]:
+          - listitem [ref=e780]:
+            - link "Terms" [ref=e781] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e782]:
+            - link "Privacy" [ref=e783] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e784]:
+            - link "Security" [ref=e785] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e786]:
+            - link "Status" [ref=e787] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e788]:
+            - link "Community" [ref=e789] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e790]:
+            - link "Docs" [ref=e791] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e792]:
+            - link "Contact" [ref=e793] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e794]:
+            - button "Manage cookies" [ref=e796] [cursor=pointer]
+          - listitem [ref=e797]:
+            - button "Do not share my personal information" [ref=e799] [cursor=pointer]

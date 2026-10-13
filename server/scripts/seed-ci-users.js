@@ -51,7 +51,9 @@ const resolveCiUsers = () => (
       email,
       password,
       role,
-      name
+      name,
+      // Diretorias derivam permissao deste campo; sem ele o perfil entra sem area.
+      diretoria: String(entry.diretoria || '').trim() || null
     };
   })
 );
@@ -69,10 +71,12 @@ const upsertUser = async (client, user) => {
       must_change_password,
       temp_password,
       password_updated_at,
+      deleted_at,
+      diretoria,
       created_at,
       updated_at
     )
-    VALUES ($1, $2, $3, $4, 'ativo', false, NULL, NOW(), NOW(), NOW())
+    VALUES ($1, $2, $3, $4, 'ativo', false, NULL, NOW(), NULL, $5, NOW(), NOW())
     ON CONFLICT (email)
     DO UPDATE SET
       password_hash = EXCLUDED.password_hash,
@@ -82,9 +86,11 @@ const upsertUser = async (client, user) => {
       must_change_password = false,
       temp_password = NULL,
       password_updated_at = NOW(),
+      deleted_at = NULL,
+      diretoria = EXCLUDED.diretoria,
       updated_at = NOW()
     `,
-    [user.email, passwordHash, user.role, user.name]
+    [user.email, passwordHash, user.role, user.name, user.diretoria]
   );
 };
 

@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs/promises';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
@@ -34,7 +34,7 @@ const profiles = [
     role: 'admin',
     expectedPath: '/admin',
     credentials: uniqueCredentials([
-      credential(envValue('E2E_ADMIN_EMAIL', 'admin.ci@laines.ufrn.br'), envValue('E2E_ADMIN_PASSWORD', 'Admin#123456'))
+      credential(envValue('E2E_ADMIN_EMAIL'), envValue('E2E_ADMIN_PASSWORD'))
     ])
   },
   {
@@ -42,9 +42,8 @@ const profiles = [
     role: 'presidente',
     expectedPath: '/admin',
     credentials: uniqueCredentials([
-      credential(envValue('E2E_PRESIDENT_EMAIL', ''), envValue('E2E_PRESIDENT_PASSWORD', '')),
-      credential('bruno.marrocos@laines.ufrn.br', 's4FVfSDsuhrqGf'),
-      credential(envValue('E2E_ADMIN_EMAIL', 'admin.ci@laines.ufrn.br'), envValue('E2E_ADMIN_PASSWORD', 'Admin#123456'))
+      credential(envValue('E2E_PRESIDENT_EMAIL'), envValue('E2E_PRESIDENT_PASSWORD')),
+      credential(envValue('E2E_ADMIN_EMAIL'), envValue('E2E_ADMIN_PASSWORD'))
     ])
   },
   {
@@ -52,7 +51,7 @@ const profiles = [
     role: 'aluno',
     expectedPath: '/aluno',
     credentials: uniqueCredentials([
-      credential(envValue('E2E_STUDENT_EMAIL', 'aluno.ci@laines.ufrn.br'), envValue('E2E_STUDENT_PASSWORD', 'Aluno#123456'))
+      credential(envValue('E2E_STUDENT_EMAIL'), envValue('E2E_STUDENT_PASSWORD'))
     ])
   },
   {
@@ -60,7 +59,7 @@ const profiles = [
     role: 'professor',
     expectedPath: '/professor',
     credentials: uniqueCredentials([
-      credential(envValue('E2E_PROFESSOR_EMAIL', 'professor.ci@laines.ufrn.br'), envValue('E2E_PROFESSOR_PASSWORD', 'Professor#123456'))
+      credential(envValue('E2E_PROFESSOR_EMAIL'), envValue('E2E_PROFESSOR_PASSWORD'))
     ])
   },
   {
@@ -68,8 +67,7 @@ const profiles = [
     role: 'tecnico',
     expectedPath: '/equipe',
     credentials: uniqueCredentials([
-      credential(envValue('E2E_TEAM_EMAIL', 'tecnico.ci@laines.ufrn.br'), envValue('E2E_TEAM_PASSWORD', 'Tecnico#123456')),
-      credential('tecnico.jornada@laines.ufrn.br', 'LAWr%hJx2FFwme')
+      credential(envValue('E2E_TEAM_EMAIL'), envValue('E2E_TEAM_PASSWORD'))
     ])
   },
   {
@@ -77,8 +75,7 @@ const profiles = [
     role: 'atleta',
     expectedPath: '/atleta',
     credentials: uniqueCredentials([
-      credential(envValue('E2E_ATHLETE_EMAIL', 'atleta.ci@laines.ufrn.br'), envValue('E2E_ATHLETE_PASSWORD', 'Atleta#123456')),
-      credential('renan.martins@laines.ufrn.br', 'dw4zQRfDFwKe@J')
+      credential(envValue('E2E_ATHLETE_EMAIL'), envValue('E2E_ATHLETE_PASSWORD'))
     ])
   }
 ];
@@ -276,17 +273,21 @@ const dismissBlockingModals = async (page, notes, profile, currentPassword = '')
 };
 
 const attemptLogin = async (page, email, password) => {
-  await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
-  await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(email);
-  await page.locator('input[placeholder="Sua senha"]').fill(password);
-  await page.locator('button:has-text("Entrar agora")').click();
-  await page.waitForTimeout(1800);
+  await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' });
+  await page.locator('[data-testid="login-identifier"]').fill(email);
+  await page.locator('[data-testid="login-password"]').fill(password);
+  await page.locator('[data-testid="login-submit"]').click();
+  await page.waitForFunction(
+    () => window.location.pathname !== '/' || Boolean(document.querySelector('#landing-login-error')),
+    null,
+    { timeout: 12000 }
+  ).catch(() => {});
 
   const currentPath = new URL(page.url()).pathname;
   const invalidToast = await safeIsVisible(page.getByText(/Credenciais inv[aá]lidas/i).first());
-  const blockedOnLogin = currentPath === '/login' && invalidToast;
+  const blockedOnLogin = currentPath === '/' && invalidToast;
   return {
-    ok: !blockedOnLogin && currentPath !== '/login',
+    ok: !blockedOnLogin && currentPath !== '/',
     currentPath,
     blockedOnLogin
   };
@@ -687,6 +688,9 @@ const runJourneyForProfile = async (browser, profile) => {
 };
 
 const main = async () => {
+  if (profiles.every((profile) => profile.credentials.length === 0)) {
+    throw new Error('Nenhuma credencial E2E configurada. Defina email e senha por perfil no ambiente.');
+  }
   await fs.mkdir(OUT_DIR, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });

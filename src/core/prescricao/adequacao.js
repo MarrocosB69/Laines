@@ -4,18 +4,21 @@
  * Estava embutida na cor do componente. Decidir "verde ou vermelho" a partir
  * de percentual e direção é cálculo, não apresentação — e é justamente onde
  * mora a inversão: para um nutriente com direção `limite` (sódio), passar de
- * 100% é excesso; para uma meta, é o alvo atingido.
+ * 100% é excesso; metas individuais consideram também o afastamento acima do alvo.
+ * RDA/AI são referências populacionais, não metas ou limites de segurança.
  *
  * Cobertura abaixo de 50% derruba o julgamento: com metade da energia do
  * plano vinda de alimentos sem o dado, o percentual não sustenta conclusão.
  */
 export function situacaoAdequacao({ percentual, direcao, cobertura }) {
   // Number.isFinite tambem barra NaN e Infinity, nao so null/undefined.
-  if (!Number.isFinite(percentual) || cobertura < 0.5) return 'sem-dado';
+  if (!Number.isFinite(percentual) || !Number.isFinite(cobertura) || cobertura < 0.5) return 'sem-dado';
   if (direcao === 'limite') return percentual > 100 ? 'excedido' : 'ok';
-  if (percentual >= 90) return 'ok';
-  if (percentual >= 70) return 'atencao';
-  return 'insuficiente';
+  if (direcao === 'referencia') return percentual >= 100 ? 'referencia-atingida' : 'referencia-abaixo';
+  if (percentual > 120) return 'excedido';
+  if (percentual < 80) return 'insuficiente';
+  if (percentual < 90 || percentual > 110) return 'atencao';
+  return 'ok';
 }
 
 /**

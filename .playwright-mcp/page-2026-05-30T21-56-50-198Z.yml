@@ -1,0 +1,142 @@
+- generic [ref=e4]:
+  - generic [ref=e10]:
+    - banner [ref=e11]:
+      - link "LAINES Laines App Sistema de gestão clínico-educacional" [ref=e13] [cursor=pointer]:
+        - /url: "#inicio"
+        - img "LAINES" [ref=e14]
+        - generic [ref=e15]:
+          - strong [ref=e16]: Laines App
+          - generic [ref=e17]: Sistema de gestão clínico-educacional
+    - main [ref=e18]:
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Liga Acadêmica Interprofissional de Nutrição Esportiva · UFRN
+          - heading "Laines App" [level=1] [ref=e23]
+          - paragraph [ref=e24]: Sistema de gestão clínico-educacional
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - generic [ref=e103]:
+                - img "Avaliações clínicas completas" [ref=e104]
+                - generic [ref=e105]:
+                  - strong [ref=e106]: Avaliações clínicas completas
+                  - generic [ref=e107]: Protocolo multiprofissional integrado por etapas
+              - button "Slide anterior" [ref=e32] [cursor=pointer]:
+                - img [ref=e33]
+              - button "Próximo slide" [ref=e35] [cursor=pointer]:
+                - img [ref=e36]
+            - generic [ref=e38]:
+              - button "Ver tela 1" [ref=e39] [cursor=pointer]
+              - button "Ver tela 2" [ref=e40] [cursor=pointer]
+              - button "Ver tela 3" [ref=e41] [cursor=pointer]
+        - complementary [ref=e42]:
+          - generic [ref=e43]:
+            - paragraph [ref=e44]: Acesso ao sistema
+            - heading "Entrar na plataforma" [level=2] [ref=e45]
+            - generic [ref=e46]: Use CPF (somente números) ou e-mail institucional.
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - generic [ref=e49]: CPF ou e-mail
+              - generic [ref=e50]:
+                - img [ref=e51]
+                - textbox "CPF ou e-mail" [ref=e54]:
+                  - /placeholder: usuario@laines.ufrn.br
+            - generic [ref=e55]:
+              - generic [ref=e56]: Senha
+              - generic [ref=e57]:
+                - img [ref=e58]
+                - textbox "Senha Mostrar senha" [ref=e61]:
+                  - /placeholder: Sua senha
+                - button "Mostrar senha" [ref=e62] [cursor=pointer]:
+                  - img [ref=e63]
+            - button "Entrar agora" [ref=e66] [cursor=pointer]:
+              - img [ref=e67]
+              - text: Entrar agora
+            - button "Esqueci minha senha" [ref=e71] [cursor=pointer]:
+              - img [ref=e72]
+              - text: Esqueci minha senha
+            - generic [ref=e75]:
+              - paragraph [ref=e76]: Não possui acesso?
+              - button "Solicitar acesso institucional" [ref=e77] [cursor=pointer]:
+                - text: Solicitar acesso institucional
+                - img [ref=e78]
+    - contentinfo [ref=e80]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - img "LAINES" [ref=e83]
+          - generic [ref=e84]:
+            - strong [ref=e85]: Laines App
+            - generic [ref=e86]: Sistema de gestão clínico-educacional
+        - generic [ref=e87]: © 2026 LAINES · UFRN. Ambiente operacional para ensino e cuidado.
+  - dialog "Solicitar acesso" [ref=e108]:
+    - generic [ref=e109]:
+      - generic [ref=e110]:
+        - heading "Solicitar acesso" [level=3] [ref=e111]
+        - paragraph [ref=e112]: Solicitação sujeita à aprovação da coordenação, com retorno por e-mail.
+      - button "Fechar" [active] [ref=e113] [cursor=pointer]:
+        - img [ref=e114]
+    - generic [ref=e117]:
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]: Nome completo
+          - textbox "Nome completo" [ref=e121]:
+            - /placeholder: Seu nome
+        - generic [ref=e122]:
+          - generic [ref=e123]: CPF
+          - textbox "CPF" [ref=e124]:
+            - /placeholder: 000.000.000-00
+        - generic [ref=e125]:
+          - generic [ref=e126]: Data de nascimento
+          - textbox "Data de nascimento" [ref=e127]
+        - generic [ref=e128]:
+          - generic [ref=e129]: E-mail
+          - textbox "E-mail" [ref=e130]:
+            - /placeholder: seu@email.com
+        - generic [ref=e131]:
+          - generic [ref=e132]: Telefone
+          - textbox "Telefone" [ref=e133]:
+            - /placeholder: (00) 00000-0000
+        - generic [ref=e134]:
+          - generic [ref=e135]: Instituição
+          - textbox "Instituição" [ref=e136]:
+            - /placeholder: Universidade, secretaria, clube...
+        - generic [ref=e137]:
+          - generic [ref=e138]: Área
+          - combobox "Área" [ref=e139]:
+            - option "Nutrição" [selected]
+            - option "Fisioterapia"
+            - option "Psicologia"
+            - option "Outros"
+        - generic [ref=e140]:
+          - generic [ref=e141]: Cargo solicitado
+          - combobox "Cargo solicitado" [ref=e142]:
+            - option "Professor" [selected]
+            - option "Profissional"
+        - generic [ref=e143]:
+          - generic [ref=e144]: Diretoria (opcional)
+          - combobox "Diretoria (opcional)" [ref=e145]:
+            - option "Sem diretoria" [selected]
+            - option "Diretoria de Marketing"
+            - option "Diretoria de Ensino"
+            - option "Diretoria de Pesquisa"
+            - option "Diretoria de Extensão"
+        - generic [ref=e146]:
+          - generic [ref=e147]: Matrícula
+          - textbox "Matrícula" [ref=e148]:
+            - /placeholder: Sua matrícula
+        - generic [ref=e149]:
+          - generic [ref=e150]: Projeto parceiro (opcional)
+          - combobox "Projeto parceiro (opcional)" [ref=e151]:
+            - option "Sem projeto" [selected]
+            - option "Laines"
+            - option "Laines Junior"
+            - option "Print LAINES"
+            - option "Projeto Auditoria UX"
+            - option "Projeto CI Analytics"
+            - option "Projeto Demonstra??o LAINES"
+        - generic [ref=e152]:
+          - generic [ref=e153]: Justificativa de uso (opcional)
+          - textbox "Justificativa de uso (opcional)" [ref=e154]:
+            - /placeholder: Conte, de forma breve, como pretende usar a plataforma.
+      - generic [ref=e155]:
+        - button "Cancelar" [ref=e156] [cursor=pointer]
+        - button "Enviar solicitação" [ref=e157] [cursor=pointer]

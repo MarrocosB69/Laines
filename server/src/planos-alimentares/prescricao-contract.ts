@@ -7,6 +7,40 @@ const array = (v: any): any[] => Array.isArray(v) ? v : [];
 const number = (v: any) => v === null || v === undefined || v === '' ? null : Number(v);
 const nutrients = { calorias: 'kcal', cho: 'cho', ptn: 'ptn', lip: 'lip', fibra: 'fibra' };
 
+/** Derivado para entrega; `nome` do snapshot continua sendo a descricao oficial. */
+export function nomeAlimentoParaEntrega(food: RecordData): string {
+  const nome = String(food?.nome ?? '').normalize('NFC').replace(/\s+/gu, ' ').trim();
+  if (!['TACO', 'TBCA'].includes(String(food?.fonte ?? '').toUpperCase())) return nome;
+  const expandido = nome.replace(/(^|[\s,(])c\/(?=\s|$)/giu, '$1com')
+    .replace(/(^|[\s,(])s\/(?=\s|$)/giu, '$1sem');
+  let profundidade = 0;
+  let resultado = '';
+  for (const caractere of expandido) {
+    if (caractere === '(') profundidade += 1;
+    if (caractere === ')') profundidade = Math.max(0, profundidade - 1);
+    resultado += caractere === ',' && profundidade === 0 ? ' · ' : caractere;
+  }
+  return resultado.replace(/\s*·\s*/gu, ' · ').replace(/\s+/gu, ' ').trim();
+}
+
+const ANCORAS_POR_GRUPO: Record<string, 'ptn' | 'choDisponivel' | 'lip'> = {
+  'carnes e derivados': 'ptn', 'pescados e frutos do mar': 'ptn',
+  'peixes e frutos do mar': 'ptn', 'ovos e derivados': 'ptn',
+  'leite e derivados': 'ptn', 'leguminosas e derivados': 'ptn',
+  'cereais e derivados': 'choDisponivel', 'frutas e derivados': 'choDisponivel',
+  'verduras, hortalicas e derivados': 'choDisponivel',
+  'vegetais e derivados': 'choDisponivel', 'produtos acucarados': 'choDisponivel',
+  'gorduras e oleos': 'lip', 'gorduras e azeites': 'lip',
+  'nozes e sementes': 'lip', 'sementes e oleaginosas': 'lip'
+};
+
+/** Mesma classificacao explícita da edição; o snapshot recebido não escolhe a âncora. */
+export function ancoraDoGrupoParaEntrega(value: unknown) {
+  const key = String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .trim().toLowerCase();
+  return ANCORAS_POR_GRUPO[key] ?? null;
+}
+
 function legacyFood(food: RecordData, id: string) {
   const grams = number(food.quantidadeGramas) ?? 100;
   return {
@@ -90,12 +124,36 @@ export function validatePrescription(dados: RecordData) {
   }
 }
 
+const valorAncora100 = (comp: RecordData, ancora: string | null) => {
+  if (!ancora) return null;
+  const valor = ancora === 'choDisponivel'
+    ? (number(comp.cho) === null || number(comp.fibra) === null
+      ? null : Math.max(0, Number(comp.cho) - Number(comp.fibra)))
+    : number(comp[ancora]);
+  return valor !== null && Number.isFinite(valor) && valor > 0 ? valor : null;
+};
+
+/** Sem âncora verificável, a quantidade da alternativa precisa ser prescrita. */
+export function assertSubstitutosAutomaticos(dados: RecordData) {
+  for (const meal of dados.refeicoes) for (const item of meal.itens) {
+    const base = record(dados.catalogo[item.alimentoId]);
+    for (const sub of array(item.substitutos)) {
+      if (sub.modo === 'fixa') continue;
+      const food = record(dados.catalogo[sub.alimentoId]);
+      const ancora = base.grupo === food.grupo ? ancoraDoGrupoParaEntrega(base.grupo) : null;
+      if (!valorAncora100(record(base.comp), ancora) || !valorAncora100(record(food.comp), ancora)) {
+        throw new BadRequestException('Substituto sem equivalência automática: informe a quantidade prescrita antes da revisão.');
+      }
+    }
+  }
+}
+
 export function portion(item: RecordData, catalogo: RecordData) {
   const food = catalogo[item.alimentoId];
   const medida = food?.medidas?.[item.medidaIdx ?? 0];
   if (!food || !medida) throw new BadRequestException('Alimento ou medida ausente do catálogo da prescrição.');
   const grams = Number(item.quantidade) * Number(medida.gramas);
-  return { descricao: food.nome, quantidadeGramas: grams, medidaCaseira: medida.descricao,
+  return { descricao: nomeAlimentoParaEntrega(food), quantidadeGramas: grams, medidaCaseira: medida.descricao,
     quantidadeMedidas: medida.descricao && food.fonte !== 'plano' ? Number(item.quantidade) : null,
     ...Object.fromEntries(Object.entries(nutrients).map(([label, key]) => [label,
       number(food.comp?.[key]) === null ? null : Number(food.comp[key]) * grams / 100
@@ -111,17 +169,22 @@ export function mealsForPrint(dados: RecordData) {
       const base = dados.catalogo[item.alimentoId];
       const medida = food.medidas[sub.medidaIdx ?? 0];
       const baseMeasure = base.medidas[item.medidaIdx ?? 0];
-      const anchor = base.grupoEquivalencia;
-      const value = (comp: RecordData) => anchor === 'choDisponivel'
-        ? (number(comp.cho) === null || number(comp.fibra) === null ? null : Math.max(0, comp.cho - comp.fibra))
-        : number(comp[anchor]);
+      const anchor = base.grupo === food.grupo ? ancoraDoGrupoParaEntrega(base.grupo) : null;
+      const a = valorAncora100(record(base.comp), anchor);
+      const b = valorAncora100(record(food.comp), anchor);
+      if (sub.modo !== 'fixa' && (!a || !b)) {
+        return { descricao: nomeAlimentoParaEntrega(food), quantidadeGramas: null,
+          medidaCaseira: medida.descricao, quantidadeMedidas: null,
+          substitui: nomeAlimentoParaEntrega(base), semEquivalenciaAutomatica: true,
+          quantidadePendente: true };
+      }
       let quantidade = number(sub.quantidade);
-      if (sub.modo !== 'fixa' && anchor) {
-        const a = value(base.comp), b = value(food.comp);
-        if (a && b) quantidade = Math.max(0.5, Math.round((a * item.quantidade * baseMeasure.gramas / (b * medida.gramas)) / 0.5) * 0.5);
+      if (sub.modo !== 'fixa' && a && b) {
+        quantidade = Math.max(0.5, Math.round((a * item.quantidade * baseMeasure.gramas / (b * medida.gramas)) / 0.5) * 0.5);
       }
       quantidade ??= Number(medida.gramas) === 1 ? 100 : 1;
-      return { ...portion({ ...sub, quantidade }, dados.catalogo), substitui: base.nome };
+      return { ...portion({ ...sub, quantidade }, dados.catalogo), substitui: nomeAlimentoParaEntrega(base),
+        semEquivalenciaAutomatica: !a || !b };
     }));
     const treino = String(dados.treinoInicio || '').split(':').map(Number);
     let horario = meal.horarioFixo || meal.horario || '';
@@ -133,7 +196,8 @@ export function mealsForPrint(dados: RecordData) {
       }
     }
     const totalRefeicao = prescriptionTotals({ ...dados, refeicoes: [meal] });
-    return { ...meal, horario, alimentos, totalRefeicao, substitutos: [...substitutos, ...array(meal.substitutosSemVinculo)] };
+    return { ...meal, horario, orientacoes: meal.orientacoes ?? meal.orientacao ?? '',
+      alimentos, totalRefeicao, substitutos: [...substitutos, ...array(meal.substitutosSemVinculo)] };
   });
 }
 

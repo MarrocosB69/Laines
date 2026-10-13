@@ -1,0 +1,122 @@
+/* Base da landing (direção "Energia e velocidade" —
+   docs/design/landing-v2/a2-energia/index.html, docs/implementacao/landing-v2/change-intent.md).
+   Contém: as fontes da página, `body.landing-page`, o container `.lp`, a
+   grade da primeira tela `.lp-primeira`, a moldura diagonal do painel de
+   login `.lp-painel` e `.spin` (os modais, fora da minha fronteira, usam).
+
+   Os `--lp-*` e `.scroll-top-floating` legados (cor, sombra, botão
+   voltar-ao-topo do desenho anterior) foram removidos: `grep -rn
+   "var(--lp-\|scroll-top" src` (com o padrão restrito aos nomes antigos,
+   sem colidir com as variáveis locais `--lp-*` desta rodada, ver
+   landing-hero.css/landing-responsivo.css) não mostra mais nenhum
+   consumidor — landing-login.css e LoginPanel.jsx já foram reescritos
+   pelo agente B para o vocabulário `--lt-*`. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+
+body.landing-page {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--lt-color-stadium);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  line-height: var(--lt-leading-normal);
+  overflow-x: clip;
+}
+
+html, body.landing-page, body.landing-page #root { max-width: 100%; }
+body.landing-page #root { min-height: 100vh; background: transparent; }
+
+/* ── Container raiz ───────────────────────────────────────────────────── */
+.lp {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ── Foco visível, para toda a landing ────────────────────────────────────
+   Halo branco + anel azul sólido (--lt-focus-ring), aplicado a qualquer
+   descendente de `.lp` — cobre o painel de login e as portas secundárias
+   sem depender dos nomes de classe de cada peça (outros agentes reescrevem
+   as próprias). Os modais (fora de `.lp`, ver LoginPage.jsx) têm as
+   próprias regras em landing-modais.css. */
+.lp :focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Animações compartilhadas ──────────────────────────────────────────── */
+.spin { animation: spin 1s linear infinite; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Primeira tela: a grade ───────────────────────────────────────────────
+   Mobile-first (base = celular); a coluna do painel em telas largas entra
+   em landing-responsivo.css, importado por último. Cinco áreas nomeadas:
+   marca, título e frase são a cópia (HeroCopy.jsx); painel é a moldura de
+   login (.lp-painel, abaixo); a cena (.lp-cena, landing-hero.css) cobre
+   marca+título+chão por posicionamento explícito, não por área. */
+.lp-primeira {
+  /* Altura da faixa do chão (3ª linha da grade). Variável, não literal:
+     landing-responsivo.css comprime este valor em telas baixas, para o
+     botão "Entrar" caber na primeira dobra do celular (critério do
+     change-intent — o mockup falhava a 320×640). */
+  --lp-chao-altura: 7.5rem;
+  position: relative;
+  /* As linhas do título escalonado vão até a borda: "clip" corta sem criar
+     contêiner rolável (com "hidden", o foco num campo rolava a seção 18px
+     na horizontal — defeito 12 do plano do mockup). "hidden" fica como
+     reserva para navegador sem suporte a "clip". */
+  overflow: hidden;
+  overflow: clip;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto var(--lp-chao-altura) auto auto;
+  grid-template-areas:
+    "marca"
+    "titulo"
+    "chao"
+    "painel"
+    "frase";
+}
+
+/* ── Moldura do painel de login ───────────────────────────────────────────
+   No mockup a moldura é dois elementos: `.painel-sombra` (sombra, por fora
+   do recorte) envolvendo `.painel` (fundo branco, recorte diagonal,
+   padding). Aqui é um só (`.lp-painel`, o `<div>` que LoginPage.jsx passa
+   para o LoginPanel) porque `filter: drop-shadow()` já segue a forma
+   recortada por `clip-path` no MESMO elemento — a ordem de efeitos do CSS
+   aplica o filtro depois do recorte. `.lp-form` (dono: LoginPanel.jsx) é o
+   `.painel__corpo` do mockup: largura máxima e conteúdo são dele; a
+   moldura, o recorte, o padding, a sombra e a varredura de entrada são
+   meus — não estilizo nada dentro de `.lp-form`. */
+.lp-painel {
+  --lp-painel-inclinacao: 2.25rem;
+  /* Padding vertical do painel; comprimido em telas baixas junto com
+     --lp-chao-altura, mesma finalidade (landing-responsivo.css). */
+  --lp-painel-pad-topo: 1.25rem;
+  --lp-painel-pad-base: 2rem;
+  grid-area: painel;
+  position: relative;
+  z-index: 2;
+  margin-top: -2.25rem;
+  background: var(--lt-color-surface);
+  clip-path: polygon(0 var(--lp-painel-inclinacao), 100% 0, 100% 100%, 0 100%);
+  padding: calc(var(--lp-painel-inclinacao) + var(--lp-painel-pad-topo)) var(--lt-page-margin) var(--lp-painel-pad-base);
+  filter: drop-shadow(0 -18px 36px rgba(4, 18, 48, 0.35));
+}
+
+/* ── Entrada: a varredura do painel ───────────────────────────────────────
+   Mesmo escopo/regras das outras duas superfícies (landing-hero.css): só
+   `.lp[data-entrada]` sob movimento não-reduzido, `from`-only, `backwards`.
+   `.lp-form` (dono: LoginPanel.jsx) tem a própria animação de "assentar"
+   dentro deste painel — não a duplico aqui. */
+@media (prefers-reduced-motion: no-preference) {
+  .lp[data-entrada] .lp-painel {
+    animation: lp-varrer 650ms var(--lt-ease-out) var(--lt-entrada-painel) backwards;
+  }
+
+  @keyframes lp-varrer { from { transform: translateX(105%); } }
+}

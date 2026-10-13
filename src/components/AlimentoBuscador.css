@@ -1,3 +1,463 @@
+/* Busca de alimentos (TACO/TBCA). Usada em dois lugares:
+   - na avaliação alimentar, dentro de `.av-modulo` (a base das avaliações);
+   - na prescrição (RefeicaoBuilder), em versão compacta: RefeicaoBuilder.css
+     redesenha a caixa de busca, os controles e o botão com `.busca-alimento-row`
+     (0,2,0).
+   Por isso há duas camadas. A primeira vale em qualquer lugar e mantém a
+   mesma especificidade de antes (0,1,0): a raiz entra em :where(), que
+   escopa sem pesar, e a versão compacta continua vencendo. Só as cores
+   passaram aos tokens --lt-* (landing-tokens.css, carregados por index.css). A segunda vale dentro de `.av-modulo`: rótulos
+   visíveis, campos de 48 px, alvos de 44 px e o foco da base. */
+
+/* ── Em qualquer lugar ───────────────────────────────────────────────── */
+.alimento-buscador {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  font-family: var(--lt-font-family);
+}
+
+:where(.alimento-buscador) .alimento-buscador__row-search {
+  width: 100%;
+}
+
+:where(.alimento-buscador) .alimento-buscador__search {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  height: 40px;
+  padding: 0 var(--lt-space-3);
+  border: 1px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+:where(.alimento-buscador) .alimento-buscador__search:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+:where(.alimento-buscador) .alimento-buscador__search svg {
+  flex-shrink: 0;
+  color: var(--lt-color-text-muted);
+}
+
+:where(.alimento-buscador) .busca-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--lt-color-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+:where(.alimento-buscador) .busca-input::placeholder {
+  color: var(--lt-color-text-subtle);
+}
+
+/* Medida, quantidade e "Adicionar": cada controle vai num invólucro com o
+   próprio rótulo. O invólucro da medida cresce, e a medida o preenche, como
+   antes, quando o controle era filho direto da linha. */
+:where(.alimento-buscador) .alimento-buscador__row-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+:where(.alimento-buscador) .alimento-buscador__campo {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+:where(.alimento-buscador) .alimento-buscador__campo--medida { flex: 1; }
+:where(.alimento-buscador) .alimento-buscador__campo--quantidade { flex: none; }
+
+:where(.alimento-buscador) .busca-unidade {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  font-size: 12px;
+  border: 1px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: inherit;
+}
+
+:where(.alimento-buscador) .busca-qty {
+  width: 68px;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 8px;
+  font-size: 12px;
+  text-align: right;
+  border: 1px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: inherit;
+}
+
+:where(.alimento-buscador) .busca-unidade:focus,
+:where(.alimento-buscador) .busca-qty:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Branco sobre o degradê de largada: 4,82:1 no topo e 6,20:1 na base. */
+:where(.alimento-buscador) .btn-adicionar-alimento {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--lt-radius-control);
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  color: var(--lt-color-text-inverse);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+:where(.alimento-buscador) .btn-adicionar-alimento:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+:where(.alimento-buscador) .btn-adicionar-alimento:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Alimento escolhido: nome, gramas e kcal ─────────────────────────── */
+:where(.alimento-buscador) .alimento-buscador__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  color: var(--lt-color-text-muted);
+  font-size: 12px;
+}
+
+:where(.alimento-buscador) .alimento-buscador__meta-nome {
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--lt-color-text);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:where(.alimento-buscador) .alimento-buscador__meta-grams {
+  color: var(--lt-color-text-muted);
+}
+
+/* Verde de texto sobre o fundo de sucesso: acima de 4,5:1. */
+:where(.alimento-buscador) .alimento-buscador__meta-kcal {
+  padding: 1px 7px;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── "Buscando..." e erro ─────────────────────────────────────────────── */
+/* Vazia, a região de status sai do fluxo (sem o vão do gap), mas continua na
+   árvore de acessibilidade: com display: none, a mensagem que chega depois
+   poderia não ser anunciada. */
+:where(.alimento-buscador) .alimento-buscador__avisos:empty { position: absolute; }
+
+:where(.alimento-buscador) .alimento-buscador__status {
+  color: var(--lt-color-text-muted);
+  font-size: 12px;
+}
+
+:where(.alimento-buscador) .alimento-buscador__error {
+  color: var(--lt-color-danger-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── Resultados: cada um é um botão de 44 px ─────────────────────────── */
+:where(.alimento-buscador) .alimento-buscador__results {
+  max-height: 272px;
+  margin: 0;
+  padding: 4px;
+  overflow: auto;
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  list-style: none;
+}
+
+:where(.alimento-buscador) .alimento-buscador__results li + li {
+  margin-top: 1px;
+}
+
+:where(.alimento-buscador) .alimento-buscador__results button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--lt-target-min);
+  padding: 8px 10px;
+  border: none;
+  border-radius: calc(var(--lt-radius-control) - 4px);
+  background: transparent;
+  color: var(--lt-color-text);
+  font-family: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+:where(.alimento-buscador) .alimento-buscador__results button:hover:not(:disabled) {
+  background: var(--lt-color-track-tint);
+}
+
+:where(.alimento-buscador) .alimento-buscador__results button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--lt-color-brand-blue);
+}
+
+:where(.alimento-buscador) .alimento-buscador__result-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--lt-color-text);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:where(.alimento-buscador) .alimento-buscador__result-side {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+:where(.alimento-buscador) .alimento-buscador__result-kcal {
+  padding: 1px 6px;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+:where(.alimento-buscador) .alimento-buscador__result-grupo {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--lt-color-text-muted);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  :where(.alimento-buscador) .alimento-buscador__row-controls {
+    flex-wrap: wrap;
+  }
+
+  :where(.alimento-buscador) .alimento-buscador__campo--medida {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  :where(.alimento-buscador) .btn-adicionar-alimento {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ── Origem do alimento ──────────────────────────────────────────────────
+   A busca passou a cobrir TACO (597) e TBCA (1170). As duas divergem em
+   varios alimentos, entao a origem do valor precisa estar visivel na hora
+   de escolher — nao escondida num detalhe depois. O nome da tabela vai
+   escrito; o fundo só distingue as duas. */
+:where(.alimento-buscador) .alimento-buscador__fonte {
+  margin-left: 0.45rem;
+  padding: 0.02rem 0.32rem;
+  border-radius: 3px;
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+:where(.alimento-buscador) .alimento-buscador__fonte.fonte-tbca {
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+/* ── Dentro de uma avaliação (.av-modulo) ────────────────────────────────
+   O mesmo desenho dos campos da base: rótulo visível em Sofia 700, campo de
+   48 px com texto a 16 px (sem o zoom do iOS), foco com --lt-focus-ring e
+   alvos de 44 px. */
+.av-modulo .alimento-buscador { gap: var(--lt-space-3); }
+
+/* O rótulo sai do modo só-leitor-de-tela (sr-only, de index.css). */
+.av-modulo .alimento-buscador .alimento-buscador__rotulo {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0 0 var(--lt-space-2);
+  padding: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  display: block;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__search {
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  height: auto;
+  min-height: 48px;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__search:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* (0,4,0) com o :not(): vence a regra global de campo de theme.css (0,2,1)
+   e a de foco (0,3,1), que punham borda, fundo e anel no campo dentro da
+   caixa. */
+.av-modulo .alimento-buscador .busca-input:not([type="checkbox"]) {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  line-height: var(--lt-leading-normal);
+}
+
+/* O anel fica na caixa (:focus-within), não no campo dentro dela. */
+.av-modulo .alimento-buscador .busca-input:focus,
+.av-modulo .alimento-buscador .busca-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__row-controls {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-3);
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__campo {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__campo--medida { flex: 1 1 12rem; }
+.av-modulo .alimento-buscador .alimento-buscador__campo--quantidade { flex: 0 1 7.5rem; }
+
+.av-modulo .alimento-buscador :is(.busca-unidade, .busca-qty) {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  min-height: 48px;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+}
+
+.av-modulo .alimento-buscador :is(.busca-unidade, .busca-qty):focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.av-modulo .alimento-buscador :is(.busca-unidade, .busca-qty):disabled {
+  border-color: var(--lt-color-border);
+  background-color: var(--lt-color-surface-field);
+}
+
+.av-modulo .alimento-buscador .btn-adicionar-alimento {
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  height: auto;
+  min-height: 48px;
+  padding: 0 var(--lt-space-5);
+  font-size: var(--lt-text-control);
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__meta { font-size: var(--lt-text-sm); }
+.av-modulo .alimento-buscador .alimento-buscador__meta-kcal { font-size: var(--lt-text-xs); }
+.av-modulo .alimento-buscador :is(.alimento-buscador__status, .alimento-buscador__error) { font-size: var(--lt-text-sm); }
+
+.av-modulo .alimento-buscador .alimento-buscador__results {
+  max-height: 20rem;
+  padding: var(--lt-space-1);
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__results button {
+  gap: var(--lt-space-3);
+  padding: var(--lt-space-2) var(--lt-space-3);
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__result-nome {
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.av-modulo .alimento-buscador .alimento-buscador__result-kcal { font-size: var(--lt-text-xs); }
+.av-modulo .alimento-buscador .alimento-buscador__result-grupo { font-size: var(--lt-text-xs); }
+.av-modulo .alimento-buscador .alimento-buscador__fonte { font-size: var(--lt-text-2xs); }
+
+/* A 390 px: medida numa linha; quantidade e "Adicionar" na de baixo. */
+@media (max-width: 30rem) {
+  .av-modulo .alimento-buscador .btn-adicionar-alimento { flex: 1 1 8rem; }
+}
+
+/* ══ Legado ══════════════════════════════════════════════════════════════
+   Cópia local de `.sr-only`, igual à regra global de src/index.css (que a
+   cita). Os rótulos acima continuam usando a classe; a regra daqui não
+   acrescenta nada e fica só até a remoção. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -8,251 +468,4 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: none;
-}
-
-.alimento-buscador {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* ── Row 1: search field full-width ─────────────────────────── */
-.alimento-buscador__row-search {
-  width: 100%;
-}
-
-.alimento-buscador__search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--color-border-secondary, #cdd6e1);
-  border-radius: 8px;
-  background: var(--color-background-primary, #fff);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.alimento-buscador__search:focus-within {
-  border-color: var(--color-navy, #1D3350);
-  box-shadow: 0 0 0 3px rgba(29, 51, 80, 0.1);
-}
-
-.alimento-buscador__search svg {
-  color: var(--color-text-tertiary, #9ca3af);
-  flex-shrink: 0;
-}
-
-.busca-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--color-text-primary, #1f2937);
-  font-size: 13px;
-  font-family: var(--font-sans, inherit);
-}
-
-.busca-input::placeholder {
-  color: var(--color-text-tertiary, #9ca3af);
-}
-
-/* ── Row 2: measure + qty + button ──────────────────────────── */
-.alimento-buscador__row-controls {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.busca-unidade {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  padding: 0 8px;
-  font-size: 12px;
-  border: 1px solid var(--color-border-secondary, #cdd6e1);
-  border-radius: 7px;
-  background: var(--color-background-primary, #fff);
-  color: var(--color-text-primary, #1f2937);
-  font-family: var(--font-sans, inherit);
-}
-
-.busca-qty {
-  width: 68px;
-  flex-shrink: 0;
-  height: 36px;
-  padding: 0 8px;
-  font-size: 12px;
-  text-align: right;
-  border: 1px solid var(--color-border-secondary, #cdd6e1);
-  border-radius: 7px;
-  background: var(--color-background-primary, #fff);
-  color: var(--color-text-primary, #1f2937);
-  font-family: var(--font-sans, inherit);
-}
-
-.busca-unidade:focus,
-.busca-qty:focus {
-  outline: none;
-  border-color: var(--color-navy, #1D3350);
-  box-shadow: 0 0 0 3px rgba(29, 51, 80, 0.08);
-}
-
-.btn-adicionar-alimento {
-  height: 36px;
-  padding: 0 16px;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--color-navy, #1D3350);
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-
-.btn-adicionar-alimento:hover:not(:disabled) {
-  background: #264878;
-}
-
-.btn-adicionar-alimento:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* ── Preview meta line ──────────────────────────────────────── */
-.alimento-buscador__meta {
-  min-height: 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--color-text-tertiary, #6b7280);
-}
-
-.alimento-buscador__meta-nome {
-  font-weight: 600;
-  color: var(--color-text-primary, #1f2937);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 220px;
-}
-
-.alimento-buscador__meta-grams {
-  color: var(--color-text-secondary, #4b5563);
-}
-
-.alimento-buscador__meta-kcal {
-  background: #ecfdf5;
-  color: #065f46;
-  border-radius: 4px;
-  padding: 1px 7px;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-/* ── Status / error ─────────────────────────────────────────── */
-.alimento-buscador__status {
-  font-size: 12px;
-  color: var(--color-navy, #1D3350);
-}
-
-.alimento-buscador__error {
-  font-size: 12px;
-  color: #B91C1C;
-}
-
-/* ── Results dropdown ───────────────────────────────────────── */
-.alimento-buscador__results {
-  list-style: none;
-  padding: 4px;
-  margin: 0;
-  border: 1px solid var(--color-border-tertiary, #d9e2ec);
-  border-radius: 10px;
-  max-height: 272px;
-  overflow: auto;
-  background: var(--color-background-primary, #fff);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
-}
-
-.alimento-buscador__results li + li {
-  margin-top: 1px;
-}
-
-.alimento-buscador__results button {
-  width: 100%;
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  cursor: pointer;
-  text-align: left;
-  border-radius: 7px;
-}
-
-.alimento-buscador__results button:hover {
-  background: var(--color-background-secondary, #f5f8fc);
-}
-
-.alimento-buscador__result-nome {
-  flex: 1;
-  min-width: 0;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--color-text-primary, #1f2937);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.alimento-buscador__result-side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.alimento-buscador__result-kcal {
-  font-size: 11px;
-  font-weight: 700;
-  color: #065f46;
-  background: #ecfdf5;
-  padding: 1px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-.alimento-buscador__result-grupo {
-  font-size: 10.5px;
-  color: var(--color-text-tertiary, #6b7280);
-  white-space: nowrap;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 700px) {
-  .alimento-buscador__row-controls {
-    flex-wrap: wrap;
-  }
-
-  .busca-unidade {
-    flex: 1 1 auto;
-    min-width: 120px;
-  }
-
-  .btn-adicionar-alimento {
-    flex: 1;
-    justify-content: center;
-  }
 }

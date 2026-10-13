@@ -1,319 +1,765 @@
-﻿.research-projects {
-  --research-surface: color-mix(in srgb, var(--admin-surface, #ffffff) 94%, #f8fbff 6%);
-  --research-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #f3f8fd) 90%, #ffffff 10%);
-  --research-border: color-mix(in srgb, var(--admin-border, rgba(20, 53, 84, 0.14)) 84%, transparent);
-  --research-text: var(--admin-text, #143554);
-  --research-muted: var(--admin-muted, #5a728b);
-  --research-shadow: var(--admin-shadow-soft, 0 18px 42px -34px rgba(20, 53, 84, 0.45));
-  --research-shadow-strong: 0 28px 54px -36px rgba(20, 53, 84, 0.4);
-  --research-focus: rgba(47, 111, 166, 0.24);
+/* Área de Pesquisa (ResearchProjects.jsx), na direção "Energia e
+   velocidade" da landing (docs/design/landing-guia-visual.md, seção
+   "Direção vigente"; docs/implementacao/areas-v2/change-intent.md, etapa 4).
+   Mesmo desenho de Ensino, Extensão e Comunicação (Areas.css) e das peças
+   da Visão geral (src/components/painel/painel.css): cartões brancos com
+   --lt-radius-card, títulos de seção em Sofia 700, título da área na voz
+   de campanha, alvos de 44 px e foco com --lt-focus-ring. Todo texto fica
+   sobre superfície própria (branco, campo ou --lt-color-track-tint), então
+   o contraste vale também com o modo escuro dos portais, que só escurece o
+   fundo da página.
+
+   Tudo escopado em `.research-projects`. Armadilhas globais redeclaradas
+   (src/index.css e src/styles/theme.css): h1…h6 em Poppins e com cor, `p`
+   com entrelinha 1,6, `button { white-space: nowrap; display: inline-flex }`,
+   `*:focus-visible` com contorno verde, `.stat-card:hover` que sobe 1 px,
+   `.research-table` e `.student-badge` globais e
+   `input:not([type=checkbox]):not([type=radio])` com especificidade 0,2,1.
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs. Nenhum tom
+   novo: só tokens --lt-* e o par de "atenção" já medido em painel.css.
+
+   Os modais vão para o `body` por createPortal e usam o sistema global
+   `app-modal-*`: o escopo daqui não os alcança. As regras deles ficam no
+   fim do arquivo, sem mudança (trocar o visual dos modais é outra onda).
+
+   As fontes vêm aqui pelo mesmo motivo de painel.css: ao recarregar direto
+   num portal, a folha da landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.research-projects {
+  --pesquisa-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --pesquisa-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --pesquisa-atencao-fundo · 6,84:1 sobre --lt-color-surface-field */
+  --pesquisa-atencao-fundo: #fff7ed;
+  --pesquisa-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+  --pesquisa-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
 
   display: flex;
   flex-direction: column;
-  gap: clamp(0.9rem, 1.8vw, 1.3rem);
-  color: var(--research-text);
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.admin-view.dark-mode .research-projects {
-  --research-surface: color-mix(in srgb, var(--admin-surface, #17273a) 95%, transparent 5%);
-  --research-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #1d3046) 92%, transparent 8%);
-  --research-border: color-mix(in srgb, var(--admin-border, rgba(148, 163, 184, 0.24)) 85%, transparent);
-  --research-shadow: 0 20px 40px -32px rgba(2, 12, 24, 0.8);
-  --research-shadow-strong: 0 30px 58px -40px rgba(2, 12, 24, 0.9);
-  --research-focus: rgba(127, 197, 232, 0.26);
+/* Reset dos globais de título e parágrafo; cada peça abaixo dá o resto.
+   0,1,1: os títulos das peças do Painel (0,2,0) vencem este reset. */
+.research-projects :is(h2, h3, h4) {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
+.research-projects p { margin: 0; line-height: var(--lt-leading-normal); }
+
+/* ── Cabeçalho da área: título na voz de campanha ────────────────────── */
 .research-projects .research-header {
-  border-radius: 1.18rem;
-  border: 1px solid var(--research-border);
-  background: linear-gradient(150deg, var(--research-surface) 0%, var(--research-surface-soft) 100%);
-  box-shadow: var(--research-shadow);
-  padding: clamp(0.9rem, 2vw, 1.3rem);
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.84rem;
   flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  margin: 0;
+  padding: var(--pesquisa-respiro) var(--pesquisa-respiro) calc(var(--pesquisa-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
 }
 
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.research-projects .research-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.research-projects .research-header__texto { flex: 1 1 18rem; min-width: 0; }
+
+/* O sobretítulo "PESQUISA": rótulo em caixa alta, apoio sobre branco
+   (6,59:1), alinhado ao texto do título; o traço é só gráfico. */
 .research-projects .research-header .header-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.34rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.09em;
+  gap: var(--lt-space-2);
+  margin: 0 0 var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--research-muted) 88%, transparent);
 }
 
 .research-projects .research-header .badge-line {
-  width: 1.4rem;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #4d9c6c 0%, #2f6fa6 100%);
+  flex: none;
+  width: 1.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+  transform: skewX(-20deg);
 }
 
-.research-projects .research-header h1 {
-  margin: 0.26rem 0 0.16rem;
-  font-size: clamp(1.2rem, 2.1vw, 1.58rem);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--research-text);
+.research-projects .research-header h2 {
+  position: relative;
+  padding: 0 0.1em 0 0.32em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
-.research-projects .research-header p {
-  margin: 0;
-  color: var(--research-muted);
-  font-size: 0.87rem;
+/* Marca verde de largada, o gesto de .painel-cabecalho__titulo::before. */
+.research-projects .research-header h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
 }
 
+.research-projects .research-header__texto > p {
+  margin-top: var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Ações do cabeçalho (Button de components/ui) ─────────────────────
+   0,3,0 vence .ui-button-primary/:hover e .ui-button:active. O primário
+   é o degradê de largada de .area-action (branco a 4,82:1 no topo e 6,20:1
+   na base); o secundário, contorno de campo com texto azul (6,33:1). */
 .research-projects .research-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.45rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
-.research-projects .research-readonly-note {
-  border: 1px solid color-mix(in srgb, var(--research-border) 70%, #2f6fa6 30%);
-  border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--research-surface-soft) 82%, #2f6fa6 18%);
-  color: color-mix(in srgb, var(--research-text) 84%, transparent);
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.35;
-  padding: 0.62rem 0.78rem;
-}
-
-.research-projects .filter-toggle {
-  min-height: 38px;
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  padding: 9px 20px;
+.research-projects .research-actions .ui-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--lt-space-5);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  transform: none;
+  transition: box-shadow 160ms, background-color 160ms, border-color 160ms;
 }
 
-.research-projects .filter-toggle {
-  border-color: var(--color-navy);
-  border-width: 1.5px;
+.research-projects .research-actions .ui-button svg { flex: none; }
+
+.research-projects .research-actions .ui-button-primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+.research-projects .research-actions .ui-button-secondary {
+  border-color: var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+@media (hover: hover) {
+  .research-projects .research-actions .ui-button-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+  }
+
+  .research-projects .research-actions .ui-button-secondary:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+}
+
+.research-projects .research-actions .ui-button:disabled { opacity: 0.55; cursor: not-allowed; }
+.research-projects .research-actions .ui-button:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Aviso de só leitura: informativo, nunca de erro ──────────────────
+   Tinta sobre --lt-color-track-tint (12,39:1), raia azul inclinada à
+   esquerda, como .area-readonly-note. Os textos não mudam nesta onda
+   (change-intent, decisão 2). `--inline` é o do Repositório. */
+.research-projects .research-readonly-note {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.research-projects .research-readonly-note::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-12deg);
+}
+
+/* ── Abas de seção ────────────────────────────────────────────────────
+   Uma faixa branca com abas de 44 px. A aba ativa não depende só de cor:
+   fundo claro, texto em tinta e a raia verde inclinada no pé (forma),
+   além do aria-selected. Os portais de hoje passam `hideSectionTabs`; a
+   faixa só aparece quando alguém monta a Pesquisa sem essa prop. */
+.research-projects .research-section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
+}
+
+.research-projects .research-section-tabs .research-section-tab {
+  position: relative;
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
   background: transparent;
-  color: var(--color-navy);
+  box-shadow: none;
+  color: var(--lt-color-text-muted); /* 6,59:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, color 160ms;
 }
 
-.research-projects .filter-toggle:hover {
-  border-color: var(--color-navy);
-  background: rgba(16, 51, 85, 0.05);
+.research-projects .research-section-tab svg { flex: none; }
+
+@media (hover: hover) {
+  .research-projects .research-section-tabs .research-section-tab:hover {
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-text);
+  }
 }
 
+.research-projects .research-section-tabs .research-section-tab[aria-selected="true"] {
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text); /* 12,39:1 */
+}
+
+.research-projects .research-section-tabs .research-section-tab[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-space-4);
+  right: var(--lt-space-4);
+  bottom: 0.3125rem;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--lt-color-brand-green);
+  transform: skewX(-20deg);
+}
+
+.research-projects .research-section-tabs .research-section-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Contagem: apoio sobre o fundo de campo (6,17:1); na aba ativa, sobre
+   branco (6,59:1). */
+.research-projects .research-section-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+.research-projects .research-section-tab[aria-selected="true"] .research-section-tab__count { background: var(--lt-color-surface); }
+
+/* ── Indicadores contextuais: o cartão de .painel-indicador, sem ação ──
+   0,3,0 vence `.stat-card` e `.stat-card:hover` de theme.css. O rótulo
+   vem antes do número, na ordem do JSX. */
 .research-projects .research-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.62rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
 .research-projects .research-stats .stat-card {
-  border: 1px solid var(--research-border);
-  border-radius: 1rem;
-  background: var(--research-surface);
-  box-shadow: var(--research-shadow);
-  padding: 0.78rem 0.86rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
+  color: var(--lt-color-text);
+  transform: none;
+  transition: none;
+}
+
+.research-projects .research-stats .stat-card:hover { transform: none; box-shadow: var(--pesquisa-sombra); }
+
+/* O acento curto e inclinado na borda de cima, como o do indicador. */
+.research-projects .research-stats .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-5);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-20deg);
 }
 
 .research-projects .research-stats .stat-label {
-  font-size: 0.71rem;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--research-muted) 88%, transparent);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .research-projects .research-stats .stat-value {
-  margin-top: 0.24rem;
-  font-size: 1.35rem;
+  margin: 0;
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.875rem, 2.6vw, 2.375rem);
   line-height: 1;
-  font-weight: 800;
-  color: var(--research-text);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
-.research-projects .research-insights {
+/* ── Painel da Pesquisa com as peças de src/components/painel/ ─────────
+   Na Visão geral, "Fluxo da pesquisa" e "Ideias recentes" ocupam a linha
+   e as duas raias dividem a de baixo; em Projetos, os dois insights são
+   duas raias. 0,5,0 vence `.painel > .painel-secao:last-child:nth-child(odd)`. */
+@media (min-width: 72rem) {
+  .research-projects .painel.research-painel > .painel-secao.research-painel__largo { grid-column: 1 / -1; }
+  .research-projects .painel.research-painel > .painel-secao.research-painel__raia { grid-column: auto; }
+}
+
+/* Os cinco indicadores do fluxo: 2 colunas (o último ocupa a linha) até
+   64rem, como em painel.css; depois 3 + 2 numa grade de 6 e, a partir de
+   80rem, os cinco numa linha. Sem isto, a grade de 4 colunas do Painel
+   deixaria o quinto sozinho. A lista (0,4,0) vence a de 0,2,0 do Painel;
+   o 4º e o 5º itens (0,5,0) vencem a regra 0,4,0 do último item ímpar. */
+@media (min-width: 64rem) {
+  .research-projects .research-painel .research-painel__fluxo .painel-indicadores__lista { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .research-projects .research-painel .research-painel__fluxo .painel-indicadores__item { grid-column: span 2; }
+  .research-projects .research-painel .research-painel__fluxo .painel-indicadores__item:nth-child(n + 4) { grid-column: span 3; }
+}
+
+@media (min-width: 80rem) {
+  .research-projects .research-painel .research-painel__fluxo .painel-indicadores__lista { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .research-projects .research-painel .research-painel__fluxo .painel-indicadores__item,
+  .research-projects .research-painel .research-painel__fluxo .painel-indicadores__item:nth-child(n + 4) { grid-column: auto; }
+}
+
+/* As ideias recentes: cartões compactos lado a lado quando cabem. */
+.research-projects .research-overview-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.62rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
-.research-projects .insight-panel {
-  border: 1px solid var(--research-border);
-  border-radius: 1rem;
-  background: var(--research-surface);
-  box-shadow: var(--research-shadow);
-  padding: 0.78rem 0.86rem;
-}
-
-.research-projects .insight-panel h3 {
-  margin: 0 0 0.54rem;
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--research-text);
-}
-
+/* ── Insights de Projetos: linhas de campo e resumo em células ──────── */
 .research-projects .insight-list {
   display: flex;
   flex-direction: column;
-  gap: 0.34rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
 .research-projects .insight-row {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.46rem;
-  font-size: 0.79rem;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-2) var(--lt-space-3) var(--lt-space-2) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+/* A raia da linha, como .painel-lista__linha::before. Só gráfico. */
+.research-projects .insight-row::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.3125rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--pesquisa-raia);
+  transform: skewX(-12deg);
+}
+
+/* Na linha, o rótulo é o nome da área (tinta, 13,19:1 sobre campo) e o
+   valor, o total. */
+.research-projects .insight-row .insight-label {
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
   font-weight: 700;
-  color: color-mix(in srgb, var(--research-text) 82%, transparent);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.research-projects .insight-row .insight-value {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
 }
 
 .research-projects .insight-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
-.research-projects .insight-summary div {
-  border: 1px solid var(--research-border);
-  border-radius: 0.72rem;
-  background: var(--research-surface-soft);
-  padding: 0.44rem 0.5rem;
+.research-projects .insight-summary > div {
   display: flex;
   flex-direction: column;
-  gap: 0.12rem;
+  gap: var(--lt-space-1);
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
 }
 
-.research-projects .insight-label {
-  font-size: 0.62rem;
-  font-weight: 800;
+/* Rótulo da célula em caixa alta: apoio sobre campo, 6,17:1. */
+.research-projects .insight-summary .insight-label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--research-muted) 86%, transparent);
+  overflow-wrap: anywhere;
 }
 
-.research-projects .insight-value {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--research-text);
+.research-projects .insight-summary .insight-value {
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-lg);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-.research-projects .insight-empty {
-  font-size: 0.75rem;
-  color: color-mix(in srgb, var(--research-muted) 84%, transparent);
-}
-
+/* ── Controles: busca, filtros e modo de visualização ───────────────── */
 .research-projects .research-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem;
-  border: 1px solid var(--research-border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--research-surface-soft) 76%, transparent);
-  padding: 0.68rem;
-}
-
-.research-projects .search-box {
-  flex: 1;
-  min-width: 240px;
-  min-height: 2.6rem;
-  border-radius: 0.82rem;
-  border: 1px solid var(--research-border);
-  background: var(--research-surface);
-  color: color-mix(in srgb, var(--research-muted) 86%, transparent);
-  display: flex;
-  align-items: center;
-  gap: 0.38rem;
-  padding: 0 0.7rem;
-}
-
-.research-projects .search-box input {
-  flex: 1;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
   min-width: 0;
-  border: none;
-  background: transparent;
-  color: var(--research-text);
-  font-size: 0.84rem;
-  font-weight: 500;
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
 }
 
-.research-projects .search-box input::placeholder {
-  color: color-mix(in srgb, var(--research-muted) 82%, transparent);
+/* Campo de busca no padrão da inscrição: 48 px, borda de campo (3,91:1,
+   WCAG 1.4.11) e texto a 16 px. 0,3,0 vence `.professor-view .search-box`
+   (ProfessorView.css) em qualquer ordem de carregamento. */
+.research-projects .research-controls .search-box {
+  display: flex;
+  flex: 1 1 18rem;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text-muted); /* ícone: 6,59:1 */
+  transition: border-color 160ms, box-shadow 160ms;
 }
 
-.research-projects .search-box input:focus {
+.research-projects .research-controls .search-box svg { flex: none; }
+
+.research-projects .research-controls .search-box:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* 0,3,1 com o pseudo: vence `input:not(...):not(...)` de theme.css e
+   `.professor-view .search-box input` (0,2,1). O foco aparece no campo
+   inteiro (acima), não no input. */
+.research-projects .research-controls .search-box input {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 45px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   outline: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  text-overflow: ellipsis;
 }
 
-.research-projects .search-box:focus-within,
-.research-projects .filters .filter-btn:focus-visible,
-.research-projects .project-edit:focus-visible {
-  box-shadow: 0 0 0 3px var(--research-focus);
+.research-projects .research-controls .search-box input:focus { outline: none; border: 0; box-shadow: none; }
+
+/* O placeholder é a única indicação do campo: --lt-color-text-subtle,
+   5,60:1 sobre branco. `opacity: 1` porque o Firefox o esmaece. */
+.research-projects .research-controls .search-box input::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
 }
 
-.research-projects .filters {
+/* Filtros de status: selos de 44 px. O ativo tem fundo claro e borda
+   azul (preenchido × contorno) e aria-pressed; a contagem vai ao lado. */
+.research-projects .research-controls .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.42rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
-.research-projects .filters .filter-btn {
-  min-height: 2.34rem;
-  border-radius: 999px;
-  border: 1px solid var(--research-border);
-  background: var(--research-surface);
-  color: color-mix(in srgb, var(--research-text) 75%, transparent);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 0 0.7rem;
+.research-projects .research-controls .filter-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-3) 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text); /* 14,09:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-.research-projects .filters .filter-btn .count {
-  border-radius: 999px;
-  border: 1px solid var(--research-border);
-  background: var(--research-surface-soft);
-  color: color-mix(in srgb, var(--research-muted) 86%, transparent);
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 0.1rem 0.36rem;
+.research-projects .research-controls .filter-btn .count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted); /* 6,17:1 */
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.research-projects .filters .filter-btn.active,
-.research-projects .filters .filter-btn:hover {
-  border-color: color-mix(in srgb, var(--research-border) 70%, #4d9c6c 30%);
-  background: color-mix(in srgb, #4d9c6c 12%, transparent);
-  color: var(--research-text);
+@media (hover: hover) {
+  .research-projects .research-controls .filter-btn:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
 }
 
+.research-projects .research-controls .filter-btn[aria-pressed="true"] {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint); /* tinta 12,39:1 */
+}
+
+.research-projects .research-controls .filter-btn[aria-pressed="true"] .count { background: var(--lt-color-surface); }
+
+.research-projects .research-controls .filter-btn:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* Lista × quadro: dois botões de 44 px colados, só ícone (o nome vem do
+   aria-label). O ativo fica preenchido e com aria-pressed. */
+.research-projects .research-view-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.research-projects .research-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: 0;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted); /* 6,59:1 */
+  cursor: pointer;
+  transition: background-color 160ms, color 160ms;
+}
+
+.research-projects .research-view-toggle button:first-child { border-radius: var(--lt-radius-control) 0 0 var(--lt-radius-control); }
+.research-projects .research-view-toggle button:last-child { margin-left: -1.5px; border-radius: 0 var(--lt-radius-control) var(--lt-radius-control) 0; }
+
+@media (hover: hover) {
+  .research-projects .research-view-toggle button:hover { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+}
+
+.research-projects .research-view-toggle button[aria-pressed="true"] {
+  position: relative;
+  z-index: 1;
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue); /* 5,57:1 */
+}
+
+.research-projects .research-view-toggle button:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Tabela de projetos (Table de admin/common) ───────────────────────
+   0,2,0 vence `.research-table` de theme.css. A casca da Table (classes
+   utilitárias, 0,1,0) perde a borda e a sombra: o cartão é este. */
 .research-projects .research-table {
-  border: 1px solid var(--research-border);
-  border-radius: 1.15rem;
-  background: var(--research-surface);
-  box-shadow: var(--research-shadow-strong);
+  container: pesquisa-tabela / inline-size;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
   overflow: hidden;
-  padding: 0.34rem;
+}
+
+.research-projects .research-table > div {
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  box-shadow: none;
 }
 
 .research-projects .research-table table {
@@ -322,183 +768,928 @@
   border-spacing: 0;
 }
 
+/* Cabeçalho da coluna: apoio sobre campo em caixa alta, 6,17:1. 0,2,2
+   vence `thead th` global e as utilitárias da Table. */
 .research-projects .research-table thead th {
-  color: color-mix(in srgb, var(--research-muted) 86%, transparent);
-  background: color-mix(in srgb, var(--research-surface-soft) 86%, transparent);
-  border-bottom: 1px solid var(--research-border);
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
+
+.research-projects .research-table thead th:first-child { border-radius: var(--lt-radius-control) 0 0 var(--lt-radius-control); }
+.research-projects .research-table thead th:last-child { border-radius: 0 var(--lt-radius-control) var(--lt-radius-control) 0; }
 
 .research-projects .research-table tbody td {
-  border-bottom: 1px solid color-mix(in srgb, var(--research-border) 72%, transparent);
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  vertical-align: top;
 }
 
-.research-projects .research-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--research-surface-soft) 72%, transparent);
+.research-projects .research-table tbody tr:last-child td { border-bottom: 0; }
+
+/* A linha não é clicável (a Table não recebe onRowClick): sem o fundo de
+   hover de theme.css e das utilitárias, que sugeriria uma ação. */
+.research-projects .research-table tbody tr,
+.research-projects .research-table tbody tr:hover,
+.research-projects .research-table tbody tr:hover td { background: transparent; }
+
+/* Vazio da Table (`.laines-feedback-state`): o tom de .area-empty. */
+.research-projects .research-table .laines-feedback-state {
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
 }
 
+.research-projects .research-table .laines-feedback-state svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--lt-color-brand-blue);
+}
+
+.research-projects .research-table .laines-feedback-state strong {
+  margin: 0;
+  color: var(--lt-color-text); /* 13,19:1 */
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.research-projects .research-table .laines-feedback-state p {
+  max-width: 36rem;
+  color: var(--lt-color-text-muted); /* 6,17:1 */
+  font-size: var(--lt-text-sm);
+}
+
+/* Célula do projeto: ícone num círculo claro, nome em tinta e descrição
+   em apoio. */
 .research-projects .project-cell {
   display: flex;
   align-items: flex-start;
-  gap: 0.56rem;
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
+.research-projects .project-cell > div:last-child { min-width: 0; }
+
 .research-projects .project-icon {
-  width: 2.16rem;
-  height: 2.16rem;
-  border-radius: 0.66rem;
-  background: rgba(47, 111, 166, 0.14);
-  color: #1d4f79;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
 .research-projects .project-cell h4 {
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--research-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
 }
 
 .research-projects .project-cell p {
-  margin: 0.2rem 0 0;
-  font-size: 0.72rem;
-  color: color-mix(in srgb, var(--research-muted) 86%, transparent);
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
 }
 
 .research-projects .project-students {
-  margin-top: 0.3rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.research-projects .student-badge {
-  border-radius: 999px;
-  border: 1px solid rgba(47, 111, 166, 0.24);
-  background: rgba(47, 111, 166, 0.12);
-  color: #1d4f79;
-  font-size: 0.63rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.1rem 0.38rem;
-}
-
-.research-projects .project-tag {
-  border-radius: 999px;
-  border: 1px solid transparent;
-  padding: 0.16rem 0.42rem;
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-}
-
-.research-projects .project-tag.area-nutricao {
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.2);
-  background: rgba(34, 197, 94, 0.14);
-}
-
-.research-projects .project-tag.area-fisioterapia {
-  color: #1d4ed8;
-  border-color: rgba(59, 130, 246, 0.22);
-  background: rgba(59, 130, 246, 0.12);
-}
-
-.research-projects .project-tag.area-psicologia {
-  color: #b45309;
-  border-color: rgba(245, 158, 11, 0.24);
-  background: rgba(245, 158, 11, 0.12);
-}
-
-.research-projects .project-tag.area-multidisciplinar {
-  color: #7e22ce;
-  border-color: rgba(168, 85, 247, 0.24);
-  background: rgba(168, 85, 247, 0.12);
-}
-
-.research-projects .project-tag.area-outros {
-  color: #334155;
-  border-color: rgba(148, 163, 184, 0.24);
-  background: rgba(148, 163, 184, 0.16);
-}
-
-.research-projects .project-tag.status-planejamento {
-  color: #0369a1;
-  border-color: rgba(14, 165, 233, 0.24);
-  background: rgba(14, 165, 233, 0.14);
-}
-
-.research-projects .project-tag.status-em_andamento {
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.2);
-  background: rgba(34, 197, 94, 0.14);
-}
-
-.research-projects .project-tag.status-concluido {
-  color: #475569;
-  border-color: rgba(148, 163, 184, 0.26);
-  background: rgba(148, 163, 184, 0.18);
-}
-
-.research-projects .project-tag.status-pausado {
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.24);
-  background: rgba(239, 68, 68, 0.12);
-}
-
-.research-projects .project-coord {
   display: flex;
   flex-direction: column;
-  gap: 0.16rem;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  margin-top: var(--lt-space-2);
 }
 
-.research-projects .project-coord > span:first-child {
-  font-size: 0.8rem;
+/* Abre e fecha a lista de alunos: 44 px, estado em aria-expanded e na
+   seta. Azul sobre --lt-color-track-tint, 5,57:1. */
+.research-projects .project-students-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  color: var(--research-text);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  white-space: normal;
+  cursor: pointer;
+  transition: border-color 160ms;
 }
 
-.research-projects .project-team {
-  font-size: 0.67rem;
-  color: color-mix(in srgb, var(--research-muted) 86%, transparent);
+@media (hover: hover) {
+  .research-projects .project-students-toggle:hover { border-color: var(--lt-color-brand-blue); }
 }
 
+.research-projects .project-students-toggle[aria-expanded="true"] { border-color: var(--lt-color-brand-blue); }
+.research-projects .project-students-toggle:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.research-projects .project-students-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-1);
+  max-width: min(100%, 28rem);
+}
+
+/* Nome do aluno: selo escrito, tinta sobre campo com contorno azul claro
+   (13,19:1). 0,2,0 vence `.student-badge` de theme.css. */
+.research-projects .student-badge {
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  box-shadow: inset 0 0 0 1px var(--pesquisa-raia);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.research-projects .project-coord,
 .research-projects .project-metrics {
   display: flex;
   flex-direction: column;
-  gap: 0.14rem;
-  font-size: 0.72rem;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.research-projects .project-coord > span:first-child {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  color: color-mix(in srgb, var(--research-text) 78%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.research-projects .project-team,
+.research-projects .project-metrics {
+  color: var(--lt-color-text-muted); /* 6,59:1 */
+  font-size: var(--lt-text-sm);
+}
+
+.research-projects .project-metrics { font-variant-numeric: tabular-nums; }
+
+/* Editar e Excluir: 44 px, com o nome escrito. Excluir em vermelho de
+   perigo (6,47:1 sobre branco; 5,91:1 no fundo do hover). */
+.research-projects .project-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--lt-space-1);
 }
 
 .research-projects .project-edit {
-  min-height: 2rem;
-  border-radius: 0.68rem;
-  border: 1px solid var(--research-border);
-  background: var(--research-surface);
-  color: color-mix(in srgb, var(--research-text) 75%, transparent);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0 0.58rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
   cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-.research-projects .project-edit:hover {
-  border-color: color-mix(in srgb, var(--research-border) 66%, #2f6fa6 34%);
+.research-projects .project-edit svg { flex: none; }
+.research-projects .project-edit--danger { color: var(--lt-color-danger-text); }
+
+@media (hover: hover) {
+  .research-projects .project-edit:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+  .research-projects .project-edit--danger:hover { border-color: var(--lt-color-danger-text); background: var(--lt-color-danger-bg); }
+}
+
+.research-projects .project-edit:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* Tabela estreita (contêiner abaixo de 52rem; as seis colunas pedem
+   cerca de 830 px antes de rolar): cada projeto vira um cartão de linha,
+   sem rolagem lateral. O cabeçalho sai só da vista (continua para o
+   leitor de tela) e a coordenação ganha o rótulo da coluna; área, status,
+   impacto e ações já se explicam pelo texto. Tabela com `display` trocado
+   mantém a semântica no Chromium e no Firefox atuais; no Safari, é ponto
+   a medir. O `content` com texto alternativo vazio evita a leitura em
+   dobro onde há suporte; onde não há, vale a primeira declaração. */
+@container pesquisa-tabela (max-width: 52rem) {
+  .research-projects .research-table table,
+  .research-projects .research-table tbody,
+  .research-projects .research-table tbody tr,
+  .research-projects .research-table tbody td { display: block; box-sizing: border-box; width: auto; }
+
+  .research-projects .research-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .research-projects .research-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--lt-space-2);
+    padding: var(--lt-space-4) var(--lt-space-2);
+    border-bottom: 1px solid var(--lt-color-border);
+  }
+
+  .research-projects .research-table tbody tr:last-child { border-bottom: 0; }
+
+  .research-projects .research-table tbody td {
+    flex: 1 1 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  /* Área e status lado a lado, logo abaixo do nome. */
+  .research-projects .research-table tbody td:nth-child(2),
+  .research-projects .research-table tbody td:nth-child(3) { flex: 0 1 auto; }
+
+  .research-projects .research-table tbody td:nth-child(4)::before {
+    content: 'Coordenação';
+    content: 'Coordenação' / '';
+    display: block;
+    margin-bottom: 0.125rem;
+    color: var(--lt-color-text-muted);
+    font-size: var(--lt-text-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .research-projects .research-table .project-actions { justify-content: flex-start; }
+}
+
+/* ── Selos: categoria em contorno, estado preenchido ──────────────────
+   Sempre escritos; a cor só acompanha. Área e tipo de produção são
+   categoria: tinta sobre branco com contorno azul claro (14,09:1). Todo
+   `status-*` é estado: fundo cheio. O padrão (planejamento, ideia e
+   qualquer outro) é azul sobre --lt-color-track-tint, 5,57:1. As classes
+   `area-*` e `status-*` vêm do dado (dinâmicas), por isso o seletor de
+   atributo em vez de uma lista fechada. */
+.research-projects .project-tag,
+.research-projects .research-tipo-badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--pesquisa-raia);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+.research-projects .project-tag[class*=" status-"] {
+  background: var(--lt-color-track-tint);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+/* Em andamento, publicado e priorizada: 6,81:1. */
+.research-projects .project-tag.status-em_andamento,
+.research-projects .project-tag.status-publicado,
+.research-projects .project-tag.status-prioridade {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+/* Aguardando alguém (revisão, rascunho, discussão) ou parado: o par de
+   "atenção" de painel.css, 6,88:1. */
+.research-projects .project-tag.status-em_revisao,
+.research-projects .project-tag.status-rascunho,
+.research-projects .project-tag.status-em_discussao,
+.research-projects .project-tag.status-pausado {
+  background: var(--pesquisa-atencao-fundo);
+  color: var(--pesquisa-atencao-texto);
+}
+
+/* Concluído e arquivada: apoio sobre branco (6,59:1), com contorno. */
+.research-projects .project-tag.status-concluido,
+.research-projects .project-tag.status-arquivada {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+}
+
+/* ── Repositório e Ideias: lista ou quadro de cartões brancos ──────── */
+.research-projects .research-repository,
+.research-projects .research-ideas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.research-projects .research-repository--board,
+.research-projects .research-ideas--board {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+}
+
+/* No quadro, o aviso e os estados vazios ocupam a linha toda. */
+.research-projects .research-repository--board > .research-readonly-note,
+.research-projects .research-repository--board > .research-empty-panel,
+.research-projects .research-ideas--board > .research-empty-panel { grid-column: 1 / -1; }
+
+.research-projects .research-production-card,
+.research-projects .research-idea-card {
+  display: flex;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--pesquisa-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
+  color: var(--lt-color-text);
+}
+
+/* Produção: miniatura e texto à esquerda, ações à direita; sem espaço, as
+   ações descem para baixo do texto. */
+.research-projects .research-production-card {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-4);
+}
+
+.research-projects .research-repository--board .research-production-card,
+.research-projects .research-ideas--board .research-idea-card {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.research-projects .research-production-card__main {
+  display: flex;
+  flex: 1 1 20rem;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.research-projects .research-repository--board .research-production-card__main { flex-basis: auto; }
+
+.research-projects .research-production-body { flex: 1 1 auto; min-width: 0; }
+
+/* Miniatura compacta: só a prévia (o nome já está no texto). */
+.research-projects .research-production-thumbnail { flex: none; width: auto; }
+.research-projects .research-production-thumbnail .attachment-thumbnail__content { display: none; }
+
+.research-projects .attachment-thumbnail.research-production-thumbnail .attachment-thumbnail__preview {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+/* Extensão do arquivo: branco sobre tinta, 14,09:1, a 10 px. */
+.research-projects .research-production-thumbnail .attachment-thumbnail__extension {
+  background: var(--lt-color-text);
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.research-projects .research-production-topline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+
+.research-projects .research-production-card h3,
+.research-projects .research-idea-card h3 {
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.research-projects .research-production-card h3 { margin: var(--lt-space-2) 0 var(--lt-space-1); }
+
+.research-projects .research-production-body > p {
+  color: var(--lt-color-text-muted); /* 6,59:1 */
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Pesquisa vinculada, ano e data: apoio, separados por um ponto
+   desenhado (fora do texto lido). */
+.research-projects .research-production-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-2);
+  margin-top: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.research-projects .research-production-meta > span { overflow-wrap: anywhere; }
+
+.research-projects .research-production-meta > span + span::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-right: var(--lt-space-2);
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--lt-color-border-field);
+}
+
+/* Autores e palavras-chave: selos escritos, tinta sobre
+   --lt-color-track-tint (12,39:1), como os chips das triagens. */
+.research-projects .research-inline-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-1);
+  margin-top: var(--lt-space-2);
+}
+
+.research-projects .research-inline-tags > span {
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--pesquisa-raia);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.research-projects .research-production-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.research-projects .research-repository--board .research-production-actions { justify-content: flex-start; }
+
+/* ── Ações dos cartões: 44 px, com o nome escrito ─────────────────────
+   Secundária: contorno de campo, azul (6,33:1). `--strong` é o estado
+   ligado ("Remover interesse"): fundo claro e borda azul (5,57:1).
+   `--primary` ("Aprovar") é o degradê de largada, o único sólido do
+   cartão (branco a 4,82:1 e 6,20:1). */
+.research-projects .research-action-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+.research-projects .research-action-link svg { flex: none; }
+
+.research-projects .research-action-link--strong {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+}
+
+.research-projects .research-action-link--primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+@media (hover: hover) {
+  .research-projects .research-action-link:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+
+  .research-projects .research-action-link--primary:hover:not(:disabled) {
+    border-color: transparent;
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+  }
+}
+
+.research-projects .research-action-link:disabled { opacity: 0.55; cursor: not-allowed; }
+.research-projects .research-action-link:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Cartão de ideia ─────────────────────────────────────────────────── */
+.research-projects .research-idea-card {
+  flex-direction: column;
+  gap: var(--lt-space-3);
+}
+
+/* Na Visão geral, dentro da seção branca: linha de campo, sem sombra. */
+.research-projects .research-idea-card--compact {
+  padding: var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+}
+
+.research-projects .research-idea-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.research-projects .research-idea-card__header > div:last-child {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.research-projects .research-production-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.research-projects .research-idea-card--compact .research-production-icon { background: var(--lt-color-surface); }
+
+/* Progresso da ideia (Ideia → Em discussão → Prioridade): legível sem a
+   cor. Etapa feita é bolinha cheia e traço contínuo; etapa por vir,
+   bolinha vazada e traço tracejado. O status vem escrito ao lado, em
+   verde escuro (5,37:1 sobre branco, 5,03:1 sobre campo); arquivada, em
+   apoio. Bolinhas e traços são só gráfico: verde a 4,21:1 e contorno de
+   campo a 3,91:1 sobre branco (3,94:1 e 3,66:1 sobre campo). */
+.research-projects .research-idea-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.research-projects .research-idea-step-dot {
+  flex: none;
+  box-sizing: border-box;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--lt-color-border-field);
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+}
+
+.research-projects .research-idea-step-dot--done {
+  border-color: var(--lt-color-brand-green);
+  background: var(--lt-color-brand-green);
+}
+
+.research-projects .research-idea-step-line {
+  flex: 1 1 1.5rem;
+  min-width: 1rem;
+  max-width: 3.5rem;
+  height: 0;
+  margin: 0 0.125rem;
+  border-top: 2px dashed var(--lt-color-border-field);
+}
+
+.research-projects .research-idea-step-line--done { border-top-style: solid; border-top-color: var(--lt-color-brand-green); }
+
+.research-projects .research-idea-progress__label {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: var(--lt-space-2);
+  color: var(--lt-color-brand-green-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.research-projects .research-idea-progress__label--arquivada { color: var(--lt-color-text-muted); }
+
+.research-projects .research-idea-card .research-inline-tags { margin-top: 0; }
+
+.research-projects .research-idea-card__content {
+  display: grid;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.research-projects .research-idea-card__content p {
+  color: var(--lt-color-text-muted); /* 6,59:1 sobre branco, 6,17:1 sobre campo */
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.research-projects .research-idea-card__content strong { color: var(--lt-color-text); font-weight: 700; }
+
+.research-projects .research-idea-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2);
+  margin-top: auto;
+  padding-top: var(--lt-space-3);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.research-projects .research-idea-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Contagem de interessados: selo escrito, tinta sobre
+   --lt-color-track-tint (12,39:1). */
+.research-projects .research-interest-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  min-height: 2rem;
+  padding: 0 var(--lt-space-3);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.research-projects .research-interest-pill svg { flex: none; color: var(--lt-color-brand-blue); }
+
+/* ── Vazio e carregando: o tom de .area-empty e .painel-estado ─────── */
+.research-projects .research-empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text); /* 13,19:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.research-projects .research-empty-panel--compact { padding: var(--lt-space-4); }
+
+/* Repositório e Ideias vazios: fora de uma seção branca, o estado ganha
+   o cartão branco e o ícone num círculo claro. */
+.research-projects .research-empty-panel--center {
+  padding: var(--lt-space-6) var(--lt-space-4);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--pesquisa-sombra);
+}
+
+.research-projects .research-empty-panel--center .research-empty-icon {
+  box-sizing: content-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: var(--lt-space-1);
+  padding: 0.625rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.research-projects .research-empty-panel p { margin: 0; }
+
+.research-projects .research-empty-panel .research-empty-hint {
+  max-width: 36rem;
+  color: var(--lt-color-text-muted); /* 6,59:1 */
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 40rem) {
+  .research-projects .research-controls .search-box { flex-basis: 100%; }
+  .research-projects .research-controls .filters { flex: 1 1 100%; }
+  .research-projects .research-controls .filter-btn { flex: 1 1 auto; }
+  .research-projects .research-production-actions { justify-content: flex-start; }
+  .research-projects .research-idea-card__actions { justify-content: flex-start; }
+}
+
+@media (max-width: 30rem) {
+  /* As ações do cabeçalho dividem a linha em vez de ficar penduradas. */
+  .research-projects .research-actions { flex: 1 1 100%; }
+  .research-projects .research-actions .ui-button { flex: 1 1 auto; padding: 0 var(--lt-space-4); }
+
+  /* Duas abas por linha. */
+  .research-projects .research-section-tabs .research-section-tab { flex: 1 1 calc(50% - var(--lt-space-1)); padding: 0 var(--lt-space-3); }
+
+  .research-projects .insight-summary { grid-template-columns: minmax(0, 1fr); }
+
+  /* O placeholder mais longo, "Buscar por ideia, área, palavra-chave ou
+     responsável" (52 caracteres), não quebra linha: como em Areas.css, ele
+     desce a 12 px e os recuos encolhem para caber sem reticências nos
+     cerca de 295 px úteis do campo a 390 px. O texto digitado continua a
+     16 px. */
+  .research-projects .research-controls { padding: var(--lt-space-2); }
+  .research-projects .research-controls .search-box { gap: 0.375rem; padding: 0 0.625rem; }
+  .research-projects .research-controls .search-box input::placeholder { font-size: var(--lt-text-xs); }
+}
+
+/* ── Movimento: a marca de largada se desenha uma vez ────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .research-projects .research-header h2::before { animation: pesquisa-largada 420ms var(--lt-ease-out) 120ms backwards; }
+
+  @keyframes pesquisa-largada { from { transform: skewX(-12deg) scaleY(0); } }
+}
+
+/* ── Modais: fora do escopo desta onda ────────────────────────────────
+   Os quatro modais vão para o `body` por createPortal, então nada acima
+   os alcança. As regras abaixo são as de antes, copiadas sem mudança
+   (tmp/areas-v1/src/views/admin/Research/ResearchProjects.css), e seguem
+   com os tons antigos e as referências a --research-*. Essas variáveis
+   só eram declaradas em `.research-projects`, que não é ancestral do
+   modal: no portal elas já não resolviam antes desta onda, e o
+   comportamento continua o mesmo. Trocar o visual dos modais fica para a
+   onda de modalSystem.css. */
+
+.research-idea-detail__workflow-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.34rem;
+}
+
+.research-idea-detail {
+  width: min(100%, 860px);
+  margin-inline: auto;
+  display: grid;
+  gap: 0.84rem;
+}
+
+.research-idea-detail__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.research-idea-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.research-idea-detail__block,
+.research-idea-detail__interests,
+.research-idea-detail__workflow {
+  border: 1px solid var(--research-border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--research-surface-soft) 72%, transparent);
+  padding: 0.76rem;
+}
+
+.research-idea-detail__block--full {
+  grid-column: 1 / -1;
+}
+
+.research-idea-detail h4 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 850;
   color: var(--research-text);
+}
+
+.research-idea-detail p {
+  margin: 0.34rem 0 0;
+  color: color-mix(in srgb, var(--research-muted) 88%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.research-idea-detail__tags,
+.research-idea-detail__interest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+
+.research-idea-detail__tags span,
+.research-idea-detail__interest-list span {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--research-border) 70%, #2f6fa6 30%);
+  background: var(--research-surface);
+  color: var(--research-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.52rem;
+}
+
+.research-idea-detail__section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.36rem;
+  color: var(--research-text);
+}
+
+.research-interest-button.is-active {
+  background: #92400e;
+  border-color: #92400e;
 }
 
 .research-project-modal-overlay {
@@ -643,45 +1834,9 @@
   background: #cbd5e1;
 }
 
-@media (max-width: 960px) {
-  .research-projects .research-insights {
-    grid-template-columns: 1fr;
-  }
-
-  .research-projects .research-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .research-projects .search-box {
-    min-width: 100%;
-  }
-
-  .research-projects .filter-toggle {
-    width: 100%;
-  }
-}
-
 @media (max-width: 700px) {
-  .research-projects {
-    gap: 0.78rem;
-  }
-
-  .research-projects .research-header {
-    padding: 0.8rem;
-  }
-
-  .research-projects .research-table {
-    padding: 0.22rem;
-  }
-
-  .research-projects .research-actions {
-    width: 100%;
-  }
-
-  .research-projects .filters .filter-btn {
-    flex: 1;
-    justify-content: center;
+  .research-idea-detail__grid {
+    grid-template-columns: 1fr;
   }
 
   .research-project-modal {
@@ -693,4 +1848,3 @@
     grid-template-columns: 1fr;
   }
 }
-

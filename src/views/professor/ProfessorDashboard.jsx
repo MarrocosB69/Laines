@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePacientes } from '../../contexts/PacienteContext';
 import api, { getApiErrorMessage } from '../../services/api';
@@ -8,7 +8,6 @@ import {
   Users,
   ClipboardList,
   Eye,
-  ChevronRight,
   Search,
   UserCheck,
   AlertTriangle,
@@ -20,7 +19,16 @@ import {
 } from 'lucide-react';
 import PatientModal from '../admin/Registration/PatientModal';
 import Button from '../../components/ui/Button';
-import { StatCard as UiStatCard } from '../../components/ui';
+import {
+  PainelVisaoGeral,
+  PainelCabecalho,
+  PainelIndicadores,
+  PainelSecao,
+  PainelLista,
+  saudacaoPorHorario
+} from '../../components/painel/Painel';
+import { buildSidebarModel } from '../../navigation/sidebarModel';
+import FilaRevisao from '../../components/Supervisao/FilaRevisao';
 import EvaluationSummaryStrip from '../../components/shared/EvaluationSummaryStrip';
 import ClinicalEvaluationResultCard from '../../components/shared/ClinicalEvaluationResultCard';
 import {
@@ -30,6 +38,7 @@ import {
 import { buildEvaluationResultCollection } from '../../components/shared/evaluationResultAdapter';
 
 import './ProfessorView.css';
+import './ProfessorDashboard.css';
 
 const PATIENT_STATUS_OPTIONS = [
   { value: 'all', label: 'Todos os status' },
@@ -83,7 +92,7 @@ const getPatientStatusLabel = (value) => {
 };
 
 const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
-  const { user } = useAuth();
+  const { user, capabilities } = useAuth();
   const { formatDate, addPaciente } = usePacientes();
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
@@ -122,44 +131,42 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
       setLoadingPatients(true);
     }
     try {
-      const { data } = await api.get('/pacientes');
-      const list = Array.isArray(data) ? data : [];
-      const filtered = list.filter((item) => {
-        if (item.professorSupervisorId && item.professorSupervisorId === user.uid) return true;
-        if (item.professorSupervisor?.id && item.professorSupervisor.id === user.uid) return true;
-        return false;
-      }).map((item) => {
-        const alunoResponsavel = item.alunoResponsavel || (item.alunoResponsavelId ? {
-          id: item.alunoResponsavelId,
-          nome: item.alunoResponsavelNome || 'Aluno',
-          email: item.alunoResponsavelEmail || ''
-        } : null);
-        return { ...item, alunoResponsavel };
-      });
+      const { data } = await api.get('/users/meus-supervisionados');
+      const supervisionados = Array.isArray(data) ? data : [];
 
-      setSupervisedPatients(filtered);
+      const studentList = supervisionados
+        .map((aluno) => ({
+          id: aluno.id,
+          nome: aluno.nome || 'Aluno',
+          email: aluno.email || '',
+          supervisaoTipo: aluno.supervisaoTipo || 'professor'
+        }))
+        .sort((a, b) => a.nome.localeCompare(b.nome));
 
-      const studentMap = new Map();
-      filtered.forEach((paciente) => {
-        const aluno = paciente.alunoResponsavel;
-        if (!aluno?.id) return;
-        if (!studentMap.has(aluno.id)) {
-          studentMap.set(aluno.id, {
+      const patientList = supervisionados.flatMap((aluno) =>
+        (aluno.pacientes || []).map((paciente) => ({
+          ...paciente,
+          alunoResponsavel: {
             id: aluno.id,
             nome: aluno.nome || 'Aluno',
             email: aluno.email || ''
-          });
-        }
-      });
-      const studentList = Array.from(studentMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+          },
+          alunoResponsavelId: aluno.id,
+          alunoResponsavelNome: aluno.nome,
+          professorSupervisorId: user.uid,
+          supervisaoTipo: aluno.supervisaoTipo || 'professor'
+        }))
+      );
+
+      setSupervisedPatients(patientList);
       setStudents(studentList);
       setLastSyncedAt(new Date());
     } catch (error) {
-      console.error('Erro ao buscar pacientes do professor:', error);
+      console.error('Erro ao buscar supervisionados:', error);
       notify({
         type: 'error',
-        title: 'Erro ao buscar pacientes',
-        message: getApiErrorMessage(error, 'Não foi possível carregar os pacientes supervisionados.')
+        title: 'Erro ao buscar supervisionados',
+        message: getApiErrorMessage(error, 'Não foi possível carregar os alunos supervisionados.')
       });
       setSupervisedPatients([]);
       setStudents([]);
@@ -198,6 +205,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
       id: aluno.id,
       nome: aluno.nome || 'Aluno',
       email: aluno.email || '',
+      supervisaoTipo: aluno.supervisaoTipo || 'professor',
       pacientes: patientsByStudent[aluno.id] || []
     }));
 
@@ -209,6 +217,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
       id,
       nome: list[0]?.alunoResponsavel?.nome || 'Aluno',
       email: list[0]?.alunoResponsavel?.email || '',
+      supervisaoTipo: list[0]?.supervisaoTipo || 'professor',
       pacientes: list
     }));
 
@@ -551,7 +560,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
   }, [alunoSelecionado?.id]);
 
   const handleCreatePatient = async (patientData) => {
-    if (!alunoSelecionado) return;
+    if (!alunoSelecionado || alunoSelecionado.supervisaoTipo !== 'professor') return;
     const payload = {
       ...patientData,
       alunoResponsavel: {
@@ -568,38 +577,219 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
     await loadPatients({ silent: true });
   };
 
-  return (
-    <div className="professor-dashboard">
-      <header className="professor-header">
+  const canCreatePatientForSelectedStudent = alunoSelecionado?.supervisaoTipo === 'professor';
+
+  // ── Visão geral (apresentação apenas; dados e cálculos acima intactos) ──
+  // Mesmo rótulo do cartão de papel da sidebar do professor.
+  const papel = useMemo(
+    () => buildSidebarModel({ portal: 'professor', user, capabilities }).papel.titulo,
+    [capabilities, user]
+  );
+
+  // Enquanto os supervisionados ainda não chegaram, as métricas valem 0 só
+  // por serem o estado inicial: a faixa mostra esqueleto, não zero.
+  const carregandoNumeros = metricsLoading || loadingStudents || loadingPatients;
+  const metaNumero = (valor) => (carregandoNumeros ? 'Carregando…' : String(valor));
+
+  // Mesmo alternar dos antigos cartões clicáveis.
+  const alternarMetrica = (metric) => setActiveMetric(activeMetric === metric ? '' : metric);
+
+  // O detalhe de uma métrica abre dentro do bloco a que pertence, que pode
+  // estar abaixo da dobra: leva o detalhe à vista (sem animação se o
+  // sistema pede movimento reduzido).
+  const metricPanelRef = useRef(null);
+  useEffect(() => {
+    const painel = metricPanelRef.current;
+    if (!activeMetric || !painel || typeof painel.scrollIntoView !== 'function') return;
+    const reduzir = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    painel.scrollIntoView({ behavior: reduzir ? 'auto' : 'smooth', block: 'nearest' });
+  }, [activeMetric]);
+
+  const indicadores = [
+    { id: 'pendentes', rotulo: 'Avaliações pendentes', valor: metrics.pendingEvaluations, detalhe: 'Com status em aberto', icone: AlertTriangle, tom: metrics.pendingEvaluations > 0 ? 'atencao' : 'neutro', onClick: () => alternarMetrica('pending'), expandido: activeMetric === 'pending' },
+    { id: 'supervisionados', rotulo: 'Atletas supervisionados', valor: metrics.totalPatients, detalhe: `${alunos.length || 0} ${alunos.length === 1 ? 'aluno' : 'alunos'}`, icone: Users, onClick: () => alternarMetrica('patients'), expandido: activeMetric === 'patients' },
+    { id: 'realizadas', rotulo: 'Avaliações realizadas', valor: metrics.evaluationsMonth, detalhe: 'Finalizadas no mês', icone: ClipboardList, onClick: () => alternarMetrica('done'), expandido: activeMetric === 'done' },
+    { id: 'consultas-futuras', rotulo: 'Consultas futuras', valor: metrics.nextAppointments, detalhe: 'Agendadas', icone: CalendarCheck }
+  ];
+
+  const pendenciasItens = [
+    { id: 'pendentes', titulo: 'Avaliações pendentes', subtitulo: 'Avaliações em aberto com responsável.', meta: metaNumero(metrics.pendingEvaluations), icone: AlertTriangle, tom: !carregandoNumeros && metrics.pendingEvaluations > 0 ? 'atencao' : 'neutro', onClick: () => alternarMetrica('pending'), expandido: activeMetric === 'pending' }
+  ];
+
+  const agendaItens = [
+    { id: 'consultas-futuras', titulo: 'Consultas futuras', subtitulo: 'Agendadas', meta: String(metrics.nextAppointments), icone: CalendarCheck },
+    { id: 'comparecimento', titulo: 'Taxa de comparecimento', subtitulo: metrics.attendanceTotal ? `${metrics.attendanceTotal} atendimentos` : 'Sem atendimentos', meta: `${metrics.attendanceRate}%`, icone: Percent }
+  ];
+
+  const supervisaoItens = [
+    { id: 'supervisionados', titulo: 'Atletas supervisionados', subtitulo: `${alunos.length || 0} ${alunos.length === 1 ? 'aluno' : 'alunos'}`, meta: metaNumero(metrics.totalPatients), icone: Users, onClick: () => alternarMetrica('patients'), expandido: activeMetric === 'patients' },
+    supervisionCoverage && { id: 'cobertura', titulo: `${supervisionCoverage.pct}% com atletas`, subtitulo: `(${supervisionCoverage.withPatients}/${supervisionCoverage.total} alunos)`, icone: UserCheck },
+    { id: 'realizadas', titulo: 'Avaliações realizadas', subtitulo: 'Finalizadas no mês', meta: metaNumero(metrics.evaluationsMonth), icone: ClipboardList, onClick: () => alternarMetrica('done'), expandido: activeMetric === 'done' },
+    { id: 'lista-espera', titulo: 'Lista de espera', subtitulo: 'Atletas aguardando', meta: metaNumero(metrics.waitlistPatients), icone: Hourglass }
+  ].filter(Boolean);
+
+  // Detalhe da métrica ativa: o mesmo painel de antes, agora renderizado
+  // dentro do bloco a que pertence (pendentes em "O que precisa de você",
+  // supervisionados e realizadas no bloco dos atletas supervisionados).
+  const metricPanel = activeMetric ? (
+    <section className="professor-metric-panel" ref={metricPanelRef}>
+      <div className="metric-panel-header">
         <div>
-          <span className="section-label">PAINEL DO PROFESSOR</span>
-          <h1>Área do Professor</h1>
+          <h3>
+            {activeMetric === 'patients' && 'Atletas supervisionados'}
+            {activeMetric === 'done' && 'Avaliações realizadas (mês)'}
+            {activeMetric === 'pending' && 'Avaliações pendentes'}
+          </h3>
           <p>
-            Ola, Prof. {professorFirstName}. Acompanhe o
-            progresso da sua turma.
+            {activeMetric === 'patients' && 'Clique em um atleta para abrir o prontuário.'}
+            {activeMetric === 'done' && 'Avaliações finalizadas no mês atual.'}
+            {activeMetric === 'pending' && 'Avaliações em aberto com responsável.'}
           </p>
         </div>
+        <button type="button" onClick={() => setActiveMetric('')} className="metric-close">
+          Fechar
+        </button>
+      </div>
 
-        <div className="professor-header-actions">
-          <div className="professor-status-card">
-            <div className="status-icon">
-              <UserCheck size={20} />
-            </div>
-            <div>
-              <p className="status-label">Status da turma</p>
-              {supervisionCoverage ? (
-                <strong className="status-value">
-                  {supervisionCoverage.pct}% com pacientes
-                  <span className="professor-status-detail">
-                    {supervisionCoverage.withPatients}/{supervisionCoverage.total} alunos
-                  </span>
-                </strong>
-              ) : (
-                <strong className="status-value">Sem alunos vinculados</strong>
-              )}
-            </div>
+      {activeEvaluationSummary && (
+        <EvaluationSummaryStrip
+          title={activeEvaluationSummary.title}
+          subtitle={activeEvaluationSummary.subtitle}
+          status={activeEvaluationSummary.status}
+          empty={activeEvaluationSummary.empty}
+          emptyMessage="Sem avaliação para consolidar resumo clínico."
+          items={activeEvaluationSummary.items}
+        />
+      )}
+
+      {activeMetric === 'patients' && (
+        <div className="metric-list">
+          {supervisedPatientsList.length === 0 ? (
+            <div className="metric-empty laines-feedback-state">Nenhum atleta supervisionado.</div>
+          ) : (
+            supervisedPatientsList.map((patient) => (
+              <button
+                key={patient.id}
+                type="button"
+                className="metric-item"
+                onClick={() => onSelectPatient?.(patient)}
+              >
+                <span className="metric-main">
+                  <strong>{patient.nome || 'Atleta'}</strong>
+                  <span>{patient.alunoResponsavel?.nome || 'Aluno não informado'}</span>
+                </span>
+                <span className="metric-meta">{patient.status || '---'}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeMetric === 'done' && (
+        <div className="metric-list">
+          {evaluationsMonthResultCollection.length === 0 ? (
+            <div className="metric-empty laines-feedback-state">Nenhuma avaliação finalizada neste mês.</div>
+          ) : (
+            evaluationsMonthResultCollection.map(({ evaluation: item, result }, index) => {
+              const patient = patientMap.get(item.pacienteId);
+              const evaluationDate = toDate(item.createdAt || item.data);
+              return (
+                // O cartão tem botão próprio ("Ver detalhes completos"): fica
+                // fora do botão da linha, que só abre o prontuário.
+                <div key={item.id || `done-result-${index}`} className="metric-result">
+                  <button
+                    type="button"
+                    className="metric-item metric-item--result"
+                    onClick={() => patient && onSelectPatient?.(patient)}
+                    disabled={!patient}
+                  >
+                    <span className="metric-main metric-main--result">
+                      <strong>{getPatientName(item)}</strong>
+                    </span>
+                    <span className="metric-meta">{formatEvaluationDate(item)}</span>
+                  </button>
+                  <ClinicalEvaluationResultCard
+                    result={result}
+                    status={item.status || 'finalizada'}
+                    typeLabel={getEvaluationTypeLabel(item.tipo)}
+                    responsible={getEvaluatorName(item)}
+                    completion={item?.meta?.completude}
+                    dateLabel={evaluationDate ? formatDate(evaluationDate) : 'Sem data'}
+                    project={item.projetoNome || patient?.projetoNome || 'Não vinculado'}
+                    className="professor-clinical-result"
+                    compact
+                  />
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {activeMetric === 'pending' && (
+        <div className="metric-list">
+          {pendingEvaluationResultCollection.length === 0 ? (
+            <div className="metric-empty laines-feedback-state">Nenhuma avaliação pendente.</div>
+          ) : (
+            pendingEvaluationResultCollection.map(({ evaluation: item, result }, index) => {
+              const patient = patientMap.get(item.pacienteId);
+              const evaluationDate = toDate(item.createdAt || item.data);
+              return (
+                <div key={item.id || `pending-result-${index}`} className="metric-result">
+                  <button
+                    type="button"
+                    className="metric-item metric-item--result"
+                    onClick={() => patient && onSelectPatient?.(patient)}
+                    disabled={!patient}
+                  >
+                    <span className="metric-main metric-main--result">
+                      <strong>{getPatientName(item)}</strong>
+                    </span>
+                    <span className="metric-meta">{getEvaluationStatusLabel(item.status || 'pendente')}</span>
+                  </button>
+                  <ClinicalEvaluationResultCard
+                    result={result}
+                    status={item.status || 'pendente'}
+                    typeLabel={getEvaluationTypeLabel(item.tipo)}
+                    responsible={getEvaluatorName(item)}
+                    completion={item?.meta?.completude}
+                    dateLabel={evaluationDate ? formatDate(evaluationDate) : 'Sem data'}
+                    project={item.projetoNome || patient?.projetoNome || 'Não vinculado'}
+                    className="professor-clinical-result"
+                    compact
+                  />
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </section>
+  ) : null;
+
+  return (
+    <div className="professor-dashboard">
+      {/* Na aba "Alunos e Atletas" a barra de contexto continua igual; na
+          Visão geral, o que ela mostrava (saudação, sincronização, cobertura
+          e Atualizar) foi para o cabeçalho e para o bloco dos supervisionados. */}
+      {activeTab !== 'dashboard' && (
+        <div className="prof-context-bar">
+          <div className="prof-context-bar__left">
+            <span className="prof-context-bar__greeting">
+              Olá, Prof. {professorFirstName}
+            </span>
+            <span className="prof-context-bar__sync">{syncLabel}</span>
           </div>
-          <div className="professor-refresh-card">
+          <div className="prof-context-bar__right">
+            {supervisionCoverage && (
+              <span className="prof-context-bar__chip">
+                <UserCheck size={13} />
+                {supervisionCoverage.pct}% com atletas
+                <span className="prof-context-bar__chip-sub">
+                  ({supervisionCoverage.withPatients}/{supervisionCoverage.total} alunos)
+                </span>
+              </span>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -607,211 +797,69 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
               onClick={() => loadPatients({ silent: true })}
               disabled={isRefreshing || loadingStudents || loadingPatients}
             >
-              <RefreshCw size={16} className={isRefreshing ? 'is-rotating' : ''} />
-              {isRefreshing ? 'Atualizando...' : 'Atualizar painel'}
+              <RefreshCw size={14} className={isRefreshing ? 'is-rotating' : ''} />
+              {isRefreshing ? 'Atualizando...' : 'Atualizar'}
             </Button>
-            <span className="professor-refresh-meta">{syncLabel}</span>
           </div>
         </div>
-      </header>
+      )}
 
       {activeTab === 'dashboard' && (
-        <>
-        <section className="professor-stats">
-        <button
-          type="button"
-          className={`stat-card-action ${activeMetric === 'patients' ? 'active' : ''}`}
-          onClick={() => setActiveMetric(activeMetric === 'patients' ? '' : 'patients')}
-        >
-          <UiStatCard
-            title="Atletas supervisionados"
-            value={metricsLoading ? '...' : metrics.totalPatients}
-            icon={Users}
-            meta={`${alunos.length || 0} alunos`}
-          />
-        </button>
-        <button
-          type="button"
-          className={`stat-card-action ${activeMetric === 'done' ? 'active' : ''}`}
-          onClick={() => setActiveMetric(activeMetric === 'done' ? '' : 'done')}
-        >
-          <UiStatCard
-            title="Avaliações realizadas"
-            value={metricsLoading ? '...' : metrics.evaluationsMonth}
-            icon={ClipboardList}
-            meta="Finalizadas no mês"
-          />
-        </button>
-        <button
-          type="button"
-          className={`stat-card-action ${activeMetric === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveMetric(activeMetric === 'pending' ? '' : 'pending')}
-        >
-          <UiStatCard
-            title="Avaliações pendentes"
-            value={metricsLoading ? '...' : metrics.pendingEvaluations}
-            icon={AlertTriangle}
-            meta="Com status em aberto"
-          />
-        </button>
-        <UiStatCard
-          title="Consultas futuras"
-          value={metricsLoading ? '...' : metrics.nextAppointments}
-          icon={CalendarCheck}
-          meta="Agendadas"
-        />
-        <UiStatCard
-          title="Lista de espera"
-          value={metricsLoading ? '...' : metrics.waitlistPatients}
-          icon={Hourglass}
-          meta="Atletas aguardando"
-        />
-        <UiStatCard
-          title="Taxa de comparecimento"
-          value={metricsLoading ? '...' : `${metrics.attendanceRate}%`}
-          icon={Percent}
-          meta={
-            metricsLoading
-              ? 'Calculando...'
-              : metrics.attendanceTotal
-                ? `${metrics.attendanceTotal} atendimentos`
-                : 'Sem atendimentos'
-          }
-        />
-      </section>
-
-      {activeMetric && (
-        <section className="professor-metric-panel">
-          <div className="metric-panel-header">
-            <div>
-              <h3>
-                {activeMetric === 'patients' && 'Atletas supervisionados'}
-                {activeMetric === 'done' && 'Avaliações realizadas (mês)'}
-                {activeMetric === 'pending' && 'Avaliações pendentes'}
-              </h3>
-              <p>
-                {activeMetric === 'patients' && 'Clique em um atleta para abrir o prontuário.'}
-                {activeMetric === 'done' && 'Avaliações finalizadas no mês atual.'}
-                {activeMetric === 'pending' && 'Avaliações em aberto com responsável.'}
-              </p>
-            </div>
-            <button type="button" onClick={() => setActiveMetric('')} className="metric-close">
-              Fechar
-            </button>
-          </div>
-
-          {activeEvaluationSummary && (
-            <EvaluationSummaryStrip
-              title={activeEvaluationSummary.title}
-              subtitle={activeEvaluationSummary.subtitle}
-              status={activeEvaluationSummary.status}
-              empty={activeEvaluationSummary.empty}
-              emptyMessage="Sem avaliação para consolidar resumo clínico."
-              items={activeEvaluationSummary.items}
-            />
-          )}
-
-          {activeMetric === 'patients' && (
-            <div className="metric-list">
-              {supervisedPatientsList.length === 0 ? (
-                <div className="metric-empty laines-feedback-state">Nenhum atleta supervisionado.</div>
-              ) : (
-                supervisedPatientsList.map((patient) => (
-                  <button
-                    key={patient.id}
+        <div className="prof-visao-geral">
+          <PainelVisaoGeral>
+            <PainelCabecalho
+              saudacao={saudacaoPorHorario(new Date())}
+              nome={professorFirstName}
+              papel={papel}
+              data={new Date()}
+              acoes={(
+                <div className="prof-painel-acoes">
+                  <span className="prof-painel-acoes__sync">{syncLabel}</span>
+                  <Button
                     type="button"
-                    className="metric-item"
-                    onClick={() => onSelectPatient?.(patient)}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => loadPatients({ silent: true })}
+                    disabled={isRefreshing || loadingStudents || loadingPatients}
                   >
-                    <div className="metric-main">
-                      <strong>{patient.nome || 'Atleta'}</strong>
-                      <span>{patient.alunoResponsavel?.nome || 'Aluno não informado'}</span>
-                    </div>
-                    <span className="metric-meta">{patient.status || '---'}</span>
-                  </button>
-                ))
+                    <RefreshCw size={14} className={isRefreshing ? 'is-rotating' : ''} aria-hidden="true" />
+                    {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+                  </Button>
+                </div>
               )}
-            </div>
-          )}
+            />
 
-          {activeMetric === 'done' && (
-            <div className="metric-list">
-              {evaluationsMonthResultCollection.length === 0 ? (
-                <div className="metric-empty laines-feedback-state">Nenhuma avaliação finalizada neste mês.</div>
-              ) : (
-                evaluationsMonthResultCollection.map(({ evaluation: item, result }, index) => {
-                  const patient = patientMap.get(item.pacienteId);
-                  const evaluationDate = toDate(item.createdAt || item.data);
-                  return (
-                    <button
-                      key={item.id || `done-result-${index}`}
-                      type="button"
-                      className="metric-item metric-item--result"
-                      onClick={() => patient && onSelectPatient?.(patient)}
-                      disabled={!patient}
-                    >
-                      <div className="metric-main metric-main--result">
-                        <ClinicalEvaluationResultCard
-                          result={result}
-                          status={item.status || 'finalizada'}
-                          typeLabel={getEvaluationTypeLabel(item.tipo)}
-                          responsible={getEvaluatorName(item)}
-                          completion={item?.meta?.completude}
-                          dateLabel={evaluationDate ? formatDate(evaluationDate) : 'Sem data'}
-                          project={item.projetoNome || patient?.projetoNome || 'Não vinculado'}
-                          className="professor-clinical-result"
-                          compact
-                        />
-                        <strong>{getPatientName(item)}</strong>
-                      </div>
-                      <span className="metric-meta">{formatEvaluationDate(item)}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
+            <PainelIndicadores
+              rotulo="Indicadores da supervisão"
+              carregando={carregandoNumeros}
+              itens={indicadores}
+            />
+            <PainelSecao id="precisa-de-voce" titulo="O que precisa de você">
+              {/* UX-06: fila de revisao primeiro — quem revisa trabalha nisso
+                  todo dia; quem nao revisa (sem capabilities.atendimento.revisaPlano)
+                  nunca ve o bloco, nem uma fila vazia. */}
+              {capabilities?.atendimento?.revisaPlano && <FilaRevisao />}
+              {/* A linha fica e o detalhe abre abaixo dela: trocar a linha pelo
+                  painel tirava do DOM o botão focado, e o foco caía no body
+                  (revisão de 27/09/2026). */}
+              <PainelLista rotuloAcessivel="Avaliações pendentes" itens={pendenciasItens} />
+              {activeMetric === 'pending' && metricPanel}
+            </PainelSecao>
 
-          {activeMetric === 'pending' && (
-            <div className="metric-list">
-              {pendingEvaluationResultCollection.length === 0 ? (
-                <div className="metric-empty laines-feedback-state">Nenhuma avaliação pendente.</div>
-              ) : (
-                pendingEvaluationResultCollection.map(({ evaluation: item, result }, index) => {
-                  const patient = patientMap.get(item.pacienteId);
-                  const evaluationDate = toDate(item.createdAt || item.data);
-                  return (
-                    <button
-                      key={item.id || `pending-result-${index}`}
-                      type="button"
-                      className="metric-item metric-item--result"
-                      onClick={() => patient && onSelectPatient?.(patient)}
-                      disabled={!patient}
-                    >
-                      <div className="metric-main metric-main--result">
-                        <ClinicalEvaluationResultCard
-                          result={result}
-                          status={item.status || 'pendente'}
-                          typeLabel={getEvaluationTypeLabel(item.tipo)}
-                          responsible={getEvaluatorName(item)}
-                          completion={item?.meta?.completude}
-                          dateLabel={evaluationDate ? formatDate(evaluationDate) : 'Sem data'}
-                          project={item.projetoNome || patient?.projetoNome || 'Não vinculado'}
-                          className="professor-clinical-result"
-                          compact
-                        />
-                        <strong>{getPatientName(item)}</strong>
-                      </div>
-                      <span className="metric-meta">{getEvaluationStatusLabel(item.status || 'pendente')}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </section>
-      )}
-        </>
+            <PainelSecao
+              id="agenda"
+              titulo="Agenda"
+              estado={carregandoNumeros ? 'carregando' : 'pronto'}
+            >
+              <PainelLista rotuloAcessivel="Agendamentos" itens={agendaItens} />
+            </PainelSecao>
+
+            <PainelSecao id="supervisionados" titulo="Atletas supervisionados">
+              <PainelLista rotuloAcessivel="Supervisão" itens={supervisaoItens} />
+              {(activeMetric === 'patients' || activeMetric === 'done') && metricPanel}
+            </PainelSecao>
+          </PainelVisaoGeral>
+        </div>
       )}
 
       {activeTab === 'patients' && <section className="professor-grid">
@@ -867,15 +915,17 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
                     {alunoSelecionado.email || 'Email não informado'}
                   </p>
                 </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  type="button"
-                  onClick={() => setPatientModalOpen(true)}
-                >
-                  <Plus size={18} />
-                  Novo atleta
-                </Button>
+                {canCreatePatientForSelectedStudent && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    type="button"
+                    onClick={() => setPatientModalOpen(true)}
+                  >
+                    <Plus size={18} />
+                    Novo atleta
+                  </Button>
+                )}
               </div>
 
               <div className="patient-summary-row">
@@ -901,6 +951,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
                   <label htmlFor="patientStatusFilter">Status</label>
                   <select
                     id="patientStatusFilter"
+                    className="prof-select"
                     value={patientStatusFilter}
                     onChange={(e) => setPatientStatusFilter(e.target.value)}
                   >
@@ -915,6 +966,7 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
                   <label htmlFor="patientSort">Ordenar por</label>
                   <select
                     id="patientSort"
+                    className="prof-select"
                     value={patientSort}
                     onChange={(e) => setPatientSort(e.target.value)}
                   >
@@ -954,15 +1006,12 @@ const ProfessorDashboard = ({ onSelectPatient, activeTab = 'dashboard' }) => {
                         </div>
                       </div>
                       <h3>{paciente.nome}</h3>
-                      <p className={`patient-status-pill status-${normalizePatientStatus(paciente.status).replace(/\s+/g, '-')}`}>
+                      <span className={`patient-status-pill status-${normalizePatientStatus(paciente.status).replace(/\s+/g, '-')}`}>
                         {getPatientStatusLabel(paciente.status)}
-                      </p>
+                      </span>
                       <p>
                         Última avaliação: {paciente.ultimaAvaliacao || '---'}
                       </p>
-                      <span className="patient-link">
-                        Ver evolução clínica <ChevronRight size={14} />
-                      </span>
                     </button>
                   ))
                 )}

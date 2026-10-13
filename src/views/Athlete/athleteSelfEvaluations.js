@@ -29,19 +29,19 @@ export const getAthleteSelfEvaluationConfig = (type) => (
   ATHLETE_SELF_EVALUATION_CONFIGS.find((item) => item.type === type) || null
 );
 
-export const getAthleteSelfEvaluationRelease = (confirmacaoAtleta, type) => {
-  const releases = confirmacaoAtleta?.formulariosLiberados;
-  if (!releases || typeof releases !== 'object' || Array.isArray(releases)) return {};
-  const release = releases[type];
+/** Accepts formulariosLiberados map directly (not the parent confirmacaoAtleta). */
+export const getAthleteSelfEvaluationRelease = (formulariosLiberados, type) => {
+  if (!formulariosLiberados || typeof formulariosLiberados !== 'object' || Array.isArray(formulariosLiberados)) return {};
+  const release = formulariosLiberados[type];
   return release && typeof release === 'object' && !Array.isArray(release) ? release : {};
 };
 
-export const isAthleteSelfEvaluationReleased = (confirmacaoAtleta, type) => (
-  Boolean(getAthleteSelfEvaluationRelease(confirmacaoAtleta, type)?.enabled)
+export const isAthleteSelfEvaluationReleased = (formulariosLiberados, type) => (
+  Boolean(getAthleteSelfEvaluationRelease(formulariosLiberados, type)?.enabled)
 );
 
-export const listReleasedAthleteSelfEvaluationConfigs = (confirmacaoAtleta) => (
+export const listReleasedAthleteSelfEvaluationConfigs = (formulariosLiberados) => (
   ATHLETE_SELF_EVALUATION_CONFIGS.filter((config) => (
-    isAthleteSelfEvaluationReleased(confirmacaoAtleta, config.type)
+    isAthleteSelfEvaluationReleased(formulariosLiberados, config.type)
   ))
 );

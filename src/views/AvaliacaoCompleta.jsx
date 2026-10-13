@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePacientes } from '../contexts/PacienteContext';
@@ -20,12 +20,16 @@ import AnamneseInicialForm from '../components/Avaliacoes/anamnese/AnamneseInici
 import AvaliacaoClinicaForm from '../components/Avaliacoes/clinica/AvaliacaoClinicaForm';
 import AvaliacaoTriagemREDS from './avaliacoes/AvaliacaoTriagemREDS';
 import AvaliacaoCargaTreino from './avaliacoes/AvaliacaoCargaTreino';
+import PlanoMetasForm from '../components/Avaliacoes/plano-metas/PlanoMetasForm';
+import { getMergedOnboardingData, getPublicTriageContext } from './avaliacoes/publicTriageContext';
 import {
   getEvaluationStatusLabel,
   getEvaluationTypeLabel
 } from '../components/shared/evaluationSummaryUtils';
 import {
-  listEvaluationRegistryByContext
+  getEditableTypesForUser,
+  listEvaluationRegistryByContext,
+  getVisibleTypesForUser
 } from '../constants/evaluationRegistry';
 import { ADMIN_ROLES, isStudentMemberRole, normalizeRole } from '../constants/roles';
 import {
@@ -34,6 +38,7 @@ import {
   buildReportFilename,
   downloadTextFile
 } from '../services/clinicalReportService';
+import { useEdicaoPendente } from '../hooks/useEdicaoPendente';
 
 import {
   ArrowLeft,
@@ -42,6 +47,7 @@ import {
   Scale,
   Flame,
   Activity,
+  Plus,
   Apple,
   Droplets,
   Heart,
@@ -52,10 +58,16 @@ import {
   ClipboardList,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Printer,
-  RefreshCw
+  RefreshCw,
+  Target,
+  AlertCircle,
+  TriangleAlert
 } from 'lucide-react';
 
+import { Skeleton } from '../components/ui';
+import { PainelIndicadores, PainelVisaoGeral } from '../components/painel/Painel';
 import './AvaliacaoCompleta.css';
 import '../components/Prontuario/ProntuarioTheme.css';
 
@@ -74,7 +86,8 @@ const MODULE_ICON_MAP = {
   fisioterapia: Activity,
   psicologia: Heart,
   exames_laboratoriais: FileText,
-  evolucao_retorno: Clock
+  evolucao_retorno: Clock,
+  plano_metas: Target
 };
 
 const MODULE_CONFIG = [...listEvaluationRegistryByContext('avaliacaoCompleta')]
@@ -91,20 +104,7 @@ const MODULE_CONFIG = [...listEvaluationRegistryByContext('avaliacaoCompleta')]
     ordem: item.ordem ?? Number.MAX_SAFE_INTEGER
   }));
 
-const EVALUATION_MANAGER_ROLES = new Set([...ADMIN_ROLES, 'coord_atendimento']);
-
-const MODULE_DEPENDENCIES = Object.freeze({
-  'triagem-reds': {
-    requires: ['alimentar', 'carga-treino'],
-    mode: 'all',
-    hint: 'Usa ingestão calórica (Alimentar) e gasto de exercício (Carga de Treino) para calcular a DE. A massa magra é extraída automaticamente de Bioimpedância ou Dobras Cutâneas (a mais recente disponível).'
-  },
-  'gasto-energetico': {
-    requires: ['anamnese-inicial'],
-    mode: 'soft',
-    hint: 'Usa perfil da Anamnese Inicial (idade, sexo, modalidade) para sugerir o Fator de Atividade adequado.'
-  },
-});
+const EVALUATION_MANAGER_ROLES = new Set([...ADMIN_ROLES]);
 
 const CLINICAL_STAGE_CONFIG = Object.freeze([
   {
@@ -124,7 +124,7 @@ const CLINICAL_STAGE_CONFIG = Object.freeze([
   },
   {
     id: 'demanda_performance',
-    label: 'Demanda e performance',
+    label: 'Demanda e desempenho',
     description: 'Gasto energético total e carga de treino semanal'
   },
   {
@@ -140,19 +140,11 @@ const CLINICAL_STAGE_CONFIG = Object.freeze([
   {
     id: 'conduta',
     label: 'Conduta',
-    description: 'Síntese RED-S, exames laboratoriais e retorno clínico'
+    description: 'Disponibilidade energética, exames laboratoriais e retorno clínico'
   }
 ]);
 
-const STAGE_SYNTHESIS_HINTS = Object.freeze({
-  triagem: 'Registre contexto clínico, sinais vitais e segurança alimentar para embasar todas as etapas seguintes.',
-  composicao_corporal: 'Registre ao menos um método de composição corporal (dobras ou BIA) — a massa magra é derivada automaticamente para o cálculo de DE.',
-  demanda_performance: 'Calcule o GET e registre a carga semanal antes de avançar para a rotina alimentar.',
-  rotina_alimentar: 'Valide ingestão calórica e hidratação — dados essenciais para o cálculo de disponibilidade energética.',
-  multiprofissional: 'Registre avaliações de psicologia e fisioterapia para fechar o quadro interprofissional.',
-  conduta: 'Calcule a Disponibilidade Energética (RED-S), interprete exames e defina o retorno clínico.',
-  visao_geral: 'Use o painel para priorizar pendências críticas e concluir a jornada da sessão.'
-});
+
 
 const ONBOARDING_CONTRACT_FIELDS = Object.freeze([
   { key: 'modalidadePrincipal', label: 'Modalidade principal' },
@@ -203,6 +195,7 @@ const hasValue = (value) => {
 };
 
 const getCurrentDate = () => new Date().toISOString();
+const getTodayIsoDate = () => new Date().toISOString().slice(0, 10);
 const REDS_PRESCRICAO_WARNING = 'Disponibilidade Energética < 30 kcal/kg MLG detectada. Recomenda-se não prescrever plano hipocalórico antes de corrigir o déficit energético.';
 
 const pickNum = (obj, ...keys) => {
@@ -287,7 +280,15 @@ const getModuleKeyMetric = (tipo, snapshot) => {
     }
     case 'evolucao_retorno': {
       const score = pickNum(r, 'scoreAdesaoGeral', 'scoreAdesao') ?? pickNum(d, 'scoreAdesaoGeral', 'scoreAdesao');
-      if (score != null) return `Adesão ${score.toFixed(0)}%`;
+      if (score != null) return `Aplicação da Dieta ${score.toFixed(0)}%`;
+      break;
+    }
+    case 'plano_metas': {
+      const mot = pickNum(d, 'motivacao');
+      const conf = pickNum(d, 'grauConfianca');
+      if (mot != null && conf != null) return `Mot. ${mot}/10 · Conf. ${conf}/10`;
+      if (mot != null) return `Motivação ${mot}/10`;
+      if (conf != null) return `Confiança ${conf}/10`;
       break;
     }
     default:
@@ -418,8 +419,23 @@ const getModuleContextCards = (tipo, snapshot) => {
   return cards;
 };
 
-const AvaliacaoCompleta = () => {
-  const { id } = useParams();
+// A mesma tela serve a rota /avaliacao/:id e o encaixe dentro do prontuario.
+// Duplicar seria manter dois formularios clinicos em paralelo — a origem exata
+// do tipo de divergencia que este sistema ja teve entre front e back.
+const AvaliacaoCompleta = ({
+  pacienteId = null,
+  embutido = false,
+  moduloInicial = null,
+  avaliacaoInicialId = null,
+  aoSair = null,
+  aoVoltar = null,
+  aoAbrirImagem = null,
+  aoAbrirTab = null,
+  navigationRequest = null,
+  onActiveModuleChange = null
+}) => {
+  const params = useParams();
+  const id = pacienteId || params.id;
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -433,12 +449,30 @@ const AvaliacaoCompleta = () => {
   const { user } = useAuth();
   const { notify, confirm } = useUiFeedback();
 
-  const [activeTab, setActiveTab] = useState(() => location.state?.startTab || MODULE_CONFIG[0]?.id || 'anamnese-inicial');
+  const [activeTab, setActiveTab] = useState(() => moduloInicial || location.state?.startTab || MODULE_CONFIG[0]?.id || 'anamnese-inicial');
   const [isNewSessionMode, setIsNewSessionMode] = useState(() => Boolean(location.state?.newSession));
   const [activeSessionId, setActiveSessionId] = useState(() => String(location.state?.sessionId || '').trim());
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [patient, setPatient] = useState(null);
   const [draftIds, setDraftIds] = useState({});
+  // Tipos em nova medicao. Enquanto o tipo esta aqui, o save ignora o rascunho
+  // existente e nao manda sessaoId: sem sessao o backend pula a checagem de
+  // conflito (avaliacoes.service.ts:1713) e a medicao vira uma linha nova
+  // datada, em vez de sobrescrever a anterior.
+  const [remedindoTipos, setRemedindoTipos] = useState(() => new Set());
+  // Remonta o formulario do modulo. Sem isso o componente mantem o estado
+  // interno — inclusive a data da medicao anterior, que faz o backend resolver
+  // a mesma sessao e recusar a nova linha por conflito de (sessao, tipo).
+  const [medicaoNonce, setMedicaoNonce] = useState(0);
+  const [seletorModulosAberto, setSeletorModulosAberto] = useState(false);
+
+  // Modo essencial: o formulario abre nos campos que a finalizacao exige, e o
+  // resto fica a um clique. Bioimpedancia mostra 28 campos e exige 3 — na
+  // consulta a pessoa tem o aparelho na mao e precisa lancar tres numeros.
+  const [modoEssencial, setModoEssencial] = useState(true);
+  const [contagemCampos, setContagemCampos] = useState({ total: 0, essenciais: 0 });
+  const formularioRef = useRef(null);
+  const lastNavigationRequestRef = useRef(0);
   const [moduleSnapshots, setModuleSnapshots] = useState({});
   const [evaluationHistory, setEvaluationHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -452,14 +486,31 @@ const AvaliacaoCompleta = () => {
     sexo: ''
   });
   const [sharedAnthropometryTouched, setSharedAnthropometryTouched] = useState(false);
+  const [baselineOpen, setBaselineOpen] = useState(false);
+
+  const visibleModuleConfig = useMemo(() => {
+    const visibleTypes = getVisibleTypesForUser(user, patient);
+    return MODULE_CONFIG.filter((item) => visibleTypes.has(item.tipo));
+  }, [patient, user]);
 
   const normalizeType = useCallback(
     (value) => String(value || '').trim().toLowerCase().replace(/-/g, '_'),
     []
   );
 
+  // Ordenacao e "qual rascunho esta aberto" dependem de quando o registro foi
+  // mexido — por isso esta continua priorizando updatedAt/createdAt.
   const getRecordDate = useCallback(
     (record) => convertFirebaseDate(record?.updatedAt || record?.createdAt || record?.data),
+    [convertFirebaseDate]
+  );
+
+  // Ja o que se mostra ao usuario e a data da medicao: tres bioimpedancias de
+  // marco, maio e agosto apareciam todas com a data em que foram digitadas.
+  const getMeasurementDate = useCallback(
+    (record) => convertFirebaseDate(
+      record?.measuredAt || record?.data || record?.dataAvaliacao || record?.createdAt
+    ),
     [convertFirebaseDate]
   );
 
@@ -485,19 +536,33 @@ const AvaliacaoCompleta = () => {
       const grouped = {};
       const nextDraftIds = {};
 
+      const selectedEvaluationId = String(avaliacaoInicialId || '').trim();
+      const selectedEvaluation = selectedEvaluationId
+        ? sorted.find((item) => String(item?.id || '') === selectedEvaluationId)
+        : null;
       const pinnedSessionId = isNewSessionMode ? String(activeSessionId || '').trim() : '';
       sorted.forEach((item) => {
         const typeKey = normalizeType(item.tipo);
         if (!typeKey) return;
         const itemStatus = String(item.status || '').toLowerCase();
         const isOpenDraft = itemStatus !== 'finalizada';
+        const isSelectedEvaluation = selectedEvaluationId && String(item?.id || '') === selectedEvaluationId;
+        if (isSelectedEvaluation) {
+          grouped[typeKey] = item;
+          if (isOpenDraft && item.id) {
+            nextDraftIds[typeKey] = item.id;
+          }
+        }
         const isInPinnedSession = pinnedSessionId
           && String(item?.sessaoId || '').trim() === pinnedSessionId;
-        if ((!isNewSessionMode || isOpenDraft || isInPinnedSession) && !grouped[typeKey]) grouped[typeKey] = item;
+        if (!isSelectedEvaluation && (!isNewSessionMode || isOpenDraft || isInPinnedSession) && !grouped[typeKey]) grouped[typeKey] = item;
         if (isOpenDraft && item.id && !nextDraftIds[typeKey]) {
           nextDraftIds[typeKey] = item.id;
         }
       });
+      if (selectedEvaluation?.sessaoId) {
+        setActiveSessionId(String(selectedEvaluation.sessaoId));
+      }
 
       setModuleSnapshots(grouped);
       setDraftIds(nextDraftIds);
@@ -509,7 +574,7 @@ const AvaliacaoCompleta = () => {
     } finally {
       setLoadingHistory(false);
     }
-  }, [activeSessionId, getAvaliacoesByPaciente, getRecordDate, id, isNewSessionMode, normalizeType]);
+  }, [activeSessionId, avaliacaoInicialId, getAvaliacoesByPaciente, getRecordDate, id, isNewSessionMode, normalizeType]);
 
   useEffect(() => {
     let isMounted = true;
@@ -528,12 +593,12 @@ const AvaliacaoCompleta = () => {
 
   useEffect(() => {
     if (activeTab === 'visao_geral') return;
-    if (MODULE_CONFIG.some((item) => item.id === activeTab)) return;
-    setActiveTab(MODULE_CONFIG[0].id);
-  }, [activeTab]);
+    if (visibleModuleConfig.some((item) => item.id === activeTab)) return;
+    setActiveTab(visibleModuleConfig[0]?.id || 'anamnese-inicial');
+  }, [activeTab, visibleModuleConfig]);
 
   const moduleStates = useMemo(() => {
-    return MODULE_CONFIG.map((tab) => {
+    return visibleModuleConfig.map((tab) => {
       const snapshot = moduleSnapshots[normalizeType(tab.tipo)] || null;
       const rawStatus = String(snapshot?.status || '').toLowerCase();
       const status = rawStatus === 'finalizada' ? 'finalizada' : snapshot ? 'rascunho' : 'pendente';
@@ -550,7 +615,7 @@ const AvaliacaoCompleta = () => {
         updatedAt: getRecordDate(snapshot)
       };
     });
-  }, [getRecordDate, moduleSnapshots, normalizeType]);
+  }, [getRecordDate, moduleSnapshots, normalizeType, visibleModuleConfig]);
 
   const progress = useMemo(() => {
     const total = moduleStates.length || 1;
@@ -622,17 +687,6 @@ const AvaliacaoCompleta = () => {
     () => moduleStates.find((item) => item.status !== 'finalizada') || null,
     [moduleStates]
   );
-
-  const stageTabs = useMemo(() => {
-    const overviewStage = {
-      id: 'visao_geral',
-      label: 'Visão geral',
-      description: 'Panorama clínico da sessão e próximos passos',
-      total: progress.total,
-      finalized: progress.finalized
-    };
-    return [overviewStage, ...stageSummaries];
-  }, [progress.finalized, progress.total, stageSummaries]);
 
   const sidebarModuleGroups = useMemo(() => (
     stageSummaries
@@ -764,8 +818,8 @@ const AvaliacaoCompleta = () => {
       {
         id: 'reds',
         label: shouldWarnRedsPrescricao
-          ? 'Risco RED-S revisado para conduta'
-          : 'Risco RED-S sem bloqueio para conduta',
+          ? 'Baixa disponibilidade energética revisada para conduta'
+          : 'Disponibilidade energética sem bloqueio para conduta',
         done: redsReviewed
       }
     ];
@@ -773,8 +827,8 @@ const AvaliacaoCompleta = () => {
     const pendingCount = checklist.filter((item) => !item.done).length;
     const tone = readyForPlano ? 'success' : (shouldWarnRedsPrescricao && !redsReviewed ? 'danger' : 'warning');
     const statusLabel = readyForPlano
-      ? 'Conduta pronta para plano alimentar'
-      : `${pendingCount} pendência(s) para fechar conduta`;
+      ? 'Contexto clínico registrado'
+      : `${pendingCount} item(ns) ainda não registrado(s) nesta síntese`;
 
     return {
       latestExames,
@@ -819,13 +873,6 @@ const AvaliacaoCompleta = () => {
       currentSessionId,
       normalizeType
     });
-    const latestBia = resolveLatestSnapshotByType({ moduleSnapshots, sortedHistory: workingSessionHistory, tipo: 'bioimpedancia', currentSessionId, normalizeType });
-    const latestDobras = resolveLatestSnapshotByType({ moduleSnapshots, sortedHistory: workingSessionHistory, tipo: 'dobras_cutaneas', currentSessionId, normalizeType });
-    const latestComposicao = (() => {
-      if (!latestBia?.id) return latestDobras;
-      if (!latestDobras?.id) return latestBia;
-      return new Date(latestBia.createdAt || 0) >= new Date(latestDobras.createdAt || 0) ? latestBia : latestDobras;
-    })();
     const latestEvolucao = resolveLatestSnapshotByType({
       moduleSnapshots,
       sortedHistory: workingSessionHistory,
@@ -853,31 +900,10 @@ const AvaliacaoCompleta = () => {
       signals.push({
         id: 'reds-no-classification',
         tone: 'danger',
-        title: 'Triagem RED-S sem classificação final',
-        message: 'O módulo RED-S foi salvo sem classificação de DE. Revise cálculo e persistência do resultado.',
+        title: 'Triagem de Disponibilidade Energética sem classificação final',
+        message: 'O módulo de disponibilidade energética foi salvo sem classificação de DE. Revise cálculo e persistência do resultado.',
         targetType: 'triagem_reds'
       });
-    }
-
-    const redsNeeds = resolveStringArray([
-      latestReds?.resultados?.precisaDadosExtras,
-      latestReds?.dados?.precisaDadosExtras,
-      latestReds?.dados?.dados_brutos?.precisaDadosExtras
-    ]);
-    if (latestReds?.id && redsNeeds.length > 0) {
-      const reconciledModules = redsNeeds.filter((tipo) => {
-        const state = moduleStates.find((item) => item.tipo === normalizeType(tipo));
-        return state?.status === 'finalizada';
-      });
-      if (reconciledModules.length > 0) {
-        signals.push({
-          id: 'reds-needs-extras-with-finalized',
-          tone: 'warning',
-          title: 'RED-S ainda pede dados já finalizados',
-          message: `Pendência RED-S para ${reconciledModules.join(', ')} mesmo após finalização do(s) módulo(s).`,
-          targetType: 'triagem_reds'
-        });
-      }
     }
 
     const getWeekly = resolveNumericFromPaths(latestGet, [
@@ -904,49 +930,6 @@ const AvaliacaoCompleta = () => {
         title: 'GET sem total semanal consistente',
         message: 'Há atividades semanais preenchidas, mas o total energético semanal não foi consolidado.',
         targetType: 'gasto_energetico_total'
-      });
-    }
-
-    const alimentarKcal = resolveNumericFromPaths(latestAlimentar, [
-      'resultados.caloriasTotal',
-      'resultados.totalDiario',
-      'resultados.calculated.totalDiario',
-      'dados.totalDiario',
-      'dados.total_diario'
-    ]);
-    const redsIngestaoAuto = resolveNumericFromPaths(latestReds, [
-      'dados.ingestaoKcalR24hAuto',
-      'resultados.calculated.ingestaoKcalR24hAuto'
-    ]);
-    if (latestAlimentar?.id && latestReds?.id && Number.isFinite(alimentarKcal) && !Number.isFinite(redsIngestaoAuto)) {
-      signals.push({
-        id: 'reds-ingestao-not-linked',
-        tone: 'warning',
-        title: 'RED-S sem ingestão automática da Alimentar',
-        message: 'A avaliação alimentar possui calorias totais, mas a triagem RED-S não refletiu o valor automático.',
-        targetType: 'triagem_reds'
-      });
-    }
-
-    const massaMagraOficial = resolveNumericFromPaths(latestComposicao, [
-      'resultados.massaMagra',
-      'resultados.massaMagraKg',
-      'resultados.calculated.massaMagra',
-      'dados.massaMagra',
-      'dados.massa_magra',
-      'dados.massaMagraKg'
-    ]);
-    const redsMassaMagraAuto = resolveNumericFromPaths(latestReds, [
-      'dados.massaMagraKgAuto',
-      'resultados.calculated.massaMagraKgAuto'
-    ]);
-    if (latestComposicao?.id && latestReds?.id && Number.isFinite(massaMagraOficial) && !Number.isFinite(redsMassaMagraAuto)) {
-      signals.push({
-        id: 'reds-masslean-not-linked',
-        tone: 'warning',
-        title: 'RED-S sem massa magra automática',
-        message: 'Bioimpedância ou Dobras Cutâneas já têm massa magra calculada, mas a triagem RED-S não consumiu esse dado.',
-        targetType: 'triagem_reds'
       });
     }
 
@@ -1013,7 +996,7 @@ const AvaliacaoCompleta = () => {
         signals.push({
           id: 'balanco-energetico-deficit',
           tone: 'danger',
-          title: 'Déficit energético elevado',
+          title: 'Balanço Energético Negativo',
           message: `Ingestão ${Math.round(kcalAlimentar)} kcal vs GET ${Math.round(getEstimado)} kcal — déficit de ${Math.abs(balanco)} kcal.`,
           targetType: 'alimentar'
         });
@@ -1021,7 +1004,7 @@ const AvaliacaoCompleta = () => {
         signals.push({
           id: 'balanco-energetico-surplus',
           tone: 'warning',
-          title: 'Superávit energético elevado',
+          title: 'Balanço Energético Positivo',
           message: `Ingestão ${Math.round(kcalAlimentar)} kcal vs GET ${Math.round(getEstimado)} kcal — superávit de ${balanco} kcal.`,
           targetType: 'gasto_energetico_total'
         });
@@ -1035,7 +1018,6 @@ const AvaliacaoCompleta = () => {
     condutaContext.readyForPlano,
     currentSessionId,
     moduleSnapshots,
-    moduleStates,
     normalizeType,
     triagemRedsSnapshot,
     workingSessionHistory
@@ -1107,7 +1089,7 @@ const AvaliacaoCompleta = () => {
       getEstimado: Math.round(getEstimado),
       balanco,
       tone: Math.abs(balanco) <= 200 ? 'success' : Math.abs(balanco) <= 500 ? 'warning' : 'danger',
-      label: balanco >= 0 ? `+${balanco} kcal superávit` : `${balanco} kcal déficit`
+      label: balanco >= 0 ? `+${balanco} kcal (positivo)` : `${balanco} kcal (negativo)`
     };
   }, [moduleSnapshots, normalizeType]);
 
@@ -1137,21 +1119,37 @@ const AvaliacaoCompleta = () => {
   const isPatientTeamMember = useMemo(
     () => Boolean(
       currentUserId
-      && Array.isArray(patient?.equipeTecnicaIds)
-      && patient.equipeTecnicaIds.includes(currentUserId)
+      && (
+        (Array.isArray(patient?.equipeTecnicaIds) && patient.equipeTecnicaIds.includes(currentUserId))
+        || (Array.isArray(patient?.equipeMultiIds) && patient.equipeMultiIds.includes(currentUserId))
+        || (
+          Array.isArray(patient?.equipeProfissional)
+          && patient.equipeProfissional.some((member) => String(member?.userId || '') === currentUserId)
+        )
+      )
     ),
-    [currentUserId, patient?.equipeTecnicaIds]
+    [currentUserId, patient?.equipeMultiIds, patient?.equipeProfissional, patient?.equipeTecnicaIds]
+  );
+  const editableEvaluationTypes = useMemo(
+    () => getEditableTypesForUser(user, patient),
+    [patient, user]
   );
   const canManagePatientFlow = useMemo(
     () => hasEvaluationManagerRole || (
-      isStudentMemberRole(normalizedUserRole) && (isPatientResponsible || isPatientTeamMember)
+      isStudentMemberRole(normalizedUserRole)
+      && (isPatientResponsible || isPatientTeamMember)
+      && editableEvaluationTypes.size > 0
     ),
-    [hasEvaluationManagerRole, isPatientResponsible, isPatientTeamMember, normalizedUserRole]
+    [editableEvaluationTypes, hasEvaluationManagerRole, isPatientResponsible, isPatientTeamMember, normalizedUserRole]
   );
+  // Um rascunho em aberto escondia o botao. Como modulo em rascunho e o estado
+  // normal (49 das 111 avaliacoes do banco), "Nova sessao" ficava permanentemente
+  // invisivel: toda medicao nova caia na mesma sessao, batia no conflito de
+  // (sessao, tipo) e o cliente sobrescrevia a linha anterior. Os rascunhos em
+  // aberto continuam na sessao antiga; a nova rodada comeca limpa.
   const canStartNewSession = canManagePatientFlow
     && !isNewSessionMode
-    && hasFinalizedEvaluationHistory
-    && !hasOpenSessionDrafts;
+    && hasFinalizedEvaluationHistory;
 
   const handleStartNewSession = useCallback(() => {
     if (!canStartNewSession) return;
@@ -1159,17 +1157,77 @@ const AvaliacaoCompleta = () => {
     setActiveSessionId('');
     setModuleSnapshots({});
     setDraftIds({});
-    setActiveTab(MODULE_CONFIG[0]?.id || 'anamnese-inicial');
+    setActiveTab(visibleModuleConfig[0]?.id || 'anamnese-inicial');
     notify({
       type: 'success',
       title: 'Nova sessão iniciada',
-      message: 'As avaliações finalizadas anteriores continuam no histórico. Esta tela agora registra uma nova sessão.'
+      message: hasOpenSessionDrafts
+        ? 'O histórico anterior continua salvo. Os rascunhos em aberto permanecem na sessão anterior e esta tela passa a registrar uma nova.'
+        : 'As avaliações finalizadas anteriores continuam no histórico. Esta tela agora registra uma nova sessão.'
     });
-  }, [canStartNewSession, notify]);
+  }, [canStartNewSession, hasOpenSessionDrafts, notify, visibleModuleConfig]);
+
+  // Sem contar, o modo poderia esconder o formulario inteiro num modulo que
+  // nao marca campo essencial. A contagem decide se o modo faz sentido aqui.
+  useEffect(() => {
+    const raiz = formularioRef.current;
+    if (!raiz) return;
+    const contar = () => {
+      const campos = raiz.querySelectorAll('.eval-field');
+      const essenciais = raiz.querySelectorAll(
+        '.eval-field--critical, .eval-field:has(.anamnese-required, .dobras-required-dot,'
+        + ' .perimetros-required-dot, .pm-field__required, [required], .clinica-required-dot)'
+      );
+      setContagemCampos({ total: campos.length, essenciais: essenciais.length });
+    };
+    // rAF para o DOM assentar antes de medir: o formulario do modulo monta
+    // depois deste efeito.
+    const id = requestAnimationFrame(() => {
+      try { contar(); } catch { setContagemCampos({ total: 0, essenciais: 0 }); }
+    });
+    return () => cancelAnimationFrame(id);
+    // podeEditar so e declarado adiante — depender dele aqui quebrava a tela.
+  }, [activeTab, medicaoNonce]);
+
+  // So vale esconder quando ha campo essencial marcado e sobra bastante coisa.
+  const podeOferecerEssencial = contagemCampos.essenciais > 0
+    && contagemCampos.total - contagemCampos.essenciais >= 4;
+  const modoEssencialAtivo = podeOferecerEssencial && modoEssencial;
+
+  const handleNovaMedicao = useCallback(() => {
+    const tipo = activeModule?.tipo ? normalizeType(activeModule.tipo) : '';
+    if (!tipo) return;
+    setRemedindoTipos((prev) => new Set(prev).add(tipo));
+    setMedicaoNonce((prev) => prev + 1);
+    // Sem snapshot o modulo volta a 'pendente' (moduleStates), o que reabre a
+    // edicao de um modulo ja finalizado sem tocar no registro anterior.
+    setModuleSnapshots((prev) => {
+      const next = { ...prev };
+      delete next[tipo];
+      return next;
+    });
+    setDraftIds((prev) => {
+      const next = { ...prev };
+      delete next[tipo];
+      return next;
+    });
+    notify({
+      type: 'success',
+      title: 'Nova medição',
+      message: `${getEvaluationTypeLabel(tipo)}: a medição anterior fica no histórico e esta tela registra uma nova.`
+    });
+  }, [activeModule?.tipo, normalizeType, notify]);
 
   const activeModuleStatus = activeModule?.status || 'pendente';
-  const podeEditar = canManagePatientFlow && activeModuleStatus !== 'finalizada';
-  const somenteLeitura = !canManagePatientFlow || activeModuleStatus === 'finalizada';
+  const canEditActiveModule = hasEvaluationManagerRole || (
+    activeModule?.tipo && editableEvaluationTypes.has(activeModule.tipo)
+  );
+  const podeEditar = canManagePatientFlow && canEditActiveModule && activeModuleStatus !== 'finalizada';
+  const podeIniciarNovaMedicao = canManagePatientFlow
+    && canEditActiveModule
+    && activeTab !== 'visao_geral'
+    && activeModuleStatus === 'finalizada';
+  const somenteLeitura = !canManagePatientFlow || !canEditActiveModule || activeModuleStatus === 'finalizada';
 
   const anthropometryBaseline = useMemo(() => {
     const latestFromEvaluations = (keys = []) => {
@@ -1190,16 +1248,14 @@ const AvaliacaoCompleta = () => {
     const heightFromPatient = normalizeHeightCm(
       patient?.altura || patient?.estatura || patient?.height
     );
-    const ageFromEval = toNumericValue(latestFromEvaluations(['idade', 'age']));
     const ageFromPatient = calculateAge(patient?.dataNascimento);
-    const sexFromEval = normalizeSexLabel(latestFromEvaluations(['sexo', 'genero', 'sex']));
-    const sexFromPatient = normalizeSexLabel(patient?.sexo || patient?.genero);
+    const sexFromPatient = normalizeSexLabel(patient?.sexoBiologico || patient?.sexo || patient?.genero);
 
     return {
       pesoKg: weightFromEval ?? weightFromPatient,
       estaturaCm: heightFromEval ?? heightFromPatient,
-      idade: ageFromEval ?? ageFromPatient,
-      sexo: sexFromEval || sexFromPatient || ''
+      idade: ageFromPatient,
+      sexo: sexFromPatient || ''
     };
   }, [
     patient?.altura,
@@ -1209,6 +1265,7 @@ const AvaliacaoCompleta = () => {
     patient?.height,
     patient?.peso,
     patient?.sexo,
+    patient?.sexoBiologico,
     patient?.weight,
     sortedHistory
   ]);
@@ -1269,6 +1326,54 @@ const AvaliacaoCompleta = () => {
     }
   }), [sharedAnthropometryBaseline]);
 
+  // UPD-18 (UX-07): protecao de edicao nao salva da ficha base compartilhada —
+  // o unico dado de edicao que este componente levanta acima dos modulos (os
+  // formularios de cada modulo guardam o proprio rascunho e ja tem autosave
+  // periodico para o servidor). "Salvo" e a base normalizada; ela se realinha
+  // sozinha ao rascunho assim que um modulo salva com os dados embutidos
+  // (attachSharedAnthropometryToPayload), entao nao precisa de reset manual
+  // de "sujo" apos salvar — so precisa limpar o rascunho local, que e outra
+  // coisa (sobrevive a sessao expirada, nao ao ciclo normal de render).
+  const anthropometrySavedSnapshot = useMemo(
+    () => normalizeAnthropometryDraft(anthropometryBaseline),
+    [anthropometryBaseline, normalizeAnthropometryDraft]
+  );
+
+  const {
+    dirty: hasPendingAnthropometryEdit,
+    rascunhoDisponivel: anthropometryDraftAvailable,
+    recuperarRascunho: recoverAnthropometryDraft,
+    descartarRascunho: discardAnthropometryDraft
+  } = useEdicaoPendente({
+    ativo: Boolean(patient) && Boolean(id),
+    screenId: 'avaliacao-completa-ficha-base',
+    userId: currentUserId,
+    recordId: id,
+    atual: sharedAnthropometryDraft,
+    salvo: anthropometrySavedSnapshot
+  });
+
+  const [anthropometryDraftBannerDismissed, setAnthropometryDraftBannerDismissed] = useState(false);
+
+  const handleRecoverAnthropometryDraft = useCallback(() => {
+    const draftData = recoverAnthropometryDraft();
+    setAnthropometryDraftBannerDismissed(true);
+    if (!draftData) return;
+    setSharedAnthropometryTouched(true);
+    setSharedAnthropometryDraft((prev) => ({ ...prev, ...draftData }));
+    setBaselineOpen(true);
+    notify({
+      type: 'success',
+      title: 'Rascunho recuperado',
+      message: 'Os dados da ficha base digitados antes da sessão expirar foram restaurados. Revise e salve para confirmar.'
+    });
+  }, [notify, recoverAnthropometryDraft]);
+
+  const handleDiscardAnthropometryDraft = useCallback(() => {
+    discardAnthropometryDraft();
+    setAnthropometryDraftBannerDismissed(true);
+  }, [discardAnthropometryDraft]);
+
   const overallLastUpdatedAt = useMemo(() => {
     return sortedHistory.length ? getRecordDate(sortedHistory[0]) : null;
   }, [getRecordDate, sortedHistory]);
@@ -1286,21 +1391,23 @@ const AvaliacaoCompleta = () => {
     return { latest, previous };
   }, [activeModuleTimeline]);
 
+  const publicTriageContext = useMemo(
+    () => getPublicTriageContext(patient?.confirmacaoAtleta),
+    [patient?.confirmacaoAtleta]
+  );
+
   const onboardingContext = useMemo(() => {
     const onboardingRoot = patient?.confirmacaoAtleta
       && typeof patient.confirmacaoAtleta === 'object'
       && !Array.isArray(patient.confirmacaoAtleta)
       ? patient.confirmacaoAtleta
       : {};
-    const onboardingData = onboardingRoot?.dados
-      && typeof onboardingRoot.dados === 'object'
-      && !Array.isArray(onboardingRoot.dados)
-      ? onboardingRoot.dados
-      : {};
+    const onboardingData = getMergedOnboardingData(onboardingRoot);
 
     const modalidadePrincipal = getTextValue(
       patient?.modalidadePrincipal
       || patient?.modalidade
+      || onboardingData?.modalidadePrincipal
       || onboardingData?.atividadeFisica
     );
     const frequenciaSemanalRaw = patient?.frequenciaSemanal ?? onboardingData?.frequenciaSemanal;
@@ -1311,7 +1418,8 @@ const AvaliacaoCompleta = () => {
     const duracaoSessao = hasValue(duracaoSessaoRaw) && Number.isFinite(Number(duracaoSessaoRaw))
       ? Number(duracaoSessaoRaw)
       : null;
-    const genero = getTextValue(patient?.genero || patient?.sexo || onboardingData?.sexoBiologico);
+    const genero = getTextValue(patient?.genero || onboardingData?.genero);
+    const sexoBiologico = getTextValue(patient?.sexoBiologico || onboardingData?.sexoBiologico || patient?.sexo);
     const status = getTextValue(patient?.status || onboardingRoot?.status);
     const observacoesIniciais = getTextValue(
       patient?.observacoes
@@ -1335,6 +1443,7 @@ const AvaliacaoCompleta = () => {
       frequenciaSemanal: frequenciaSemanalRaw,
       duracaoSessao: duracaoSessaoRaw,
       genero,
+      sexoBiologico,
       status,
       observacoesIniciais
     };
@@ -1383,6 +1492,7 @@ const AvaliacaoCompleta = () => {
     patient?.modalidadePrincipal,
     patient?.observacoes,
     patient?.sexo,
+    patient?.sexoBiologico,
     patient?.status
   ]);
 
@@ -1526,7 +1636,10 @@ const AvaliacaoCompleta = () => {
     try {
       if (!avaliacao?.tipo) return;
       const tipo = normalizeType(avaliacao.tipo);
-      const payloadSessionId = avaliacao?.sessaoId || currentSessionId || undefined;
+      const remedindo = remedindoTipos.has(tipo);
+      const payloadSessionId = remedindo
+        ? undefined
+        : (avaliacao?.sessaoId || currentSessionId || undefined);
       const payload = {
         ...attachSharedAnthropometryToPayload(avaliacao),
         tipo,
@@ -1534,10 +1647,14 @@ const AvaliacaoCompleta = () => {
         projetoId: patient?.projetoId || null,
         projetoNome: patient?.projetoNome || '',
         sessaoId: payloadSessionId,
+        // A sessao e resolvida no backend pela data de referencia. Datar a nova
+        // medicao de hoje e o que a coloca numa sessao propria em vez de colidir
+        // com a medicao anterior.
+        ...(remedindo ? { data: getTodayIsoDate() } : {}),
         status: finalizar ? 'finalizada' : 'rascunho'
       };
 
-      const existingDraftId = draftIds[tipo];
+      const existingDraftId = remedindo ? null : draftIds[tipo];
       let savedId = existingDraftId;
       if (existingDraftId) {
         await updateAvaliacao(existingDraftId, payload);
@@ -1546,7 +1663,20 @@ const AvaliacaoCompleta = () => {
         setDraftIds((prev) => ({ ...prev, [tipo]: savedId }));
       }
 
+      // A linha nova ja existe: os proximos saves devem atualiza-la, nao criar
+      // outra a cada tecla.
+      if (remedindo) {
+        setRemedindoTipos((prev) => {
+          const next = new Set(prev);
+          next.delete(tipo);
+          return next;
+        });
+      }
       setLastSavedAt(new Date());
+      // O modulo salvo levou a ficha base junto (attachSharedAnthropometryToPayload);
+      // um rascunho local dela sobreviveria so a uma sessao expirada que ja
+      // passou — mantê-lo depois disso ofereceria de volta um dado defasado.
+      discardAnthropometryDraft();
       updateLocalModuleSnapshot(tipo, {
         ...payload,
         id: savedId,
@@ -1593,7 +1723,9 @@ const AvaliacaoCompleta = () => {
     loadEvaluationContext,
     attachSharedAnthropometryToPayload,
     currentSessionId,
-    isNewSessionMode
+    isNewSessionMode,
+    remedindoTipos,
+    discardAnthropometryDraft
   ]);
 
   const handleAutoSave = useCallback(async (avaliacao) => {
@@ -1601,7 +1733,10 @@ const AvaliacaoCompleta = () => {
     setAutoSaveError('');
     try {
       const tipo = normalizeType(avaliacao.tipo);
-      const payloadSessionId = avaliacao?.sessaoId || currentSessionId || undefined;
+      const remedindo = remedindoTipos.has(tipo);
+      const payloadSessionId = remedindo
+        ? undefined
+        : (avaliacao?.sessaoId || currentSessionId || undefined);
       const payload = {
         ...attachSharedAnthropometryToPayload(avaliacao),
         tipo,
@@ -1609,10 +1744,11 @@ const AvaliacaoCompleta = () => {
         projetoId: patient?.projetoId || null,
         projetoNome: patient?.projetoNome || '',
         sessaoId: payloadSessionId,
+        ...(remedindo ? { data: getTodayIsoDate() } : {}),
         status: 'rascunho',
         autoSave: true
       };
-      const existingDraftId = draftIds[tipo];
+      const existingDraftId = remedindo ? null : draftIds[tipo];
       let savedId = existingDraftId;
       if (existingDraftId) {
         await updateAvaliacao(existingDraftId, payload);
@@ -1620,7 +1756,21 @@ const AvaliacaoCompleta = () => {
         savedId = await salvarAvaliacao(payload);
         setDraftIds((prev) => ({ ...prev, [tipo]: savedId }));
       }
+      // A linha nova ja existe: os proximos saves devem atualiza-la, nao criar
+      // outra a cada tecla.
+      if (remedindo) {
+        setRemedindoTipos((prev) => {
+          const next = new Set(prev);
+          next.delete(tipo);
+          return next;
+        });
+      }
       setLastSavedAt(new Date());
+      // O autosave tambem leva a ficha base (attachSharedAnthropometryToPayload)
+      // e, tendo chegado ao servidor, o rascunho local perde sentido — mante-lo
+      // reapareceria como "recuperar" num dado ja superado, arriscando
+      // sobrescrever uma edicao mais nova com uma mais velha.
+      discardAnthropometryDraft();
       updateLocalModuleSnapshot(tipo, {
         ...payload,
         id: savedId,
@@ -1654,7 +1804,9 @@ const AvaliacaoCompleta = () => {
     attachSharedAnthropometryToPayload,
     currentSessionId,
     isNewSessionMode,
-    loadEvaluationContext
+    remedindoTipos,
+    loadEvaluationContext,
+    discardAnthropometryDraft
   ]);
 
   const registerRedsPrescricaoOverride = useCallback(async () => {
@@ -1662,7 +1814,7 @@ const AvaliacaoCompleta = () => {
       notify({
         type: 'error',
         title: 'Override nao registrado',
-        message: 'A triagem RED-S precisa estar salva para registrar o override de prescricao.'
+        message: 'A triagem de disponibilidade energética precisa estar salva para registrar o override de prescrição.'
       });
       return false;
     }
@@ -1724,7 +1876,7 @@ const AvaliacaoCompleta = () => {
       notify({
         type: 'error',
         title: 'Falha ao registrar override',
-        message: getApiErrorMessage(error, 'Nao foi possivel registrar o override de RED-S para prescricao.')
+        message: getApiErrorMessage(error, 'Não foi possível registrar o override de baixa disponibilidade energética para prescrição.')
       });
       return false;
     }
@@ -1752,7 +1904,7 @@ const AvaliacaoCompleta = () => {
     const isPrescricaoModule = targetType === 'prescricao_dieta';
     if (isPrescricaoModule && shouldWarnRedsPrescricao) {
       const proceed = await confirm({
-        title: 'Alerta RED-S — Disponibilidade Energética Crítica',
+        title: 'Alerta — baixa disponibilidade energética',
         message: REDS_PRESCRICAO_WARNING,
         confirmLabel: 'Prosseguir mesmo assim',
         cancelLabel: 'Cancelar',
@@ -1788,6 +1940,16 @@ const AvaliacaoCompleta = () => {
     const targetModuleId = event.currentTarget.dataset.moduleId;
     if (!targetModuleId) return;
     void handleTabChange(targetModuleId);
+    // Com a grade acima do formulario, trocar de modulo sem rolar deixaria a
+    // pessoa olhando os cartoes enquanto o conteudo mudou fora da vista.
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        document.querySelector('.avaliacao-main')?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      });
+    }
   }, [handleTabChange]);
 
   const handleIssueShortcutClick = useCallback((event) => {
@@ -1800,6 +1962,24 @@ const AvaliacaoCompleta = () => {
     () => moduleStates.findIndex((item) => item.id === activeTab),
     [activeTab, moduleStates]
   );
+
+  // Nomeia o modulo aberto e os vizinhos imediatos. Uma fileira de quinze
+  // pontos anonimos nao diz onde a pessoa esta; nomear os tres do meio da
+  // sequencia sem devolver a parede de texto que a lista era.
+  // Dezesseis pontos anonimos numa fileira nao diziam onde a pessoa estava nem
+  // para onde ia: o alvo era pequeno, o rotulo escondido e a ordem invisivel.
+  // Sequencia (anterior/proximo) resolve o movimento comum; o seletor resolve
+  // o salto para um modulo qualquer sem espalhar vinte e dois alvos na barra.
+  const navModulos = useMemo(() => {
+    const itens = sidebarModuleGroups.flatMap((group) => group.items);
+    const atual = itens.findIndex((item) => item.id === activeTab);
+    return {
+      itens,
+      indice: atual,
+      anterior: atual > 0 ? itens[atual - 1] : null,
+      proximo: atual >= 0 && atual < itens.length - 1 ? itens[atual + 1] : null
+    };
+  }, [activeTab, sidebarModuleGroups]);
 
   const getStageTargetModule = useCallback((stageId) => {
     if (stageId === 'visao_geral') {
@@ -1820,15 +2000,47 @@ const AvaliacaoCompleta = () => {
     void handleTabChange(targetModule.id);
   }, [getStageTargetModule, handleTabChange]);
 
-  const handleStageTabButtonClick = useCallback((event) => {
-    const stageId = event.currentTarget.dataset.stageId;
-    if (!stageId) return;
-    handleStageTabChange(stageId);
-  }, [handleStageTabChange]);
-
-  const handleGoBack = useCallback(() => {
+  const handleGoBack = useCallback(async (destination = 'prontuario') => {
+    // UPD-18 (UX-07): abandono deliberado — navegacao interna pelo botao
+    // "Voltar" da propria tela, ja que o BrowserRouter deste app nao tem
+    // useBlocker/unstable_usePrompt para interceptar a rota.
+    if (hasPendingAnthropometryEdit) {
+      const proceed = await confirm({
+        title: 'Sair sem salvar?',
+        message: 'Há alterações na ficha base (peso, estatura, idade ou sexo) que ainda não foram salvas. Elas serão perdidas se você sair agora.',
+        confirmLabel: 'Sair sem salvar',
+        cancelLabel: 'Continuar editando',
+        variant: 'danger'
+      });
+      if (!proceed) return;
+    }
+    if (destination === 'portal' && aoVoltar) { aoVoltar(); return; }
+    if (destination === 'image' && aoAbrirImagem) { aoAbrirImagem(); return; }
+    if (destination?.kind === 'tab' && aoAbrirTab) { aoAbrirTab(destination.tab); return; }
+    if (aoSair) { aoSair(); return; }
     navigate(returnToPath, { state: returnState });
-  }, [navigate, returnState, returnToPath]);
+  }, [aoAbrirImagem, aoAbrirTab, aoSair, aoVoltar, confirm, hasPendingAnthropometryEdit, navigate, returnState, returnToPath]);
+
+  useEffect(() => {
+    if (!embutido || !navigationRequest) return;
+    if (navigationRequest.sequence === lastNavigationRequestRef.current) return;
+    lastNavigationRequestRef.current = navigationRequest.sequence;
+    if (navigationRequest.action === 'module') {
+      void handleTabChange(navigationRequest.moduleId);
+    } else if (navigationRequest.action === 'back') {
+      void handleGoBack('portal');
+    } else if (navigationRequest.action === 'image') {
+      void handleGoBack('image');
+    } else if (navigationRequest.action === 'panel') {
+      void handleGoBack();
+    } else if (navigationRequest.action === 'tab') {
+      void handleGoBack({ kind: 'tab', tab: navigationRequest.moduleId });
+    }
+  }, [embutido, handleGoBack, handleTabChange, navigationRequest]);
+
+  useEffect(() => {
+    if (embutido) onActiveModuleChange?.(activeTab === 'visao_geral' ? null : activeTab);
+  }, [activeTab, embutido, onActiveModuleChange]);
 
   const handleReloadEvaluationContext = useCallback(() => {
     void loadEvaluationContext();
@@ -1843,7 +2055,7 @@ const AvaliacaoCompleta = () => {
 
     if (shouldWarnRedsPrescricao) {
       const proceed = await confirm({
-        title: 'Alerta RED-S — Disponibilidade Energética Crítica',
+        title: 'Alerta — baixa disponibilidade energética',
         message: REDS_PRESCRICAO_WARNING,
         confirmLabel: 'Abrir plano mesmo assim',
         cancelLabel: 'Cancelar',
@@ -1854,7 +2066,7 @@ const AvaliacaoCompleta = () => {
       if (!overrideRegistered) return;
     }
 
-    navigate(`/planos-alimentares/${id}`, {
+    navigate(`/prescricao-plano/${id}`, {
       state: {
         returnTo: returnToPath,
         returnView: returnState.returnView,
@@ -1918,7 +2130,7 @@ const AvaliacaoCompleta = () => {
   }, [activeTabIndex, handleTabChange, moduleStates]);
 
   const handleFinalizeCurrentModule = useCallback(async () => {
-    if (!canManagePatientFlow || !activeModule) return;
+    if (!podeEditar || !activeModule) return;
     if (!activeModule.snapshot?.id) {
       notify({
         type: 'warning',
@@ -1961,7 +2173,7 @@ const AvaliacaoCompleta = () => {
       setIsFinalizingModule(false);
     }
   }, [
-    canManagePatientFlow,
+    podeEditar,
     activeModule,
     patient,
     notify,
@@ -1970,7 +2182,7 @@ const AvaliacaoCompleta = () => {
   ]);
 
   const handleReopenCurrentModule = useCallback(async () => {
-    if (!canManagePatientFlow || !activeModule?.snapshot?.id) return;
+    if (!canManagePatientFlow || !canEditActiveModule || !activeModule?.snapshot?.id) return;
     setIsFinalizingModule(true);
     try {
       const payload = { status: 'rascunho' };
@@ -1991,6 +2203,7 @@ const AvaliacaoCompleta = () => {
       setIsFinalizingModule(false);
     }
   }, [
+    canEditActiveModule,
     canManagePatientFlow,
     activeModule,
     notify,
@@ -2011,7 +2224,9 @@ const AvaliacaoCompleta = () => {
       moduleSnapshot: activeModule?.snapshot || null,
       currentSessionId: currentSessionId || undefined,
       moduleHistory: activeModuleTimeline,
-      allEvaluationHistory: workingSessionHistory
+      // O histórico do formulário contém apenas registros do próprio instrumento.
+      // Sínteses do prontuário podem combinar instrumentos, mas não os formulários.
+      allEvaluationHistory: activeModuleTimeline
     };
 
     switch (activeTab) {
@@ -2045,6 +2260,8 @@ const AvaliacaoCompleta = () => {
         return <AvaliacaoExamesLaboratoriais {...formProps} />;
       case 'evolucao-retorno':
         return <AvaliacaoEvolucaoRetorno {...formProps} />;
+      case 'plano-metas':
+        return <PlanoMetasForm {...formProps} />;
       default:
         return null;
     }
@@ -2054,91 +2271,12 @@ const AvaliacaoCompleta = () => {
     ? 'Em andamento'
     : getEvaluationStatusLabel(progress.overallStatus);
 
-  const activeSummaryStatus = activeModule?.status || 'pendente';
   const activeStageLabel = activeClinicalStage?.label || 'Visão geral';
-  const activeStageProgressLabel = activeClinicalStage
-    ? `${activeClinicalStage.finalized}/${activeClinicalStage.total || 0} módulos finalizados`
-    : `${progress.finalized}/${progress.total} módulos finalizados`;
+
   const planCtaLabel = shouldWarnRedsPrescricao
-    ? 'Plano alimentar com alerta RED-S'
-    : 'Plano alimentar liberado para conduta';
-  const activeStageHint = STAGE_SYNTHESIS_HINTS[activeClinicalStageId] || STAGE_SYNTHESIS_HINTS.visao_geral;
+    ? 'Plano alimentar com alerta de baixa disponibilidade energética'
+    : 'Abrir plano alimentar';
 
-  const pendingModules = useMemo(
-    () => moduleStates.filter((item) => item.status !== 'finalizada'),
-    [moduleStates]
-  );
-
-  const clinicalAlerts = useMemo(() => {
-    const alerts = [];
-    if (crossLayerInconsistencies.length > 0) {
-      const topIssue = crossLayerInconsistencies[0];
-      alerts.push({
-        id: 'cross-layer',
-        tone: 'warning',
-        title: 'Inconsistências entre módulos',
-        message: `${crossLayerInconsistencies.length} inconsistência(s) cruzada(s) detectada(s) entre avaliação, cálculo e conduta.`,
-        targetType: topIssue?.targetType || ''
-      });
-    }
-    if (shouldWarnRedsPrescricao) {
-      alerts.push({
-        id: 'reds',
-        tone: 'danger',
-        title: 'Risco energético elevado',
-        message: 'Triagem RED-S em estado estabelecido. Avalie conduta nutricional com cautela antes de prescrição hipocalórica.',
-        targetType: 'triagem_reds'
-      });
-    }
-    if (onboardingContext.missingContractFields.length > 0) {
-      alerts.push({
-        id: 'onboarding',
-        tone: 'warning',
-        title: 'Cadastro base incompleto',
-        message: `${onboardingContext.missingContractFields.length} campo(s) do onboarding ainda não foram consolidados na sessão.`,
-        targetType: 'anamnese_inicial'
-      });
-    }
-    if (pendingModules.length > 0) {
-      alerts.push({
-        id: 'progress',
-        tone: 'info',
-        title: 'Sessão em andamento',
-        message: `${pendingModules.length} módulo(s) ainda pendente(s) para fechamento completo da jornada clínica.`,
-        targetType: nextPendingModule?.tipo || ''
-      });
-    } else {
-      alerts.push({
-        id: 'ready',
-        tone: 'success',
-        title: 'Jornada completa',
-        message: 'Todos os módulos previstos nesta sessão foram finalizados.'
-      });
-    }
-    return alerts.slice(0, 4);
-  }, [
-    crossLayerInconsistencies,
-    nextPendingModule?.tipo,
-    onboardingContext.missingContractFields.length,
-    pendingModules.length,
-    shouldWarnRedsPrescricao
-  ]);
-
-  const stageSynthesisItems = useMemo(() => {
-    const stageModules = activeClinicalStage?.modules || [];
-    const completed = stageModules.filter((item) => item.status === 'finalizada');
-    const inDraft = stageModules.filter((item) => item.status === 'rascunho');
-    const pending = stageModules.filter((item) => item.status === 'pendente');
-    return {
-      total: stageModules.length,
-      completed: completed.length,
-      inDraft: inDraft.length,
-      pending: pending.length,
-      completion: activeClinicalStage?.completion || 0,
-      topCompleted: completed.slice(0, 3),
-      topPending: pending.slice(0, 3)
-    };
-  }, [activeClinicalStage]);
 
   const nextSteps = useMemo(() => {
     const steps = [];
@@ -2189,7 +2327,7 @@ const AvaliacaoCompleta = () => {
       steps.push({
         id: 'reds-review',
         priority: 'high',
-        label: 'Reavaliar risco RED-S antes da conduta',
+        label: 'Reavaliar disponibilidade energética antes da conduta',
         description: 'Registrar justificativa clínica e revisar disponibilidade energética.',
         action: 'open-triagem-reds'
       });
@@ -2263,343 +2401,246 @@ const AvaliacaoCompleta = () => {
 
   return (
     <div className="avaliacao-completa" aria-busy={loadingHistory ? 'true' : undefined}>
-      <header className="avaliacao-header">
-        <div className="avaliacao-header-left">
-          <button
-            className="btn-back"
-            onClick={handleGoBack}
-            type="button"
-            aria-label="Voltar"
-            title="Voltar"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div className="avaliacao-title">
-            <h2>Avaliação completa</h2>
-            <p className="sub">Atleta: {patient?.nome || id}</p>
-            {patient?.projetoNome && (
-              <span className="sub">Projeto: {patient.projetoNome}</span>
-            )}
+      {/* Embutido no prontuario, o cabecalho do paciente ja existe uma vez;
+          repeti-lo empilharia dois titulos para o mesmo registro. */}
+      {!embutido && (
+        <header className="avaliacao-header">
+          <div className="avaliacao-header-left">
+            <button
+              className="btn-back"
+              onClick={handleGoBack}
+              type="button"
+              aria-label="Voltar"
+              title="Voltar"
+            >
+              <ArrowLeft size={20} aria-hidden="true" />
+            </button>
+            <div className="avaliacao-title">
+              <h2>Avaliação completa</h2>
+              <p className="sub">
+                <span className="avaliacao-title__atleta">Atleta: <strong>{patient?.nome || id}</strong></span>
+                {patient?.projetoNome && (
+                  <span className="avaliacao-title__projeto">Projeto: {patient.projetoNome}</span>
+                )}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="avaliacao-header-meta">
-          {canStartNewSession && (
-            <button
-              type="button"
-              className="tab-btn tab-btn--secondary"
-              onClick={handleStartNewSession}
-            >
-              Nova sessão
-            </button>
-          )}
-          <button
-            type="button"
-            className="tab-btn tab-btn--primary avaliacao-header-plan-btn"
-            onClick={handleOpenPlanoAlimentar}
-            title={planCtaLabel}
-          >
-            Plano alimentar
-          </button>
-          {isNewSessionMode && (
-            <span className="eval-status-badge eval-status-badge--andamento">
-              <span className="eval-status-badge__dot" />
-              Nova sessão
-            </span>
-          )}
-          <span className={`eval-status-badge ${progress.overallStatus === 'finalizada' ? 'eval-status-badge--finalizada' : 'eval-status-badge--andamento'}`}>
-            <span className="eval-status-badge__dot" />
-            {overallStatusLabel}
-          </span>
-          {somenteLeitura && (
-            <span className="eval-status-badge eval-status-badge--leitura">
-              <span className="eval-status-badge__dot" />
-              Somente leitura
-            </span>
-          )}
-          {lastSavedAt && (
-            <span className="status-pill status-saved">
-              <Clock size={14} />
-              Último salvamento: {lastSavedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-        </div>
-      </header>
-
-      <nav className="avaliacao-stage-tabs" aria-label="Macroetapas da jornada clínica">
-        {stageTabs.map((stage) => {
-          const isActive = stage.id === activeClinicalStageId;
-          const hasModules = (stage.total || 0) > 0;
-          const pct = hasModules ? Math.round(((stage.finalized || 0) / stage.total) * 100) : 0;
-          const isComplete = pct === 100;
-          return (
-            <button
-              key={stage.id}
-              type="button"
-              className={`avaliacao-stage-tab ${isActive ? 'avaliacao-stage-tab--active' : ''} ${isComplete ? 'avaliacao-stage-tab--complete' : ''}`}
-              onClick={handleStageTabButtonClick}
-              title={stage.description}
-              disabled={!hasModules}
-              aria-current={isActive ? 'page' : undefined}
-              aria-label={`${stage.label}: ${stage.finalized || 0} de ${stage.total || 0} módulos finalizados`}
-              data-stage-id={stage.id}
-              style={{ '--ac-stage-pct': `${pct}%` }}
-            >
-              <span className="avaliacao-stage-tab__title">{stage.label}</span>
-              <span className="avaliacao-stage-tab__meta">
-                {stage.finalized || 0}/{stage.total || 0}
+          <div className="avaliacao-header-meta">
+            {/* Estado da sessão antes das ações: cada selo tem o texto escrito,
+                e o ponto é só o acento. */}
+            <div className="avaliacao-header-estado">
+              {isNewSessionMode && (
+                <span className="eval-status-badge eval-status-badge--andamento">
+                  <span className="eval-status-badge__dot" aria-hidden="true" />
+                  Nova sessão
+                </span>
+              )}
+              <span className={`eval-status-badge ${progress.overallStatus === 'finalizada' ? 'eval-status-badge--finalizada' : 'eval-status-badge--andamento'}`}>
+                <span className="eval-status-badge__dot" aria-hidden="true" />
+                {overallStatusLabel}
               </span>
-            </button>
-          );
-        })}
-      </nav>
+              {somenteLeitura && (
+                <span className="eval-status-badge eval-status-badge--leitura">
+                  <span className="eval-status-badge__dot" aria-hidden="true" />
+                  Somente leitura
+                </span>
+              )}
+            </div>
+            <div className="avaliacao-header-acoes">
+              {canStartNewSession && (
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--secondary"
+                  onClick={handleStartNewSession}
+                >
+                  Nova sessão
+                </button>
+              )}
+              <button
+                type="button"
+                className="tab-btn tab-btn--primary avaliacao-header-plan-btn"
+                onClick={handleOpenPlanoAlimentar}
+                title={planCtaLabel}
+              >
+                Plano alimentar
+              </button>
+            </div>
+          </div>
+        </header>
+      )}
+
 
       {shouldWarnRedsPrescricao && (
         <div className="avaliacao-reds-banner" role="alert">
-          <ShieldCheck size={16} />
-          <span>Risco RED-S estabelecido — revise disponibilidade energética antes de prescrever.</span>
+          <ShieldCheck size={20} aria-hidden="true" />
+          <span>Baixa disponibilidade energética — revise antes de prescrever.</span>
           <button type="button" className="tab-btn tab-btn--secondary" onClick={() => openModuleByType('triagem_reds')}>
             Revisar
           </button>
         </div>
       )}
 
-      {(activeClinicalStageId === 'conduta' || condutaContext.hasAnyData) && (
-        <section className="avaliacao-conduta-bridge" aria-label="Síntese de conduta clínica">
-          <header className="avaliacao-conduta-bridge__header">
-            <div>
-              <h3>Prontidão para prescrição</h3>
-              <p>Consolidação de exames, evolução, metas e prontidão para plano alimentar.</p>
-            </div>
-            <span className={`avaliacao-conduta-chip tone-${condutaContext.tone}`}>
-              {condutaContext.statusLabel}
-            </span>
-          </header>
-
-          <div className="avaliacao-conduta-grid">
-            <article className="avaliacao-conduta-card">
-              <small>Exames laboratoriais</small>
-              <strong>{condutaContext.examesReady ? 'Registrado' : 'Pendente'}</strong>
-              <span>{condutaContext.examesStatus || 'Sem classificação de painel'}</span>
-            </article>
-            <article className="avaliacao-conduta-card">
-              <small>Evolução/retorno</small>
-              <strong>{condutaContext.evolucaoReady ? 'Registrado' : 'Pendente'}</strong>
-              <span>
-                {condutaContext.evolucaoPrioridade || 'Sem prioridade definida'}
-                {Number.isFinite(condutaContext.evolucaoScore) ? ` · Adesão ${Math.round(condutaContext.evolucaoScore)}%` : ''}
-              </span>
-            </article>
-            <article className="avaliacao-conduta-card">
-              <small>Metas clínicas</small>
-              <strong>{condutaContext.metasAtivas}</strong>
-              <span>{condutaContext.metasAtivas > 0 ? 'Meta(s) ativa(s) na evolução' : 'Nenhuma meta registrada'}</span>
-            </article>
-            <article className="avaliacao-conduta-card">
-              <small>Plano alimentar</small>
-              <strong>{condutaContext.readyForPlano ? 'Liberado' : 'Aguardando conduta'}</strong>
-              <span>
-                {shouldWarnRedsPrescricao
-                  ? `RED-S exige revisão${condutaContext.redsOverrideCount ? ` (${condutaContext.redsOverrideCount} override)` : ''}`
-                  : 'Sem bloqueio de risco RED-S'}
-              </span>
-            </article>
-          </div>
-        </section>
-      )}
 
       {autoSaveError && (
         <div className="avaliacao-helper avaliacao-helper--error" role="alert" aria-live="assertive">
-          <ShieldCheck size={18} />
+          <AlertCircle size={20} aria-hidden="true" />
           <p>{autoSaveError}</p>
         </div>
       )}
 
       {historyError && (
         <div className="avaliacao-helper avaliacao-helper--error" role="alert" aria-live="assertive">
-          <ShieldCheck size={18} />
+          <AlertCircle size={20} aria-hidden="true" />
           <p>{historyError}</p>
           <button type="button" className="tab-btn tab-btn--secondary" onClick={handleReloadEvaluationContext}>
-            <RefreshCw size={14} />
+            <RefreshCw size={16} aria-hidden="true" />
             Recarregar
           </button>
         </div>
       )}
 
-      <div className="avaliacao-layout-grid">
-        <aside className="avaliacao-sidebar" aria-label="Navegação de módulos">
+      {/* A escolha do modulo vive no prontuario, que ja lista os dezessete
+          tipos com status e nao-iniciados. Aqui a trilha so situa: de onde se
+          veio, o painel clinico e onde se esta na sequencia. */}
+      <nav className="avaliacao-nav" aria-label="Módulos de avaliação">
+        <button type="button" className="avaliacao-nav__sair" onClick={handleGoBack}>
+          <ChevronLeft size={18} aria-hidden="true" />
+          {embutido ? 'Todos os módulos' : 'Prontuário'}
+        </button>
 
-          {/* Mini status — clica e abre painel */}
-          <section className="avaliacao-sidebar-card avaliacao-sidebar-mini-status">
-            <div className="sidebar-mini-status__row">
-              <div className="sidebar-mini-status__progress">
-                <strong>{progress.finalized}</strong>
-                <span>/{progress.total}</span>
-                <small>módulos</small>
-              </div>
-              {crossLayerInconsistencies.length > 0 && (
+        <button
+          type="button"
+          className={`avaliacao-nav__geral${activeTab === 'visao_geral' ? ' active' : ''}`}
+          onClick={() => handleStageTabChange('visao_geral')}
+          aria-current={activeTab === 'visao_geral' ? 'page' : undefined}
+        >
+          <Activity size={18} aria-hidden="true" />
+          Visão geral
+          <span className="avaliacao-nav__progresso">{progress.finalized}/{progress.total}</span>
+          {/* aria-label num span sem papel não é lido: o número de alertas
+              vai em texto para o leitor de tela, e o ponto fica só visual. */}
+          {crossLayerInconsistencies.length > 0 && (
+            <>
+              <span className="module-strip-alert-dot" aria-hidden="true" />
+              <span className="sr-only">{`${crossLayerInconsistencies.length} alertas`}</span>
+            </>
+          )}
+        </button>
+
+        {/* Embutido, o cabecalho da avaliacao nao aparece — e o plano alimentar
+            vivia nele. A acao volta para a barra, que e o que sobra em tela. */}
+        {embutido && (
+          <>
+            <button
+              type="button"
+              className="avaliacao-nav__plano"
+              onClick={handleOpenPlanoAlimentar}
+              title={planCtaLabel}
+            >
+              Plano alimentar
+            </button>
+            {canStartNewSession && (
+              <button
+                type="button"
+                className="avaliacao-nav__sessao"
+                onClick={handleStartNewSession}
+              >
+                Nova sessão
+              </button>
+            )}
+          </>
+        )}
+
+        <div className="avaliacao-nav__sequencia">
+          <button
+            type="button"
+            className="avaliacao-nav__passo"
+            onClick={handleModuleShortcutClick}
+            data-module-id={navModulos.anterior?.id}
+            disabled={!navModulos.anterior}
+            title={navModulos.anterior ? `Anterior: ${navModulos.anterior.label}` : 'Primeiro módulo'}
+          >
+            <ChevronLeft size={18} aria-hidden="true" />
+            <span className="avaliacao-nav__passo-nome">{navModulos.anterior?.label || 'Início'}</span>
+          </button>
+
+          <div className="avaliacao-nav__atual-wrap">
+            {/* Lista de botões que abre e fecha, não um menu: role="menu"
+                prometia setas do teclado que a lista não tem. */}
+            <button
+              type="button"
+              className="avaliacao-nav__atual"
+              onClick={() => setSeletorModulosAberto((v) => !v)}
+              aria-expanded={seletorModulosAberto}
+              aria-controls="avaliacao-nav-painel"
+            >
+              <span className={`avaliacao-nav__ponto status-${activeModule?.status || 'pendente'}`} aria-hidden="true" />
+              <span className="avaliacao-nav__atual-nome">{activeModule?.label || 'Escolher módulo'}</span>
+              <span className="avaliacao-nav__contador">
+                {navModulos.indice >= 0 ? navModulos.indice + 1 : '–'}/{navModulos.itens.length}
+              </span>
+              <ChevronDown size={18} aria-hidden="true" />
+            </button>
+
+            {seletorModulosAberto && (
+              <>
                 <button
                   type="button"
-                  className="sidebar-mini-status__alert-btn"
-                  onClick={() => handleStageTabChange('visao_geral')}
-                  title="Ver painel de monitoramento"
-                >
-                  {crossLayerInconsistencies.length} alerta{crossLayerInconsistencies.length !== 1 ? 's' : ''}
-                </button>
-              )}
-            </div>
-            <div className="sidebar-mini-status__bar">
-              <div className="sidebar-mini-status__bar-fill" style={{ width: `${progress.completion}%` }} />
-            </div>
-          </section>
-
-          <section className="avaliacao-sidebar-card avaliacao-sidebar-card--wide">
-            <div className="avaliacao-sidebar-card__header">
-              <h3>Módulos</h3>
-              <span>{stageModuleIndex >= 0 ? stageModuleIndex + 1 : activeTabIndex + 1}/{stageModuleCount}</span>
-            </div>
-            {sidebarModuleGroups.length > 0 ? (
-              <div className="avaliacao-module-groups">
-                {sidebarModuleGroups.map((group) => (
-                  <div key={group.group} className="avaliacao-module-group">
-                    <p className="avaliacao-module-group__title">{group.group}</p>
-                    <div className="avaliacao-module-group__list">
-                      {group.items.map((module) => {
-                        const dateLabel = getRelativeDateLabel(module.updatedAt);
-                        const staleDays = module.updatedAt
-                          ? Math.floor((Date.now() - new Date(module.updatedAt).getTime()) / 86400000)
-                          : null;
-                        const isStale = module.status !== 'pendente' && staleDays != null && staleDays > 30;
-                        const keyMetric = getModuleKeyMetric(module.tipo, module.snapshot);
-                        return (
-                          <button
-                            key={module.id}
-                            type="button"
-                            className={`avaliacao-module-btn ${module.id === activeTab ? 'active' : ''} status-${module.status}`}
-                            onClick={handleModuleShortcutClick}
-                            data-module-id={module.id}
-                            title={module.label}
-                            aria-label={module.label}
-                            aria-current={module.id === activeTab ? 'page' : undefined}
-                          >
-                            <div className="avaliacao-module-btn__top">
-                              <div className="avaliacao-module-btn__main">
-                                <module.icon size={13} />
-                                <span>{module.label}</span>
-                              </div>
-                              <div className="avaliacao-module-btn__right">
-                                {dateLabel && (
-                                  <span className={`avaliacao-module-btn__date${isStale ? ' stale' : ''}`}>
-                                    {dateLabel}
-                                  </span>
-                                )}
-                                {module.status === 'finalizada'
-                                  ? <CheckCircle2 size={12} className="module-icon-finalizada" />
-                                  : module.status === 'rascunho'
-                                    ? <CircleDashed size={12} className="module-icon-rascunho" />
-                                    : <Clock size={12} className="module-icon-pendente" />}
-                              </div>
-                            </div>
-                            {keyMetric && (
-                              <div className="avaliacao-module-btn__info">{keyMetric}</div>
-                            )}
-                            {module.id === activeTab && <span className="sr-only">Módulo ativo</span>}
-                          </button>
-                        );
-                      })}
+                  className="avaliacao-nav__veu"
+                  aria-label="Fechar seletor"
+                  onClick={() => setSeletorModulosAberto(false)}
+                />
+                <div className="avaliacao-nav__painel" id="avaliacao-nav-painel">
+                  {sidebarModuleGroups.map((grupo, indiceGrupo) => (
+                    <div
+                      key={grupo.group}
+                      className="avaliacao-nav__grupo"
+                      role="group"
+                      aria-labelledby={`avaliacao-nav-grupo-${indiceGrupo}`}
+                    >
+                      <p className="avaliacao-nav__grupo-titulo" id={`avaliacao-nav-grupo-${indiceGrupo}`}>{grupo.group}</p>
+                      {grupo.items.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`avaliacao-nav__opcao status-${item.status}${item.id === activeTab ? ' active' : ''}`}
+                          data-module-id={item.id}
+                          aria-current={item.id === activeTab ? 'step' : undefined}
+                          onClick={(event) => { setSeletorModulosAberto(false); handleModuleShortcutClick(event); }}
+                        >
+                          <span className="avaliacao-nav__ponto" aria-hidden="true" />
+                          <span className="avaliacao-nav__opcao-nome">{item.label}</span>
+                          <span className="avaliacao-nav__opcao-estado">
+                            {item.status === 'finalizada' ? 'finalizado'
+                              : item.status === 'rascunho' ? 'rascunho' : 'pendente'}
+                          </span>
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="avaliacao-sidebar-empty">Nenhum módulo configurado para esta etapa.</p>
-            )}
-          </section>
-
-          <section className="avaliacao-sidebar-card avaliacao-sidebar-card--wide">
-            <div className="avaliacao-sidebar-card__header">
-              <h3>Histórico do módulo</h3>
-              <span>{activeModuleTimeline.length}</span>
-            </div>
-            {activeModuleComparison?.previous && (
-              <p className="avaliacao-sidebar-empty">
-                Último registro: {formatDate(getRecordDate(activeModuleComparison.latest))} · anterior: {formatDate(getRecordDate(activeModuleComparison.previous))}
-              </p>
-            )}
-            {activeModuleTimeline.length === 0 ? (
-              <p className="avaliacao-sidebar-empty">Nenhum registro anterior para este módulo.</p>
-            ) : (
-              <div className="avaliacao-history-list">
-                {activeModuleTimeline.slice(0, 6).map((item, index) => {
-                  const itemDate = getRecordDate(item);
-                  return (
-                    <div key={item.id || index} className="avaliacao-history-item">
-                      <div>
-                        <strong>{itemDate ? formatDate(itemDate) : '—'}</strong>
-                        <span>{item.createdByName || item.alunoNome || 'Equipe'}</span>
-                      </div>
-                      <span className={`module-status status-${String(item.status || 'pendente').toLowerCase()}`}>
-                        {getEvaluationStatusLabel(item.status || 'pendente')}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          <section className="avaliacao-sidebar-card avaliacao-report-card">
-            <div className="avaliacao-sidebar-card__header">
-              <h3>Relatório</h3>
-            </div>
-            <p className="avaliacao-report-card__description">
-              Período avaliado: {reportPeriodLabel}
-            </p>
-            <div className="avaliacao-report-card__meta">
-              {summaryItems.slice(0, 4).map((item) => (
-                <div key={item.label}>
-                  <small>{item.label}</small>
-                  <strong>{item.value}</strong>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="avaliacao-report-card__actions">
-              <button
-                type="button"
-                className="tab-btn tab-btn--primary"
-                onClick={handleExportClinicalReportHtml}
-              >
-                <Download size={15} />
-                Exportar HTML
-              </button>
-              <button
-                type="button"
-                className="tab-btn tab-btn--secondary"
-                onClick={handleExportClinicalReportJson}
-              >
-                <FileText size={15} />
-                Exportar JSON
-              </button>
-              <button
-                type="button"
-                className="tab-btn tab-btn--secondary"
-                onClick={handleReloadEvaluationContext}
-              >
-                <RefreshCw size={15} />
-                Atualizar dados
-              </button>
-              <button
-                type="button"
-                className="tab-btn tab-btn--secondary"
-                onClick={handlePrintPage}
-              >
-                <Printer size={15} />
-                Imprimir tela
-              </button>
-            </div>
-            <p className="avaliacao-report-card__hint">Abra no navegador e salve como PDF.</p>
-          </section>
-        </aside>
+              </>
+            )}
+          </div>
 
+          <button
+            type="button"
+            className="avaliacao-nav__passo"
+            onClick={handleModuleShortcutClick}
+            data-module-id={navModulos.proximo?.id}
+            disabled={!navModulos.proximo}
+            title={navModulos.proximo ? `Próximo: ${navModulos.proximo.label}` : 'Último módulo'}
+          >
+            <span className="avaliacao-nav__passo-nome">{navModulos.proximo?.label || 'Fim'}</span>
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </nav>
+
+      {/* A coluna do histórico vem depois do formulário no DOM, e é assim que
+          aparece: à direita na tela larga e abaixo dele a 390 px. Antes ela
+          vinha primeiro e, no celular, empurrava o formulário para baixo. */}
+      <div className="avaliacao-layout-grid">
         <section className="avaliacao-main">
           <div className="avaliacao-main-toolbar">
             <div className="avaliacao-main-toolbar__title">
@@ -2610,151 +2651,272 @@ const AvaliacaoCompleta = () => {
                   {stageModuleIndex >= 0 ? stageModuleIndex + 1 : activeTabIndex + 1} de {stageModuleCount}
                 </p>
               )}
-              <h3>{activeTab === 'visao_geral' ? 'Visão geral' : (activeModule ? activeModule.label : 'Módulo clínico')}</h3>
-              <p>{activeTab === 'visao_geral' ? 'Panorama clínico da sessão e próximos passos' : (activeModule?.description || 'Preencha e salve os dados clínicos deste módulo.')}</p>
+              {/* Com um módulo aberto, o nome aqui é texto: o módulo traz o
+                  próprio h3 logo abaixo, e dois títulos iguais seguidos
+                  confundiriam a navegação por títulos. Sem módulo (Visão
+                  geral ou módulo indisponível), este continua sendo o h3. */}
+              {activeTab !== 'visao_geral' && activeModule ? (
+                <p className="avaliacao-main-toolbar__modulo">{activeModule.label}</p>
+              ) : (
+                <h3>{activeTab === 'visao_geral' ? 'Visão geral' : (activeModule ? activeModule.label : 'Módulo clínico')}</h3>
+              )}
             </div>
-            <div className="avaliacao-main-toolbar__actions">
+            {/* Modulo finalizado e somente leitura. Sem esta acao a unica forma
+                de registrar uma medicao nova era reabrir e sobrescrever a
+                anterior, e a serie longitudinal nunca se formava. */}
+            {podeIniciarNovaMedicao && (
               <button
                 type="button"
-                className="tab-btn"
-                onClick={goToPreviousModule}
-                disabled={activeTabIndex <= 0}
+                className="tab-btn tab-btn--secondary avaliacao-nova-medicao"
+                onClick={handleNovaMedicao}
+                title={`Registrar uma nova medição de ${activeModule?.label || 'módulo'} sem alterar a anterior`}
               >
-                <ChevronLeft size={15} />
-                Módulo anterior
+                <Plus size={18} aria-hidden="true" />
+                Nova medição
               </button>
-              <button
-                type="button"
-                className="tab-btn"
-                onClick={goToNextModule}
-                disabled={activeTabIndex < 0 || activeTabIndex >= moduleStates.length - 1}
-              >
-                Próximo módulo
-                <ChevronRight size={15} />
-              </button>
-              {canManagePatientFlow && activeModule && activeModuleStatus !== 'finalizada' && (
-                <button
-                  type="button"
-                  className="tab-btn tab-btn--primary"
-                  onClick={handleFinalizeCurrentModule}
-                  disabled={isFinalizingModule}
-                >
-                  <CheckCircle2 size={15} />
-                  {isFinalizingModule ? 'Finalizando...' : 'Finalizar módulo'}
-                </button>
-              )}
-              {canManagePatientFlow && activeModule && activeModuleStatus === 'finalizada' && (
-                <button
-                  type="button"
-                  className="tab-btn tab-btn--secondary"
-                  onClick={handleReopenCurrentModule}
-                  disabled={isFinalizingModule}
-                >
-                  <CircleDashed size={15} />
-                  {isFinalizingModule ? 'Reabrindo...' : 'Reabrir módulo'}
-                </button>
-              )}
-            </div>
+            )}
           </div>
 
-          <div className="avaliacao-shared-baseline">
-            <div className="avaliacao-shared-baseline__header">
-              <div>
-                <h4>Ficha base da avaliação</h4>
-                <p>Dados compartilhados entre módulos para evitar preenchimento repetido.</p>
-              </div>
-              {podeEditar && sharedAnthropometryTouched && (
+          {/* UPD-18 (UX-07): sessao expirada e o pior caso de abandono — ninguem
+              escolheu sair, e o redirecionamento para o login levaria junto o
+              que a pessoa tinha digitado na ficha base. O rascunho so existe
+              porque useEdicaoPendente o guardou no instante em que o evento
+              de sessao expirada chegou; aqui ele e oferecido de volta, nunca
+              aplicado sozinho. */}
+          {anthropometryDraftAvailable && !anthropometryDraftBannerDismissed && (
+            <div className="avaliacao-helper" role="status" aria-live="polite">
+              <Clock size={20} aria-hidden="true" />
+              <p>
+                A sessão expirou enquanto havia alterações não salvas na ficha base (peso, estatura,
+                idade ou sexo). Recupere para continuar de onde parou ou descarte para partir dos
+                dados salvos.
+              </p>
+              <button type="button" className="tab-btn tab-btn--primary" onClick={handleRecoverAnthropometryDraft}>
+                <RefreshCw size={18} aria-hidden="true" />
+                Recuperar rascunho
+              </button>
+              <button type="button" className="tab-btn tab-btn--secondary" onClick={handleDiscardAnthropometryDraft}>
+                Descartar
+              </button>
+            </div>
+          )}
+
+          {/* Ficha base, triagem pública e última sessão formam um só cartão
+              de contexto, com um fio entre os blocos: três cartões brancos
+              empilhados antes do módulo pesavam mais que o próprio módulo. */}
+          <div className="avaliacao-contexto">
+            <div className="avaliacao-shared-baseline">
+              {!baselineOpen ? (
                 <button
                   type="button"
-                  className="tab-btn tab-btn--secondary"
-                  onClick={handleRestoreAnthropometryBase}
+                  className="avaliacao-baseline-summary"
+                  onClick={() => setBaselineOpen(true)}
                 >
-                  Restaurar base
+                  <span className="avaliacao-baseline-summary__label">Ficha base</span>
+                  <span className="avaliacao-baseline-summary__vals">
+                    {sharedAnthropometryDraft.pesoKg ? `${sharedAnthropometryDraft.pesoKg} kg` : <em>peso —</em>}
+                    {' · '}
+                    {sharedAnthropometryDraft.estaturaCm ? `${sharedAnthropometryDraft.estaturaCm} cm` : <em>altura —</em>}
+                    {' · '}
+                    {sharedAnthropometryDraft.idade ? `${sharedAnthropometryDraft.idade} anos` : <em>idade —</em>}
+                    {' · '}
+                    {sharedAnthropometryDraft.sexo === 'MASCULINO' ? 'M' : sharedAnthropometryDraft.sexo === 'FEMININO' ? 'F' : <em>sexo —</em>}
+                  </span>
+                  <ChevronDown size={18} className="avaliacao-baseline-summary__chevron" aria-hidden="true" />
                 </button>
+              ) : (
+                <>
+                  <div className="avaliacao-shared-baseline__header">
+                    {/* Na Visão geral a ficha fica sob o h3 "Visão geral"; com
+                        um módulo aberto não há h3 acima dela, e ela é irmã do
+                        título do módulo. */}
+                    {activeTab === 'visao_geral'
+                      ? <h4>Ficha base da avaliação</h4>
+                      : <h3>Ficha base da avaliação</h3>}
+                    <div className="avaliacao-shared-baseline__header-actions">
+                      {podeEditar && sharedAnthropometryTouched && (
+                        <button
+                          type="button"
+                          className="tab-btn tab-btn--secondary"
+                          onClick={handleRestoreAnthropometryBase}
+                        >
+                          Restaurar base
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="tab-btn tab-btn--ghost"
+                        onClick={() => setBaselineOpen(false)}
+                      >
+                        <ChevronDown size={18} style={{ transform: 'rotate(180deg)' }} aria-hidden="true" />
+                        Recolher
+                      </button>
+                    </div>
+                  </div>
+                  <div className="avaliacao-shared-baseline__grid">
+                    <label>
+                      Peso (kg)
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={sharedAnthropometryDraft.pesoKg}
+                        onChange={(event) => handleSharedAnthropometryChange('pesoKg', event.target.value)}
+                        disabled={!podeEditar}
+                        placeholder="Ex.: 72.4"
+                      />
+                    </label>
+                    <label>
+                      Estatura (cm)
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={sharedAnthropometryDraft.estaturaCm}
+                        onChange={(event) => handleSharedAnthropometryChange('estaturaCm', event.target.value)}
+                        disabled={!podeEditar}
+                        placeholder="Ex.: 172"
+                      />
+                    </label>
+                    <label>
+                      Idade
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={sharedAnthropometryDraft.idade}
+                        onChange={(event) => handleSharedAnthropometryChange('idade', event.target.value)}
+                        disabled={!podeEditar}
+                        placeholder="Ex.: 23"
+                      />
+                    </label>
+                    <label>
+                      Sexo biológico
+                      <select
+                        value={sharedAnthropometryDraft.sexo}
+                        onChange={(event) => handleSharedAnthropometryChange('sexo', event.target.value)}
+                        disabled={!podeEditar}
+                      >
+                        <option value="">Não informado</option>
+                        <option value="MASCULINO">Masculino</option>
+                        <option value="FEMININO">Feminino</option>
+                      </select>
+                    </label>
+                  </div>
+                </>
               )}
             </div>
-            <div className="avaliacao-shared-baseline__grid">
-              <label>
-                Peso (kg)
-                <input
-                  type="number"
-                  step="0.1"
-                  value={sharedAnthropometryDraft.pesoKg}
-                  onChange={(event) => handleSharedAnthropometryChange('pesoKg', event.target.value)}
-                  disabled={!podeEditar}
-                  placeholder="Ex.: 72.4"
-                />
-              </label>
-              <label>
-                Estatura (cm)
-                <input
-                  type="number"
-                  step="0.1"
-                  value={sharedAnthropometryDraft.estaturaCm}
-                  onChange={(event) => handleSharedAnthropometryChange('estaturaCm', event.target.value)}
-                  disabled={!podeEditar}
-                  placeholder="Ex.: 172"
-                />
-              </label>
-              <label>
-                Idade
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={sharedAnthropometryDraft.idade}
-                  onChange={(event) => handleSharedAnthropometryChange('idade', event.target.value)}
-                  disabled={!podeEditar}
-                  placeholder="Ex.: 23"
-                />
-              </label>
-              <label>
-                Sexo biológico
-                <select
-                  value={sharedAnthropometryDraft.sexo}
-                  onChange={(event) => handleSharedAnthropometryChange('sexo', event.target.value)}
-                  disabled={!podeEditar}
-                >
-                  <option value="">Não informado</option>
-                  <option value="MASCULINO">Masculino</option>
-                  <option value="FEMININO">Feminino</option>
-                </select>
-              </label>
-            </div>
-          </div>
 
-          {activeModule?.snapshot && (() => {
-            const ctxCards = getModuleContextCards(activeModule.tipo, activeModule.snapshot);
-            if (!ctxCards.length) return null;
-            const ctxDateLabel = getRelativeDateLabel(activeModule.updatedAt);
-            const ctxStaleDays = activeModule.updatedAt
-              ? Math.floor((Date.now() - new Date(activeModule.updatedAt).getTime()) / 86400000)
-              : null;
-            const ctxIsStale = ctxStaleDays != null && ctxStaleDays > 30;
-            return (
-              <div className="avaliacao-context-strip">
-                <div className="avaliacao-context-strip__header">
-                  <span className="avaliacao-context-strip__label">Última sessão</span>
-                  {ctxDateLabel && (
-                    <span className={`avaliacao-context-strip__date${ctxIsStale ? ' stale' : ''}`}>
-                      {ctxDateLabel}
+            {activeTab !== 'visao_geral' && publicTriageContext.hasData && (
+              <details className="avaliacao-public-triage" key={`triagem-${activeTab}`}>
+                <summary className="avaliacao-public-triage__summary">
+                  <span className="avaliacao-public-triage__title">Triagem pública <small>Autorrelato</small></span>
+                  {publicTriageContext.updatedAt && (
+                    <span className="avaliacao-public-triage__date">
+                      {formatDate(publicTriageContext.updatedAt)}
                     </span>
                   )}
-                  <span className={`module-status status-${activeModule.status}`}>
-                    {activeModule.status === 'finalizada' ? 'Finalizada' : activeModule.status === 'rascunho' ? 'Rascunho' : 'Pendente'}
+                  <span className="avaliacao-public-triage__preview">
+                    {publicTriageContext.summary.join(' · ') || 'Informações da inscrição disponíveis'}
                   </span>
+                  <ChevronDown size={18} className="avaliacao-public-triage__chevron" aria-hidden="true" />
+                </summary>
+                <div className="avaliacao-public-triage__body">
+                  <p>Informações declaradas na inscrição. Confirme com o paciente antes de registrar a avaliação.</p>
+                  <div className="avaliacao-public-triage__sections">
+                    {publicTriageContext.sections.map((section) => (
+                      <section key={section.id} className="avaliacao-public-triage__section">
+                        <h4>{section.label}</h4>
+                        <dl>
+                          {section.items.map((item) => (
+                            <div key={item.label}>
+                              <dt>{item.label}</dt>
+                              <dd>{item.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </section>
+                    ))}
+                  </div>
                 </div>
-                <div className="avaliacao-context-strip__cards">
-                  {ctxCards.map((card) => (
-                    <div key={card.label} className="avaliacao-context-strip__card">
-                      <span>{card.label}</span>
-                      <strong>{card.value}</strong>
-                    </div>
-                  ))}
+              </details>
+            )}
+
+            {activeModule?.snapshot && (() => {
+              const ctxCards = getModuleContextCards(activeModule.tipo, activeModule.snapshot);
+              if (!ctxCards.length) return null;
+              const ctxDateLabel = getRelativeDateLabel(activeModule.updatedAt);
+              const ctxStaleDays = activeModule.updatedAt
+                ? Math.floor((Date.now() - new Date(activeModule.updatedAt).getTime()) / 86400000)
+                : null;
+              const ctxIsStale = ctxStaleDays != null && ctxStaleDays > 30;
+              return (
+                <details className="avaliacao-context-strip" key={`historico-${activeTab}`}>
+                  <summary className="avaliacao-context-strip__header">
+                    <span className="avaliacao-context-strip__label">Última sessão</span>
+                    {ctxDateLabel && (
+                      <span className={`avaliacao-context-strip__date${ctxIsStale ? ' stale' : ''}`}>
+                        {ctxDateLabel}
+                      </span>
+                    )}
+                    <span className={`module-status status-${activeModule.status}`}>
+                      {activeModule.status === 'finalizada' ? 'Finalizada' : activeModule.status === 'rascunho' ? 'Rascunho' : 'Pendente'}
+                    </span>
+                    <ChevronDown size={18} className="avaliacao-context-strip__chevron" aria-hidden="true" />
+                  </summary>
+                  <dl className="avaliacao-context-strip__cards">
+                    {ctxCards.map((card) => (
+                      <div key={card.label} className="avaliacao-context-strip__card">
+                        <dt>{card.label}</dt>
+                        <dd>{card.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              );
+            })()}
+          </div>
+
+          {condutaContext.hasAnyData && activeClinicalStageId === 'conduta' && (
+            <section className="avaliacao-conduta-bridge" aria-label="Síntese de conduta clínica">
+              <header className="avaliacao-conduta-bridge__header">
+                <div>
+                  <h3>Síntese integrada do atendimento</h3>
+                  <p>Consulta conjunta de registros. A ausência de um instrumento não impede o uso dos demais.</p>
                 </div>
+                <span className={`avaliacao-conduta-chip tone-${condutaContext.tone}`}>
+                  {condutaContext.statusLabel}
+                </span>
+              </header>
+              <div className="avaliacao-conduta-grid">
+                <article className="avaliacao-conduta-card">
+                  <small>Exames laboratoriais</small>
+                  <strong>{condutaContext.examesReady ? 'Registrado' : 'Pendente'}</strong>
+                  <span>{condutaContext.examesStatus || 'Sem classificação de painel'}</span>
+                </article>
+                <article className="avaliacao-conduta-card">
+                  <small>Evolução/retorno</small>
+                  <strong>{condutaContext.evolucaoReady ? 'Registrado' : 'Pendente'}</strong>
+                  <span>
+                    {condutaContext.evolucaoPrioridade || 'Sem prioridade definida'}
+                    {Number.isFinite(condutaContext.evolucaoScore) ? ` · Adesão ${Math.round(condutaContext.evolucaoScore)}%` : ''}
+                  </span>
+                </article>
+                <article className="avaliacao-conduta-card">
+                  <small>Metas clínicas</small>
+                  <strong>{condutaContext.metasAtivas}</strong>
+                  <span>{condutaContext.metasAtivas > 0 ? 'Meta(s) ativa(s) na evolução' : 'Nenhuma meta registrada'}</span>
+                </article>
+                <article className="avaliacao-conduta-card">
+                  <small>Plano alimentar</small>
+                  <strong>{condutaContext.readyForPlano ? 'Contexto registrado' : 'Contexto parcial'}</strong>
+                  <span>
+                    {shouldWarnRedsPrescricao
+                      ? `Baixa disponibilidade energética exige revisão${condutaContext.redsOverrideCount ? ` (${condutaContext.redsOverrideCount} override)` : ''}`
+                      : 'Sem bloqueio por baixa disponibilidade energética'}
+                  </span>
+                </article>
               </div>
-            );
-          })()}
+            </section>
+          )}
 
           <div className="avaliacao-body">
             {activeTab === 'visao_geral' ? (
@@ -2793,42 +2955,40 @@ const AvaliacaoCompleta = () => {
                       <span>/{progress.total} módulos</span>
                       <em>{progress.completion}%</em>
                     </div>
-                    <div className="monitor-progress-card__bar">
+                    {/* A barra repete a porcentagem escrita acima: só gráfico. */}
+                    <div className="monitor-progress-card__bar" aria-hidden="true">
                       <div className="monitor-progress-card__fill" style={{ width: `${progress.completion}%` }} />
-                    </div>
-                    <div className="monitor-progress-card__stages">
-                      {stageSummaries.map((stage) => (
-                        <div key={stage.id} className="monitor-stage-stat">
-                          <span>{stage.label}</span>
-                          <strong>{stage.finalized}/{stage.total}</strong>
-                        </div>
-                      ))}
                     </div>
                   </div>
 
-                  {balancoEnergetico && (
-                    <div className={`monitor-insight-card tone-${balancoEnergetico.tone}`}>
-                      <span className="monitor-insight-card__label">Balanço energético</span>
-                      <strong className="monitor-insight-card__value">{balancoEnergetico.label}</strong>
-                      <small className="monitor-insight-card__sub">
-                        {balancoEnergetico.kcalIngerida} kcal ingeridas · GET {balancoEnergetico.getEstimado} kcal
-                      </small>
-                    </div>
-                  )}
-
-                  {examesInsights && (
-                    <div className={`monitor-insight-card${examesInsights.alterados.length > 0 ? ' tone-danger' : ' tone-warning'}`}>
-                      <span className="monitor-insight-card__label">Exames laboratoriais</span>
-                      <strong className="monitor-insight-card__value">
-                        {examesInsights.alterados.length > 0
-                          ? `${examesInsights.alterados.length} fora da referência`
-                          : `${examesInsights.limitrofes.length} limítrofe(s)`}
-                      </strong>
-                      <small className="monitor-insight-card__sub">
-                        {[...examesInsights.alterados, ...examesInsights.limitrofes].slice(0, 3).join(', ')}
-                        {examesInsights.alterados.length + examesInsights.limitrofes.length > 3 && ' …'}
-                      </small>
-                    </div>
+                  {/* Os dois cartões de dado têm rótulo, valor, detalhe e tom: a
+                      estrutura do indicador do Painel. O Painel tem só os tons
+                      neutro, atenção e positivo, e escreve "Atenção" no cartão;
+                      "perigo" e "atenção" daqui caem ambos em atenção, e o
+                      valor escrito diz qual é o caso. */}
+                  {(balancoEnergetico || examesInsights) && (
+                    <PainelVisaoGeral className="monitor-indicadores">
+                      <PainelIndicadores
+                        itens={[
+                          balancoEnergetico && {
+                            id: 'balanco-energetico',
+                            rotulo: 'Balanço energético',
+                            valor: balancoEnergetico.label,
+                            detalhe: `${balancoEnergetico.kcalIngerida} kcal ingeridas · GET ${balancoEnergetico.getEstimado} kcal`,
+                            tom: balancoEnergetico.tone === 'success' ? 'positivo' : 'atencao'
+                          },
+                          examesInsights && {
+                            id: 'exames-laboratoriais',
+                            rotulo: 'Exames laboratoriais',
+                            valor: examesInsights.alterados.length > 0
+                              ? `${examesInsights.alterados.length} fora da referência`
+                              : `${examesInsights.limitrofes.length} limítrofe(s)`,
+                            detalhe: `${[...examesInsights.alterados, ...examesInsights.limitrofes].slice(0, 3).join(', ')}${examesInsights.alterados.length + examesInsights.limitrofes.length > 3 ? ' …' : ''}`,
+                            tom: 'atencao'
+                          }
+                        ].filter(Boolean)}
+                      />
+                    </PainelVisaoGeral>
                   )}
                 </div>
 
@@ -2839,11 +2999,21 @@ const AvaliacaoCompleta = () => {
                       Alertas clínicos
                       <span className="monitor-count-badge">{crossLayerInconsistencies.length}</span>
                     </h4>
-                    <div className="monitor-alerts-grid">
+                    {/* O tom vem também na forma do ícone e num prefixo lido
+                        ("Alerta:" ou "Atenção:", o vocabulário do aviso da
+                        base), não só na cor. Cada "Abrir" é descrito pelo
+                        título do seu alerta. */}
+                    <ul className="monitor-alerts-grid">
                       {crossLayerInconsistencies.map((issue) => (
-                        <div key={issue.id} className={`monitor-alert tone-${issue.tone}`}>
+                        <li key={issue.id} className={`monitor-alert tone-${issue.tone}`}>
+                          <span className="monitor-alert__icone" aria-hidden="true">
+                            {issue.tone === 'danger' ? <AlertCircle size={20} /> : <TriangleAlert size={20} />}
+                          </span>
                           <div className="monitor-alert__content">
-                            <strong>{issue.title}</strong>
+                            <strong id={`monitor-alerta-${issue.id}`}>
+                              <span className="sr-only">{issue.tone === 'danger' ? 'Alerta: ' : 'Atenção: '}</span>
+                              {issue.title}
+                            </strong>
                             <p>{issue.message}</p>
                           </div>
                           {issue.targetType && (
@@ -2852,13 +3022,14 @@ const AvaliacaoCompleta = () => {
                               className="monitor-alert__btn"
                               data-target-type={issue.targetType}
                               onClick={handleIssueShortcutClick}
+                              aria-describedby={`monitor-alerta-${issue.id}`}
                             >
                               Abrir
                             </button>
                           )}
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
                 )}
 
@@ -2869,11 +3040,11 @@ const AvaliacaoCompleta = () => {
                       Próximos passos
                       <span className="monitor-count-badge monitor-count-badge--neutral">{nextSteps.length}</span>
                     </h4>
-                    <div className="monitor-steps-list">
+                    <ol className="monitor-steps-list">
                       {nextSteps.map((step) => (
-                        <div key={step.id} className={`monitor-step priority-${step.priority}`}>
+                        <li key={step.id} className={`monitor-step priority-${step.priority}`}>
                           <div className="monitor-step__body">
-                            <strong>{step.label}</strong>
+                            <strong id={`monitor-passo-${step.id}`}>{step.label}</strong>
                             <p>{step.description}</p>
                           </div>
                           <button
@@ -2881,12 +3052,13 @@ const AvaliacaoCompleta = () => {
                             className="tab-btn tab-btn--secondary monitor-step__btn"
                             data-step-id={step.id}
                             onClick={handleNextStepButtonClick}
+                            aria-describedby={`monitor-passo-${step.id}`}
                           >
                             Abrir
                           </button>
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ol>
                   </div>
                 )}
 
@@ -2896,11 +3068,14 @@ const AvaliacaoCompleta = () => {
                   <div className="avaliacao-overview-map__stages">
                     {stageSummaries.map((stage) => (
                       <div key={stage.id} className="avaliacao-overview-map__stage">
-                        <div className="avaliacao-overview-map__stage-header">
+                        <h5 className="avaliacao-overview-map__stage-header">
                           <span className="avaliacao-overview-map__stage-label">{stage.label}</span>
                           <span className="avaliacao-overview-map__stage-count">{stage.finalized}/{stage.total}</span>
-                        </div>
-                        <div className="avaliacao-overview-map__stage-modules">
+                        </h5>
+                        {/* O estado vai escrito em cada módulo; o nome acessível
+                            passa a ser o texto do cartão, que agora inclui o
+                            estado, a métrica e a data. */}
+                        <ul className="avaliacao-overview-map__stage-modules">
                           {stage.modules.map((module) => {
                             const dateLabel = getRelativeDateLabel(module.updatedAt);
                             const staleDays = module.updatedAt
@@ -2910,39 +3085,40 @@ const AvaliacaoCompleta = () => {
                             const keyMetric = getModuleKeyMetric(module.tipo, module.snapshot);
                             const ModuleIcon = module.icon;
                             return (
-                              <button
-                                key={module.id}
-                                type="button"
-                                className={`avaliacao-overview-module-card status-${module.status}`}
-                                onClick={handleModuleShortcutClick}
-                                data-module-id={module.id}
-                                aria-label={`${module.label} — ${module.status}`}
-                              >
-                                <div className="avaliacao-overview-module-card__top">
-                                  <ModuleIcon size={13} />
-                                  <span>{module.label}</span>
-                                  <div className="avaliacao-overview-module-card__badge">
+                              <li key={module.id}>
+                                <button
+                                  type="button"
+                                  className={`avaliacao-overview-module-card status-${module.status}`}
+                                  onClick={handleModuleShortcutClick}
+                                  data-module-id={module.id}
+                                >
+                                  <span className="avaliacao-overview-module-card__top">
+                                    <ModuleIcon size={18} aria-hidden="true" />
+                                    <span className="avaliacao-overview-module-card__nome">{module.label}</span>
+                                  </span>
+                                  <span className="avaliacao-overview-module-card__badge">
                                     {module.status === 'finalizada'
-                                      ? <CheckCircle2 size={11} className="module-icon-finalizada" />
+                                      ? <CheckCircle2 size={16} className="module-icon-finalizada" aria-hidden="true" />
                                       : module.status === 'rascunho'
-                                        ? <CircleDashed size={11} className="module-icon-rascunho" />
-                                        : <Clock size={11} className="module-icon-pendente" />}
-                                  </div>
-                                </div>
-                                {(keyMetric || dateLabel) && (
-                                  <div className="avaliacao-overview-module-card__meta">
-                                    {keyMetric && <span className="avaliacao-overview-module-card__metric">{keyMetric}</span>}
-                                    {dateLabel && (
-                                      <span className={`avaliacao-overview-module-card__date${isStale ? ' stale' : ''}`}>
-                                        {dateLabel}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </button>
+                                        ? <CircleDashed size={16} className="module-icon-rascunho" aria-hidden="true" />
+                                        : <Clock size={16} className="module-icon-pendente" aria-hidden="true" />}
+                                    {getEvaluationStatusLabel(module.status)}
+                                  </span>
+                                  {(keyMetric || dateLabel) && (
+                                    <span className="avaliacao-overview-module-card__meta">
+                                      {keyMetric && <span className="avaliacao-overview-module-card__metric">{keyMetric}</span>}
+                                      {dateLabel && (
+                                        <span className={`avaliacao-overview-module-card__date${isStale ? ' stale' : ''}`}>
+                                          {dateLabel}
+                                        </span>
+                                      )}
+                                    </span>
+                                  )}
+                                </button>
+                              </li>
                             );
                           })}
-                        </div>
+                        </ul>
                       </div>
                     ))}
                   </div>
@@ -2951,35 +3127,23 @@ const AvaliacaoCompleta = () => {
               </section>
             ) : (
               <>
-                {activeModule && MODULE_DEPENDENCIES[activeTab] && (() => {
-                  const dep = MODULE_DEPENDENCIES[activeTab];
-                  const statuses = dep.requires.map((reqId) => {
-                    const m = moduleStates.find((s) => s.id === reqId);
-                    return { id: reqId, label: m?.label || reqId, filled: !!m && m.status !== 'pendente' };
-                  });
-                  const anyMissing = dep.mode === 'all'
-                    ? statuses.some((s) => !s.filled)
-                    : dep.mode === 'any'
-                      ? statuses.every((s) => !s.filled)
-                      : false;
-                  if (!anyMissing) return null;
-                  return (
-                    <div className="avaliacao-dep-notice">
-                      <strong>Módulos de suporte</strong>
-                      <p>{dep.hint}</p>
-                      <ul>
-                        {statuses.map((s) => (
-                          <li key={s.id} className={s.filled ? 'dep-ok' : 'dep-pending'}>
-                            <span className="dep-dot" />
-                            {s.label} — {s.filled ? 'preenchido' : 'pendente nesta sessão'}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  );
-                })()}
                 {activeModule ? (
-                  renderForm()
+                  <div
+                    ref={formularioRef}
+                    className={modoEssencialAtivo ? 'avaliacao-form modo-essencial' : 'avaliacao-form'}
+                    key={`${activeTab}:${medicaoNonce}`}
+                  >
+                    {renderForm()}
+                    {podeOferecerEssencial && (
+                      <div className="avaliacao-mais-campos">
+                        <button type="button" onClick={() => setModoEssencial((v) => !v)}>
+                          {modoEssencialAtivo
+                            ? `Ver todos os ${contagemCampos.total} campos`
+                            : `Mostrar apenas os ${contagemCampos.essenciais} essenciais`}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <section className="avaliacao-empty-module" aria-label="Módulo indisponível">
                     <h4>Módulo indisponível</h4>
@@ -3002,13 +3166,157 @@ const AvaliacaoCompleta = () => {
             )}
           </div>
 
-          <div className="avaliacao-footer-actions">
-            <button type="button" className="tab-btn tab-btn--secondary" onClick={handleGoBack}>
-              <ArrowLeft size={15} />
-              Voltar ao prontuário
-            </button>
+          <div className="avaliacao-module-footer-bar">
+            <div className="avaliacao-module-footer-bar__left">
+              {activeModule && (
+                <span className={`status-pill${activeModuleStatus === 'finalizada' ? ' status-final' : activeModuleStatus === 'rascunho' ? ' status-draft' : ''}`}>
+                  {activeModuleStatus === 'finalizada' ? 'Finalizado' : activeModuleStatus === 'rascunho' ? 'Rascunho' : 'Não iniciado'}
+                </span>
+              )}
+              {lastSavedAt && (
+                <span className="status-pill status-saved">
+                  <Clock size={14} aria-hidden="true" />
+                  Salvo {lastSavedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+            <div className="avaliacao-module-footer-bar__right">
+              <button type="button" className="tab-btn tab-btn--secondary" onClick={handleGoBack}>
+                <ArrowLeft size={18} aria-hidden="true" />
+                Prontuário
+              </button>
+              <button
+                type="button"
+                className="tab-btn tab-btn--ghost"
+                onClick={goToPreviousModule}
+                disabled={activeTabIndex <= 0}
+              >
+                <ChevronLeft size={18} aria-hidden="true" />
+                Anterior
+              </button>
+              <button
+                type="button"
+                className="tab-btn tab-btn--ghost"
+                onClick={goToNextModule}
+                disabled={activeTabIndex < 0 || activeTabIndex >= moduleStates.length - 1}
+              >
+                Próximo
+                <ChevronRight size={18} aria-hidden="true" />
+              </button>
+              {podeEditar && activeModule && activeModuleStatus !== 'finalizada' && (
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--primary"
+                  onClick={handleFinalizeCurrentModule}
+                  disabled={isFinalizingModule}
+                >
+                  <CheckCircle2 size={18} aria-hidden="true" />
+                  {isFinalizingModule ? 'Finalizando...' : 'Finalizar'}
+                </button>
+              )}
+              {canManagePatientFlow && canEditActiveModule && activeModule && activeModuleStatus === 'finalizada' && (
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--secondary"
+                  onClick={handleReopenCurrentModule}
+                  disabled={isFinalizingModule}
+                >
+                  <CircleDashed size={18} aria-hidden="true" />
+                  {isFinalizingModule ? 'Reabrindo...' : 'Reabrir'}
+                </button>
+              )}
+            </div>
           </div>
         </section>
+
+        <aside className="avaliacao-sidebar" aria-label="Navegação de módulos">
+          <section className="avaliacao-sidebar-card avaliacao-sidebar-card--wide">
+            <div className="avaliacao-sidebar-card__header">
+              <h3>Histórico do módulo</h3>
+              <span className="avaliacao-sidebar-card__contagem">{activeModuleTimeline.length}</span>
+            </div>
+            {activeModuleComparison?.previous && (
+              <p className="avaliacao-sidebar-empty avaliacao-sidebar-comparacao">
+                Último registro: {formatDate(getMeasurementDate(activeModuleComparison.latest))} · anterior: {formatDate(getMeasurementDate(activeModuleComparison.previous))}
+              </p>
+            )}
+            {activeModuleTimeline.length === 0 ? (
+              <p className="avaliacao-sidebar-empty">Nenhum registro anterior para este módulo.</p>
+            ) : (
+              <ul className="avaliacao-history-list">
+                {activeModuleTimeline.slice(0, 6).map((item, index) => {
+                  const itemDate = getMeasurementDate(item);
+                  return (
+                    <li key={item.id || index} className="avaliacao-history-item">
+                      <div className="avaliacao-history-item__texto">
+                        <strong>{itemDate ? formatDate(itemDate) : '—'}</strong>
+                        <span>{item.createdByName || item.alunoNome || 'Equipe'}</span>
+                      </div>
+                      <span className={`module-status status-${String(item.status || 'pendente').toLowerCase()}`}>
+                        {getEvaluationStatusLabel(item.status || 'pendente')}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          <details className="avaliacao-sidebar-card avaliacao-report-card">
+            <summary className="avaliacao-report-card__summary">
+              <h3>Relatório</h3>
+              <ChevronDown size={18} className="report-chevron" aria-hidden="true" />
+            </summary>
+            <div className="avaliacao-report-card__body">
+              <p className="avaliacao-report-card__description">
+                Período avaliado: {reportPeriodLabel}
+              </p>
+              <dl className="avaliacao-report-card__meta">
+                {summaryItems.slice(0, 4).map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="avaliacao-report-card__actions">
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--primary"
+                  onClick={handleExportClinicalReportHtml}
+                >
+                  <Download size={18} aria-hidden="true" />
+                  Exportar HTML
+                </button>
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--secondary"
+                  onClick={handleExportClinicalReportJson}
+                >
+                  <FileText size={18} aria-hidden="true" />
+                  Exportar JSON
+                </button>
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--secondary"
+                  onClick={handleReloadEvaluationContext}
+                >
+                  <RefreshCw size={18} aria-hidden="true" />
+                  Atualizar dados
+                </button>
+                <button
+                  type="button"
+                  className="tab-btn tab-btn--secondary"
+                  onClick={handlePrintPage}
+                >
+                  <Printer size={18} aria-hidden="true" />
+                  Imprimir tela
+                </button>
+              </div>
+              <p className="avaliacao-report-card__hint">Abra no navegador e salve como PDF.</p>
+            </div>
+          </details>
+        </aside>
       </div>
     </div>
   );
@@ -3084,16 +3392,16 @@ function getTriagemRedsFinalizationBlocker(snapshot, patient) {
   ).trim();
 
   if (!Number.isFinite(disponibilidadeEnergetica) || !Number.isFinite(scoreRastreio) || !classificacao) {
-    return 'Complete disponibilidade energetica, score de rastreio e classificacao RED-S antes de finalizar.';
+    return 'Complete disponibilidade energética, score de rastreio e classificação antes de finalizar.';
   }
   if (!sexo) {
-    return 'Informe o sexo biologico para validar o questionario RED-S antes de finalizar.';
+    return 'Informe o sexo biológico para validar o questionário de rastreio antes de finalizar.';
   }
   if (sexo === 'female' && !isRedsQuestionnaireComplete(dados.leafQRespostas, 12, 'leaf_q')) {
-    return 'Complete todas as 12 respostas do LEAF-Q antes de finalizar RED-S.';
+    return 'Complete todas as 12 respostas do LEAF-Q antes de finalizar a triagem.';
   }
   if (sexo === 'male' && !isRedsQuestionnaireComplete(dados.leaQ13Respostas, 13, 'lea_q')) {
-    return 'Complete todas as 13 respostas do LEA-Q13 antes de finalizar RED-S.';
+    return 'Complete todas as 13 respostas do LEA-Q13 antes de finalizar a triagem.';
   }
   return '';
 }
@@ -3201,26 +3509,6 @@ function resolveArrayFromPaths(source, paths = []) {
   for (const path of paths) {
     const value = resolvePathValue(source, path);
     if (Array.isArray(value)) return value;
-  }
-  return [];
-}
-
-function resolveStringArray(values = []) {
-  for (const value of values) {
-    if (Array.isArray(value)) {
-      const normalized = value
-        .map((item) => String(item || '').trim().toLowerCase().replace(/-/g, '_'))
-        .filter(Boolean);
-      if (normalized.length > 0) return normalized;
-      continue;
-    }
-    if (typeof value === 'string') {
-      const normalized = value
-        .split(/[,\n;]+/g)
-        .map((item) => item.trim().toLowerCase().replace(/-/g, '_'))
-        .filter(Boolean);
-      if (normalized.length > 0) return normalized;
-    }
   }
   return [];
 }

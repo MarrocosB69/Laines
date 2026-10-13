@@ -1,19 +1,460 @@
-/* ═══════════════════════════════════════════════════════════
-   ProntuarioHeader — ph-* namespace
-   ═══════════════════════════════════════════════════════════ */
+/* Cabeçalho do prontuário (ProntuarioHeader.jsx), na direção "Energia e
+   velocidade" (docs/design/landing-guia-visual.md, seção "Direção vigente";
+   desenho aprovado no WI-007, docs/product/construction/prontuario/
+   organizacao_e_autonomia.md, "Decisões de interação e visual").
 
-.ph-root {
+   Um cartão branco com --lt-radius-card e a raia azul e verde no pé, a
+   mesma do cabeçalho da Visão geral (painel.css) e da página de avaliações.
+   O nome do atleta vai na voz de campanha, com a marca verde de largada.
+   A situação do atendimento é escrita num selo; a próxima ação é o único
+   sólido do cabeçalho (degradê de largada). Alertas e dados do caso ficam
+   embaixo, os alertas com tom de atenção, ícone e texto.
+
+   Escopo `.prontuario-root .ph-*`, sem valores fixos antigos: as cores são
+   os tokens --lt-* e os --prt-* de ProntuarioPatch.css, que carrega antes
+   desta folha. O cabeçalho não fica preso ao rolar; quem acompanha a
+   rolagem é a barra de abas. `h1` global e `button { white-space: nowrap }`
+   são declarados de volta aqui. */
+
+/* ── Cartão ──────────────────────────────────────────────────────────── */
+.prontuario-root .ph-root.ph-overview {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.125rem 1.375rem;
-  overflow: hidden;
-  border-radius: var(--pron-radius-xl, 20px);
+  top: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--prt-respiro) var(--prt-respiro) calc(var(--prt-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--prt-sombra);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  overflow: visible;
 }
 
-/* top accent stripe */
+/* A raia no pé: azul e verde da marca. Só gráfico. */
+.prontuario-root .ph-root.ph-overview::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+/* ── Identidade: voltar, iniciais, nome e dados curtos ───────────────── */
+.prontuario-root .ph-left {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.prontuario-root .ph-back-btn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  min-width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+/* Iniciais em branco sobre o azul do estádio (13,93:1), como nos
+   cabeçalhos dos portais. */
+.prontuario-root .ph-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-stadium);
+  box-shadow: none;
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.prontuario-root .ph-identity {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* O nome na voz de campanha. As quatro linhas do reset vencem o degradê
+   recortado do h1 global. */
+.prontuario-root .ph-overview .ph-name {
+  position: relative;
+  margin: 0;
+  padding: 0 0.1em 0 0.32em;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o mesmo gesto do título da Visão geral. */
+.prontuario-root .ph-overview .ph-name::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, var(--prt-largada-luz), var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.prontuario-root .ph-overview .ph-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  min-width: 0;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.prontuario-root .ph-overview .ph-meta:empty { display: none; }
+
+/* O número do prontuário: selo de campo, algarismos tabulares. */
+.prontuario-root .ph-meta__item--code {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.prontuario-root .ph-supervision {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.prontuario-root .ph-supervision strong {
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+/* ── Situação do atendimento e próxima ação ─────────────────────────── */
+.prontuario-root .ph-current-care {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* O estado vai escrito; o ponto é só a forma do selo. */
+.prontuario-root .ph-tag.ph-tag--info {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+
+.prontuario-root .ph-tag.ph-tag--info::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.prontuario-root .ph-tag.ph-tag--info:empty { display: none; }
+
+.prontuario-root .ph-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+.prontuario-root .ph-btn svg { flex: none; }
+
+/* Branco sobre o degradê: 4,82:1 no topo e 6,20:1 na base. */
+.prontuario-root .ph-btn.ph-btn--primary {
+  border: 0;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: var(--prt-sombra-largada);
+  color: var(--lt-color-text-inverse);
+}
+
+.prontuario-root .ph-btn.ph-btn--ghost {
+  border: 1.5px solid var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+.prontuario-root .ph-btn:disabled {
+  box-shadow: none;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Alertas para decidir: tom de atenção, ícone e texto ─────────────── */
+.prontuario-root .ph-decision-alerts {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prontuario-root .ph-decision-alerts li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border-radius: var(--lt-radius-control);
+  background: var(--prt-atencao-fundo);
+  color: var(--prt-atencao-texto);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* O traço inclinado do aviso, o mesmo de .av-aviso e da página de avaliações. */
+.prontuario-root .ph-decision-alerts li::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--prt-atencao-traco);
+  transform: skewX(-12deg);
+}
+
+.prontuario-root .ph-decision-alerts svg {
+  flex: none;
+  margin-top: 0.1875rem;
+}
+
+/* ── Dados do caso e outras ações ────────────────────────────────────── */
+.prontuario-root .ph-case-details {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  padding-top: var(--lt-space-2);
+  border-top: 1px solid var(--lt-color-border);
+  font-size: var(--lt-text-base);
+}
+
+.prontuario-root .ph-case-details > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-2);
+  margin-left: calc(-1 * var(--lt-space-2));
+  border-radius: var(--lt-radius-control);
+  color: var(--lt-color-brand-blue);
+  font-weight: 700;
+  font-size: var(--lt-text-sm);
+  list-style: none;
+  cursor: pointer;
+}
+
+.prontuario-root .ph-case-details > summary::-webkit-details-marker { display: none; }
+
+/* Divisa desenhada: aponta para a direita fechado e para baixo aberto. */
+.prontuario-root .ph-case-details > summary::before {
+  content: '';
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: rotate(-45deg);
+}
+
+.prontuario-root .ph-case-details[open] > summary::before { transform: rotate(45deg); }
+
+.prontuario-root .ph-responsaveis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--lt-space-3) var(--lt-space-5);
+  margin: var(--lt-space-3) 0 0;
+  padding: 0;
+}
+
+.prontuario-root .ph-resp { min-width: 0; }
+
+.prontuario-root .ph-resp dt {
+  margin: 0 0 0.125rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 1;
+}
+
+.prontuario-root .ph-resp dd {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.prontuario-root .ph-case-details .ph-actions__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  width: auto;
+  margin-top: var(--lt-space-4);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
+/* ── Estados: passar o mouse e foco ──────────────────────────────────── */
+@media (hover: hover) {
+  .prontuario-root .ph-back-btn:hover,
+  .prontuario-root .ph-btn.ph-btn--ghost:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
+
+  .prontuario-root .ph-btn.ph-btn--primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-bottom), var(--lt-color-brand-green-text));
+    box-shadow: var(--prt-sombra-largada-forte);
+  }
+
+  .prontuario-root .ph-case-details > summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+
+.prontuario-root :is(.ph-back-btn, .ph-btn, .ph-case-details > summary):focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Telas estreitas: uma coluna; a próxima ação ocupa a largura ─────── */
+@media (max-width: 600px) {
+  .prontuario-root .ph-root.ph-overview {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .prontuario-root .ph-overview .ph-avatar { display: none; }
+
+  .prontuario-root .ph-overview .ph-name { font-size: clamp(2rem, 9vw, 2.5rem); }
+
+  .prontuario-root .ph-current-care { align-items: flex-start; }
+
+  .prontuario-root .ph-current-care .ph-btn { width: 100%; }
+}
+
+/* ── Movimento: a marca de largada se desenha uma vez ────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .prontuario-root .ph-overview .ph-name::before {
+    animation: prt-largada 420ms var(--lt-ease-out) 120ms backwards;
+  }
+
+  @keyframes prt-largada { from { transform: skewX(-12deg) scaleY(0); } }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LEGADO SEM CONSUMIDOR
+   Regras da versão anterior desta folha cujas classes nenhum componente
+   renderizado usa hoje (ProntuarioHeader.jsx não tem .ph-accent-bar,
+   .ph-avatar__dot, .ph-name__*, .ph-meta__item, .ph-tags, .ph-tag--ok,
+   --warn, --muted, .ph-actions nem .ph-resp__*). Guardadas sem mudança até
+   a decisão de apagar.
+   ═══════════════════════════════════════════════════════════════════════ */
+
 .ph-accent-bar {
   position: absolute;
   inset: 0 0 auto 0;
@@ -26,51 +467,6 @@
   pointer-events: none;
 }
 
-/* ── Left side ── */
-.ph-left {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  min-width: 0;
-}
-
-.ph-back-btn {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  background: #fff;
-  color: #64748b;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-.ph-back-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: rgba(15, 23, 42, 0.2);
-}
-
-/* ── Avatar ── */
-.ph-avatar {
-  position: relative;
-  flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(116, 168, 101, 0.14), rgba(116, 168, 101, 0.06));
-  border: 2px solid rgba(116, 168, 101, 0.22);
-  color: var(--pron-accent, var(--color-green, #74A865));
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.08);
-}
-
 .ph-avatar__dot {
   position: absolute;
   bottom: 1px;
@@ -79,31 +475,17 @@
   height: 11px;
   border-radius: 50%;
   background: #22c55e;
-  border: 2px solid #fff;
+  border: 2px solid var(--pn-surface);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-/* ── Identity block ── */
-.ph-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  min-width: 0;
-}
-
-.ph-name {
-  margin: 0;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .ph-name__first {
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--pron-text-primary, #0f172a);
   letter-spacing: -0.02em;
 }
+
 .ph-name__rest {
   font-size: 1.25rem;
   font-weight: 400;
@@ -111,30 +493,17 @@
   letter-spacing: -0.01em;
 }
 
-/* ── Meta line ── */
-.ph-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
 .ph-meta__item {
   font-size: 0.775rem;
   color: var(--pron-text-secondary, #64748b);
 }
+
 .ph-meta__item + .ph-meta__item::before {
   content: '·';
   margin-right: 0.5rem;
   opacity: 0.4;
 }
-.ph-meta__item--code {
-  font-family: ui-monospace, monospace;
-  font-size: 0.72rem;
-  background: #f1f5f9;
-  padding: 0.1rem 0.45rem;
-  border-radius: 4px;
-  color: #64748b;
-}
+
 .ph-meta__item--project {
   display: inline-flex;
   align-items: center;
@@ -143,7 +512,6 @@
   font-weight: 600;
 }
 
-/* ── Tags row ── */
 .ph-tags {
   display: flex;
   flex-wrap: wrap;
@@ -151,27 +519,12 @@
   align-items: center;
 }
 
-.ph-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border: 1px solid transparent;
-  max-width: 260px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ph-tag--ok    { background: #f0fdf4; color: #16a34a; border-color: rgba(22, 163, 74, 0.22); }
-.ph-tag--warn  { background: #fffbeb; color: #d97706; border-color: rgba(217, 119, 6, 0.22); }
-.ph-tag--info  { background: #eff6ff; color: #2563eb; border-color: rgba(86, 173, 219, 0.18); }
-.ph-tag--muted { background: #f1f5f9; color: #64748b; border-color: rgba(0, 0, 0, 0.07); }
+.ph-tag--ok    { background: #f0fdf4; color: var(--pn-ok); border-color: rgba(22, 163, 74, 0.22); }
 
-/* ── Right side: actions ── */
+.ph-tag--warn  { background: #fffbeb; color: var(--pn-warn); border-color: rgba(217, 119, 6, 0.22); }
+
+.ph-tag--muted { background: var(--pn-surface-3); color: var(--pn-text-3); border-color: rgba(0, 0, 0, 0.07); }
+
 .ph-actions {
   display: flex;
   align-items: center;
@@ -181,69 +534,7 @@
   justify-content: flex-end;
 }
 
-.ph-actions__group {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  overflow: hidden;
-  background: #fff;
-}
-.ph-actions__group .ph-btn--ghost {
-  border-radius: 0;
-  border: none;
-  border-right: 1px solid rgba(0, 0, 0, 0.07);
-}
-.ph-actions__group .ph-btn--ghost:last-child {
-  border-right: none;
-}
-
-/* ── Buttons ── */
-.ph-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: none;
-  cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  padding: 0.5rem 0.875rem;
-  border-radius: 10px;
-  transition: background 0.15s, color 0.15s, opacity 0.15s;
-  white-space: nowrap;
-  font-family: inherit;
-}
-.ph-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.ph-btn--primary {
-  background: var(--pron-accent, var(--color-green, #74A865));
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(116, 168, 101, 0.28);
-}
-.ph-btn--primary:hover:not(:disabled) {
-  opacity: 0.88;
-  box-shadow: 0 3px 12px rgba(116, 168, 101, 0.36);
-}
-
-.ph-btn--ghost {
-  background: transparent;
-  color: #64748b;
-  padding: 0.5rem 0.75rem;
-}
-.ph-btn--ghost:hover:not(:disabled) {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
-/* ── Responsive ── */
 @media (max-width: 768px) {
-  .ph-root {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.875rem;
-    padding: 1rem;
-  }
 
   .ph-actions {
     width: 100%;
@@ -255,9 +546,8 @@
     font-size: 1.0625rem;
   }
 
-  .ph-avatar {
-    width: 44px;
-    height: 44px;
-    font-size: 0.9375rem;
-  }
 }
+
+.ph-resp__vazio { opacity: 0.45; font-style: italic; }
+
+.ph-resp__nota { font-size: 0.75rem; opacity: 0.55; }

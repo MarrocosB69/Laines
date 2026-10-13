@@ -279,7 +279,51 @@ const conicityClassification = (index) => {
   return { label: 'Risco elevado por conicidade', tone: 'danger', source: 'Valdez 1991' };
 };
 
-const ymcaBodyFatClassification = ({ sex, percentFat }) => {
+// % de gordura YMCA (WI-013, decisão 1). A equação original é em polegadas e
+// libras; aplicada em cm e kg dava ~300%. Fora da faixa plausível o valor vira
+// null com aviso: abaixo de 2% fica aquém da gordura essencial e acima de 70%
+// não é resultado fisiológico.
+export const YMCA_PERCENT_FAT_RANGE = Object.freeze({ min: 2, max: 70 });
+export const YMCA_OUT_OF_RANGE_LABEL = 'Fora da faixa plausível (2 a 70%). Verifique cintura e peso.';
+export const YMCA_LEGACY_UNITS_LABEL = 'Valor salvo calculado com unidades erradas (cm e kg); não exibido.';
+const CM_PER_INCH = 2.54;
+const LB_PER_KG = 2.20462;
+
+export const isPlausibleYmcaPercentFat = (value) => {
+  const numeric = toNumber(value);
+  return Number.isFinite(numeric)
+    && numeric >= YMCA_PERCENT_FAT_RANGE.min
+    && numeric <= YMCA_PERCENT_FAT_RANGE.max;
+};
+
+export const calculateYmcaPercentFat = ({ sex, waistCm, weightKg } = {}) => {
+  const normalizedSex = normalizeSex(sex);
+  const waist = toNumber(waistCm);
+  const weight = toNumber(weightKg);
+  if (!normalizedSex || !Number.isFinite(waist) || waist <= 0 || !Number.isFinite(weight) || weight <= 0) {
+    return { value: null, raw: null, outOfRange: false };
+  }
+  const waistIn = waist / CM_PER_INCH;
+  const weightLb = weight * LB_PER_KG;
+  const constant = normalizedSex === 'male' ? -98.42 : -76.76;
+  const raw = ((constant + (4.15 * waistIn) - (0.082 * weightLb)) / weightLb) * 100;
+  const plausible = isPlausibleYmcaPercentFat(raw);
+  return { value: plausible ? raw : null, raw, outOfRange: !plausible };
+};
+
+// Leitura de um % YMCA já salvo. Código novo nunca grava valor fora da faixa;
+// um valor assim vem de registro antigo, calculado em cm e kg.
+export const readSavedYmcaPercentFat = (value) => {
+  const numeric = toNumber(value);
+  if (!Number.isFinite(numeric)) return { value: null, legacyUnits: false };
+  if (!isPlausibleYmcaPercentFat(numeric)) return { value: null, legacyUnits: true };
+  return { value: numeric, legacyUnits: false };
+};
+
+const ymcaBodyFatClassification = ({ sex, percentFat, outOfRange = false }) => {
+  if (outOfRange) {
+    return { label: YMCA_OUT_OF_RANGE_LABEL, tone: 'warning', source: 'YMCA' };
+  }
   if (!Number.isFinite(percentFat) || !sex) {
     return { label: 'Sem classificacao YMCA', tone: 'neutral', source: 'YMCA' };
   }
@@ -319,16 +363,13 @@ export const calculateCircumferenceIndicators = (input) => {
     ? waistM / (0.109 * Math.sqrt(weightKg / heightM))
     : null;
 
-  const ymcaPercentFat = Number.isFinite(waistCm) && Number.isFinite(weightKg) && weightKg > 0 && sex
-    ? (sex === 'male'
-      ? ((-98.42 + (4.15 * waistCm) - (0.082 * weightKg)) / weightKg) * 100
-      : ((-76.76 + (4.15 * waistCm) - (0.082 * weightKg)) / weightKg) * 100)
-    : null;
+  const ymca = calculateYmcaPercentFat({ sex, waistCm, weightKg });
+  const ymcaPercentFat = ymca.value;
 
   const rcqClass = rcqClassification({ rcq, sex });
   const iceClass = iceClassification(ice);
   const conicityClass = conicityClassification(conicity);
-  const ymcaClass = ymcaBodyFatClassification({ sex, percentFat: ymcaPercentFat });
+  const ymcaClass = ymcaBodyFatClassification({ sex, percentFat: ymcaPercentFat, outOfRange: ymca.outOfRange });
 
   return {
     indicators: {
@@ -343,12 +384,15 @@ export const calculateCircumferenceIndicators = (input) => {
       conicity: conicityClass,
       ymcaPercentFat: ymcaClass
     },
+    flags: {
+      ymcaPercentFatOutOfRange: ymca.outOfRange
+    },
     formulas: {
       rcq: 'cintura_cm / quadril_cm',
       ice: 'cintura_cm / estatura_cm',
       conicity: 'cintura_m / (0.109 * sqrt(peso_kg / estatura_m))',
-      ymcaMale: '((-98.42 + 4.15*cintura_cm - 0.082*peso_kg)/peso_kg)*100',
-      ymcaFemale: '((-76.76 + 4.15*cintura_cm - 0.082*peso_kg)/peso_kg)*100'
+      ymcaMale: '((-98.42 + 4.15*cintura_pol - 0.082*peso_lb)/peso_lb)*100; cintura_pol = cintura_cm/2.54; peso_lb = peso_kg*2.20462',
+      ymcaFemale: '((-76.76 + 4.15*cintura_pol - 0.082*peso_lb)/peso_lb)*100; cintura_pol = cintura_cm/2.54; peso_lb = peso_kg*2.20462'
     }
   };
 };
@@ -698,33 +742,45 @@ export const calculateHydrationEvaluation = (input = {}) => {
   const intakeMlSafe = Number.isFinite(fluidIntakeMl) ? fluidIntakeMl : 0;
   const urineMlSafe = Number.isFinite(urineVolumeMl) ? urineVolumeMl : 0;
 
-  const weightLossKg = Number.isFinite(weightBeforeKg) && Number.isFinite(weightAfterKg)
+  // WI-013, decisão 5. A variação (antes - após) negativa é ganho de peso, não
+  // "perda negativa". A perda de suor usa a variação com sinal; se der zero ou
+  // menos, o registro é inconsistente e perda, sudorese e reposição ficam null.
+  // Nenhuma dessas saídas é negativa.
+  const weightChangeKg = Number.isFinite(weightBeforeKg) && Number.isFinite(weightAfterKg)
     ? weightBeforeKg - weightAfterKg
     : null;
-  const weightLossPercent = Number.isFinite(weightLossKg) && Number.isFinite(weightBeforeKg) && weightBeforeKg > 0
-    ? (weightLossKg / weightBeforeKg) * 100
+  const weightLossKg = Number.isFinite(weightChangeKg) && weightChangeKg >= 0 ? weightChangeKg : null;
+  const weightGainKg = Number.isFinite(weightChangeKg) && weightChangeKg < 0 ? -weightChangeKg : null;
+  const signedLossPercent = Number.isFinite(weightChangeKg) && Number.isFinite(weightBeforeKg) && weightBeforeKg > 0
+    ? (weightChangeKg / weightBeforeKg) * 100
     : null;
-  const netFluidLossMl = Number.isFinite(weightLossKg)
-    ? (weightLossKg * 1000) + intakeMlSafe - urineMlSafe
+  const weightLossPercent = Number.isFinite(signedLossPercent) && signedLossPercent >= 0 ? signedLossPercent : null;
+  const sweatLossRawMl = Number.isFinite(weightChangeKg)
+    ? (weightChangeKg * 1000) + intakeMlSafe - urineMlSafe
     : null;
+  const sweatLossInconsistent = Number.isFinite(sweatLossRawMl) && sweatLossRawMl <= 0;
+  const netFluidLossMl = Number.isFinite(sweatLossRawMl) && sweatLossRawMl > 0 ? sweatLossRawMl : null;
   const sweatRateLh = Number.isFinite(netFluidLossMl) && Number.isFinite(durationMin) && durationMin > 0
     ? ((netFluidLossMl / durationMin) * 60) / 1000
     : null;
   const sweatRateMlMin = Number.isFinite(sweatRateLh)
     ? (sweatRateLh * 1000) / 60
     : null;
+  const replacementTargetMl = Number.isFinite(netFluidLossMl) ? Math.round(netFluidLossMl * 1.5) : null;
 
-  const classification = classifyHydrationByLossPercent(weightLossPercent);
+  // A faixa continua lida sobre a variação com sinal: ganho de peso segue
+  // "Sem perda relevante", como antes.
+  const classification = classifyHydrationByLossPercent(signedLossPercent);
   const warnings = [];
 
-  if (Number.isFinite(weightLossKg) && weightLossKg < 0) {
+  if (Number.isFinite(weightGainKg)) {
     warnings.push('Peso apos o exercicio maior que o peso antes. Verifique hidratacao excessiva ou registro.');
   }
   if (Number.isFinite(durationMin) && durationMin <= 0) {
     warnings.push('Duracao do exercicio deve ser maior que zero para calcular taxa de sudorese.');
   }
-  if (Number.isFinite(netFluidLossMl) && netFluidLossMl < 0) {
-    warnings.push('Balanco hidrico liquido negativo para perda estimada. Revise entradas de volume.');
+  if (sweatLossInconsistent) {
+    warnings.push('Balanco hidrico liquido negativo ou zero para perda estimada. Revise entradas de volume.');
   }
 
   return {
@@ -741,17 +797,24 @@ export const calculateHydrationEvaluation = (input = {}) => {
     },
     metrics: {
       perdaPesoAbsolutaKg: weightLossKg,
+      ganhoPesoKg: weightGainKg,
       perdaPesoPercentual: weightLossPercent,
       perdaHidricaLiquidaMl: netFluidLossMl,
       taxaSudoreseLh: sweatRateLh,
-      taxaSudoreseMlMin: sweatRateMlMin
+      taxaSudoreseMlMin: sweatRateMlMin,
+      metaReposicaoMl: replacementTargetMl
+    },
+    flags: {
+      ganhoPeso: Number.isFinite(weightGainKg),
+      perdaSuorInconsistente: sweatLossInconsistent
     },
     classification,
     warnings,
     formulas: {
-      perdaPesoAbsolutaKg: 'peso_antes_kg - peso_apos_kg',
+      perdaPesoAbsolutaKg: 'peso_antes_kg - peso_apos_kg (negativo = ganho de peso, nao perda)',
       perdaPesoPercentual: '(perda_peso_kg / peso_antes_kg) x 100',
-      perdaHidricaLiquidaMl: '(perda_peso_kg x 1000) + volume_ingerido_ml - volume_urinario_ml',
+      perdaHidricaLiquidaMl: '(variacao_peso_kg x 1000) + volume_ingerido_ml - volume_urinario_ml; <= 0 fica nulo',
+      metaReposicaoMl: 'perda_hidrica_liquida_ml x 1.5',
       taxaSudoreseLh: '((perda_hidrica_liquida_ml / duracao_min) x 60) / 1000',
       classificacao: 'Faixas por perda percentual de peso durante exercicio'
     }
@@ -842,8 +905,11 @@ const resolveNovaGroupEnergy = ({ input, categoryKey }) => {
   return null;
 };
 
+// WI-013, decisão 6: sem percentual de ultraprocessados (total zero) não há
+// padrão a classificar; nunca "Padrão saudável".
 export const classifyNovaPattern = (percentuais = {}) => {
-  const ultra = toNumber(percentuais?.ultraprocessados) || 0;
+  const ultra = toNumber(percentuais?.ultraprocessados);
+  if (!Number.isFinite(ultra)) return { label: 'Sem classificacao', tone: 'neutral', reference: 'Classificacao NOVA por % ultraprocessados' };
   if (ultra < 10) return { label: 'Padrao saudavel', tone: 'success', reference: 'Classificacao NOVA por % ultraprocessados' };
   if (ultra < 20) return { label: 'Padrao moderado', tone: 'info', reference: 'Classificacao NOVA por % ultraprocessados' };
   if (ultra < 30) return { label: 'Padrao de risco', tone: 'warning', reference: 'Classificacao NOVA por % ultraprocessados' };
@@ -907,7 +973,7 @@ export const calculateNovaEvaluation = (input = {}) => {
   const totalBasePercentual = totalDiarioCalculado > 0 ? totalDiarioCalculado : 0;
   const percentuais = Object.keys(NOVA_CATEGORY_CATALOG).reduce((acc, key) => {
     if (!Number.isFinite(totalBasePercentual) || totalBasePercentual <= 0) {
-      acc[key] = 0;
+      acc[key] = null;
     } else {
       acc[key] = Number(((categorias[key].energiaTotal / totalBasePercentual) * 100).toFixed(2));
     }
@@ -1949,12 +2015,12 @@ const extractBiaSource = (record) => {
 
 const extractAnthropometricSource = (record) => {
   const rawWeight = extractWeightFromRecord(record);
-  const ymcaPercent = toNumber(pickFirstPath(record, [
+  const ymcaPercent = readSavedYmcaPercentFat(pickFirstPath(record, [
     'dados.percentual_gordura_ymca',
     'dados.resultados_calculados.percentualGorduraYmca',
     'resultados.percentual_gordura_ymca',
     'resultados.calculated.percentualGorduraYmca'
-  ]));
+  ])).value;
 
   const metrics = deriveBodyCompositionFromInputs({
     percentFat: ymcaPercent,
@@ -1984,6 +2050,121 @@ const hasCompositionData = (source) => Number.isFinite(source?.percentFat)
   || Number.isFinite(source?.leanMassKg);
 
 export const calculateIntegratedBodyComposition = (input = {}) => {
+  // Active assessments use only measurements entered in this instrument. The
+  // historical integration branch below remains for explicit legacy review.
+  if (input?.legacyIntegrationMode !== true) {
+    const ageYears = toNumber(input?.ageYears);
+    const sex = normalizeSex(input?.sex);
+    const weightKg = toNumber(input?.weightKg);
+    const heightCm = normalizeHeightCm(input?.heightCm);
+    const measured = input?.ownMeasurements || {};
+    const percentFat = toNumber(measured.percentFat);
+    const fatMassKg = toNumber(measured.fatMassKg);
+    const leanMassKg = toNumber(measured.leanMassKg);
+    const bodyWaterL = toNumber(measured.bodyWaterL);
+    const validPercent = Number.isFinite(percentFat) && percentFat >= 0 && percentFat <= 100 ? percentFat : null;
+    const validFatMass = Number.isFinite(fatMassKg) && fatMassKg >= 0
+      && (!Number.isFinite(weightKg) || fatMassKg <= weightKg) ? fatMassKg : null;
+    const validLeanMass = Number.isFinite(leanMassKg) && leanMassKg >= 0
+      && (!Number.isFinite(weightKg) || leanMassKg <= weightKg) ? leanMassKg : null;
+    const validBodyWater = Number.isFinite(bodyWaterL) && bodyWaterL >= 0 ? bodyWaterL : null;
+    const weightBasedConflict = Number.isFinite(weightKg) && weightKg > 0 && (
+      (Number.isFinite(validFatMass) && Number.isFinite(validLeanMass)
+        && Math.abs(validFatMass + validLeanMass - weightKg) > 1)
+      || (Number.isFinite(validPercent) && Number.isFinite(validFatMass)
+        && Math.abs(validFatMass - (validPercent / 100) * weightKg) > 1)
+      || (Number.isFinite(validPercent) && Number.isFinite(validLeanMass)
+        && Math.abs(validLeanMass - (1 - validPercent / 100) * weightKg) > 1)
+    );
+    const massBasedConflict = (!Number.isFinite(weightKg) || weightKg <= 0)
+      && Number.isFinite(validPercent) && Number.isFinite(validFatMass)
+      && Number.isFinite(validLeanMass) && validFatMass + validLeanMass > 0
+      && Math.abs(validPercent - 100 * validFatMass / (validFatMass + validLeanMass)) > 1;
+    const measurementConflict = weightBasedConflict || massBasedConflict;
+    const hasOwnMeasurement = !measurementConflict && (Number.isFinite(validPercent)
+      || Number.isFinite(validFatMass)
+      || Number.isFinite(validLeanMass));
+    const fatMassForDerivation = Number.isFinite(validFatMass)
+      ? validFatMass
+      : (Number.isFinite(validLeanMass) && Number.isFinite(weightKg) && weightKg > 0
+        ? weightKg - validLeanMass
+        : null);
+    const metrics = deriveBodyCompositionFromInputs({
+      percentFat: validPercent,
+      fatMassKg: fatMassForDerivation,
+      leanMassKg: validLeanMass,
+      weightKg: Number.isFinite(weightKg) && weightKg > 0 ? weightKg : null
+    });
+    const source = hasOwnMeasurement ? {
+      sourceId: 'medicao_propria',
+      label: 'Medidas desta avaliacao',
+      rank: 1,
+      percentFat: metrics.percentFat,
+      fatMassKg: metrics.fatMassKg,
+      leanMassKg: metrics.leanMassKg,
+      bodyWaterL: validBodyWater,
+      weightKg: metrics.weightKg,
+      heightCm,
+      measuredAt: null,
+      isRecommended: true,
+      isOfficial: true,
+      deltaVsOfficial: null
+    } : null;
+    const tmbComparative = calculateTmbComparative({
+      weightKg: metrics.weightKg ?? weightKg,
+      heightCm,
+      ageYears,
+      sex,
+      fatFreeMassKg: source?.leanMassKg,
+      activityLevel: input?.activityLevel,
+      activityFactor: input?.activityFactor,
+      population: 'tropical'
+    });
+    const selectedTmb = resolveOfficialTmbSelection({
+      comparative: tmbComparative,
+      selectedFormulaId: String(input?.selectedFormulaId || '').trim() || tmbComparative.defaultFormulaId
+    });
+    const activityFactorResolved = Number.isFinite(tmbComparative.profile.activityFactorResolved)
+      ? tmbComparative.profile.activityFactorResolved
+      : null;
+    const getKcal = Number.isFinite(selectedTmb.tmbKcal)
+      ? (selectedTmb.type === 'eer'
+        ? selectedTmb.tmbKcal
+        : (Number.isFinite(activityFactorResolved)
+          ? selectedTmb.tmbKcal * activityFactorResolved
+          : null))
+      : null;
+
+    return {
+      sources: source ? [source] : [],
+      recommendedSourceId: source?.sourceId || null,
+      selectedSourceId: source?.sourceId || null,
+      hasOverride: false,
+      official: {
+        sourceId: source?.sourceId || null,
+        sourceLabel: source?.label || null,
+        sourceReason: source ? 'Medicao informada neste instrumento.' : null,
+        indicatedFor: null,
+        percentFat: source?.percentFat ?? null,
+        fatMassKg: source?.fatMassKg ?? null,
+        leanMassKg: source?.leanMassKg ?? null,
+        waterL: source?.bodyWaterL ?? null,
+        weightKg: source?.weightKg ?? weightKg ?? null,
+        heightCm,
+        classification: sex
+          ? classifyBodyFatForBia({ sex, ageYears, percentFat: source?.percentFat })
+          : { label: 'Sexo nao informado para classificacao', tone: 'neutral', source: 'Cadastro' }
+      },
+      methodSpreadPp: null,
+      hasRelevantMethodSpread: false,
+      tmbComparative,
+      selectedTmb,
+      getKcal: Number.isFinite(getKcal) ? Number(getKcal.toFixed(0)) : null,
+      activityFactorResolved,
+      formulas: { sourceHierarchy: 'Medidas informadas neste instrumento' }
+    };
+  }
+
   const allHistory = Array.isArray(input?.allHistory) ? input.allHistory : [];
   const currentSessionId = String(input?.currentSessionId || '').trim();
   const ageYears = toNumber(input?.ageYears);
@@ -2129,6 +2310,103 @@ export const calculateIntegratedBodyComposition = (input = {}) => {
   };
 };
 
+export const restoreIntegratedCompositionSnapshot = (snapshot) => {
+  if (!snapshot || typeof snapshot !== 'object') return null;
+  const dados = snapshot.dados || {};
+  const raw = dados.dados_brutos || dados.input || {};
+  const calculated = dados.resultados_calculados || snapshot.resultados?.calculated || {};
+  const classifications = dados.classificacoes || snapshot.resultados?.output || {};
+  const formula = dados.metadados_formula || {};
+  const percentFat = toNumber(calculated.percentualGorduraOficial ?? calculated.percentual_gordura_oficial ?? dados.percentual_gordura_oficial ?? snapshot.resultados?.percentual_gordura);
+  const fatMassKg = toNumber(calculated.massaGordaOficialKg ?? calculated.massa_gorda_oficial_kg ?? dados.massa_gorda_oficial_kg ?? snapshot.resultados?.massa_gorda_kg);
+  const leanMassKg = toNumber(calculated.massaMagraOficialKg ?? calculated.massa_magra_oficial_kg ?? dados.massa_magra_oficial_kg ?? snapshot.resultados?.massa_magra_kg);
+  const waterL = toNumber(calculated.aguaCorporalOficialL ?? calculated.agua_corporal_oficial_l ?? dados.agua_corporal_oficial_l ?? snapshot.resultados?.agua_total_l);
+  const tmbKcal = toNumber(calculated.tmbSelecionadaKcal ?? calculated.tmb_selecionada_kcal ?? dados.tmb_selecionada_kcal ?? snapshot.resultados?.tmb_kcal);
+  const getKcal = toNumber(calculated.getEstimadoKcal ?? calculated.get_estimado_kcal ?? dados.get_estimado_kcal ?? snapshot.resultados?.get_kcal);
+  if (![percentFat, fatMassKg, leanMassKg, waterL, tmbKcal, getKcal].some(Number.isFinite)) return null;
+
+  const sourceId = String(dados.fonte_oficial || raw.selectedSourceId || '').trim() || null;
+  const sources = (Array.isArray(raw.fontes_disponiveis) ? raw.fontes_disponiveis : []).map((source) => ({
+    ...source,
+    percentFat: toNumber(source?.percentFat),
+    fatMassKg: toNumber(source?.fatMassKg),
+    leanMassKg: toNumber(source?.leanMassKg),
+    bodyWaterL: toNumber(source?.bodyWaterL),
+    deltaVsOfficial: null,
+    isOfficial: source?.sourceId === sourceId
+  }));
+  const sourceLabel = String(classifications.fonte_oficial || sources.find((source) => source.isOfficial)?.label || 'Resultado registrado');
+  const formulaId = String(formula.formulaId || snapshot.formulaId || '').trim() || null;
+  const formulaVersion = String(formula.formulaVersion || snapshot.formulaVersion || '').trim() || null;
+  const formulaLabel = String(formula.formulaLabel || formulaId || '').trim() || null;
+  const methodSpreadPp = toNumber(dados.comparacao?.spread_metodos_pp);
+
+  return {
+    historicalIntegration: !raw.ownMeasurements,
+    sources,
+    recommendedSourceId: sources.find((source) => source.isRecommended)?.sourceId || null,
+    selectedSourceId: sourceId,
+    hasOverride: false,
+    official: {
+      sourceId,
+      sourceLabel,
+      sourceReason: 'Resultado preservado do registro salvo.',
+      indicatedFor: null,
+      percentFat,
+      fatMassKg,
+      leanMassKg,
+      waterL,
+      weightKg: toNumber(dados.peso_kg),
+      heightCm: normalizeHeightCm(dados.estatura_cm),
+      classification: {
+        label: String(classifications.percentual_gordura || 'Sem classificacao de % gordura'),
+        tone: 'neutral',
+        source: String(classifications.referencia || 'Registro salvo')
+      }
+    },
+    methodSpreadPp,
+    hasRelevantMethodSpread: Number.isFinite(methodSpreadPp) && methodSpreadPp > 3,
+    tmbComparative: { rows: [], defaultFormulaId: formulaId },
+    selectedTmb: {
+      formulaId,
+      formulaVersion,
+      tmbKcal,
+      selected: formulaLabel ? { label: formulaLabel } : null
+    },
+    getKcal,
+    activityFactorResolved: toNumber(dados.fator_atividade_personalizado),
+    formulas: { sourceHierarchy: 'Resultado preservado do registro salvo' }
+  };
+};
+
+// Total semanal do registro de atividades do GET (WI-013, decisão 4). Só conta
+// atividade com duração positiva e gasto calculado. Sem nenhuma, o total é
+// null, não 0: um 0 virava PAL real 1,0 e anulava o nível de atividade.
+export const sumWeeklyActivityExpenditure = (rows) => {
+  if (!Array.isArray(rows)) return null;
+  let total = 0;
+  let counted = 0;
+  rows.forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    const durationHours = toNumber(row.duracaoHoras ?? row.duracao_horas);
+    const expenditureKcal = toNumber(row.gastoKcal ?? row.gasto_kcal);
+    if (!Number.isFinite(durationHours) || durationHours <= 0 || !Number.isFinite(expenditureKcal)) return;
+    total += expenditureKcal;
+    counted += 1;
+  });
+  return counted > 0 ? Number(total.toFixed(2)) : null;
+};
+
+// PAL real = 1 + gasto semanal / (TMB x 7). Sem total semanal, é null e vale o
+// fator do nível de atividade escolhido.
+export const calculateWeeklyPal = ({ weeklyActivityKcal, tmbKcal } = {}) => {
+  const weekly = toNumber(weeklyActivityKcal);
+  const tmb = toNumber(tmbKcal);
+  if (!Number.isFinite(weekly) || !Number.isFinite(tmb) || tmb <= 0) return null;
+  const pal = 1 + (weekly / (tmb * 7));
+  return Number.isFinite(pal) ? Number(pal.toFixed(3)) : null;
+};
+
 const GET_ACTIVITY_FACTORS = {
   sedentario: { factor: 1.2, label: 'Sedentario' },
   levemente_ativo: { factor: 1.375, label: 'Levemente ativo' },
@@ -2160,68 +2438,18 @@ const resolveGetActivityFactor = ({ activityLevel, customActivityFactor }) => {
   };
 };
 
-const findLatestEvaluationByType = ({ allHistory, type, sessionId }) => {
-  const normalizedType = normalizeEvaluationType(type);
-  const rows = (Array.isArray(allHistory) ? allHistory : [])
-    .filter((record) => normalizeEvaluationType(record?.tipo) === normalizedType)
-    .filter((record) => (sessionId ? String(record?.sessaoId || '').trim() === String(sessionId).trim() : true))
-    .sort((a, b) => resolveRecordTimestamp(b) - resolveRecordTimestamp(a));
-  return rows[0] || null;
-};
-
-const extractIntegratedTmbBase = (record) => ({
-  tmbKcal: toNumber(pickFirstPath(record, [
-    'dados.resultados_calculados.tmbSelecionadaKcal',
-    'dados.resultados_calculados.tmbSelecionada',
-    'dados.tmbSelecionadaKcal',
-    'dados.tmbSelecionada',
-    'resultados.tmb_kcal',
-    'resultados.tmbSelecionada',
-    'resultados.calculated.tmbKcal'
-  ])),
-  getKcal: toNumber(pickFirstPath(record, [
-    'dados.resultados_calculados.getEstimadoKcal',
-    'dados.get_estimado_kcal',
-    'resultados.get_kcal',
-    'resultados.calculated.getKcal'
-  ])),
-  formulaId: String(pickFirstPath(record, [
-    'dados.metadados_formula.formulaId',
-    'dados.formulaId'
-  ]) || ''),
-  formulaVersion: String(pickFirstPath(record, [
-    'dados.metadados_formula.formulaVersion',
-    'dados.formulaVersion'
-  ]) || ''),
-  formulaLabel: String(pickFirstPath(record, [
-    'dados.metadados_formula.formulaLabel',
-    'dados.metadados_formula.label'
-  ]) || ''),
-  sourceLabel: String(pickFirstPath(record, [
-    'dados.classificacoes.fonte_oficial',
-    'dados.fonte_oficial'
-  ]) || ''),
-  sourceRecordId: record?.id || null
-});
-
 export const calculateGetEvaluation = (input = {}) => {
-  const allHistory = Array.isArray(input?.allHistory) ? input.allHistory : [];
-  const currentSessionId = String(input?.currentSessionId || '').trim();
   const sex = normalizeSex(input?.sex);
-
-  const integratedInSession = findLatestEvaluationByType({
-    allHistory,
-    type: 'composicao_corporal_integrada',
-    sessionId: currentSessionId
+  const comparative = calculateTmbComparative({
+    weightKg: input?.weightKg,
+    heightCm: input?.heightCm,
+    ageYears: input?.ageYears,
+    sex,
+    population: 'tropical'
   });
-  const integratedGlobal = integratedInSession || findLatestEvaluationByType({
-    allHistory,
-    type: 'composicao_corporal_integrada',
-    sessionId: ''
-  });
-
-  const integratedBase = extractIntegratedTmbBase(integratedGlobal);
-  const manualTmbKcal = toNumber(input?.manualTmbKcal);
+  const ownBase = resolveOfficialTmbSelection({ comparative });
+  const manualRaw = toNumber(input?.manualTmbKcal);
+  const manualTmbKcal = Number.isFinite(manualRaw) && manualRaw > 0 ? manualRaw : null;
   const activityFactor = resolveGetActivityFactor({
     activityLevel: input?.activityLevel,
     customActivityFactor: input?.customActivityFactor
@@ -2229,10 +2457,10 @@ export const calculateGetEvaluation = (input = {}) => {
 
   const tmbUsedKcal = Number.isFinite(manualTmbKcal)
     ? manualTmbKcal
-    : integratedBase.tmbKcal;
-  const formulaId = Number.isFinite(manualTmbKcal) ? 'manual_override' : (integratedBase.formulaId || null);
-  const formulaVersion = Number.isFinite(manualTmbKcal) ? '1.0.0' : (integratedBase.formulaVersion || null);
-  const formulaLabel = Number.isFinite(manualTmbKcal) ? 'TMB manual (override)' : (integratedBase.formulaLabel || null);
+    : ownBase.tmbKcal;
+  const formulaId = Number.isFinite(manualTmbKcal) ? 'manual_override' : ownBase.formulaId;
+  const formulaVersion = Number.isFinite(manualTmbKcal) ? '1.0.0' : ownBase.formulaVersion;
+  const formulaLabel = Number.isFinite(manualTmbKcal) ? 'TMB informada neste instrumento' : (ownBase.selected?.label || null);
 
   const formulaIsEer = formulaId === 'dri_iom_2005_eer';
   const getKcal = Number.isFinite(tmbUsedKcal)
@@ -2254,7 +2482,7 @@ export const calculateGetEvaluation = (input = {}) => {
 
   const warnings = [];
   if (!Number.isFinite(tmbUsedKcal)) {
-    warnings.push('TMB indisponivel. Salve a composicao corporal integrada ou informe TMB manual.');
+    warnings.push('TMB indisponivel. Confira peso, estatura, idade e sexo ou informe a TMB neste instrumento.');
   }
   if (activityFactor.hasCustomOutOfRange) {
     warnings.push('Fator de atividade personalizado fora da faixa 0.8-2.5. Preset aplicado automaticamente.');
@@ -2268,16 +2496,17 @@ export const calculateGetEvaluation = (input = {}) => {
 
   return {
     base: {
-      integratedRecordId: integratedBase.sourceRecordId,
-      tmbFromIntegratedKcal: Number.isFinite(integratedBase.tmbKcal) ? integratedBase.tmbKcal : null,
+      integratedRecordId: null,
+      tmbFromIntegratedKcal: null,
+      tmbEstimatedKcal: Number.isFinite(ownBase.tmbKcal) ? ownBase.tmbKcal : null,
       manualTmbKcal: Number.isFinite(manualTmbKcal) ? manualTmbKcal : null,
       tmbUsedKcal: Number.isFinite(tmbUsedKcal) ? tmbUsedKcal : null,
       formulaId,
       formulaVersion,
       formulaLabel,
       formulaIsEer,
-      sourceLabel: integratedBase.sourceLabel || null,
-      sourceGetKcal: Number.isFinite(integratedBase.getKcal) ? integratedBase.getKcal : null
+      sourceLabel: Number.isFinite(manualTmbKcal) ? 'Informada neste instrumento' : 'Perfil cadastral e medidas compartilhadas',
+      sourceGetKcal: null
     },
     activity: {
       level: String(input?.activityLevel || 'sedentario').trim().toLowerCase(),
@@ -3017,6 +3246,19 @@ const classifyLabValue = ({ value, referenceMin, referenceMax }) => {
   return 'sem_referencia';
 };
 
+// Tom do aviso de conduta dos Exames a partir do status real do painel
+// (WI-013, decisão 2): alterado é no mínimo atenção, e risco quando o escore
+// já indica (>= 70); limítrofe é atenção; normal é ok; sem classificação é
+// "sem dados", nunca "consistente".
+export const resolveLaboratoryConductTone = ({ statusPainel, scoreRisco } = {}) => {
+  const token = String(statusPainel || '').trim().toLowerCase();
+  const score = toNumber(scoreRisco);
+  if (token === 'alterado') return Number.isFinite(score) && score >= 70 ? 'risk' : 'warn';
+  if (token === 'limitrofe') return 'warn';
+  if (token === 'normal') return 'ok';
+  return 'sem_dados';
+};
+
 export const calculateLaboratoryEvaluation = (input = {}) => {
   const panel = String(input?.painel || 'geral').trim().toLowerCase() || 'geral';
   const baseDate = normalizeIsoDate(input?.dataAvaliacao);
@@ -3140,44 +3382,53 @@ export const calculateEvolutionReturnEvaluation = (input = {}) => {
   const planWeight = toNumber(input?.weights?.adesaoPlanoAlimentar) ?? 0.5;
   const activityWeight = toNumber(input?.weights?.adesaoAtividadeFisica) ?? 0.35;
   const perceivedWeight = toNumber(input?.weights?.respostaPercebida) ?? 0.15;
-  const totalWeight = planWeight + activityWeight + perceivedWeight;
 
-  const normalizedPlan = Number.isFinite(adesaoPlanoAlimentar) ? clampPercent(adesaoPlanoAlimentar) : 0;
-  const normalizedActivity = Number.isFinite(adesaoAtividadeFisica) ? clampPercent(adesaoAtividadeFisica) : 0;
+  const normalizedPlan = Number.isFinite(adesaoPlanoAlimentar) ? clampPercent(adesaoPlanoAlimentar) : null;
+  const normalizedActivity = Number.isFinite(adesaoAtividadeFisica) ? clampPercent(adesaoAtividadeFisica) : null;
   const normalizedPerceived = Number.isFinite(respostaPercebida)
     ? clampPercent(((respostaPercebida - 1) / 4) * 100)
-    : 0;
+    : null;
 
-  const weightedScore = totalWeight > 0
-    ? (
-      ((normalizedPlan * planWeight)
-      + (normalizedActivity * activityWeight)
-      + (normalizedPerceived * perceivedWeight)) / totalWeight
-    )
-    : 0;
+  // WI-013, decisão 3: componente ausente sai do cálculo e os pesos se
+  // redistribuem entre os presentes. Sem nenhum, escore e prioridade são null.
+  const presentComponents = [
+    { value: normalizedPlan, weight: planWeight },
+    { value: normalizedActivity, weight: activityWeight },
+    { value: normalizedPerceived, weight: perceivedWeight }
+  ].filter((item) => Number.isFinite(item.value) && Number.isFinite(item.weight) && item.weight > 0);
+  const presentWeight = presentComponents.reduce((sum, item) => sum + item.weight, 0);
 
-  const scoreAdesaoGeral = Number(weightedScore.toFixed(2));
+  const scoreAdesaoGeral = presentWeight > 0
+    ? Number((presentComponents.reduce((sum, item) => sum + (item.value * item.weight), 0) / presentWeight).toFixed(2))
+    : null;
   const hasClinicalSignal = intercorrencias.length >= 15 || sintomas.length >= 15;
 
-  const prioridadeRetorno = scoreAdesaoGeral < 50 || hasClinicalSignal
-    ? 'alta'
-    : scoreAdesaoGeral < 75
-      ? 'moderada'
-      : 'baixa';
+  const prioridadeRetorno = !Number.isFinite(scoreAdesaoGeral)
+    ? null
+    : scoreAdesaoGeral < 50 || hasClinicalSignal
+      ? 'alta'
+      : scoreAdesaoGeral < 75
+        ? 'moderada'
+        : 'baixa';
 
+  const semComponenteMensagem = 'Informe adesao alimentar e/ou adesao de atividade fisica para calcular score.';
   const resumoObjetivos = (objectives.length ? objectives : ['Plano atual']).map((objetivo) => ({
     objetivo,
-    status: scoreAdesaoGeral >= 75 ? 'melhora' : scoreAdesaoGeral >= 50 ? 'estavel' : 'piora',
-    justificativa: prioridadeRetorno === 'alta'
-      ? 'Baixa adesao global ou intercorrencias relevantes.'
-      : prioridadeRetorno === 'moderada'
-        ? 'Adesao parcial, manter ajustes progressivos.'
-        : 'Boa adesao e resposta global favoravel.'
+    status: !Number.isFinite(scoreAdesaoGeral)
+      ? 'sem_classificacao'
+      : scoreAdesaoGeral >= 75 ? 'melhora' : scoreAdesaoGeral >= 50 ? 'estavel' : 'piora',
+    justificativa: !prioridadeRetorno
+      ? semComponenteMensagem
+      : prioridadeRetorno === 'alta'
+        ? 'Baixa adesao global ou intercorrencias relevantes.'
+        : prioridadeRetorno === 'moderada'
+          ? 'Adesao parcial, manter ajustes progressivos.'
+          : 'Boa adesao e resposta global favoravel.'
   }));
 
   const warnings = [];
   if (!Number.isFinite(adesaoPlanoAlimentar) && !Number.isFinite(adesaoAtividadeFisica)) {
-    warnings.push('Informe adesao alimentar e/ou adesao de atividade fisica para calcular score.');
+    warnings.push(semComponenteMensagem);
   }
   if (!Number.isFinite(respostaPercebida)) {
     warnings.push('Resposta percebida nao informada. Score calculado sem esse componente.');
@@ -3203,7 +3454,7 @@ export const calculateEvolutionReturnEvaluation = (input = {}) => {
     },
     warnings,
     formulas: {
-      scoreAdesaoGeral: 'media ponderada de adesao alimentar, atividade fisica e resposta percebida',
+      scoreAdesaoGeral: 'media ponderada de adesao alimentar, atividade fisica e resposta percebida; componente ausente sai e os pesos se redistribuem',
       prioridadeRetorno: 'alta: score < 50 ou intercorrencias/sintomas relevantes | moderada: 50-74 | baixa: >=75'
     }
   };

@@ -1,4 +1,7 @@
-import { getEvaluationTypeLabel } from './evaluationSummaryUtils';
+import {
+  formatEnergyAvailabilityClassification,
+  getEvaluationTypeLabel
+} from './evaluationSummaryUtils';
 import {
   buildBioimpVariation,
   evaluateBioimpedanceSnapshot,
@@ -151,6 +154,55 @@ const mapWaistTone = (waist) => {
   if (waist <= 102) return 'warning';
   return 'danger';
 };
+
+// Os tokens gravados (otima, risco_relativo, reds_estabelecido; zona_segura...)
+// não mudam: muda só o texto exibido. O texto da faixa de disponibilidade
+// energética vem de evaluationSummaryUtils (glossário do WI-013). Zona e fase
+// desconhecidas aparecem por extenso, nunca como código cru.
+const ENERGY_AVAILABILITY_TONES = {
+  otima: 'success',
+  risco_relativo: 'warning',
+  reds_estabelecido: 'danger'
+};
+
+const ACWR_ZONE_LABELS = {
+  subcarga: 'Subcarga',
+  zona_segura: 'Zona segura',
+  zona_alerta: 'Zona de alerta',
+  zona_risco: 'Zona de risco'
+};
+
+// Fases do formulário profissional e do autorrelato do atleta.
+const TRAINING_PHASE_LABELS = {
+  preparacao_geral: 'Preparação geral',
+  preparacao_especifica: 'Preparação específica',
+  pre_competicao: 'Pré-competição',
+  competicao: 'Competição',
+  transicao: 'Transição',
+  taper: 'Taper',
+  pre_temporada: 'Pré-temporada',
+  temporada_competitiva: 'Temporada competitiva',
+  pos_temporada: 'Pós-temporada',
+  ferias: 'Férias',
+  lesionado: 'Período de lesão'
+};
+
+const humanizeToken = (value) => {
+  const text = String(value || '').replace(/_/g, ' ').trim();
+  return text ? `${text.charAt(0).toUpperCase()}${text.slice(1)}` : '';
+};
+
+const labelFromGlossary = (labels) => (value) => {
+  const token = normalizeToken(value);
+  if (!token) return null;
+  return labels[token] || humanizeToken(value);
+};
+
+export const formatAcwrZone = labelFromGlossary(ACWR_ZONE_LABELS);
+export const formatTrainingPhase = labelFromGlossary(TRAINING_PHASE_LABELS);
+
+// Tipos cujo resultado não admite leitura de melhora ou piora.
+const NO_CLINICAL_COMPARISON_TYPES = new Set(['composicao_corporal_imagem']);
 
 const resolveByType = (evaluation) => {
   const type = normalizeToken(evaluation?.tipo);
@@ -641,14 +693,77 @@ const resolveByType = (evaluation) => {
     ]) || 'Nao informada';
 
     return {
-      title: 'Score de adesao',
+      title: 'Aplicação da Dieta',
       value: score,
       unit: '%',
       classification: String(prioridade).replace(/_/g, ' '),
       tone: classifyToneByText(prioridade, score !== null ? 'info' : 'neutral'),
-      interpretation: 'Resumo longitudinal da adesao e necessidade de retorno.',
+      interpretation: 'Resumo longitudinal da aplicação da dieta e necessidade de retorno.',
       supportLabel: 'Proxima avaliacao',
       supportValue: String(proximaAvaliacao)
+    };
+  }
+
+  // Lê a DE e a classificação já gravadas; não recalcula nem classifica.
+  if (type === 'triagem_reds') {
+    const disponibilidade = toNumber(pickFirst(evaluation, [
+      'resultados.calculated.disponibilidadeEnergetica',
+      'resultados.disponibilidadeEnergetica',
+      'resultados.calculated.DE',
+      'resultados.DE',
+      'dados.disponibilidadeEnergetica'
+    ]));
+    const classificationToken = pickFirst(evaluation, [
+      'resultados.output.classificacaoDE',
+      'resultados.calculated.classificacaoDE',
+      'resultados.classificacaoDE',
+      'dados.classificacaoDE'
+    ]);
+    return {
+      title: 'Disponibilidade energética',
+      value: disponibilidade,
+      unit: 'kcal/kg MLG/dia',
+      classification: formatEnergyAvailabilityClassification(classificationToken) || 'Sem classificação',
+      tone: ENERGY_AVAILABILITY_TONES[normalizeToken(classificationToken)] || 'neutral',
+      interpretation: 'Disponibilidade energética: (ingestão − gasto do exercício) ÷ massa livre de gordura (MLG).',
+      supportLabel: 'Faixas (kcal/kg MLG/dia)',
+      supportValue: '≥ 45 adequada · 30 a < 45 reduzida · < 30 baixa'
+    };
+  }
+
+  // Estimativa experimental (WI-008): só o que o processador gravou, sem
+  // classificação clínica, sem tom e sem comparação de melhora ou piora.
+  if (type === 'composicao_corporal_imagem') {
+    const gordura = toNumber(pickFirst(evaluation, [
+      'resultados.percGordura',
+      'resultados.calculated.percGordura'
+    ]));
+    const massaMagra = toNumber(pickFirst(evaluation, [
+      'resultados.massaMagra',
+      'resultados.calculated.massaMagra'
+    ]));
+    const version = pickFirst(evaluation, [
+      'resultados.algoritmoVersion',
+      'resultados.algorithmVersion'
+    ]);
+    const versionText = version && normalizeToken(version) !== 'nao_informada'
+      ? `algoritmo ${version}`
+      : 'versão do algoritmo não informada';
+    const calibration = pickFirst(evaluation, ['resultados.calibracao.confianca_geral']);
+    const calibrationText = calibration
+      ? `calibração com confiança ${String(calibration).replace(/_/g, ' ')} informada pelo processador`
+      : 'qualidade da calibração não informada';
+    return {
+      title: 'Gordura corporal estimada',
+      value: gordura,
+      unit: '%',
+      classification: gordura !== null ? 'Estimativa experimental' : 'Sem resultado processado',
+      tone: 'neutral',
+      interpretation: gordura !== null
+        ? `Estimativa por imagem (${versionText}; ${calibrationText}). Validação clínica não comprovada; não substitui medidas de referência.`
+        : 'Estimativa experimental por imagem, ainda sem resultado processado.',
+      supportLabel: 'Massa magra estimada',
+      supportValue: massaMagra !== null ? `${massaMagra.toFixed(1)} kg` : 'Não informada'
     };
   }
 
@@ -665,6 +780,14 @@ const resolveByType = (evaluation) => {
 };
 
 const buildVariation = (currentMetric, previousMetric, type) => {
+  if (NO_CLINICAL_COMPARISON_TYPES.has(type)) {
+    return {
+      available: false,
+      label: 'Sem comparação clínica',
+      direction: 'flat',
+      delta: null
+    };
+  }
   const currentValue = toNumber(currentMetric?.value);
   const previousValue = toNumber(previousMetric?.value);
   const deltas = buildComparativeDeltas({
@@ -1036,7 +1159,7 @@ export const buildEvaluationTimelineSummary = (evaluation) => {
       'classificacao'
     ]);
     const blocks = [];
-    if (Number.isFinite(score)) blocks.push(`Adesao ${score.toFixed(0)}%`);
+    if (Number.isFinite(score)) blocks.push(`Aplicação da Dieta ${score.toFixed(0)}%`);
     if (prioridade) blocks.push(String(prioridade).replace(/_/g, ' '));
     return blocks.join(' | ');
   }

@@ -18,9 +18,12 @@ import React from 'react';
  *     badge={<span className="eval-date-badge">Salvo 12/04/2026</span>}
  *   />
  */
+// h3: o nivel do titulo do modulo no contrato
+// (docs/implementacao/avaliacoes-v2/contrato-avaliacao.md). O icone e
+// decorativo; o titulo ja diz o que e.
 const EvaluationHeader = ({ icon, title, subtitle, badge }) => (
   <div className="eval-header">
-    <div className="eval-icon">
+    <div className="eval-icon" aria-hidden="true">
       {icon}
     </div>
     <div className="eval-header-text">

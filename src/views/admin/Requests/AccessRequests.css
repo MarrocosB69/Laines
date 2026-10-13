@@ -1,411 +1,939 @@
-﻿.access-requests {
-  --req-surface: color-mix(in srgb, var(--admin-surface, #ffffff) 94%, #f8fbff 6%);
-  --req-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #f3f8fd) 90%, #ffffff 10%);
-  --req-border: color-mix(in srgb, var(--admin-border, rgba(20, 53, 84, 0.14)) 84%, transparent);
-  --req-text: var(--admin-text, #143554);
-  --req-muted: var(--admin-muted, #5a728b);
-  --req-shadow: var(--admin-shadow-soft, 0 18px 42px -34px rgba(20, 53, 84, 0.45));
-  --req-shadow-strong: 0 26px 52px -36px rgba(20, 53, 84, 0.38);
-  --req-focus: rgba(47, 111, 166, 0.24);
+/* Solicitações de acesso (AccessRequests.jsx), na direção "Energia e
+   velocidade" da landing (docs/design/landing-guia-visual.md, seção
+   "Direção vigente"; docs/implementacao/telas-v2/change-intent.md, onda D1).
+   Mesmo desenho da Pesquisa (ResearchProjects.css), que usa a mesma Table
+   de admin/common: cartões brancos com --lt-radius-card, título na voz de
+   campanha, alvos de 44 px, campo de 48 px e foco com --lt-focus-ring.
+   Todo texto fica sobre superfície própria (branco, campo ou
+   --lt-color-track-tint), então o contraste vale também com o modo escuro
+   do portal, que só escurece o fundo da página.
+
+   Tudo escopado em `.access-requests`. Armadilhas globais redeclaradas
+   (src/index.css e src/styles/theme.css, que a onda A muda em paralelo):
+   h1…h6 com fonte e cor próprias, `p` com entrelinha 1,6, `button
+   { white-space: nowrap; display: inline-flex }`, `*:focus-visible`,
+   `.stat-card` e `.status-badge` globais, `tbody tr:hover` e
+   `input:not([type=checkbox]):not([type=radio])` com especificidade 0,2,1.
+   As utilitárias do Tailwind na casca da Table ficam numa camada (@layer)
+   e perdem para qualquer regra daqui.
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs. Nenhum tom
+   novo: só tokens --lt-* e o par de "atenção" já medido em painel.css.
+
+   As fontes vêm aqui pelo mesmo motivo de painel.css: ao recarregar direto
+   num portal, a folha da landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.access-requests {
+  --req-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --req-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --req-atencao-fundo */
+  --req-atencao-fundo: #fff7ed;
+  --req-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+  --req-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
 
   display: flex;
   flex-direction: column;
-  gap: clamp(0.9rem, 1.8vw, 1.3rem);
-  color: var(--req-text);
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.admin-view.dark-mode .access-requests {
-  --req-surface: color-mix(in srgb, var(--admin-surface, #17273a) 95%, transparent 5%);
-  --req-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #1d3046) 92%, transparent 8%);
-  --req-border: color-mix(in srgb, var(--admin-border, rgba(148, 163, 184, 0.24)) 85%, transparent);
-  --req-shadow: 0 20px 40px -32px rgba(2, 12, 24, 0.8);
-  --req-shadow-strong: 0 30px 58px -40px rgba(2, 12, 24, 0.9);
-  --req-focus: rgba(127, 197, 232, 0.26);
+/* Reset dos globais de título e parágrafo; cada peça abaixo dá o resto. */
+.access-requests :is(h2, h4) {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
+.access-requests p { margin: 0; line-height: var(--lt-leading-normal); }
+
+/* ── Cabeçalho: título na voz de campanha ────────────────────────────── */
 .access-requests .requests-header {
-  border-radius: 1.18rem;
-  border: 1px solid var(--req-border);
-  background: linear-gradient(150deg, var(--req-surface) 0%, var(--req-surface-soft) 100%);
-  box-shadow: var(--req-shadow);
-  padding: clamp(0.9rem, 2vw, 1.3rem);
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  padding: var(--req-respiro) var(--req-respiro) calc(var(--req-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--req-sombra);
 }
 
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.access-requests .requests-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.access-requests .requests-header .header-left { min-width: 0; }
+
+/* O sobretítulo "SOLICITAÇÕES": apoio sobre branco (6,59:1), alinhado ao
+   texto do título; o traço é só gráfico. */
 .access-requests .requests-header .header-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.34rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.09em;
+  gap: var(--lt-space-2);
+  margin: 0 0 var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--req-muted) 88%, transparent);
 }
 
 .access-requests .requests-header .badge-line {
-  width: 1.4rem;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #4d9c6c 0%, #2f6fa6 100%);
+  flex: none;
+  width: 1.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+  transform: skewX(-20deg);
 }
 
-.access-requests .requests-header h1 {
-  margin: 0.26rem 0 0.16rem;
-  font-size: clamp(1.2rem, 2.1vw, 1.58rem);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--req-text);
+.access-requests .requests-header h2 {
+  position: relative;
+  padding: 0 0.1em 0 0.32em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o gesto de .painel-cabecalho__titulo::before. */
+.access-requests .requests-header h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
 }
 
 .access-requests .requests-header p {
-  margin: 0;
-  color: var(--req-muted);
-  font-size: 0.87rem;
+  margin-top: var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
 }
 
+/* ── Credenciais depois de aprovar ───────────────────────────────────
+   Cartão branco com raia azul à esquerda: é aviso, não erro. O e-mail de
+   login fica numa célula de campo (13,19:1) com o botão de copiar ao lado. */
+.access-requests .request-credentials {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--req-respiro) var(--req-respiro) var(--req-respiro) calc(var(--req-respiro) + 0.375rem);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--req-sombra);
+}
+
+.access-requests .request-credentials::before {
+  content: '';
+  position: absolute;
+  top: var(--lt-space-5);
+  bottom: var(--lt-space-5);
+  left: 0.625rem;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-12deg);
+}
+
+.access-requests .request-credentials__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  margin: 0;
+}
+
+.access-requests .request-credentials__header > div { flex: 1 1 14rem; min-width: 0; }
+
+/* Rótulos em caixa alta: apoio sobre branco, 6,59:1. */
+.access-requests .request-credentials__eyebrow,
+.access-requests .request-credentials__label {
+  display: block;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.access-requests .request-credentials h2 {
+  margin-top: var(--lt-space-1);
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+/* "Ocultar": ação secundária em contorno, 44 px; azul sobre branco 6,33:1. */
+.access-requests .request-credentials__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+.access-requests .request-credentials__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.access-requests .request-credentials__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.access-requests .request-credentials__value {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: 48px;
+  margin: 0;
+  padding: var(--lt-space-1) var(--lt-space-1) var(--lt-space-1) var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.access-requests .request-credentials__value > svg { flex: none; color: var(--lt-color-brand-blue); }
+
+.access-requests .request-credentials__value span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Copiar: só ícone (o nome vem do aria-label), 44 px, azul 5,93:1 sobre
+   o campo. */
+.access-requests .request-credentials__copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-brand-blue);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+@media (hover: hover) {
+  .access-requests .request-credentials__close:hover,
+  .access-requests .request-credentials__copy:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+}
+
+/* O aviso de entrega do link: tinta sobre --lt-color-track-tint (12,39:1). */
+.access-requests .request-credentials__warning {
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* ── Contagens: o cartão de .painel-indicador, sem ação ───────────────
+   0,3,0 vence `.stat-card` e `.stat-card:hover` de theme.css. O rótulo
+   vem antes do número, na ordem do JSX. */
 .access-requests .requests-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 0.66rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
 .access-requests .requests-stats .stat-card {
-  border: 1px solid var(--req-border);
-  border-radius: 1rem;
-  background: var(--req-surface);
-  box-shadow: var(--req-shadow);
-  padding: 0.78rem 0.86rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--req-sombra);
+  color: var(--lt-color-text);
+  transform: none;
+  transition: none;
+}
+
+.access-requests .requests-stats .stat-card:hover { transform: none; box-shadow: var(--req-sombra); }
+
+/* O acento curto e inclinado na borda de cima, como o do indicador. */
+.access-requests .requests-stats .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-5);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-20deg);
 }
 
 .access-requests .requests-stats .stat-label {
-  font-size: 0.71rem;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--req-muted) 88%, transparent);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
 }
 
 .access-requests .requests-stats .stat-value {
-  margin-top: 0.24rem;
-  font-size: 1.45rem;
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.875rem, 2.6vw, 2.375rem);
   line-height: 1;
-  font-weight: 800;
-  color: var(--req-text);
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ── Busca e filtros ─────────────────────────────────────────────────── */
 .access-requests .requests-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.65rem;
-  border: 1px solid var(--req-border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--req-surface-soft) 76%, transparent);
-  padding: 0.68rem;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--req-sombra);
 }
 
-.access-requests .requests-search {
-  flex: 1;
-  min-width: 240px;
-  min-height: 2.6rem;
-  border-radius: 0.82rem;
-  border: 1px solid var(--req-border);
-  background: var(--req-surface);
-  color: var(--req-text);
-  font-size: 0.84rem;
-  font-weight: 500;
-  padding: 0.56rem 0.74rem;
+/* Campo de 48 px no padrão da inscrição: borda --lt-color-border-field
+   (3,91:1, WCAG 1.4.11) e texto a 16 px, que evita o zoom do iOS. 0,3,0
+   vence `input:not(...):not(...)` de theme.css (0,2,1). */
+.access-requests .requests-controls .requests-search {
+  flex: 1 1 18rem;
+  box-sizing: border-box;
+  width: auto;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  text-overflow: ellipsis;
+  transition: border-color 160ms, box-shadow 160ms;
 }
 
-.access-requests .requests-search::placeholder {
-  color: color-mix(in srgb, var(--req-muted) 82%, transparent);
+/* O placeholder: --lt-color-text-subtle, 5,60:1 sobre branco. */
+.access-requests .requests-controls .requests-search::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
 }
 
-.access-requests .requests-search:focus,
-.access-requests .requests-filters .filter-btn:focus-visible,
-.access-requests .request-actions .action-btn:focus-visible {
+.access-requests .requests-controls .requests-search:focus {
   outline: none;
-  box-shadow: 0 0 0 3px var(--req-focus);
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
 }
 
-.access-requests .requests-search:focus {
-  border-color: color-mix(in srgb, var(--req-border) 60%, #2f6fa6 40%);
-}
-
+/* Filtros de status: selos de 44 px. O ativo tem fundo claro, borda azul
+   e aria-pressed; a contagem vai ao lado. */
 .access-requests .requests-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.42rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
 .access-requests .requests-filters .filter-btn {
-  min-height: 2.34rem;
-  border-radius: 999px;
-  border: 1px solid var(--req-border);
-  background: var(--req-surface);
-  color: color-mix(in srgb, var(--req-text) 75%, transparent);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 0 0.7rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-3) 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text); /* 14,09:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  transition: background-color 160ms, border-color 160ms;
 }
 
 .access-requests .requests-filters .filter-btn .count {
-  border-radius: 999px;
-  border: 1px solid var(--req-border);
-  background: var(--req-surface-soft);
-  color: color-mix(in srgb, var(--req-muted) 86%, transparent);
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 0.1rem 0.36rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted); /* 6,17:1 */
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.access-requests .requests-filters .filter-btn:hover,
-.access-requests .requests-filters .filter-btn.active {
-  border-color: color-mix(in srgb, var(--req-border) 70%, #4d9c6c 30%);
-  background: color-mix(in srgb, #4d9c6c 12%, transparent);
-  color: var(--req-text);
+@media (hover: hover) {
+  .access-requests .requests-filters .filter-btn:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
 }
 
+/* Ativo: borda azul e fundo claro (tinta 12,39:1), não só a cor; o leitor
+   de tela ouve aria-pressed. */
+.access-requests .requests-filters .filter-btn[aria-pressed="true"] {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--lt-color-brand-blue);
+}
+
+.access-requests .requests-filters .filter-btn[aria-pressed="true"] .count { background: var(--lt-color-surface); }
+
+/* ── Tabela de solicitações (Table de admin/common) ───────────────────
+   O cartão é este; a casca da Table (utilitárias do Tailwind, em camada)
+   perde borda, raio e sombra. `table-layout: fixed` segura as larguras
+   das colunas (35/25/20/20 %, vindas do JSX): um e-mail longo quebra em
+   vez de alargar a tabela. */
 .access-requests .requests-table {
-  border: 1px solid var(--req-border);
-  border-radius: 1.15rem;
-  background: var(--req-surface);
-  box-shadow: var(--req-shadow-strong);
+  container: solicitacoes-tabela / inline-size;
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--req-sombra);
   overflow: hidden;
-  padding: 0.34rem;
+}
+
+.access-requests .requests-table > div {
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  box-shadow: none;
 }
 
 .access-requests .requests-table table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
+  table-layout: fixed;
 }
 
+/* Cabeçalho da coluna: apoio sobre campo em caixa alta, 6,17:1. 0,2,2
+   vence `thead th` global e as utilitárias da Table. */
 .access-requests .requests-table thead th {
-  color: color-mix(in srgb, var(--req-muted) 86%, transparent);
-  background: color-mix(in srgb, var(--req-surface-soft) 86%, transparent);
-  border-bottom: 1px solid var(--req-border);
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
+
+.access-requests .requests-table thead th:first-child { border-radius: var(--lt-radius-control) 0 0 var(--lt-radius-control); }
+.access-requests .requests-table thead th:last-child { border-radius: 0 var(--lt-radius-control) var(--lt-radius-control) 0; }
 
 .access-requests .requests-table tbody td {
-  border-bottom: 1px solid color-mix(in srgb, var(--req-border) 72%, transparent);
+  padding: var(--lt-space-4);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  vertical-align: top;
+  overflow-wrap: anywhere;
 }
 
-.access-requests .requests-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--req-surface-soft) 72%, transparent);
+.access-requests .requests-table tbody tr:last-child td { border-bottom: 0; }
+
+/* A linha não é clicável (a Table não recebe onRowClick): sem o fundo de
+   hover de theme.css e das utilitárias, que sugeriria uma ação. */
+.access-requests .requests-table tbody tr,
+.access-requests .requests-table tbody tr:hover,
+.access-requests .requests-table tbody tr:hover td { background: transparent; }
+
+/* Carregando: blocos parados no tom de .painel-esqueleto; o pulso fica
+   no fim do arquivo, só sem preferência por menos movimento. */
+.access-requests .requests-table .skeleton {
+  border-radius: var(--lt-radius-control);
+  background: #e7ecf3;
+  animation: none;
 }
 
+.access-requests .requests-table .skeleton-line { height: 1rem; }
+.access-requests .requests-table .skeleton-card { height: 4.5rem; }
+
+/* Vazio da Table (`.laines-feedback-state`): o tom de .painel-estado. */
+.access-requests .requests-table .laines-feedback-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  text-align: center;
+}
+
+.access-requests .requests-table .laines-feedback-state svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--lt-color-brand-blue);
+}
+
+.access-requests .requests-table .laines-feedback-state strong {
+  margin: 0;
+  color: var(--lt-color-text); /* 13,19:1 */
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.access-requests .requests-table .laines-feedback-state p {
+  max-width: 36rem;
+  color: var(--lt-color-text-muted); /* 6,17:1 */
+  font-size: var(--lt-text-sm);
+}
+
+/* ── Célula do solicitante ───────────────────────────────────────────── */
 .access-requests .requester-cell {
   display: flex;
   align-items: flex-start;
-  gap: 0.56rem;
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
+.access-requests .requester-cell > div:last-child { min-width: 0; }
+
 .access-requests .requester-avatar {
-  width: 2.16rem;
-  height: 2.16rem;
-  border-radius: 0.66rem;
-  background: rgba(77, 156, 108, 0.12);
-  color: #2f855a;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
 .access-requests .requester-cell h4 {
-  margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.25;
-  font-weight: 700;
-  color: var(--req-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
 }
 
+/* E-mail e telefone: apoio sobre branco, 6,59:1. */
 .access-requests .requester-meta {
-  margin-top: 0.2rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.2rem 0.6rem;
-  font-size: 0.71rem;
-  color: color-mix(in srgb, var(--req-muted) 87%, transparent);
+  gap: var(--lt-space-1) var(--lt-space-2);
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
 }
 
 .access-requests .requester-meta span {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: var(--lt-space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.access-requests .meta-separator {
-  color: color-mix(in srgb, var(--req-muted) 62%, transparent);
-}
+.access-requests .requester-meta svg { flex: none; }
+.access-requests .requester-meta .meta-separator { color: var(--lt-color-text-subtle); }
 
+/* Cargo e área são categoria, não estado: tinta sobre branco com contorno
+   azul claro (14,09:1). */
 .access-requests .requester-tags {
-  margin-top: 0.28rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.32rem;
+  gap: var(--lt-space-1);
+  margin-top: var(--lt-space-2);
 }
 
 .access-requests .requester-tags .tag {
-  border-radius: 999px;
-  border: 1px solid rgba(47, 111, 166, 0.22);
-  background: rgba(47, 111, 166, 0.12);
-  color: #1d4f79;
-  font-size: 0.64rem;
-  font-weight: 800;
-  padding: 0.12rem 0.42rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--req-raia);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
 }
 
+/* ── Vínculo ─────────────────────────────────────────────────────────── */
 .access-requests .request-info {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.125rem;
+  min-width: 0;
 }
 
 .access-requests .request-info .info-label {
-  font-size: 0.62rem;
-  font-weight: 800;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--req-muted) 85%, transparent);
 }
 
 .access-requests .request-info .info-value {
-  font-size: 0.8rem;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  color: var(--req-text);
+  overflow-wrap: anywhere;
 }
 
 .access-requests .request-info .info-note {
-  margin: 0;
-  font-size: 0.72rem;
-  color: color-mix(in srgb, var(--req-muted) 88%, transparent);
-  line-height: 1.4;
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
 }
 
+/* ── Status: o selo é o texto; a cor só acompanha ─────────────────────
+   0,3,0 vence `.status-badge` de theme.css. Pendente no par de "atenção"
+   de painel.css (6,88:1), aprovado 6,81:1, recusado 5,91:1. */
 .access-requests .status-cell {
   display: flex;
   flex-direction: column;
-  gap: 0.26rem;
+  align-items: flex-start;
+  gap: var(--lt-space-1);
+  min-width: 0;
 }
 
-.access-requests .status-badge {
-  width: fit-content;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  padding: 0.16rem 0.42rem;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.access-requests .status-cell .status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: var(--lt-space-1);
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--req-atencao-fundo);
+  color: var(--req-atencao-texto);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.access-requests .status-badge.pendente {
-  color: #92400e;
-  border-color: rgba(245, 158, 11, 0.22);
-  background: rgba(245, 158, 11, 0.14);
+.access-requests .status-cell .status-badge svg { flex: none; }
+
+.access-requests .status-cell .status-badge.aprovado {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
-.access-requests .status-badge.aprovado {
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.2);
-  background: rgba(34, 197, 94, 0.14);
+.access-requests .status-cell .status-badge.recusado {
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
 }
 
-.access-requests .status-badge.recusado {
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.24);
-  background: rgba(239, 68, 68, 0.12);
+.access-requests .status-cell .status-date {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-variant-numeric: tabular-nums;
 }
 
-.access-requests .status-date {
-  font-size: 0.69rem;
-  color: color-mix(in srgb, var(--req-muted) 84%, transparent);
-}
-
+/* ── Ações: aprovar é o sólido da linha; recusar, contorno vermelho ────
+   Alvos de 44 px. O nome acessível traz a pessoa (aria-label no JSX).
+   Aprovar no degradê de largada: branco a 4,82:1 no topo e 6,20:1 na
+   base. Recusar: vermelho de texto sobre branco, 6,47:1, e o contorno na
+   mesma cor. Desabilitado: sai o sólido, e o selo de status ao lado diz
+   por quê. */
 .access-requests .request-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.34rem;
+  align-items: stretch;
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
 .access-requests .request-actions .action-btn {
-  min-height: 2rem;
-  border-radius: 0.68rem;
-  border: 1px solid transparent;
-  padding: 0 0.58rem;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
 }
 
-.access-requests .request-actions .action-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
+.access-requests .request-actions .action-btn svg { flex: none; }
 
 .access-requests .request-actions .action-btn.approve {
-  background: #0f8a4d;
-  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
 }
 
 .access-requests .request-actions .action-btn.reject {
-  background: #be123c;
-  color: #ffffff;
+  border-color: var(--lt-color-danger-text);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-danger-text);
 }
 
-.access-requests .request-actions .action-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .access-requests .request-actions .action-btn.approve:hover:not(:disabled) { box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
+  .access-requests .request-actions .action-btn.reject:hover:not(:disabled) { background: var(--lt-color-danger-bg); }
 }
 
-@media (max-width: 900px) {
-  .access-requests .requests-controls {
+.access-requests .request-actions .action-btn:disabled {
+  border-color: var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  color: var(--lt-color-text-subtle);
+  cursor: not-allowed;
+}
+
+/* ── Foco visível: o anel da landing em todos os controles ────────── */
+.access-requests .requests-filters .filter-btn:focus-visible,
+.access-requests .request-actions .action-btn:focus-visible,
+.access-requests .request-credentials__close:focus-visible,
+.access-requests .request-credentials__copy:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Tabela estreita: cada solicitação vira um cartão de linha ─────────
+   Abaixo de 46rem de contêiner as quatro colunas espremem os botões; a
+   linha passa a empilhar solicitante, vínculo, status e ações, sem rolagem
+   lateral. O cabeçalho sai só da vista (continua para o leitor de tela);
+   "Instituição" já rotula o vínculo, e status e ações se explicam pelo
+   texto. Tabela com `display` trocado mantém a semântica no Chromium e no
+   Firefox atuais; no Safari, é ponto a medir (o mesmo da Pesquisa). */
+@container solicitacoes-tabela (max-width: 46rem) {
+  .access-requests .requests-table table,
+  .access-requests .requests-table tbody,
+  .access-requests .requests-table tbody tr,
+  .access-requests .requests-table tbody td { display: block; box-sizing: border-box; width: auto; }
+
+  .access-requests .requests-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .access-requests .requests-table tbody tr {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    gap: var(--lt-space-3);
+    padding: var(--lt-space-4) var(--lt-space-2);
+    border-bottom: 1px solid var(--lt-color-border);
   }
 
-  .access-requests .requests-search {
-    min-width: 100%;
+  .access-requests .requests-table tbody tr:last-child { border-bottom: 0; }
+
+  .access-requests .requests-table tbody td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    text-align: left;
   }
 
-  .access-requests .request-actions {
-    align-items: flex-start;
+  /* Vínculo recuado sob o nome, alinhado ao texto do solicitante. */
+  .access-requests .requests-table tbody td:nth-child(2) { padding-left: calc(2.25rem + var(--lt-space-3)); }
+
+  .access-requests .status-cell {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--lt-space-2);
+    padding-left: calc(2.25rem + var(--lt-space-3));
   }
+
+  .access-requests .request-actions { flex-direction: row; flex-wrap: wrap; }
+  .access-requests .request-actions .action-btn { flex: 1 1 9rem; }
 }
 
-@media (max-width: 640px) {
-  .access-requests {
-    gap: 0.78rem;
-  }
-
-  .access-requests .requests-table {
-    padding: 0.22rem;
-  }
-
-  .access-requests .requests-filters .filter-btn {
-    flex: 1;
-    justify-content: center;
-  }
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 40rem) {
+  .access-requests .requests-controls .requests-search { flex-basis: 100%; }
+  .access-requests .requests-filters { width: 100%; }
+  .access-requests .requests-filters .filter-btn { flex: 1 1 auto; }
 }
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com `prefers-reduced-motion: no-preference`, só transform/opacity e
+   sem laço: a marca de largada se desenha uma vez e o esqueleto pulsa três
+   vezes (4,8 s) e para. */
+@media (prefers-reduced-motion: no-preference) {
+  .access-requests .requests-header h2::before { animation: req-largada 420ms var(--lt-ease-out) 120ms backwards; }
+  .access-requests .requests-table .skeleton { animation: req-pulsar 1.6s ease-in-out 3; }
+
+  @keyframes req-largada { from { transform: skewX(-12deg) scaleY(0); } }
+  @keyframes req-pulsar { 50% { opacity: 0.5; } }
+}
+
+/* ══ LEGADO SEM CONSUMIDOR: início ═════════════════════════════════════
+   Regras copiadas sem mudança de tmp/telas-v1/src/views/admin/Requests/
+   AccessRequests.css. Nenhuma das duas classes aparece em src/ (busca por
+   token exato em 29/09/2026): são do campo de senha provisória, que saiu
+   do JSX quando a aprovação passou a enviar link de ativação. Remover
+   código morto depende de aprovação (telas-v2/change-intent.md, "Não
+   objetivos"), então o bloco fica isolado para sair de uma vez. */
+.access-requests .request-credentials__value--password {
+  border-color: rgba(245, 158, 11, 0.36);
+  background: #fefce8;
+}
+
+.access-requests .request-credentials__password {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: #92400e;
+}
+/* ══ LEGADO SEM CONSUMIDOR: fim ═════════════════════════════════════ */

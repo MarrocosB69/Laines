@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import api, { getApiErrorMessage } from '../services/api';
 import { adaptarAlimento, adaptarMetas } from '../services/prescricaoCatalogo';
 import { migrarRefeicao } from '../core/prescricao/legado';
+import { assinaturaPrescricao, mesclarRespostaPrescricao } from '../core/prescricao/edicao.js';
 
 /**
  * Carga e persistência da prescrição.
@@ -29,21 +30,38 @@ export function usePrescricaoApi(pacienteId) {
   const [erro, setErro] = useState('');
   const [paciente, setPaciente] = useState(null);
   const [metas, setMetas] = useState(null);
+  const [contextoClinico, setContextoClinico] = useState(null);
   const [planoId, setPlanoId] = useState('');
   const [plano, setPlano] = useState(null);
+  const [planoPacienteId, setPlanoPacienteId] = useState(null);
   const [catalogoPorId, setCatalogoPorId] = useState({});
+  const [candidatosPorId, setCandidatosPorId] = useState({});
   const [salvando, setSalvando] = useState(false);
   const [salvoEm, setSalvoEm] = useState(null);
   const [assinaturaSalva, setAssinaturaSalva] = useState('');
-  const alterado = Boolean(plano) && JSON.stringify({ plano, catalogo: catalogoPorId }) !== assinaturaSalva;
+  const alterado = Boolean(plano) && planoPacienteId === pacienteId
+    && assinaturaPrescricao(plano, catalogoPorId) !== assinaturaSalva;
+  const pacienteAtivo = useRef(pacienteId);
+  pacienteAtivo.current = pacienteId;
 
   // Evita que uma resposta atrasada da busca sobrescreva a mais recente.
   const buscaSeq = useRef(0);
+  const gruposCarregados = useRef(new Set());
   const [busca, setBusca] = useState({ termo: '', resultados: [], carregando: false, erro: '' });
 
   useEffect(() => {
     if (!pacienteId) return undefined;
     let vivo = true;
+    buscaSeq.current += 1;
+    gruposCarregados.current.clear();
+    setPlanoPacienteId(null);
+    setPlano(null);
+    setPlanoId('');
+    setCatalogoPorId({});
+    setCandidatosPorId({});
+    setSalvando(false);
+    setSalvoEm(null);
+    setBusca({ termo: '', resultados: [], carregando: false, erro: '' });
 
     (async () => {
       setCarregando(true);
@@ -58,6 +76,7 @@ export function usePrescricaoApi(pacienteId) {
 
         const dadosPaciente = pac.data || null;
         setPaciente(dadosPaciente);
+        setContextoClinico(ctx.data || null);
         setMetas(adaptarMetas(ctx.data, dadosPaciente?.peso ?? dadosPaciente?.pesoAtual));
 
         const existente = Array.isArray(lista.data?.itens)
@@ -84,16 +103,22 @@ export function usePrescricaoApi(pacienteId) {
           };
           setPlano(carregado);
           setCatalogoPorId(catalogo);
-          setAssinaturaSalva(JSON.stringify({ plano: carregado, catalogo }));
+          setAssinaturaSalva(assinaturaPrescricao(carregado, catalogo));
         } else {
-          setPlano({
+          const novo = {
             schemaVersion: 2, version: 0, status: 'rascunho', refeicoes: [REFEICAO_VAZIA(1)],
             treinoInicio: '', treinoDuracao: 60, pesoPaciente: ''
-          });
+          };
+          setPlano(novo);
           setCatalogoPorId({});
+          setAssinaturaSalva(assinaturaPrescricao(novo, {}));
         }
+        setPlanoPacienteId(pacienteId);
       } catch (e) {
-        if (vivo) setErro(getApiErrorMessage(e, 'Não foi possível carregar a prescrição.'));
+        if (vivo) {
+          setErro(getApiErrorMessage(e, 'Não foi possível carregar a prescrição.'));
+          setPlanoPacienteId(pacienteId);
+        }
       } finally {
         if (vivo) setCarregando(false);
       }
@@ -103,13 +128,12 @@ export function usePrescricaoApi(pacienteId) {
   }, [pacienteId]);
 
   const buscar = useCallback(async (termo) => {
+    const seq = ++buscaSeq.current;
     setBusca((b) => ({ ...b, termo }));
     if (termo.trim().length < 2) {
       setBusca((b) => ({ ...b, resultados: [], carregando: false, erro: '' }));
       return;
     }
-    const seq = buscaSeq.current + 1;
-    buscaSeq.current = seq;
     setBusca((b) => ({ ...b, carregando: true, erro: '' }));
     try {
       const { data } = await api.get('/taco/buscar', { params: { q: termo, limit: 20 } });
@@ -137,8 +161,6 @@ export function usePrescricaoApi(pacienteId) {
    * nunca propoe nada novo — o painel abria vazio e parecia quebrado.
    * Cada grupo e buscado uma vez por sessao.
    */
-  const gruposCarregados = useRef(new Set());
-
   const carregarGrupo = useCallback(async (grupo) => {
     if (!grupo || gruposCarregados.current.has(grupo)) return;
     gruposCarregados.current.add(grupo);
@@ -146,9 +168,9 @@ export function usePrescricaoApi(pacienteId) {
       // 100 e o teto do endpoint; pedir mais devolve 400 e a sugestao some.
       const { data } = await api.get('/taco/buscar', { params: { grupo, limit: 100 } });
       const novos = (Array.isArray(data) ? data : []).map(adaptarAlimento).filter(Boolean);
-      setCatalogoPorId((atual) => {
+      setCandidatosPorId((atual) => {
         const proximo = { ...atual };
-        // Nao sobrescreve o que ja esta la: o plano guarda o instantaneo dele.
+        // Opcoes ainda nao escolhidas nao compoem o snapshot salvo.
         for (const a of novos) if (!proximo[a.id]) proximo[a.id] = a;
         return proximo;
       });
@@ -196,18 +218,21 @@ export function usePrescricaoApi(pacienteId) {
       const { data } = planoId
         ? await api.patch(`/planos-alimentares/${planoId}`, payload)
         : await api.post('/planos-alimentares', payload);
+      if (pacienteAtivo.current !== pacienteId) return undefined;
       setPlanoId(data?.id || planoId);
       const saved = { ...plano, ...data.dados, status: data.status };
       const catalogo = data.dados?.catalogo || catalogoPorId;
-      setPlano(saved);
-      setCatalogoPorId(catalogo);
-      setAssinaturaSalva(JSON.stringify({ plano: saved, catalogo }));
+      setPlano((atual) => mesclarRespostaPrescricao(plano, atual, saved));
+      setCatalogoPorId((atual) => mesclarRespostaPrescricao(catalogoPorId, atual, catalogo));
+      setAssinaturaSalva(assinaturaPrescricao(saved, catalogo));
       setSalvoEm(new Date());
       return data;
     } catch (e) {
-      setErro(getApiErrorMessage(e, 'Não foi possível salvar o plano alimentar.'));
+      if (pacienteAtivo.current === pacienteId) {
+        setErro(getApiErrorMessage(e, 'Não foi possível salvar o plano alimentar.'));
+      }
     } finally {
-      setSalvando(false);
+      if (pacienteAtivo.current === pacienteId) setSalvando(false);
     }
   }, [plano, pacienteId, metas, catalogoPorId, planoId]);
 
@@ -219,18 +244,22 @@ export function usePrescricaoApi(pacienteId) {
       const { data } = await api.post(`/planos-alimentares/${planoId}/${acao}`, {
         expectedVersion: plano.version || 0, confirmarComposicaoManual
       });
+      if (pacienteAtivo.current !== pacienteId) return undefined;
       const saved = { ...plano, ...data.dados, status: data.status };
       const catalogo = data.dados?.catalogo || catalogoPorId;
-      setPlano(saved);
-      setCatalogoPorId(catalogo);
-      setAssinaturaSalva(JSON.stringify({ plano: saved, catalogo }));
+      setPlano((atual) => mesclarRespostaPrescricao(plano, atual, saved));
+      setCatalogoPorId((atual) => mesclarRespostaPrescricao(catalogoPorId, atual, catalogo));
+      setAssinaturaSalva(assinaturaPrescricao(saved, catalogo));
       setSalvoEm(new Date());
+      return data;
     } catch (e) {
-      setErro(getApiErrorMessage(e, 'Não foi possível atualizar a revisão do plano.'));
+      if (pacienteAtivo.current === pacienteId) {
+        setErro(getApiErrorMessage(e, 'Não foi possível atualizar a revisão do plano.'));
+      }
     } finally {
-      setSalvando(false);
+      if (pacienteAtivo.current === pacienteId) setSalvando(false);
     }
-  }, [planoId, plano, catalogoPorId, salvando, alterado]);
+  }, [planoId, plano, catalogoPorId, salvando, alterado, pacienteId]);
 
   const exportarPdf = useCallback(async () => {
     if (!planoId) return;
@@ -251,8 +280,11 @@ export function usePrescricaoApi(pacienteId) {
   }, [planoId, plano?.version]);
 
   return {
-    carregando, erro, paciente, metas, plano, setPlano,
-    catalogoPorId, registrarAlimento,
+    carregando: carregando || planoPacienteId !== pacienteId,
+    erro: planoPacienteId === pacienteId ? erro : '', paciente, metas,
+    contextoClinico: contextoClinico?.pacienteId === pacienteId ? contextoClinico : null,
+    plano: planoPacienteId === pacienteId ? plano : null, setPlano,
+    catalogoPorId, candidatosPorId, registrarAlimento,
     busca, buscar, carregarGrupo,
     salvar, salvando, salvoEm, planoId, transicionar, exportarPdf, alterado
   };

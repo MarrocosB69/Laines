@@ -1,0 +1,1038 @@
+<!doctype html>
+<!--
+  LAINES, landing v2, releitura A2 "energia": a largada.
+  Mockup de direção de arte (docs/design/landing-v2/a2-energia/plano.md).
+  Não é código de produção. Nenhum dado clínico: a página apresenta a liga e
+  deixa entrar. O texto das quatro áreas vem das telas do sistema (plano, seção 1).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAINES: entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Sofia Sans 400–700 variável (39,4 KB) + Sofia Sans Extra Condensed
+     Italic 900 estática (15,6 KB), subconjunto latino. Pedir 1,800;1,900
+     traria o arquivo variável de 41 KB: por isso só 1,900. -->
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Tokens (contraste em contraste.cjs) */
+    --estadio: #0b2a5e;  /* céu da cena; cal por cima 13,93:1 */
+    --pista:   #2560a8;  /* raias, links, foco; 6,33:1 sobre cal */
+    --gramado: #3d8c2a;  /* só gráfico: campo interno e luz do horizonte */
+    --largada: #2d7a1a;  /* o único sólido; cal por cima 5,37:1 */
+    --cal:     #ffffff;
+    --tinta:   #262947;  /* 14,09:1 sobre cal */
+    --apoio:   #555c78;  /*  6,59:1 sobre cal */
+    --nevoa:   #d6e3f5;  /* texto secundário na cena; 10,73:1 sobre estádio */
+    --borda:   #7a8098;  /*  3,91:1 sobre cal, limite do campo */
+    --erro:    #b91c1c;
+    --erro-fundo: #fef2f2;
+    --tinta-pista: #eaf1fa; /* fundo dos ícones e das portas no hover */
+
+    --letra: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --letra-campanha: 'Sofia Sans Extra Condensed', 'Arial Narrow', sans-serif-condensed, sans-serif;
+
+    --t-13: 0.8125rem;
+    --t-15: 0.9375rem;
+    --t-16: 1rem;
+    --t-17: 1.0625rem;
+    --t-20: 1.25rem;
+
+    --margem: clamp(1rem, 4.5vw, 4rem);
+    --saida: cubic-bezier(.16, 1, .3, 1);       /* saída exponencial */
+    --arranque: cubic-bezier(.12, .8, .2, 1);   /* arranque explosivo, freada longa */
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--estadio);
+    color: var(--tinta);
+    font-family: var(--letra);
+    font-size: var(--t-16);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, p { margin: 0; }
+  .inteiro { white-space: nowrap; }
+
+  /* ── Primeira tela: cena + painel ─────────────────────────────────────
+     Celular: marca, título, faixa da pista, painel e frase, nessa ordem.
+     Desktop: a cena ocupa a tela toda e o painel corta pela diagonal. */
+  .primeira {
+    position: relative;
+    /* As linhas das raias do título vão até a borda. "clip" corta sem criar
+       contêiner rolável: com "hidden", o foco num campo rolava a primeira
+       seção 18 px na horizontal (visto na captura a 390 px). "hidden" fica
+       como reserva para navegador sem "clip". */
+    overflow: hidden;
+    overflow: clip;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 7.5rem auto auto;
+    grid-template-areas:
+      "marca"
+      "titulo"
+      "chao"
+      "painel"
+      "frase";
+  }
+
+  /* ── A cena: céu, luz do horizonte e chão em perspectiva ─────────────── */
+  .cena {
+    grid-column: 1 / -1;
+    grid-row: 1 / 4;
+    position: relative;
+    overflow: hidden;
+    /* Céu do estádio: escuro em cima, azul da marca a meia altura e a luz
+       verde dos refletores sobre o gramado, rente ao horizonte. */
+    /* Rampa em px a partir do horizonte, para ter a mesma espessura no
+       celular e no desktop; abaixo dele, a névoa verde do fundo da pista. */
+    background: linear-gradient(180deg,
+      #0a2656 0%,
+      #0e3370 calc(var(--horizonte) - 200px),
+      #1b4f93 calc(var(--horizonte) - 44px),
+      #2b7a6a calc(var(--horizonte) - 8px),
+      #6fbb55 var(--horizonte),
+      #4f9f4f calc(var(--horizonte) + 6px),
+      #2f7466 calc(var(--horizonte) + 40px));
+    /* No celular, o chão ocupa só a faixa "chao" (7,5 rem) e um pouco sob
+       a diagonal do painel. */
+    --horizonte: calc(100% - 7.5rem);  /* altura do horizonte na cena */
+    --fuga-x: 84%;           /* ponto de fuga */
+    --prof: 150px;           /* perspectiva: menor = mais profundidade */
+    --raia: 15vw;            /* largura da raia na borda de baixo */
+    --pista-x: -38vw;        /* onde a raia 1 começa, na borda de baixo */
+  }
+  .cena__luz {
+    position: absolute;
+    inset: 0;
+    /* A luz do horizonte: um núcleo claro no ponto de fuga, um halo verde
+       baixo e largo, e o brilho azul do céu acima dele. */
+    background:
+      radial-gradient(ellipse 22% 14px at var(--fuga-x) var(--horizonte), rgba(240, 255, 224, .9), rgba(160, 222, 120, .35) 50%, transparent 80%),
+      radial-gradient(ellipse 50% 36px at var(--fuga-x) var(--horizonte), rgba(110, 196, 80, .45), transparent 75%);
+  }
+  .chao {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--horizonte);
+    bottom: var(--chao-base, 0px);
+    perspective: var(--prof);
+    perspective-origin: var(--fuga-x) 0;
+    overflow: hidden;
+    /* O fundo da pista se dissolve na luz do horizonte. */
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent 8%, rgba(0,0,0,.6) 18%, #000 40%);
+            mask-image: linear-gradient(180deg, transparent 0, transparent 8%, rgba(0,0,0,.6) 18%, #000 40%);
+  }
+  /* O plano do chão: a borda de baixo é a mais próxima da câmera; o topo do
+     elemento vai para o horizonte. Coordenadas locais: x = através das
+     raias, y = profundidade (para cima = mais longe). */
+  .chao__plano {
+    /* --aba: quanto o plano passa de cada lado da tela; --fundo: a
+       profundidade. A área do plano é o custo da entrada. Medido no Chromium
+       sem GPU, quadros/s durante a entrada a 1280 e 390 px: 3000 × 4200 px,
+       11 e 16; 1800 × 2400 px, 18 e 29, com a mesma aparência. Mais fundo
+       que 4200 px estoura a rasterização (12000 px renderizou quebrado). */
+    --aba: 1800px;
+    --fundo: 2400px;
+    position: absolute;
+    left: calc(-1 * var(--aba));
+    width: calc(100% + 2 * var(--aba));
+    bottom: 0;
+    height: var(--fundo);
+    transform-origin: 50% 100%;
+    transform: rotateX(90deg);
+    overflow: hidden;
+    --x0: calc(var(--aba) + var(--pista-x)); /* raia 1 no plano */
+    background:
+      /* névoa: quanto mais longe, mais a pista some na luz do horizonte */
+      linear-gradient(0deg, transparent 450px, rgba(27, 79, 147, .35) 850px, rgba(43, 122, 106, .82) 1700px, rgba(62, 140, 80, .96) 2350px),
+      /* linhas das raias: 9 linhas brancas para 8 raias */
+      repeating-linear-gradient(90deg, rgba(255,255,255,.92) 0 3px, transparent 3px var(--raia))
+        var(--x0) 0 / calc(8 * var(--raia) + 3px) 100% no-repeat,
+      /* o gramado por dentro da raia 1, com as faixas de corte da grama:
+         a perspectiva as encurta até o horizonte */
+      repeating-linear-gradient(0deg, var(--gramado) 0 220px, #357d25 220px 440px) 0 0 / var(--x0) 100% no-repeat,
+      /* a pista: azul da marca, mais clara perto da câmera */
+      linear-gradient(0deg, #2d6cbb 0%, var(--pista) 12%, #1d5098 40%, #173f7c 100%);
+  }
+  /* Marcas que passam: traços nas linhas das raias, repetidos em
+     profundidade. A camada é mais alta que o plano (--curso) e, em repouso,
+     fica na posição final; a entrada a traz de longe. */
+  .chao__marcas {
+    position: absolute;
+    left: var(--x0);
+    width: calc(8 * var(--raia) + 3px);
+    top: 0;
+    height: calc(100% + var(--curso));
+    --curso: 1680px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='140'%3E%3Crect x='0' y='0' width='26' height='6' fill='white'/%3E%3C/svg%3E");
+    background-size: var(--raia) 140px;
+    background-position: 1px 0;
+  }
+  /* A linha de largada escalonada: uma barra por raia, cada uma um pouco
+     mais à frente. Fica perto da câmera no início e sai de quadro depois
+     do disparo; em repouso, já passou (fora do plano). */
+  .chao__largada {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 40px;
+    height: 400px;
+  }
+  .chao__largada i {
+    position: absolute;
+    left: calc(var(--n) * var(--raia) + 3px);
+    width: calc(var(--raia) - 3px);
+    height: 10px;
+    bottom: calc(var(--n) * 26px);
+    background: var(--cal);
+    transform-origin: 0 50%;
+  }
+
+  /* ── Marca ────────────────────────────────────────────────────────── */
+  .marca {
+    grid-area: marca;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem var(--margem) 0;
+    color: var(--cal);
+  }
+  .marca__emblema {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--cal);
+    overflow: hidden;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.14), 0 6px 18px -6px rgba(0,0,0,.5);
+  }
+  .marca__emblema img { display: block; width: 100%; height: 100%; }
+  .marca__sigla {
+    font-family: var(--letra-campanha);
+    font-style: italic;
+    font-weight: 900;
+    font-size: 1.625rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+  .marca__inst {
+    margin-left: auto;
+    color: var(--nevoa);
+    font-size: var(--t-15);
+  }
+
+  /* ── Título: a largada escalonada ─────────────────────────────────────
+     Três linhas em três raias. Cada linha recua em relação à de cima, como
+     os blocos dos 400 m. A barra antes de cada linha é a marca de largada
+     da raia; a linha fina embaixo é a linha da raia. */
+  .titulo {
+    grid-area: titulo;
+    position: relative;
+    z-index: 1;
+    /* No celular, o horizonte fica logo abaixo: o respiro de baixo mantém
+       a última linha longe da luz. */
+    padding: 1.5rem var(--margem) 1.25rem;
+    color: var(--cal);
+    font-family: var(--letra-campanha);
+    font-style: italic;
+    font-weight: 900;
+    text-transform: uppercase;
+    /* No celular, a maior linha ("Interprofissional de", escalonada) ocupa
+       a largura útil: 10,2 vw cabe de 320 a 420 px sem cortar. */
+    font-size: clamp(1.75rem, 10.2vw, 2.75rem);
+    line-height: 0.92;
+    letter-spacing: 0.005em;
+    --escalonamento: 0.42em;
+  }
+  .titulo__linha {
+    position: relative;
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin-left: calc(var(--i) * var(--escalonamento));
+    padding: 0.06em 0 0.08em 0.3em;
+    white-space: nowrap;
+  }
+  /* A marca de largada atravessa a raia inteira, de linha a linha, como
+     no chão da pista; por isso não se lê como uma barra de texto. */
+  .titulo__linha::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: -0.02em;
+    bottom: 0;
+    width: 0.1em;
+    background: linear-gradient(180deg, #6cc04f, var(--gramado));
+    transform: skewX(-12deg);
+    transform-origin: 0 100%;
+  }
+  .titulo__linha::after {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--i) * var(--escalonamento) - var(--margem));
+    right: -100vw;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,.34), rgba(255,255,255,.12) 60%, transparent);
+  }
+
+  /* ── Frase sobre a liga ───────────────────────────────────────────── */
+  .frase {
+    grid-area: frase;
+    position: relative;
+    z-index: 1;
+    padding: 2.5rem var(--margem) 0;
+    background: var(--estadio);
+    color: var(--nevoa);
+    font-size: var(--t-17);
+    max-width: 40rem;
+    text-wrap: pretty;
+  }
+
+  /* ── Painel do formulário ─────────────────────────────────────────── */
+  .painel-sombra {
+    grid-area: painel;
+    position: relative;
+    z-index: 2;
+    margin-top: -2.25rem;
+    filter: drop-shadow(0 -18px 36px rgba(4, 18, 48, .35));
+  }
+  .painel {
+    --inclinacao: 2.25rem;
+    height: 100%;
+    background: var(--cal);
+    clip-path: polygon(0 var(--inclinacao), 100% 0, 100% 100%, 0 100%);
+    padding: calc(var(--inclinacao) + 1.25rem) var(--margem) 2rem;
+  }
+  .painel__corpo { max-width: 24rem; }
+
+  .painel h2 {
+    font-family: var(--letra-campanha);
+    font-style: italic;
+    font-weight: 900;
+    font-size: 2.5rem;
+    line-height: 1;
+    color: var(--tinta);
+    letter-spacing: 0.005em;
+  }
+  .painel__dica {
+    margin-top: 0.375rem;
+    color: var(--apoio);
+    font-size: var(--t-16);
+  }
+
+  form { margin-top: 1.25rem; }
+  .campo + .campo { margin-top: 1rem; }
+  /* "Esqueci minha senha" fica na linha do rótulo, mas vem depois do campo
+     no DOM: a ordem do Tab é CPF, senha, Mostrar, Esqueci, Entrar, e quem
+     digita o CPF e aperta Tab cai direto na senha. */
+  .campo--senha {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "rotulo esqueci"
+      "caixa  caixa"
+      "erro   erro";
+    align-items: center;
+    column-gap: 0.75rem;
+  }
+  .campo--senha > label { grid-area: rotulo; }
+  .campo--senha > .campo__caixa { grid-area: caixa; }
+  /* A margem negativa do .link mantém o alvo de 44 px sem abrir a linha. */
+  .campo--senha > .campo__esqueci { grid-area: esqueci; margin-bottom: calc(0.375rem - 12px); }
+  .campo--senha > .campo__erro { grid-area: erro; }
+  .campo label {
+    display: block;
+    font-weight: 700;
+    font-size: var(--t-15);
+    color: var(--tinta);
+    transition: color 160ms;
+  }
+  .campo > label { margin-bottom: 0.375rem; }
+  .campo:focus-within label { color: var(--pista); }
+
+  .campo__caixa { position: relative; }
+  .campo input {
+    display: block;
+    width: 100%;
+    height: 52px;
+    padding: 0 1rem;
+    border: 1.5px solid var(--borda);
+    border-radius: 12px;
+    background: var(--cal);
+    color: var(--tinta);
+    font: inherit;
+    font-size: var(--t-17);
+    transition: border-color 160ms, box-shadow 160ms;
+  }
+  .campo input:focus {
+    outline: none;
+    border-color: var(--pista);
+    box-shadow: 0 0 0 1px var(--pista), 0 0 0 5px rgba(37, 96, 168, .16);
+  }
+  .campo input[aria-invalid="true"] {
+    border-color: var(--erro);
+    box-shadow: 0 0 0 1px var(--erro);
+  }
+  .campo input[aria-invalid="true"]:focus { box-shadow: 0 0 0 1px var(--erro), 0 0 0 5px rgba(185, 28, 28, .14); }
+  .campo__senha input { padding-right: 6.25rem; }
+
+  /* A raia acende: linha azul e verde que corre sob o campo em foco. */
+  .campo__raia {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(90deg, var(--pista), var(--gramado));
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform 320ms var(--saida);
+    pointer-events: none;
+  }
+  .campo input:focus ~ .campo__raia { transform: scaleX(1); }
+  .campo input[aria-invalid="true"] ~ .campo__raia { background: var(--erro); }
+
+  .campo__mostrar {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 0.875rem;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--pista);
+    font: inherit;
+    font-weight: 700;
+    font-size: var(--t-15);
+    cursor: pointer;
+    transition: background-color 160ms;
+  }
+  .campo__erro {
+    display: flex;
+    gap: 0.375rem;
+    align-items: center;
+    margin-top: 0.375rem;
+    color: var(--erro);
+    font-size: var(--t-15);
+    font-weight: 600;
+  }
+  .campo__erro[hidden] { display: none; }
+
+  .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: -12px 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pista);
+    font: inherit;
+    font-weight: 700;
+    font-size: var(--t-15);
+    text-decoration: none;
+    cursor: pointer;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0 2px;
+    background-position: 0 calc(50% + 0.75em);
+    background-repeat: no-repeat;
+    transition: background-size 220ms var(--saida);
+  }
+
+  /* ── O botão Entrar: o único sólido ───────────────────────────────── */
+  .botao-entrar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 54px;
+    margin-top: 1.5rem;
+    border: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #33821f, #2a6f18);
+    color: var(--cal);
+    font: inherit;
+    font-weight: 700;
+    font-size: var(--t-17);
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.22),
+      0 1px 2px rgba(20, 60, 12, .3),
+      0 12px 24px -12px rgba(45, 122, 26, .75);
+    transition: transform 180ms var(--saida), box-shadow 180ms;
+  }
+  /* Brilho: passa uma vez no fim da entrada e uma vez a cada hover. Em
+     repouso fica fora do botão e transparente. */
+  .botao-entrar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 32%, rgba(255,255,255,.38) 50%, transparent 68%);
+    transform: translateX(-120%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Barra de envio: corre na base enquanto a resposta não chega. */
+  .botao-entrar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255,255,255,.85);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    opacity: 0;
+  }
+  .botao-entrar[aria-busy="true"] { cursor: progress; }
+  .botao-entrar[aria-busy="true"]::before { opacity: 1; transform: scaleX(1); transition: transform 1200ms linear; }
+  .botao-entrar:active { transform: scale(.98); }
+
+  .erro-geral {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-top: 1rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 10px;
+    background: var(--erro-fundo);
+    color: var(--erro);
+    font-weight: 600;
+    font-size: var(--t-15);
+    line-height: 1.4;
+  }
+  .erro-geral[hidden] { display: none; }
+  .erro-geral svg, .campo__erro svg { flex: none; }
+  .erro-geral svg { margin-top: 1px; }
+
+  /* ── Portas secundárias ───────────────────────────────────────────── */
+  .portas {
+    display: grid;
+    gap: 0.625rem;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e4e8f0;
+  }
+  .porta {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    min-height: 64px;
+    padding: 0.625rem 0.875rem 0.625rem 0.75rem;
+    border: 1.5px solid #dfe4ee;
+    border-radius: 14px;
+    background: var(--cal);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 160ms, border-color 160ms;
+  }
+  .porta__icone {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--tinta-pista);
+    color: var(--pista);
+  }
+  .porta__texto { display: grid; gap: 1px; line-height: 1.3; }
+  .porta__pergunta { color: var(--apoio); font-size: var(--t-15); }
+  .porta__acao { color: var(--pista); font-weight: 700; font-size: var(--t-16); }
+  .porta__seta { color: var(--pista); transition: transform 220ms var(--saida); }
+
+  /* ── Foco ─────────────────────────────────────────────────────────── */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 3px solid var(--pista);
+    outline-offset: 2px;
+  }
+  .campo input:focus-visible { outline: none; }
+  .botao-entrar:focus-visible { outline-offset: 3px; }
+
+  @media (hover: hover) {
+    .campo input:hover:not(:focus):not([aria-invalid="true"]) { border-color: var(--tinta); }
+    .campo__mostrar:hover { background: var(--tinta-pista); }
+    .link:hover { background-size: 100% 2px; }
+    .botao-entrar:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.22),
+        0 1px 2px rgba(20, 60, 12, .3),
+        0 18px 30px -12px rgba(45, 122, 26, .85);
+    }
+    .porta:hover { background: #f5f8fd; border-color: #c3d3ea; }
+    .porta:hover .porta__seta { transform: translateX(3px); }
+  }
+
+  /* ── As quatro áreas: raias vistas de cima ────────────────────────── */
+  .areas {
+    position: relative;
+    padding: 2rem 0 0;
+    background: var(--estadio);
+    color: var(--cal);
+  }
+  .areas h2 {
+    padding: 0 var(--margem);
+    font-size: var(--t-20);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .raias {
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    /* O gramado por dentro, a linha branca e as raias. */
+    border-top: 10px solid var(--gramado);
+    background: linear-gradient(90deg, #13397a, #184690 70%, #1b4c96);
+  }
+  /* Cada área na sua raia, com a mesma marca de largada do título. O
+     escalonamento vale só para o nome; a descrição fica numa coluna só,
+     para ser lida de uma vez. */
+  .raia {
+    --escalonamento: 1.1rem;
+    display: grid;
+    gap: 0.25rem;
+    padding: 1.125rem var(--margem) 1.25rem;
+    border-top: 3px solid rgba(255,255,255,.7);
+  }
+  .raia:last-child { border-bottom: 3px solid rgba(255,255,255,.7); }
+  .raia h3 {
+    position: relative;
+    justify-self: start;
+    margin-left: calc(var(--i) * var(--escalonamento));
+    padding-left: 0.32em;
+    font-family: var(--letra-campanha);
+    font-style: italic;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 2.25rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .raia h3::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.04em;
+    bottom: 0.06em;
+    width: 0.1em;
+    background: linear-gradient(180deg, #6cc04f, var(--gramado));
+    transform: skewX(-12deg);
+  }
+  .raia p { color: var(--nevoa); font-size: var(--t-16); max-width: 34rem; }
+
+  .rodape {
+    padding: 1.75rem var(--margem) 2rem;
+    background: var(--estadio);
+    color: var(--nevoa);
+    font-size: var(--t-15);
+  }
+  .rodape p { text-wrap: balance; }
+
+  /* ── Diálogo (solicitar acesso, recuperar senha) ──────────────────── */
+  dialog {
+    width: min(30rem, calc(100vw - 2rem));
+    padding: 1.75rem 1.5rem 1.5rem;
+    border: 0;
+    border-radius: 18px;
+    background: var(--cal);
+    color: var(--tinta);
+    box-shadow: 0 30px 60px -20px rgba(4, 18, 48, .55);
+  }
+  dialog::backdrop { background: rgba(8, 28, 64, .62); }
+  dialog h2 {
+    font-family: var(--letra-campanha);
+    font-style: italic;
+    font-weight: 900;
+    font-size: 2.125rem;
+    line-height: 1;
+  }
+  dialog p { margin-top: 0.625rem; color: var(--apoio); }
+  dialog .dialogo__nota {
+    margin-top: 1rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 10px;
+    background: #f3f6fb;
+    color: var(--tinta);
+    font-size: var(--t-15);
+  }
+  .dialogo__fechar {
+    display: block;
+    width: 100%;
+    height: 48px;
+    margin-top: 1.25rem;
+    border: 1.5px solid var(--borda);
+    border-radius: 12px;
+    background: var(--cal);
+    color: var(--tinta);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ── Celular estreito ─────────────────────────────────────────────── */
+  @media (max-width: 22.5rem) {
+    .marca__inst { font-size: var(--t-13); }
+    .porta { grid-template-columns: 36px minmax(0, 1fr) 16px; gap: 0.625rem; padding-left: 0.625rem; }
+    .porta__icone { width: 36px; height: 36px; }
+  }
+
+  /* ── Tablet e acima ───────────────────────────────────────────────── */
+  @media (min-width: 40rem) {
+    .raia {
+      grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+      align-items: center;
+      column-gap: 2rem;
+    }
+    .raia h3 { font-size: 3rem; }
+    .raia p { font-size: var(--t-17); }
+  }
+
+  /* ── Desktop ──────────────────────────────────────────────────────── */
+  @media (min-width: 64rem) {
+    .primeira {
+      grid-template-columns: minmax(0, 1fr) clamp(26rem, 36vw, 33rem);
+      grid-template-rows: auto auto auto 1fr;
+      grid-template-areas:
+        "marca  painel"
+        "titulo painel"
+        "frase  painel"
+        ".      painel";
+      min-height: 100vh;
+      min-height: 100svh;
+    }
+    .cena {
+      grid-row: 1 / -1;
+      --horizonte: 60%;
+      --fuga-x: 61%;
+      --prof: 340px;
+      --raia: 124px;
+      --pista-x: -560px;
+    }
+    .marca { padding-top: 2rem; }
+    .marca__emblema { width: 52px; height: 52px; }
+    .marca__sigla { font-size: 1.875rem; }
+    .marca__inst { margin-left: 0.25rem; padding-left: 0.875rem; border-left: 1.5px solid rgba(214,227,245,.35); }
+    .titulo { padding-top: clamp(2rem, 7vh, 4.5rem); padding-bottom: 0; font-size: clamp(3.5rem, 1rem + 4.6vw, 5.75rem); }
+    .frase {
+      padding-top: 1.75rem;
+      padding-right: 2rem;
+      background: none;
+      max-width: 34rem;
+      font-size: var(--t-17);
+    }
+    .painel-sombra {
+      margin: 0 0 0 -5.5rem;
+      filter: drop-shadow(-22px 0 40px rgba(4, 18, 48, .45));
+    }
+    .painel {
+      --inclinacao: 5.5rem;
+      clip-path: polygon(var(--inclinacao) 0, 100% 0, 100% 100%, 0 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2.5rem var(--margem) 2.5rem calc(var(--inclinacao) + 2.5rem);
+    }
+    .painel h2 { font-size: 3rem; }
+
+    .areas { padding-top: 3.5rem; }
+    .areas h2 { font-size: 1.5rem; }
+    .raias { margin-top: 1.5rem; }
+    .raia { padding-top: 1.25rem; padding-bottom: 1.25rem; --escalonamento: 2rem; }
+    .raia { grid-template-columns: 28.5rem minmax(0, 1fr); }
+    .raia h3 { font-size: 4rem; }
+    .raia p { font-size: var(--t-20); }
+  }
+
+  /* ── Entrada: parado, e depois dispara ────────────────────────────────
+     Só transform e opacity. Todo quadro-chave define apenas o "from": o
+     fim é o CSS em repouso, que é também o que aparece com movimento
+     reduzido. Preenchimento "backwards", não "both": ao terminar, a
+     animação sai de cena e o elemento deixa de ser camada própria do
+     compositor, então o texto é rasterizado igual ao do modo sem movimento
+     (com "both", a captura diferia na suavização das bordas).
+     Nada em laço; tudo termina em 1,95 s. */
+  @media (prefers-reduced-motion: no-preference) {
+    /* 0,10–0,45 s: às suas marcas — a largada escalonada se desenha. */
+    .chao__largada i {
+      animation: marcar 220ms var(--saida) backwards;
+      animation-delay: calc(60ms + var(--n) * 24ms); /* a última termina em 0,45 s */
+    }
+    /* 0,45–1,65 s: disparo — as marcas passam sob a câmera e freiam. */
+    .chao__marcas {
+      animation: passar 1200ms var(--arranque) 450ms backwards;
+    }
+    /* 0,45–0,95 s: a luz do horizonte acende. */
+    .cena__luz { animation: acender 500ms ease-out 450ms backwards; }
+    /* 0,45 / 0,53 / 0,61 s: as três linhas saem dos blocos. */
+    .titulo__linha {
+      animation: sair-do-bloco 700ms var(--saida) backwards;
+      animation-delay: calc(450ms + var(--i) * 80ms);
+    }
+    /* 0,65–1,30 s: o painel varre a tela pela diagonal, opaco, como o corte
+       de uma vinheta; 0,90–1,35 s: o formulário assenta dentro dele. */
+    .painel-sombra { animation: varrer 650ms var(--saida) 650ms backwards; }
+    .painel__corpo { animation: assentar-form 450ms var(--saida) 900ms backwards; }
+    /* 0,95–1,45 s: a frase assenta. */
+    .frase { animation: assentar 500ms var(--saida) 950ms backwards; }
+    /* 1,50–1,95 s: chegada — o brilho cruza o botão uma vez. */
+    .botao-entrar::after { animation: brilho 450ms ease-in-out 1500ms; }
+
+    /* Microinterações */
+    .botao-entrar:hover::after { animation: brilho 600ms ease-in-out; }
+    .erro-tranco { animation: tranco 320ms ease-in-out; }
+    dialog[open] { animation: subir 260ms var(--saida); }
+    dialog[open]::backdrop { animation: aparecer 200ms ease-out; }
+
+    @keyframes marcar { from { transform: scaleX(0); } }
+    @keyframes passar { from { transform: translateY(calc(-1 * var(--curso))); } }
+    @keyframes acender { from { opacity: .35; } }
+    @keyframes sair-do-bloco {
+      from { opacity: 0; transform: translateX(-14vw) skewX(-16deg); }
+      40% { opacity: 1; }
+    }
+    @keyframes varrer { from { transform: translateX(105%); } }
+    @keyframes assentar-form { from { opacity: 0; transform: translateX(24px); } }
+    @keyframes assentar { from { opacity: 0; transform: translateX(-12px); } }
+    @keyframes brilho {
+      from { opacity: 1; transform: translateX(-120%); }
+      to   { opacity: 1; transform: translateX(120%); }
+    }
+    @keyframes tranco {
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(2px); }
+    }
+    @keyframes subir { from { opacity: 0; transform: translateY(12px); } }
+    @keyframes aparecer { from { opacity: 0; } }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .campo__raia, .porta__seta, .botao-entrar, .link, .campo input { transition: none; }
+    .botao-entrar[aria-busy="true"]::before { transition: none; }
+    .botao-entrar:active, .botao-entrar:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="primeira">
+
+    <div class="cena" aria-hidden="true">
+      <div class="cena__luz"></div>
+      <div class="chao">
+        <div class="chao__plano">
+          <div class="chao__marcas">
+            <div class="chao__largada">
+              <i style="--n:0"></i><i style="--n:1"></i><i style="--n:2"></i><i style="--n:3"></i>
+              <i style="--n:4"></i><i style="--n:5"></i><i style="--n:6"></i><i style="--n:7"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <header class="marca">
+      <span class="marca__emblema"><img src="../../../../src/assets/LogoLaines.webp" alt="" width="512" height="512"></span>
+      <span class="marca__sigla">LAINES</span>
+      <span class="marca__inst">FACISA, UFRN</span>
+    </header>
+
+    <h1 class="titulo">
+      <span class="titulo__linha" style="--i:0">Liga Acadêmica</span>
+      <span class="titulo__linha" style="--i:1">Interprofissional de</span>
+      <span class="titulo__linha" style="--i:2">Nutrição Esportiva</span>
+    </h1>
+
+    <p class="frase">A liga da FACISA/UFRN que reúne estudantes e profissionais de saúde em torno da nutrição no esporte.</p>
+
+    <div class="painel-sombra">
+      <section class="painel" aria-labelledby="titulo-entrar">
+        <div class="painel__corpo">
+          <h2 id="titulo-entrar">Entrar</h2>
+          <p class="painel__dica" id="dica-login">Use seu CPF, só os números, ou seu <span class="inteiro">e-mail</span>.</p>
+
+          <form id="form-login" novalidate>
+            <div class="campo">
+              <label for="login-id">CPF ou e-mail</label>
+              <div class="campo__caixa">
+                <input id="login-id" name="login" type="text" autocomplete="username" inputmode="email" required aria-describedby="dica-login erro-id">
+                <span class="campo__raia" aria-hidden="true"></span>
+              </div>
+              <p class="campo__erro" id="erro-id" hidden>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></svg>
+                <span>Informe seu CPF ou <span class="inteiro">e-mail</span>.</span>
+              </p>
+            </div>
+
+            <div class="campo campo--senha">
+              <label for="login-senha">Senha</label>
+              <div class="campo__caixa campo__senha">
+                <input id="login-senha" name="senha" type="password" autocomplete="current-password" required aria-describedby="erro-senha">
+                <button type="button" class="campo__mostrar" aria-controls="login-senha" aria-pressed="false">Mostrar</button>
+                <span class="campo__raia" aria-hidden="true"></span>
+              </div>
+              <button type="button" class="link campo__esqueci" data-abre="recuperar">Esqueci minha senha</button>
+              <p class="campo__erro" id="erro-senha" hidden>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></svg>
+                <span>Informe sua senha.</span>
+              </p>
+            </div>
+
+            <button type="submit" class="botao-entrar">Entrar</button>
+            <p class="erro-geral" id="erro-login" role="alert" hidden>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></svg>
+              <span>CPF, <span class="inteiro">e-mail</span> ou senha incorretos. Confira e tente de novo.</span>
+            </p>
+          </form>
+
+          <nav class="portas" aria-label="Outros acessos">
+            <a class="porta" href="/inscricao">
+              <span class="porta__icone" aria-hidden="true">
+                <!-- cronômetro: a vez do atleta -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="8"/><path d="M12 10v4l2.5 2M10 2h4M12 2v4M19 7l1.5-1.5"/></svg>
+              </span>
+              <span class="porta__texto">
+                <span class="porta__pergunta">É atleta e quer ser atendido pela liga?</span>
+                <span class="porta__acao">Entrar na lista de espera</span>
+              </span>
+              <svg class="porta__seta" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+            </a>
+            <button type="button" class="porta" data-abre="acesso">
+              <span class="porta__icone" aria-hidden="true">
+                <!-- crachá: profissional sem conta -->
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="15" rx="2.5"/><circle cx="9" cy="12" r="2.25"/><path d="M5.8 17c.6-1.4 1.8-2.2 3.2-2.2s2.6.8 3.2 2.2M15 10.5h3M15 14h3M9 5V3h6v2"/></svg>
+              </span>
+              <span class="porta__texto">
+                <span class="porta__pergunta">Professor ou profissional de saúde sem conta?</span>
+                <span class="porta__acao">Solicitar acesso</span>
+              </span>
+              <svg class="porta__seta" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+          </nav>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <section class="areas" aria-labelledby="titulo-areas">
+    <h2 id="titulo-areas">As quatro áreas da liga</h2>
+    <ul class="raias">
+      <li class="raia" style="--i:0"><h3>Ensino</h3><p>Reuniões científicas, rodas de conversa e materiais de apoio.</p></li>
+      <li class="raia" style="--i:1"><h3>Pesquisa</h3><p>Projetos, ideias e produções científicas da liga.</p></li>
+      <li class="raia" style="--i:2"><h3>Extensão</h3><p>Triagens, capacitações e materiais produzidos pela liga.</p></li>
+      <li class="raia" style="--i:3"><h3>Comunicação</h3><p>Avisos, campanhas e divulgações da liga.</p></li>
+    </ul>
+  </section>
+</main>
+
+<footer class="rodape">
+  <p>© 2026 LAINES, Faculdade de Ciências da Saúde do Trairi (FACISA), Universidade Federal do Rio Grande do Norte</p>
+</footer>
+
+<!-- No mockup, um diálogo só mostra a abertura. O conteúdo dos modais atuais
+     (solicitação com 13 campos, recuperação de senha) não muda nesta proposta. -->
+<dialog id="dialogo" aria-labelledby="dialogo-titulo">
+  <h2 id="dialogo-titulo">Solicitar acesso</h2>
+  <p id="dialogo-texto">Solicitação sujeita à aprovação da coordenação, com retorno por <span class="inteiro">e-mail</span>.</p>
+  <p class="dialogo__nota">Mockup: aqui entra o formulário atual, com os mesmos campos.</p>
+  <form method="dialog"><button class="dialogo__fechar">Fechar</button></form>
+</dialog>
+
+<script>
+  // Só para o mockup: estados do formulário e abertura dos diálogos.
+  const semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const form = document.getElementById('form-login');
+  const id = document.getElementById('login-id');
+  const senha = document.getElementById('login-senha');
+  const mostrar = document.querySelector('.campo__mostrar');
+  const botao = form.querySelector('.botao-entrar');
+  const erroGeral = document.getElementById('erro-login');
+
+  mostrar.addEventListener('click', () => {
+    const ver = senha.type === 'password';
+    senha.type = ver ? 'text' : 'password';
+    mostrar.setAttribute('aria-pressed', String(ver));
+    mostrar.textContent = ver ? 'Ocultar' : 'Mostrar';
+  });
+
+  const marcar = (campo, erroId, invalido) => {
+    campo.setAttribute('aria-invalid', String(invalido));
+    document.getElementById(erroId).hidden = !invalido;
+  };
+  [[id, 'erro-id'], [senha, 'erro-senha']].forEach(([campo, erroId]) => {
+    campo.addEventListener('input', () => { marcar(campo, erroId, false); erroGeral.hidden = true; });
+  });
+
+  const tranco = () => {
+    if (semMovimento) return;
+    form.classList.remove('erro-tranco');
+    void form.offsetWidth;
+    form.classList.add('erro-tranco');
+  };
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const faltaId = !id.value.trim();
+    const faltaSenha = !senha.value;
+    marcar(id, 'erro-id', faltaId);
+    marcar(senha, 'erro-senha', faltaSenha);
+    erroGeral.hidden = true;
+    if (faltaId || faltaSenha) {
+      (faltaId ? id : senha).focus();
+      tranco();
+      return;
+    }
+    // Sem servidor no mockup: simula o envio e mostra o erro de credencial.
+    botao.setAttribute('aria-busy', 'true');
+    botao.textContent = 'Entrando';
+    setTimeout(() => {
+      botao.removeAttribute('aria-busy');
+      botao.textContent = 'Entrar';
+      erroGeral.hidden = false;
+      tranco();
+    }, 1200);
+  });
+
+  const dialogo = document.getElementById('dialogo');
+  const textos = {
+    acesso: ['Solicitar acesso', 'Solicitação sujeita à aprovação da coordenação, com retorno por e-mail.', 'Mockup: aqui entra o formulário atual, com os mesmos campos.'],
+    recuperar: ['Redefinir senha', 'Informe seu e-mail ou CPF para começar.', 'Mockup: aqui entra o fluxo atual de redefinição.']
+  };
+  document.querySelectorAll('[data-abre]').forEach((b) => b.addEventListener('click', () => {
+    const [t, p, n] = textos[b.dataset.abre];
+    dialogo.querySelector('h2').textContent = t;
+    dialogo.querySelector('#dialogo-texto').textContent = p;
+    dialogo.querySelector('.dialogo__nota').textContent = n;
+    dialogo.showModal();
+  }));
+  // No mockup, o link da lista de espera não sai da página.
+  document.querySelector('a.porta').addEventListener('click', (e) => e.preventDefault());
+</script>
+</body>
+</html>

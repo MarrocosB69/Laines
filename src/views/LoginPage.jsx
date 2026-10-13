@@ -1,28 +1,42 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  AlertCircle,
-  ArrowRight,
-  ArrowUp,
-  Eye,
-  EyeOff,
-  Loader2,
-  KeyRound,
-  Lock,
-  Mail,
-  ShieldCheck,
-  X
-} from 'lucide-react';
 import api, { getApiErrorMessage } from '../services/api';
 import { isPastDate, isValidCpf, isValidEmail, normalizeCpf } from '../utils/validation';
 import { formatCpf } from '../utils/formatters';
 import { useModalBodyLock } from '../hooks/useModalBodyLock';
 import { useModalFocusTrap } from '../hooks/useModalFocusTrap';
 import { getRedirectPathFromRole, normalizeRole } from '../constants/roles';
-import logoLaines from '../assets/LogoLaines.webp';
-import './LoginPage.css';
+import PistaCena from './landing/PistaCena';
+import HeroCopy from './landing/HeroCopy';
+import LoginPanel from './landing/LoginPanel';
+import AreasLiga from './landing/AreasLiga';
+import SiteFooter from './landing/SiteFooter';
+import AccessRequestModal from './landing/AccessRequestModal';
+import PasswordRecoveryModal from './landing/PasswordRecoveryModal';
+// Uma folha por superficie, para que cada uma seja trabalhada sem colidir com
+// as outras. A ordem importa: tokens, base, pecas e, por ultimo, o responsivo.
+import './landing/landing-tokens.css';
+import './landing/landing-base.css';
+import './landing/landing-hero.css';
+import './landing/landing-login.css';
+import './landing/landing-areas.css';
+import './landing/landing-modais.css';
+// Sempre por ultimo: as regras de celular precisam vir depois das de desktop.
+import './landing/landing-responsivo.css';
+
+// A entrada orquestrada (~2 s) toca uma vez por sessao do navegador: quem sai
+// e volta ao login, ou recarrega a pagina, encontra o formulario pronto. Na
+// recuperacao de senha o modal abre de imediato, sem entrada por tras.
+const ENTRADA_KEY = 'laines:landing-entrada';
+const deveTocarEntrada = () => {
+  if (window.location.pathname === '/recuperar-senha') return false;
+  try {
+    return !window.sessionStorage.getItem(ENTRADA_KEY);
+  } catch {
+    return false;
+  }
+};
 
 const initialRequestForm = {
   nome: '',
@@ -44,13 +58,9 @@ const initialRequestForm = {
 
 const initialRecoveryForm = {
   identifier: '',
-  cpf: '',
-  dataNascimento: '',
   newPassword: '',
   confirmPassword: ''
 };
-
-const PASSWORD_COMPLEXITY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -58,7 +68,9 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showScrollTop, setShowScrollTop] = useState(false);
+  // Leitura pura no inicializador (o StrictMode o chama duas vezes); a marca
+  // de "ja tocou" e gravada no efeito abaixo.
+  const [entrada] = useState(deveTocarEntrada);
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [requestForm, setRequestForm] = useState(initialRequestForm);
@@ -68,23 +80,28 @@ const LoginPage = () => {
   const [requestError, setRequestError] = useState('');
   const [requestSuccess, setRequestSuccess] = useState('');
   const accessRequestModalRef = useRef(null);
-  const [recoverOpen, setRecoverOpen] = useState(false);
+  const [recoveryToken, setRecoveryToken] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('token') || '');
+  const [recoverOpen, setRecoverOpen] = useState(() => window.location.pathname === '/recuperar-senha');
+  const [recoverStep, setRecoverStep] = useState(() => /^[a-f0-9]{64}$/.test(recoveryToken) ? 'reset' : 'identify');
+  useEffect(() => {
+    if (new URLSearchParams(window.location.hash.slice(1)).has('token')) {
+      window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+    }
+  }, []);
   const [recoverForm, setRecoverForm] = useState(initialRecoveryForm);
   const [recoverLoading, setRecoverLoading] = useState(false);
   const [recoverError, setRecoverError] = useState('');
-  const [recoverSuccess, setRecoverSuccess] = useState('');
-  const [recoverShowPassword, setRecoverShowPassword] = useState(false);
-  const [recoverShowConfirmPassword, setRecoverShowConfirmPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const recoveryModalRef = useRef(null);
   const hasLoadedProjectsRef = useRef(false);
   const loadingProjectsRef = useRef(false);
 
-  const { login, user, signed, loading: authLoading } = useAuth();
+  const { login, logout, user, signed, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const isProfessorRequest = requestForm.cargoSolicitado === 'professor';
   const isProfissionalRequest = requestForm.cargoSolicitado === 'profissional';
-  const canPickProject = isProfessorRequest || isProfissionalRequest;
 
   const loadPublicProjects = useCallback(async () => {
     if (hasLoadedProjectsRef.current || loadingProjectsRef.current) return;
@@ -116,37 +133,20 @@ const LoginPage = () => {
   }, []);
 
   useEffect(() => {
-    if (signed && user && !authLoading) {
-      navigate(getRedirectPathFromRole(normalizeRole(user.role)));
+    if (!entrada) return;
+    try {
+      window.sessionStorage.setItem(ENTRADA_KEY, '1');
+    } catch {
+      // Sem sessionStorage a entrada volta a tocar no proximo carregamento;
+      // nenhum outro efeito.
     }
-  }, [signed, user, authLoading, navigate]);
+  }, [entrada]);
 
   useEffect(() => {
-    const getScrollTop = () => {
-      const scrollingElement = document.scrollingElement || document.documentElement;
-      return scrollingElement?.scrollTop ?? window.scrollY ?? 0;
-    };
-
-    let rafId = null;
-
-    const handleScroll = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(() => {
-        rafId = null;
-        const nextVisible = getScrollTop() > 360;
-        setShowScrollTop((prev) => (prev === nextVisible ? prev : nextVisible));
-      });
-    };
-
-    handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
-  }, []);
+    if (signed && user && !authLoading && window.location.pathname !== '/recuperar-senha') {
+      navigate(getRedirectPathFromRole(normalizeRole(user.role), user));
+    }
+  }, [signed, user, authLoading, navigate]);
 
   useEffect(() => {
     if (hasLoadedProjectsRef.current) return undefined;
@@ -194,10 +194,8 @@ const LoginPage = () => {
   const handleOpenRecovery = () => {
     setRequestOpen(false);
     setRecoverOpen(true);
+    setRecoverStep('identify');
     setRecoverError('');
-    setRecoverSuccess('');
-    setRecoverShowPassword(false);
-    setRecoverShowConfirmPassword(false);
     setRecoverForm((prev) => ({
       ...initialRecoveryForm,
       identifier: email.trim() || prev.identifier
@@ -205,12 +203,13 @@ const LoginPage = () => {
   };
 
   const handleCloseRecovery = () => {
+    setRecoveryToken('');
     setRecoverOpen(false);
+    setRecoverStep('identify');
     setRecoverForm(initialRecoveryForm);
     setRecoverError('');
-    setRecoverSuccess('');
-    setRecoverShowPassword(false);
-    setRecoverShowConfirmPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
   };
 
   useEffect(() => {
@@ -229,6 +228,14 @@ const LoginPage = () => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [recoverOpen, requestOpen]);
 
+  const resolveLoginError = (err) => {
+    const status = Number(err?.response?.status || 0);
+    if (status === 401) return 'E-mail, CPF ou senha incorretos.';
+    if (status === 423 || status === 429) return 'Acesso temporariamente bloqueado. Aguarde alguns minutos e tente novamente.';
+    if (status === 503 || !err?.response) return 'Sistema temporariamente indisponível. Tente novamente em alguns minutos.';
+    return getApiErrorMessage(err, 'Não foi possível entrar. Tente novamente.');
+  };
+
   const handleLogin = async (event) => {
     event.preventDefault();
     setError('');
@@ -236,12 +243,16 @@ const LoginPage = () => {
     try {
       const rawLogin = email.trim();
       const digits = normalizeCpf(rawLogin);
+      if (!rawLogin.includes('@') && digits.length === 11 && !isValidCpf(digits)) {
+        setError('CPF inválido. Verifique os dígitos informados.');
+        return;
+      }
       const loginEmail = !rawLogin.includes('@') && digits.length === 11
         ? `${digits}@laines.ufrn.br`
         : rawLogin;
       await login(loginEmail, password);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Credenciais inválidas ou erro de conexão.'));
+      setError(resolveLoginError(err));
     } finally {
       setIsLoading(false);
     }
@@ -319,69 +330,57 @@ const LoginPage = () => {
     }
   };
 
-  const handleRecoveryChange = (field) => (event) => {
+  const handleRecoverFieldChange = (field) => (event) => {
     setRecoverForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
-  const handleRecoveryCpfChange = (event) => {
-    const formatted = formatCpf(event.target.value);
-    setRecoverForm((prev) => ({ ...prev, cpf: formatted }));
+  const handleRecoveryBackToIdentify = () => {
+    setRecoverStep('identify');
+    setRecoverError('');
   };
 
-  const handleRecoverySubmit = async (event) => {
+  const handleRecoveryIdentifySubmit = async (event) => {
     event.preventDefault();
     setRecoverError('');
-    setRecoverSuccess('');
-
     const identifier = recoverForm.identifier.trim();
-    const cpfDigits = normalizeCpf(recoverForm.cpf);
+    if (!isValidEmail(identifier)) { setRecoverError('Informe seu e-mail de acesso.'); return; }
+    setRecoverLoading(true);
+    try {
+      await api.post('/auth/recovery-request', { identifier });
+      setRecoverStep('sent');
+    } catch (err) {
+      setRecoverError(getApiErrorMessage(err, 'Nao foi possivel solicitar o link. Tente novamente mais tarde.'));
+    } finally { setRecoverLoading(false); }
+  };
 
-    if (!identifier || !recoverForm.cpf.trim() || !recoverForm.dataNascimento) {
-      setRecoverError('Informe identificador, CPF e data de nascimento.');
+  const handleRecoveryResetSubmit = async (event) => {
+    event.preventDefault();
+    setRecoverError('');
+    const { newPassword, confirmPassword } = recoverForm;
+    if (newPassword.length < 8) {
+      setRecoverError('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
-    if (identifier.includes('@') && !isValidEmail(identifier)) {
-      setRecoverError('Identificador de login invalido.');
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      setRecoverError('A senha deve conter ao menos 1 letra maiúscula, 1 minúscula e 1 número.');
       return;
     }
-    if (!identifier.includes('@') && normalizeCpf(identifier).length !== 11) {
-      setRecoverError('Use e-mail ou CPF (11 digitos) no identificador.');
+    if (newPassword !== confirmPassword) {
+      setRecoverError('As senhas não coincidem.');
       return;
     }
-    if (!isValidCpf(cpfDigits)) {
-      setRecoverError('CPF invalido.');
-      return;
-    }
-    if (!isPastDate(recoverForm.dataNascimento)) {
-      setRecoverError('Data de nascimento invalida.');
-      return;
-    }
-    if (!recoverForm.newPassword || recoverForm.newPassword.length < 8) {
-      setRecoverError('A nova senha deve ter ao menos 8 caracteres.');
-      return;
-    }
-    if (!PASSWORD_COMPLEXITY_REGEX.test(recoverForm.newPassword)) {
-      setRecoverError('A senha deve conter letra maiuscula, minuscula e numero.');
-      return;
-    }
-    if (recoverForm.newPassword !== recoverForm.confirmPassword) {
-      setRecoverError('A confirmacao da senha nao confere.');
-      return;
-    }
-
     setRecoverLoading(true);
     try {
       await api.post('/auth/recover-password', {
-        identifier,
-        cpf: recoverForm.cpf.trim(),
-        dataNascimento: recoverForm.dataNascimento,
-        newPassword: recoverForm.newPassword
+        token: recoveryToken,
+        newPassword
       });
-      setRecoverSuccess('Senha redefinida com sucesso. Voce ja pode entrar no sistema.');
-      setRecoverForm(initialRecoveryForm);
+      await logout();
+      setRecoveryToken('');
+      setRecoverStep('done');
     } catch (err) {
-      console.error('Erro ao recuperar senha:', err);
-      setRecoverError(getApiErrorMessage(err, 'Nao foi possivel recuperar a senha.'));
+      const msg = getApiErrorMessage(err, 'Não foi possível redefinir a senha.');
+      setRecoverError(msg);
     } finally {
       setRecoverLoading(false);
     }
@@ -389,533 +388,68 @@ const LoginPage = () => {
 
   return (
     <>
-      <div className="landing-v2">
-        <div className="landing-v2__ambient landing-v2__ambient--one" />
-        <div className="landing-v2__ambient landing-v2__ambient--two" />
-        <div className="landing-v2__ambient landing-v2__ambient--three" />
-
-        <motion.header
-          className="landing-topbar"
-          initial={{ opacity: 0, y: -24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="landing-container landing-topbar__inner">
-            <a href="#inicio" className="landing-brand">
-              <img src={logoLaines} alt="LAINES" width="512" height="512" decoding="async" />
-              <div>
-                <strong>LAINES</strong>
-                <span>Plataforma clínico-educacional</span>
-              </div>
-            </a>
-          </div>
-        </motion.header>
-
+      {/* data-entrada liga a entrada orquestrada; sem ele, o CSS em repouso
+          ja e o estado final (docs/implementacao/landing-v2/change-intent.md). */}
+      <div className="lp" data-entrada={entrada ? '' : undefined}>
         <main id="inicio">
-          <section className="landing-hero">
-            <div className="landing-container landing-hero__grid">
-              <motion.div
-                className="landing-hero__copy"
-                initial={{ opacity: 0, y: 26 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7 }}
-              >
-                <h1>Sistema LAINES para acompanhamento clínico-esportivo</h1>
-                <p>
-                  Liga acadêmica interprofissional de nutrição esportiva - UFRN.
-                </p>
-              </motion.div>
-
-              <motion.aside
-                id="acesso"
-                className="landing-login-panel"
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-              >
-                <header>
-                  <p>Acesso ao sistema</p>
-                  <h2>Entrar na plataforma</h2>
-                  <small>Use CPF (somente números) ou e-mail institucional.</small>
-                </header>
-
-                <form onSubmit={handleLogin} className="landing-login-form">
-                  <label className="landing-field">
-                    <span>CPF ou e-mail</span>
-                    <div className="field-shell">
-                      <Mail size={17} />
-                      <input
-                        type="text"
-                        required
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder="usuario@laines.ufrn.br"
-                        autoComplete="username"
-                      />
-                    </div>
-                  </label>
-
-                  <label className="landing-field">
-                    <span>Senha</span>
-                    <div className="field-shell">
-                      <Lock size={17} />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        required
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder="Sua senha"
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        className="password-visibility"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                      >
-                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                      </button>
-                    </div>
-                  </label>
-
-                  <button type="submit" className="landing-submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 size={17} className="spin" />
-                        Entrando...
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck size={17} />
-                        Entrar agora
-                      </>
-                    )}
-                  </button>
-
-                  <AnimatePresence>
-                    {error && (
-                      <motion.div
-                        className="landing-error"
-                        role="alert"
-                        aria-live="assertive"
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 6 }}
-                      >
-                        <AlertCircle size={16} />
-                        <span>{error}</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="landing-login-recovery">
-                    <button type="button" onClick={handleOpenRecovery}>
-                      <KeyRound size={15} />
-                      Esqueci minha senha
-                    </button>
-                  </div>
-
-                  <div className="landing-login-panel__foot">
-                    <p>Não possui acesso?</p>
-                    <button type="button" onClick={handleOpenRequest}>
-                      Solicitar acesso institucional
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </form>
-              </motion.aside>
+          <div className="lp-primeira">
+            <PistaCena />
+            <HeroCopy />
+            <div className="lp-painel" id="acesso">
+              <LoginPanel
+                email={email}
+                onEmailChange={setEmail}
+                password={password}
+                onPasswordChange={setPassword}
+                showPassword={showPassword}
+                onToggleShowPassword={() => setShowPassword((prev) => !prev)}
+                isLoading={isLoading}
+                error={error}
+                onSubmit={handleLogin}
+                onOpenRecovery={handleOpenRecovery}
+                onOpenRequest={handleOpenRequest}
+              />
             </div>
-          </section>
+          </div>
+          <AreasLiga />
         </main>
 
-        <footer className="landing-footer-v2">
-          <div className="landing-container landing-footer-v2__inner">
-            <div className="landing-footer-v2__brand">
-              <img src={logoLaines} alt="LAINES" width="512" height="512" loading="lazy" decoding="async" />
-              <div>
-                <strong>LAINES</strong>
-                <span>Plataforma de gestão clínica e educacional</span>
-              </div>
-            </div>
-            <small>© 2026 LAINES. Ambiente operacional para ensino e cuidado.</small>
-          </div>
-        </footer>
+        <SiteFooter />
       </div>
 
-      {showScrollTop && (
-        <button
-          type="button"
-          className="scroll-top-floating"
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          aria-label="Voltar ao topo"
-        >
-          <ArrowUp size={18} />
-        </button>
-      )}
+      <AccessRequestModal
+        open={requestOpen}
+        modalRef={accessRequestModalRef}
+        form={requestForm}
+        onFieldChange={handleRequestChange}
+        onCpfChange={handleRequestCpfChange}
+        onProjectChange={handleRequestProjectChange}
+        projects={requestProjects}
+        projectsLoading={requestProjectsLoading}
+        loading={requestLoading}
+        error={requestError}
+        success={requestSuccess}
+        onSubmit={handleRequestSubmit}
+        onClose={handleCloseRequest}
+      />
 
-      <AnimatePresence>
-        {requestOpen && (
-          <motion.div
-            className="request-modal-overlay app-modal-overlay"
-            role="presentation"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) handleCloseRequest();
-            }}
-          >
-            <motion.div
-              className="request-modal app-modal-shell app-modal-shell--lg app-modal-shell--scrollable"
-              ref={accessRequestModalRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="request-access-modal-title"
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            >
-              <div className="request-modal-header app-modal-header">
-                <div className="app-modal-heading">
-                  <h3 id="request-access-modal-title" className="app-modal-title">Solicitar acesso</h3>
-                  <p className="app-modal-subtitle">Solicitação sujeita à aprovação da coordenação, com retorno por e-mail.</p>
-                </div>
-                <button type="button" className="app-modal-close" onClick={handleCloseRequest} aria-label="Fechar">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleRequestSubmit} className="request-form app-modal-body">
-                <div className="request-grid">
-                  <label className="request-field">
-                    <span>Nome completo</span>
-                    <input
-                      type="text"
-                      value={requestForm.nome}
-                      onChange={handleRequestChange('nome')}
-                      placeholder="Seu nome"
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>CPF</span>
-                    <input
-                      type="text"
-                      value={requestForm.cpf}
-                      onChange={handleRequestCpfChange}
-                      placeholder="000.000.000-00"
-                      maxLength="14"
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>Data de nascimento</span>
-                    <input
-                      type="date"
-                      value={requestForm.dataNascimento}
-                      onChange={handleRequestChange('dataNascimento')}
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>E-mail</span>
-                    <input
-                      type="email"
-                      value={requestForm.email}
-                      onChange={handleRequestChange('email')}
-                      placeholder="seu@email.com"
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>Telefone</span>
-                    <input
-                      type="tel"
-                      value={requestForm.telefone}
-                      onChange={handleRequestChange('telefone')}
-                      placeholder="(00) 00000-0000"
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>Instituição</span>
-                    <input
-                      type="text"
-                      value={requestForm.instituicao}
-                      onChange={handleRequestChange('instituicao')}
-                      placeholder="Universidade, secretaria, clube..."
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>Área</span>
-                    <select value={requestForm.area} onChange={handleRequestChange('area')}>
-                      <option value="nutricao">Nutrição</option>
-                      <option value="fisioterapia">Fisioterapia</option>
-                      <option value="psicologia">Psicologia</option>
-                      <option value="outros">Outros</option>
-                    </select>
-                  </label>
-
-                  <label className="request-field">
-                    <span>Cargo solicitado</span>
-                    <select value={requestForm.cargoSolicitado} onChange={handleRequestChange('cargoSolicitado')}>
-                      <option value="professor">Professor</option>
-                      <option value="profissional">Profissional</option>
-                    </select>
-                  </label>
-
-                  <label className="request-field">
-                    <span>Diretoria (opcional)</span>
-                    <select value={requestForm.diretoria} onChange={handleRequestChange('diretoria')}>
-                      <option value="">Sem diretoria</option>
-                      <option value="diretoria_marketing">Diretoria de Marketing</option>
-                      <option value="diretoria_ensino">Diretoria de Ensino</option>
-                      <option value="diretoria_pesquisa">Diretoria de Pesquisa</option>
-                      <option value="diretoria_extensao">Diretoria de Extensão</option>
-                    </select>
-                  </label>
-
-                  {isProfessorRequest && (
-                    <label className="request-field">
-                      <span>Matrícula</span>
-                      <input
-                        type="text"
-                        value={requestForm.matricula}
-                        onChange={handleRequestChange('matricula')}
-                        placeholder="Sua matrícula"
-                        required
-                      />
-                    </label>
-                  )}
-
-                  {isProfissionalRequest && (
-                    <>
-                      <label className="request-field">
-                        <span>Conselho profissional</span>
-                        <select
-                          value={requestForm.conselhoTipo}
-                          onChange={handleRequestChange('conselhoTipo')}
-                          required
-                        >
-                          <option value="">Selecione...</option>
-                          <option value="CRN">CRN</option>
-                          <option value="CREFITO">CREFITO</option>
-                          <option value="CRP">CRP</option>
-                          <option value="OUTRO">Outro</option>
-                        </select>
-                      </label>
-
-                      <label className="request-field">
-                        <span>Número do conselho</span>
-                        <input
-                          type="text"
-                          value={requestForm.conselhoNumero}
-                          onChange={handleRequestChange('conselhoNumero')}
-                          placeholder="Registro profissional"
-                          required
-                        />
-                      </label>
-                    </>
-                  )}
-
-                  {canPickProject && (
-                    <label className="request-field full">
-                      <span>Projeto parceiro (opcional)</span>
-                      <select
-                        value={requestForm.projetoId}
-                        onChange={handleRequestProjectChange}
-                        disabled={requestProjectsLoading}
-                      >
-                        <option value="">{requestProjectsLoading ? 'Carregando...' : 'Sem projeto'}</option>
-                        {requestProjects.map((project) => (
-                          <option key={project.id} value={project.id}>
-                            {project.nome}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-
-                  <label className="request-field full">
-                    <span>Justificativa de uso (opcional)</span>
-                    <textarea
-                      rows="4"
-                      value={requestForm.justificativa}
-                      onChange={handleRequestChange('justificativa')}
-                      placeholder="Conte, de forma breve, como pretende usar a plataforma."
-                    />
-                  </label>
-                </div>
-
-                {requestError && <div className="request-message error">{requestError}</div>}
-                {requestSuccess && <div className="request-message success">{requestSuccess}</div>}
-
-                <div className="request-actions app-modal-footer">
-                  <button
-                    type="button"
-                    className="request-secondary app-modal-btn app-modal-btn--secondary"
-                    onClick={handleCloseRequest}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="request-primary app-modal-btn app-modal-btn--primary"
-                    disabled={requestLoading}
-                  >
-                    {requestLoading ? 'Enviando...' : 'Enviar solicitação'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {recoverOpen && (
-          <motion.div
-            className="request-modal-overlay app-modal-overlay"
-            role="presentation"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) handleCloseRecovery();
-            }}
-          >
-            <motion.div
-              className="request-modal recovery-modal app-modal-shell"
-              ref={recoveryModalRef}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="recovery-modal-title"
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-            >
-              <div className="request-modal-header app-modal-header">
-                <div className="app-modal-heading">
-                  <h3 id="recovery-modal-title" className="app-modal-title">Recuperar senha</h3>
-                  <p className="app-modal-subtitle">Informe seus dados para redefinir a senha de acesso.</p>
-                </div>
-                <button type="button" className="app-modal-close" onClick={handleCloseRecovery} aria-label="Fechar">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleRecoverySubmit} className="request-form app-modal-body">
-                <div className="request-grid recovery-grid">
-                  <label className="request-field full">
-                    <span>CPF ou e-mail cadastrado</span>
-                    <input
-                      type="text"
-                      value={recoverForm.identifier}
-                      onChange={handleRecoveryChange('identifier')}
-                      placeholder="usuario@laines.ufrn.br ou 00000000000"
-                      autoComplete="username"
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>CPF</span>
-                    <input
-                      type="text"
-                      value={recoverForm.cpf}
-                      onChange={handleRecoveryCpfChange}
-                      placeholder="000.000.000-00"
-                      maxLength="14"
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>Data de nascimento</span>
-                    <input
-                      type="date"
-                      value={recoverForm.dataNascimento}
-                      onChange={handleRecoveryChange('dataNascimento')}
-                      required
-                    />
-                  </label>
-
-                  <label className="request-field">
-                    <span>Nova senha</span>
-                    <div className="field-shell">
-                      <Lock size={17} />
-                      <input
-                        type={recoverShowPassword ? 'text' : 'password'}
-                        value={recoverForm.newPassword}
-                        onChange={handleRecoveryChange('newPassword')}
-                        placeholder="Nova senha"
-                        autoComplete="new-password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="password-visibility"
-                        onClick={() => setRecoverShowPassword((prev) => !prev)}
-                        aria-label={recoverShowPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                      >
-                        {recoverShowPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                      </button>
-                    </div>
-                  </label>
-
-                  <label className="request-field">
-                    <span>Confirmar nova senha</span>
-                    <div className="field-shell">
-                      <Lock size={17} />
-                      <input
-                        type={recoverShowConfirmPassword ? 'text' : 'password'}
-                        value={recoverForm.confirmPassword}
-                        onChange={handleRecoveryChange('confirmPassword')}
-                        placeholder="Repita a nova senha"
-                        autoComplete="new-password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        className="password-visibility"
-                        onClick={() => setRecoverShowConfirmPassword((prev) => !prev)}
-                        aria-label={recoverShowConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                      >
-                        {recoverShowConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                      </button>
-                    </div>
-                  </label>
-                </div>
-
-                {recoverError && <div className="request-message error">{recoverError}</div>}
-                {recoverSuccess && <div className="request-message success">{recoverSuccess}</div>}
-
-                <div className="request-actions app-modal-footer">
-                  <button
-                    type="button"
-                    className="request-secondary app-modal-btn app-modal-btn--secondary"
-                    onClick={handleCloseRecovery}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="request-primary app-modal-btn app-modal-btn--primary"
-                    disabled={recoverLoading}
-                  >
-                    {recoverLoading ? 'Redefinindo...' : 'Redefinir senha'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <PasswordRecoveryModal
+        open={recoverOpen}
+        modalRef={recoveryModalRef}
+        step={recoverStep}
+        form={recoverForm}
+        onFieldChange={handleRecoverFieldChange}
+        loading={recoverLoading}
+        error={recoverError}
+        showNewPassword={showNewPassword}
+        showConfirmPassword={showConfirmPassword}
+        onToggleNewPassword={() => setShowNewPassword((prev) => !prev)}
+        onToggleConfirmPassword={() => setShowConfirmPassword((prev) => !prev)}
+        onIdentifySubmit={handleRecoveryIdentifySubmit}
+        onResetSubmit={handleRecoveryResetSubmit}
+        onBackToIdentify={handleRecoveryBackToIdentify}
+        onClose={handleCloseRecovery}
+      />
     </>
   );
 };

@@ -1,0 +1,935 @@
+- generic [active] [ref=e1]:
+  - list:
+    - listitem:
+      - link "Skip to main content" [ref=e2] [cursor=pointer]:
+        - /url: "#content"
+    - listitem:
+      - link "Skip to search" [ref=e3] [cursor=pointer]:
+        - /url: "#search"
+  - banner [ref=e7]:
+    - navigation [ref=e8]:
+      - link "MDN" [ref=e10] [cursor=pointer]:
+        - /url: /en-US/
+        - img "MDN" [ref=e11]
+      - button "Search the site" [ref=e17] [cursor=pointer]:
+        - img [ref=e18]
+      - button "Toggle navigation" [ref=e21] [cursor=pointer]
+      - text: (external) (external)
+    - generic [ref=e22]:
+      - button "Toggle sidebar" [ref=e25] [cursor=pointer]:
+        - img [ref=e27]
+      - list [ref=e29]:
+        - listitem [ref=e30]:
+          - link "Web" [ref=e31] [cursor=pointer]:
+            - /url: /en-US/docs/Web
+        - listitem [ref=e32]:
+          - link "Web APIs" [ref=e33] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API
+        - listitem [ref=e34]:
+          - link "MediaDevices" [ref=e35] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaDevices
+        - listitem [ref=e36]:
+          - link "getUserMedia()" [ref=e37] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaDevices/getUserMedia
+      - button "Switch color theme" [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]: Theme
+      - generic [ref=e45]:
+        - button "English (US)" [ref=e46] [cursor=pointer]:
+          - generic [ref=e47]: English (US)
+        - generic: Remember language
+  - main [ref=e50]:
+    - generic [ref=e51]:
+      - 'heading "MediaDevices: getUserMedia() method" [level=1] [ref=e52]'
+      - group [ref=e53]:
+        - generic "Baseline Check Baseline Widely available Chrome check Edge check Firefox check Safari check" [ref=e54] [cursor=pointer]:
+          - img "Baseline Check" [ref=e55]
+          - generic [ref=e56]: Baseline Widely available
+          - generic [ref=e57]:
+            - generic "Supported in Chrome and Edge" [ref=e58]:
+              - img "Chrome check" [ref=e59]
+              - img "Edge check" [ref=e60]
+            - generic "Supported in Firefox" [ref=e61]:
+              - img "Firefox check" [ref=e62]
+            - generic "Supported in Safari" [ref=e63]:
+              - img "Safari check" [ref=e64]
+      - generic [ref=e66]:
+        - paragraph [ref=e68]:
+          - strong [ref=e69]: "Secure context:"
+          - text: This feature is available only in
+          - link "secure contexts" [ref=e70] [cursor=pointer]:
+            - /url: /en-US/docs/Web/Security/Defenses/Secure_Contexts
+          - text: (HTTPS), in some or all
+          - link "supporting browsers" [ref=e71] [cursor=pointer]:
+            - /url: "#browser_compatibility"
+          - text: .
+        - paragraph [ref=e72]:
+          - text: The
+          - strong [ref=e73]:
+            - code [ref=e74]: getUserMedia()
+          - text: method of the
+          - link "MediaDevices" [ref=e75] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaDevices
+            - code [ref=e76]: MediaDevices
+          - text: interface prompts the user for permission to use a media input which produces a
+          - link "MediaStream" [ref=e77] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaStream
+            - code [ref=e78]: MediaStream
+          - text: with tracks containing the requested types of media.
+        - paragraph [ref=e79]: That stream can include, for example, a video track (produced by either a hardware or virtual video source such as a camera, video recording device, screen sharing service, and so forth), an audio track (similarly, produced by a physical or virtual audio source like a microphone, A/D converter, or the like), and possibly other track types.
+        - paragraph [ref=e80]:
+          - text: It returns a
+          - link "Promise" [ref=e81] [cursor=pointer]:
+            - /url: /en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+            - code [ref=e82]: Promise
+          - text: that resolves to a
+          - link "MediaStream" [ref=e83] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaStream
+            - code [ref=e84]: MediaStream
+          - text: object. If the user denies permission, or matching media is not available, then the promise is rejected with
+          - code [ref=e85]: NotAllowedError
+          - text: or
+          - code [ref=e86]: NotFoundError
+          - link "DOMException" [ref=e87] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/DOMException
+            - code [ref=e88]: DOMException
+          - text: respectively.
+        - paragraph [ref=e90]:
+          - strong [ref=e91]: "Note:"
+          - text: It's possible for the returned promise to
+          - emphasis [ref=e92]: neither
+          - text: resolve nor reject, as the user is not required to make a choice at all and may ignore the request.
+    - complementary [ref=e93]:
+      - navigation [ref=e94]:
+        - heading "In this article" [level=2] [ref=e95]
+        - list [ref=e96]:
+          - listitem [ref=e97]:
+            - link "Syntax" [ref=e98] [cursor=pointer]:
+              - /url: "#syntax"
+          - listitem [ref=e99]:
+            - link "Privacy and security" [ref=e100] [cursor=pointer]:
+              - /url: "#privacy_and_security"
+          - listitem [ref=e101]:
+            - link "Examples" [ref=e102] [cursor=pointer]:
+              - /url: "#examples"
+          - listitem [ref=e103]:
+            - link "Specifications" [ref=e104] [cursor=pointer]:
+              - /url: "#specifications"
+          - listitem [ref=e105]:
+            - link "Browser compatibility" [ref=e106] [cursor=pointer]:
+              - /url: "#browser_compatibility"
+          - listitem [ref=e107]:
+            - link "See also" [ref=e108] [cursor=pointer]:
+              - /url: "#see_also"
+    - generic [ref=e109]:
+      - region "Syntax" [ref=e110]:
+        - heading "Syntax" [level=2] [ref=e111]:
+          - link "Syntax" [ref=e112] [cursor=pointer]:
+            - /url: "#syntax"
+        - generic [ref=e114]:
+          - generic [ref=e115]:
+            - generic [ref=e116]: js
+            - button "Copy" [ref=e119] [cursor=pointer]:
+              - generic [ref=e120]:
+                - generic: Copy
+          - code [ref=e122]: getUserMedia(constraints)
+      - region "Parameters" [ref=e123]:
+        - heading "Parameters" [level=3] [ref=e124]:
+          - link "Parameters" [ref=e125] [cursor=pointer]:
+            - /url: "#parameters"
+        - generic [ref=e126]:
+          - term [ref=e127]:
+            - link "constraints" [ref=e128] [cursor=pointer]:
+              - /url: "#constraints"
+              - code [ref=e129]: constraints
+          - definition [ref=e130]:
+            - paragraph [ref=e131]: An object specifying the types of media to request, along with any requirements for each type.
+            - paragraph [ref=e132]:
+              - text: The
+              - code [ref=e133]: constraints
+              - text: "parameter is an object with two members:"
+              - code [ref=e134]: video
+              - text: and
+              - code [ref=e135]: audio
+              - text: ", describing the media types requested. Either or both must be specified. If the browser cannot find all media tracks with the specified types that meet the constraints given, then the returned promise is rejected with"
+              - code [ref=e136]: NotFoundError
+              - link "DOMException" [ref=e137] [cursor=pointer]:
+                - /url: /en-US/docs/Web/API/DOMException
+                - code [ref=e138]: DOMException
+              - text: .
+            - paragraph [ref=e139]:
+              - text: For both
+              - code [ref=e140]: video
+              - text: and
+              - code [ref=e141]: audio
+              - text: ", its value is either a boolean or an object. The default value is"
+              - code [ref=e142]: "false"
+              - text: .
+            - list [ref=e143]:
+              - listitem [ref=e144]:
+                - text: If
+                - code [ref=e145]: "true"
+                - text: is specified for a media type, the resulting stream is
+                - emphasis [ref=e146]: required
+                - text: to have that type of track in it. If one cannot be included for any reason, the returned promise will reject.
+              - listitem [ref=e147]:
+                - text: If
+                - code [ref=e148]: "false"
+                - text: is specified for a media type, the resulting stream
+                - emphasis [ref=e149]: must not
+                - text: have that type of track, or the returned promise will reject. Because both
+                - code [ref=e150]: video
+                - text: and
+                - code [ref=e151]: audio
+                - text: default to
+                - code [ref=e152]: "false"
+                - text: ", if the"
+                - code [ref=e153]: constraints
+                - text: object contains neither property or if it's not present at all, the returned promise will always reject.
+              - listitem [ref=e154]:
+                - text: If an object is specified for a media type, the object is read as a
+                - link "MediaTrackConstraints" [ref=e155] [cursor=pointer]:
+                  - /url: /en-US/docs/Web/API/MediaTrackConstraints
+                  - code [ref=e156]: MediaTrackConstraints
+                - text: dictionary.
+      - region "Return value" [ref=e157]:
+        - heading "Return value" [level=3] [ref=e158]:
+          - link "Return value" [ref=e159] [cursor=pointer]:
+            - /url: "#return_value"
+        - paragraph [ref=e160]:
+          - text: A
+          - link "Promise" [ref=e161] [cursor=pointer]:
+            - /url: /en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+            - code [ref=e162]: Promise
+          - text: whose fulfillment handler receives a
+          - link "MediaStream" [ref=e163] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaStream
+            - code [ref=e164]: MediaStream
+          - text: object when the requested media has successfully been obtained.
+      - region "Exceptions" [ref=e165]:
+        - heading "Exceptions" [level=3] [ref=e166]:
+          - link "Exceptions" [ref=e167] [cursor=pointer]:
+            - /url: "#exceptions"
+        - generic [ref=e168]:
+          - term [ref=e169]:
+            - code [ref=e170]: AbortError
+            - link "DOMException" [ref=e171] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e172]: DOMException
+          - definition [ref=e173]:
+            - paragraph [ref=e174]:
+              - text: Although the user and operating system both granted access to the hardware device, and no hardware issues occurred that would cause a
+              - code [ref=e175]: NotReadableError
+              - link "DOMException" [ref=e176] [cursor=pointer]:
+                - /url: /en-US/docs/Web/API/DOMException
+                - code [ref=e177]: DOMException
+              - text: ", throw if some problem occurred which prevented the device from being used."
+          - term [ref=e178]:
+            - code [ref=e179]: InvalidStateError
+            - link "DOMException" [ref=e180] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e181]: DOMException
+          - definition [ref=e182]:
+            - paragraph [ref=e183]: Thrown if current document is not fully active.
+          - term [ref=e184]:
+            - code [ref=e185]: NotAllowedError
+            - link "DOMException" [ref=e186] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e187]: DOMException
+          - definition [ref=e188]:
+            - paragraph [ref=e189]:
+              - text: Thrown if one or more of the requested source devices cannot be used at this time. This will happen if the browsing context is insecure (that is, the page was loaded using HTTP rather than HTTPS). It also happens if the user has specified that the current browsing instance is not permitted access to the device, the user has denied access for the current session, or the user has denied all access to user media devices globally. On browsers that support managing media permissions with
+              - link "Permissions Policy" [ref=e190] [cursor=pointer]:
+                - /url: /en-US/docs/Web/HTTP/Guides/Permissions_Policy
+              - text: ", this error is returned if Permissions Policy is not configured to allow access to the input source(s)."
+            - paragraph [ref=e192]:
+              - strong [ref=e193]: "Note:"
+              - text: Older versions of the specification used
+              - code [ref=e194]: SecurityError
+              - text: for this instead;
+              - code [ref=e195]: SecurityError
+              - text: has taken on a new meaning.
+          - term [ref=e196]:
+            - code [ref=e197]: NotFoundError
+            - link "DOMException" [ref=e198] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e199]: DOMException
+          - definition [ref=e200]:
+            - paragraph [ref=e201]: Thrown if no media tracks of the type specified were found that satisfy the given constraints.
+          - term [ref=e202]:
+            - code [ref=e203]: NotReadableError
+            - link "DOMException" [ref=e204] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e205]: DOMException
+          - definition [ref=e206]:
+            - paragraph [ref=e207]: Thrown if, although the user granted permission to use the matching devices, a hardware error occurred at the operating system, browser, or Web page level which prevented access to the device.
+          - term [ref=e208]:
+            - code [ref=e209]: OverconstrainedError
+            - link "DOMException" [ref=e210] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e211]: DOMException
+          - definition [ref=e212]:
+            - paragraph [ref=e213]:
+              - text: Thrown if the specified constraints resulted in no candidate devices which met the criteria requested. The error is an object of type
+              - code [ref=e214]: OverconstrainedError
+              - text: ", and has a"
+              - code [ref=e215]: constraint
+              - text: property whose string value is the name of a constraint which was impossible to meet, and a
+              - code [ref=e216]: message
+              - text: property containing a human-readable string explaining the problem.
+            - paragraph [ref=e218]:
+              - strong [ref=e219]: "Note:"
+              - text: Because this error can occur even when the user has not yet granted permission to use the underlying device, it can potentially be used as a
+              - link "fingerprinting" [ref=e220] [cursor=pointer]:
+                - /url: /en-US/docs/Glossary/Fingerprinting
+              - text: surface.
+          - term [ref=e221]:
+            - code [ref=e222]: SecurityError
+            - link "DOMException" [ref=e223] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/DOMException
+              - code [ref=e224]: DOMException
+          - definition [ref=e225]:
+            - paragraph [ref=e226]:
+              - text: Thrown if user media support is disabled on the
+              - link "Document" [ref=e227] [cursor=pointer]:
+                - /url: /en-US/docs/Web/API/Document
+                - code [ref=e228]: Document
+              - text: on which
+              - code [ref=e229]: getUserMedia()
+              - text: was called. The mechanism by which user media support is enabled and disabled is left up to the individual user agent.
+          - term [ref=e230]:
+            - link "TypeError" [ref=e231] [cursor=pointer]:
+              - /url: /en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError
+              - code [ref=e232]: TypeError
+          - definition [ref=e233]:
+            - paragraph [ref=e234]:
+              - text: Thrown if the list of constraints specified is empty, or has all constraints set to
+              - code [ref=e235]: "false"
+              - text: . This can also happen if you try to call
+              - code [ref=e236]: getUserMedia()
+              - text: in an insecure context, since
+              - link "navigator.mediaDevices" [ref=e237] [cursor=pointer]:
+                - /url: /en-US/docs/Web/API/Navigator/mediaDevices
+                - code [ref=e238]: navigator.mediaDevices
+              - text: is
+              - code [ref=e239]: undefined
+              - text: in an insecure context.
+      - region "Privacy and security" [ref=e240]:
+        - heading "Privacy and security" [level=2] [ref=e241]:
+          - link "Privacy and security" [ref=e242] [cursor=pointer]:
+            - /url: "#privacy_and_security"
+        - paragraph [ref=e243]:
+          - text: As an API that may involve significant privacy concerns,
+          - code [ref=e244]: getUserMedia()
+          - text: "'s specification lays out a wide array of privacy and security requirements that browsers are obligated to meet."
+        - paragraph [ref=e245]:
+          - code [ref=e246]: getUserMedia()
+          - text: is a powerful feature that can only be used in
+          - link "secure contexts" [ref=e247] [cursor=pointer]:
+            - /url: /en-US/docs/Web/Security/Defenses/Secure_Contexts
+          - text: ; in insecure contexts,
+          - code [ref=e248]: navigator.mediaDevices
+          - text: is
+          - code [ref=e249]: undefined
+          - text: ", preventing access to"
+          - code [ref=e250]: getUserMedia()
+          - text: . A secure context is, in short, a page loaded using HTTPS or the
+          - code [ref=e251]: file:///
+          - text: URL scheme, or a page loaded from
+          - code [ref=e252]: localhost
+          - text: .
+        - paragraph [ref=e253]:
+          - text: In addition, user permission is always required to access the user's audio and video inputs. Only a window's top-level document context for a valid origin can even request permission to use
+          - code [ref=e254]: getUserMedia()
+          - text: ", unless the top-level context expressly grants permission for a given"
+          - link "<iframe>" [ref=e255] [cursor=pointer]:
+            - /url: /en-US/docs/Web/HTML/Reference/Elements/iframe
+            - code [ref=e256]: <iframe>
+          - text: to do so using
+          - link "Permissions Policy" [ref=e257] [cursor=pointer]:
+            - /url: /en-US/docs/Web/HTTP/Guides/Permissions_Policy
+          - text: . Otherwise, the user will never even be asked for permission to use the input devices.
+        - paragraph [ref=e258]: For additional details on these requirements and rules, how they are reflected in the context in which your code is running, and about how browsers manage user privacy and security issues, read on.
+      - region "User privacy" [ref=e259]:
+        - heading "User privacy" [level=3] [ref=e260]:
+          - link "User privacy" [ref=e261] [cursor=pointer]:
+            - /url: "#user_privacy"
+        - paragraph [ref=e262]:
+          - text: As an API that may involve significant privacy concerns,
+          - code [ref=e263]: getUserMedia()
+          - text: is held by the specification to very specific requirements for user notification and permission management. First,
+          - code [ref=e264]: getUserMedia()
+          - text: must always get user permission before opening any media gathering input such as a webcam or microphone. Browsers may offer a once-per-domain permission feature, but they must ask at least the first time, and the user must specifically grant ongoing permission if they choose to do so.
+        - paragraph [ref=e265]: Of equal importance are the rules around notification. Browsers are required to display an indicator that shows that a camera or microphone is in use, above and beyond any hardware indicator that may exist. They must also show an indicator that permission has been granted to use a device for input, even if the device is not actively recording at the moment.
+        - paragraph [ref=e266]: For example in Firefox, the URL bar displays a pulsing red icon to indicate that recording is underway. The icon is gray if the permission is in place but recording is not currently underway. The device's physical light is used to indicate whether or not recording is currently active. If you've muted your camera (so-called "facemuting"), your camera's activity light goes out to indicate that the camera is not actively recording you, without discarding the permission to resume using the camera once muting is over.
+      - region "Security" [ref=e267]:
+        - heading "Security" [level=3] [ref=e268]:
+          - link "Security" [ref=e269] [cursor=pointer]:
+            - /url: "#security"
+        - paragraph [ref=e270]:
+          - text: There are a number of ways security management and controls in a
+          - link "user agent" [ref=e271] [cursor=pointer]:
+            - /url: /en-US/docs/Glossary/User_agent
+          - text: can cause
+          - code [ref=e272]: getUserMedia()
+          - text: to return a security-related error.
+        - heading "Permissions Policy" [level=4] [ref=e273]
+        - paragraph [ref=e274]:
+          - text: The two
+          - link "Permissions Policy" [ref=e275] [cursor=pointer]:
+            - /url: /en-US/docs/Web/HTTP/Guides/Permissions_Policy
+          - text: directives that apply to
+          - code [ref=e276]: getUserMedia()
+          - text: are
+          - code [ref=e277]: camera
+          - text: and
+          - code [ref=e278]: microphone
+          - text: .
+        - paragraph [ref=e279]:
+          - text: For example, this HTTP header will enable use of a camera by the document and any embedded
+          - link "<iframe>" [ref=e280] [cursor=pointer]:
+            - /url: /en-US/docs/Web/HTML/Reference/Elements/iframe
+            - code [ref=e281]: <iframe>
+          - text: "elements that are loaded from the same origin:"
+        - generic [ref=e283]:
+          - generic [ref=e284]:
+            - generic [ref=e285]: http
+            - button "Copy" [ref=e288] [cursor=pointer]:
+              - generic [ref=e289]:
+                - generic: Copy
+          - code [ref=e291]: "Permissions-Policy: camera=(self)"
+        - paragraph [ref=e292]:
+          - text: This will request access to the microphone for the current origin and the specific origin
+          - code [ref=e293]: https://developer.mozilla.org
+          - text: ":"
+        - generic [ref=e295]:
+          - generic [ref=e296]:
+            - generic [ref=e297]: http
+            - button "Copy" [ref=e300] [cursor=pointer]:
+              - generic [ref=e301]:
+                - generic: Copy
+          - code [ref=e303]: "Permissions-Policy: microphone=(self \"https://developer.mozilla.org\")"
+        - paragraph [ref=e304]:
+          - text: If you're using
+          - code [ref=e305]: getUserMedia()
+          - text: within an
+          - code [ref=e306]: <iframe>
+          - text: ", you can request permission just for that frame, which is clearly more secure than requesting a more general permission. Here, indicate we need the ability to use both camera and microphone:"
+        - generic [ref=e308]:
+          - generic [ref=e309]:
+            - generic [ref=e310]: html
+            - button "Copy" [ref=e313] [cursor=pointer]:
+              - generic [ref=e314]:
+                - generic: Copy
+          - code [ref=e316]:
+            - generic [ref=e317]:
+              - generic [ref=e318]: <iframe
+              - text: src
+              - generic [ref=e319]: ="https://mycode.example.net/etc"
+              - text: allow
+              - generic [ref=e320]: ="camera; microphone"
+              - text: ">"
+            - generic [ref=e321]:
+              - generic [ref=e322]: </iframe
+              - text: ">"
+        - heading "Encryption based security" [level=4] [ref=e323]
+        - paragraph [ref=e324]:
+          - text: The
+          - code [ref=e325]: getUserMedia()
+          - text: method is only available in
+          - link "secure contexts" [ref=e326] [cursor=pointer]:
+            - /url: /en-US/docs/Web/Security/Defenses/Secure_Contexts
+          - text: . A secure context is one the browser is reasonably confident contains a document which was loaded securely, using HTTPS/TLS, and has limited exposure to insecure contexts. If a document isn't loaded in a secure context, the
+          - link "navigator.mediaDevices" [ref=e327] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/Navigator/mediaDevices
+            - code [ref=e328]: navigator.mediaDevices
+          - text: property is
+          - code [ref=e329]: undefined
+          - text: ", making access to"
+          - code [ref=e330]: getUserMedia()
+          - text: impossible.
+        - paragraph [ref=e331]:
+          - text: Attempting to access
+          - code [ref=e332]: getUserMedia()
+          - text: in this situation will result in a
+          - link "TypeError" [ref=e333] [cursor=pointer]:
+            - /url: /en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError
+            - code [ref=e334]: TypeError
+          - text: .
+        - heading "Document source security" [level=4] [ref=e335]
+        - paragraph [ref=e336]:
+          - text: Because of the obvious security concern associated with
+          - code [ref=e337]: getUserMedia()
+          - text: if used unexpectedly or without security being carefully managed, it can only be used in secure contexts. There are a number of insecure ways to load a document that might, in turn, attempt to call
+          - code [ref=e338]: getUserMedia()
+          - text: . The following are examples of situations in which
+          - code [ref=e339]: getUserMedia()
+          - text: "is not permitted to be called:"
+        - list [ref=e340]:
+          - listitem [ref=e341]:
+            - text: A document loaded into a sandboxed
+            - link "<iframe>" [ref=e342] [cursor=pointer]:
+              - /url: /en-US/docs/Web/HTML/Reference/Elements/iframe
+              - code [ref=e343]: <iframe>
+            - text: element cannot call
+            - code [ref=e344]: getUserMedia()
+            - text: unless the
+            - code [ref=e345]: <iframe>
+            - text: has its
+            - link "sandbox" [ref=e346] [cursor=pointer]:
+              - /url: /en-US/docs/Web/HTML/Reference/Elements/iframe#sandbox
+              - code [ref=e347]: sandbox
+            - text: attribute set to
+            - code [ref=e348]: allow-same-origin
+            - text: .
+          - listitem [ref=e349]:
+            - text: A document loaded using a
+            - code [ref=e350]: data://
+            - text: or
+            - code [ref=e351]: blob://
+            - text: URL which has no origin (such as when one of these URLs is typed by the user into the address bar) cannot call
+            - code [ref=e352]: getUserMedia()
+            - text: . These kinds of URLs loaded from JavaScript code inherit the script's permissions.
+          - listitem [ref=e353]:
+            - text: Any other situation in which there is no origin, such as when the
+            - link "srcdoc" [ref=e354] [cursor=pointer]:
+              - /url: /en-US/docs/Web/HTML/Reference/Elements/iframe#srcdoc
+              - code [ref=e355]: srcdoc
+            - text: attribute is used to specify the contents of a frame.
+      - region "Examples" [ref=e356]:
+        - heading "Examples" [level=2] [ref=e357]:
+          - link "Examples" [ref=e358] [cursor=pointer]:
+            - /url: "#examples"
+      - region "Using getUserMedia()" [ref=e359]:
+        - heading "Using getUserMedia()" [level=3] [ref=e360]:
+          - link "Using getUserMedia()" [ref=e361] [cursor=pointer]:
+            - /url: "#using_getusermedia"
+        - paragraph [ref=e362]:
+          - text: Generally, you will access the
+          - link "MediaDevices" [ref=e363] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaDevices
+            - code [ref=e364]: MediaDevices
+          - text: singleton object using
+          - link "navigator.mediaDevices" [ref=e365] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/Navigator/mediaDevices
+            - code [ref=e366]: navigator.mediaDevices
+          - text: ", like this:"
+        - generic [ref=e368]:
+          - generic [ref=e369]:
+            - generic [ref=e370]: js
+            - button "Copy" [ref=e373] [cursor=pointer]:
+              - generic [ref=e374]:
+                - generic: Copy
+          - code [ref=e376]: "async function getMedia(constraints) { let stream = null; try { stream = await navigator.mediaDevices.getUserMedia(constraints); /* use the stream */ } catch (err) { /* handle the error */ } }"
+        - paragraph [ref=e377]: "Similarly, using the raw promises directly, the code looks like this:"
+        - generic [ref=e379]:
+          - generic [ref=e380]:
+            - generic [ref=e381]: js
+            - button "Copy" [ref=e384] [cursor=pointer]:
+              - generic [ref=e385]:
+                - generic: Copy
+          - code [ref=e387]: "navigator.mediaDevices .getUserMedia(constraints) .then((stream) => { /* use the stream */ }) .catch((err) => { /* handle the error */ });"
+        - paragraph [ref=e389]:
+          - strong [ref=e390]: "Note:"
+          - text: If the current document isn't loaded securely,
+          - code [ref=e391]: navigator.mediaDevices
+          - text: will be
+          - code [ref=e392]: undefined
+          - text: ", and you cannot use"
+          - code [ref=e393]: getUserMedia()
+          - text: . See
+          - link "Security" [ref=e394] [cursor=pointer]:
+            - /url: "#security"
+          - text: for more information on this and other security issues related to using
+          - code [ref=e395]: getUserMedia()
+          - text: .
+        - paragraph [ref=e396]:
+          - text: Below are some examples of the
+          - code [ref=e397]: constraints
+          - text: parameter.
+        - paragraph [ref=e398]: "The following requests both audio and video without any specific requirements:"
+        - generic [ref=e400]:
+          - generic [ref=e401]:
+            - generic [ref=e402]: js
+            - button "Copy" [ref=e405] [cursor=pointer]:
+              - generic [ref=e406]:
+                - generic: Copy
+          - code [ref=e408]: "getUserMedia({ audio: true, video: true, });"
+        - paragraph [ref=e409]: "While information about a user's cameras and microphones are inaccessible for privacy reasons, an application can request the camera and microphone capabilities it needs and wants, using additional constraints. The following expresses a preference for 1280x720 camera resolution:"
+        - generic [ref=e411]:
+          - generic [ref=e412]:
+            - generic [ref=e413]: js
+            - button "Copy" [ref=e416] [cursor=pointer]:
+              - generic [ref=e417]:
+                - generic: Copy
+          - code [ref=e419]: "getUserMedia({ audio: true, video: { width: 1280, height: 720 }, });"
+        - paragraph [ref=e420]:
+          - text: The browser will try to honor the constraints, and will return a matching track if supported by the underlying hardware. If not supported, the browser may attempt to crop and downscale a higher resolution stream from the underlying hardware in order to match the constraint (and might also reduce the frame rate if that was constrained). This behavior can be forced by setting the
+          - link "resizeMode" [ref=e421] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaTrackConstraints#resizemode
+            - code [ref=e422]: resizeMode
+          - text: constraint to
+          - code [ref=e423]: crop-and-scale
+          - text: (or disabled by setting it to
+          - code [ref=e424]: none
+          - text: "):"
+        - generic [ref=e426]:
+          - generic [ref=e427]:
+            - generic [ref=e428]: js
+            - button "Copy" [ref=e431] [cursor=pointer]:
+              - generic [ref=e432]:
+                - generic: Copy
+          - code [ref=e434]: "getUserMedia({ audio: true, video: { width: 1280, height: 720, resizeMode: \"crop-and-scale\" }, });"
+        - paragraph [ref=e435]: The browser may return another resolution if an exact match is not available and the source is not to be scaled.
+        - paragraph [ref=e436]:
+          - text: To
+          - emphasis [ref=e437]: require
+          - text: a capability and fail if it is not available, use the keywords
+          - code [ref=e438]: min
+          - text: ","
+          - code [ref=e439]: max
+          - text: ", or"
+          - code [ref=e440]: exact
+          - text: (a.k.a.
+          - code [ref=e441]: min === max
+          - text: "). The following demands a minimum resolution of 1280x720:"
+        - generic [ref=e443]:
+          - generic [ref=e444]:
+            - generic [ref=e445]: js
+            - button "Copy" [ref=e448] [cursor=pointer]:
+              - generic [ref=e449]:
+                - generic: Copy
+          - code [ref=e451]: "getUserMedia({ audio: true, video: { width: { min: 1280 }, height: { min: 720 }, }, });"
+        - paragraph [ref=e452]:
+          - text: If no camera exists with this resolution or higher, then the returned promise will be rejected with
+          - code [ref=e453]: OverconstrainedError
+          - text: ", and the user will not be prompted."
+        - paragraph [ref=e454]:
+          - text: The reason for the difference in behavior is that the keywords
+          - code [ref=e455]: min
+          - text: ","
+          - code [ref=e456]: max
+          - text: ", and"
+          - code [ref=e457]: exact
+          - text: are inherently mandatory — whereas plain values and a keyword called
+          - code [ref=e458]: ideal
+          - text: "are not. Here's a full example:"
+        - generic [ref=e460]:
+          - generic [ref=e461]:
+            - generic [ref=e462]: js
+            - button "Copy" [ref=e465] [cursor=pointer]:
+              - generic [ref=e466]:
+                - generic: Copy
+          - code [ref=e468]: "getUserMedia({ audio: true, video: { width: { min: 1024, ideal: 1280, max: 1920 }, height: { min: 576, ideal: 720, max: 1080 }, }, });"
+        - paragraph [ref=e469]:
+          - text: An
+          - code [ref=e470]: ideal
+          - text: value, when used, has gravity — which means that the browser will try to find the setting (and camera, if you have more than one), with the smallest
+          - link "fitness distance (external)" [ref=e471] [cursor=pointer]:
+            - /url: https://w3c.github.io/mediacapture-main/#dfn-fitness-distance
+          - text: from the ideal values given.
+        - paragraph [ref=e472]: "Plain values are inherently ideal, which means that the first of our resolution examples above could have been written like this:"
+        - generic [ref=e474]:
+          - generic [ref=e475]:
+            - generic [ref=e476]: js
+            - button "Copy" [ref=e479] [cursor=pointer]:
+              - generic [ref=e480]:
+                - generic: Copy
+          - code [ref=e482]: "getUserMedia({ audio: true, video: { width: { ideal: 1280 }, height: { ideal: 720 }, }, });"
+        - paragraph [ref=e483]: "Not all constraints are numbers. For example, on mobile devices, the following will prefer the front camera (if one is available) over the rear one:"
+        - generic [ref=e485]:
+          - generic [ref=e486]:
+            - generic [ref=e487]: js
+            - button "Copy" [ref=e490] [cursor=pointer]:
+              - generic [ref=e491]:
+                - generic: Copy
+          - code [ref=e493]: "getUserMedia({ audio: true, video: { facingMode: \"user\" }, });"
+        - paragraph [ref=e494]:
+          - text: To
+          - emphasis [ref=e495]: require
+          - text: "the rear camera, use:"
+        - generic [ref=e497]:
+          - generic [ref=e498]:
+            - generic [ref=e499]: js
+            - button "Copy" [ref=e502] [cursor=pointer]:
+              - generic [ref=e503]:
+                - generic: Copy
+          - code [ref=e505]: "getUserMedia({ audio: true, video: { facingMode: { exact: \"environment\" }, }, });"
+        - paragraph [ref=e506]:
+          - text: Another non-number constraint is the
+          - code [ref=e507]: deviceId
+          - text: constraint. If you have a
+          - code [ref=e508]: deviceId
+          - text: from
+          - link "mediaDevices.enumerateDevices()" [ref=e509] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaDevices/enumerateDevices
+            - code [ref=e510]: mediaDevices.enumerateDevices()
+          - text: ", you can use it to request a specific device:"
+        - generic [ref=e512]:
+          - generic [ref=e513]:
+            - generic [ref=e514]: js
+            - button "Copy" [ref=e517] [cursor=pointer]:
+              - generic [ref=e518]:
+                - generic: Copy
+          - code [ref=e520]: "getUserMedia({ video: { deviceId: myPreferredCameraDeviceId, }, });"
+        - paragraph [ref=e521]:
+          - text: The above will return the camera you requested, or a different camera if that specific camera is no longer available. Browsers' internally-available information, such as user preference, may also override your request. For example, when the user was asked for camera permissions, the camera they selected may take priority over the one you requested. Again, to
+          - emphasis [ref=e522]: require
+          - text: "the specific camera, you would use:"
+        - generic [ref=e524]:
+          - generic [ref=e525]:
+            - generic [ref=e526]: js
+            - button "Copy" [ref=e529] [cursor=pointer]:
+              - generic [ref=e530]:
+                - generic: Copy
+          - code [ref=e532]: "getUserMedia({ video: { deviceId: { exact: myExactCameraOrBustDeviceId, }, }, });"
+      - region "Width and height" [ref=e533]:
+        - heading "Width and height" [level=3] [ref=e534]:
+          - link "Width and height" [ref=e535] [cursor=pointer]:
+            - /url: "#width_and_height"
+        - paragraph [ref=e536]:
+          - text: This example gives a preference for camera resolution, and assigns the resulting
+          - link "MediaStream" [ref=e537] [cursor=pointer]:
+            - /url: /en-US/docs/Web/API/MediaStream
+            - code [ref=e538]: MediaStream
+          - text: object to a video element.
+        - generic [ref=e540]:
+          - generic [ref=e541]:
+            - generic [ref=e542]: js
+            - button "Copy" [ref=e545] [cursor=pointer]:
+              - generic [ref=e546]:
+                - generic: Copy
+          - code [ref=e548]:
+            - text: "// Prefer camera resolution nearest to 1280x720. const constraints = { audio: true, video: { width: 1280, height: 720 }, }; navigator.mediaDevices .getUserMedia(constraints) .then((mediaStream) => { const video = document.querySelector(\"video\"); video.srcObject = mediaStream; video.onloadedmetadata = () => { video.play(); }; }) .catch((err) => { // always check for errors at the end. console.error("
+            - generic [ref=e549]:
+              - text: "`"
+              - generic [ref=e550]: "${err.name}"
+              - text: ":"
+              - generic [ref=e551]: "${err.message}"
+              - text: "`"
+            - text: "); });"
+      - region "Frame rate" [ref=e552]:
+        - heading "Frame rate" [level=3] [ref=e553]:
+          - link "Frame rate" [ref=e554] [cursor=pointer]:
+            - /url: "#frame_rate"
+        - paragraph [ref=e555]: Lower frame-rates may be desirable in some cases, like WebRTC transmissions with bandwidth restrictions.
+        - generic [ref=e557]:
+          - generic [ref=e558]:
+            - generic [ref=e559]: js
+            - button "Copy" [ref=e562] [cursor=pointer]:
+              - generic [ref=e563]:
+                - generic: Copy
+          - code [ref=e565]: "const constraints = { video: { frameRate: { ideal: 10, max: 15 } }, };"
+      - region "Front and back camera" [ref=e566]:
+        - heading "Front and back camera" [level=3] [ref=e567]:
+          - link "Front and back camera" [ref=e568] [cursor=pointer]:
+            - /url: "#front_and_back_camera"
+        - paragraph [ref=e569]: On mobile phones.
+        - generic [ref=e571]:
+          - generic [ref=e572]:
+            - generic [ref=e573]: js
+            - button "Copy" [ref=e576] [cursor=pointer]:
+              - generic [ref=e577]:
+                - generic: Copy
+          - code [ref=e579]: "let front = false; document.getElementById(\"flip-button\").onclick = () => { front = !front; }; const constraints = { video: { facingMode: front ? \"user\" : \"environment\" }, };"
+        - paragraph [ref=e581]:
+          - strong [ref=e582]: "Note:"
+          - text: In certain cases, it may be necessary to release the current camera facing mode before you can switch to a different one. To ensure the camera switch, it is advisable to free up the media resources by invoking the "stop()" method on the track before requesting a different facing mode.
+      - region "Specifications" [ref=e583]:
+        - heading "Specifications" [level=2] [ref=e584]:
+          - link "Specifications" [ref=e585] [cursor=pointer]:
+            - /url: "#specifications"
+        - table [ref=e586]:
+          - rowgroup [ref=e587]:
+            - row "Specification" [ref=e588]:
+              - columnheader "Specification" [ref=e589]
+          - rowgroup [ref=e590]:
+            - 'row "Media Capture and Streams # dom-mediadevices-getusermedia (external)" [ref=e591]':
+              - 'cell "Media Capture and Streams # dom-mediadevices-getusermedia (external)" [ref=e592]':
+                - 'link "Media Capture and Streams # dom-mediadevices-getusermedia (external)" [ref=e593] [cursor=pointer]':
+                  - /url: https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia
+                  - text: Media Capture and Streams
+                  - text: "# dom-mediadevices-getusermedia (external)"
+      - region "Browser compatibility" [ref=e594]:
+        - heading "Browser compatibility" [level=2] [ref=e595]:
+          - link "Browser compatibility" [ref=e596] [cursor=pointer]:
+            - /url: "#browser_compatibility"
+        - generic:
+          - paragraph
+      - region "See also" [ref=e597]:
+        - heading "See also" [level=2] [ref=e598]:
+          - link "See also" [ref=e599] [cursor=pointer]:
+            - /url: "#see_also"
+        - list [ref=e600]:
+          - listitem [ref=e601]:
+            - text: The older
+            - link "Navigator.getUserMedia()" [ref=e602] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/Navigator/getUserMedia
+              - code [ref=e603]: Navigator.getUserMedia()
+            - text: legacy API
+          - listitem [ref=e604]:
+            - link "MediaDevices.enumerateDevices()" [ref=e605] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaDevices/enumerateDevices
+              - code [ref=e606]: MediaDevices.enumerateDevices()
+            - text: ": Listing available media devices"
+          - listitem [ref=e607]:
+            - link "WebRTC API" [ref=e608] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/WebRTC_API
+          - listitem [ref=e609]:
+            - link "Media Capture and Streams API" [ref=e610] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/Media_Capture_and_Streams_API
+          - listitem [ref=e611]:
+            - link "Screen Capture API" [ref=e612] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/Screen_Capture_API
+            - text: ": Capturing screen contents as a"
+            - link "MediaStream" [ref=e613] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaStream
+              - code [ref=e614]: MediaStream
+          - listitem [ref=e615]:
+            - link "MediaDevices.getDisplayMedia()" [ref=e616] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaDevices/getDisplayMedia
+              - code [ref=e617]: MediaDevices.getDisplayMedia()
+            - text: ": Getting a stream containing screen contents"
+          - listitem [ref=e618]:
+            - link "Taking webcam photos" [ref=e619] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/Media_Capture_and_Streams_API/Taking_still_photos
+            - text: ": A tutorial on using"
+            - code [ref=e620]: getUserMedia()
+            - text: to take still photos rather than video
+      - region "Help improve MDN" [ref=e621]:
+        - generic [ref=e622]:
+          - img [ref=e623]
+          - heading "Help improve MDN" [level=2] [ref=e630]
+          - group [ref=e632]:
+            - generic [ref=e633]: Was this page helpful to you?
+            - generic [ref=e634]:
+              - button "Yes" [ref=e636] [cursor=pointer]:
+                - img [ref=e638]
+                - generic [ref=e640]:
+                  - generic: "Yes"
+              - button "No" [ref=e642] [cursor=pointer]:
+                - img [ref=e644]
+                - generic [ref=e646]:
+                  - generic: "No"
+          - link "Learn how to contribute" [ref=e647] [cursor=pointer]:
+            - /url: /en-US/docs/MDN/Community/Getting_started
+          - paragraph [ref=e648]:
+            - text: This page was last modified on
+            - time [ref=e649]: Nov 30, 2025
+            - text: by
+            - link "MDN contributors" [ref=e650] [cursor=pointer]:
+              - /url: /en-US/docs/Web/API/MediaDevices/getUserMedia/contributors.txt
+            - text: .
+          - generic [ref=e651]:
+            - link "View this page on GitHub (external)" [ref=e652] [cursor=pointer]:
+              - /url: https://github.com/mdn/content/blob/main/files/en-us/web/api/mediadevices/getusermedia/index.md?plain=1
+            - text: •
+            - link "Report a problem with this content (external)" [ref=e653] [cursor=pointer]:
+              - /url: https://github.com/mdn/content/issues/new?template=page-report.yml&mdn-url=https%3A%2F%2Fdeveloper.mozilla.org%2Fen-US%2Fdocs%2FWeb%2FAPI%2FMediaDevices%2FgetUserMedia&metadata=%3C%21--+Do+not+make+changes+below+this+line+--%3E%0A%3Cdetails%3E%0A%3Csummary%3EPage+report+details%3C%2Fsummary%3E%0A%0A*+Folder%3A+%60en-us%2Fweb%2Fapi%2Fmediadevices%2Fgetusermedia%60%0A*+MDN+URL%3A+https%3A%2F%2Fdeveloper.mozilla.org%2Fen-US%2Fdocs%2FWeb%2FAPI%2FMediaDevices%2FgetUserMedia%0A*+GitHub+URL%3A+https%3A%2F%2Fgithub.com%2Fmdn%2Fcontent%2Fblob%2Fmain%2Ffiles%2Fen-us%2Fweb%2Fapi%2Fmediadevices%2Fgetusermedia%2Findex.md%0A*+Last+commit%3A+https%3A%2F%2Fgithub.com%2Fmdn%2Fcontent%2Fcommit%2Fca26363fcc6fc861103d40ac0205e5c5b79eb2fa%0A*+Document+last+modified%3A+2025-11-30T02%3A30%3A55.000Z%0A%0A%3C%2Fdetails%3E
+  - contentinfo [ref=e655]:
+    - generic [ref=e656]:
+      - generic [ref=e657]:
+        - link "MDN logo" [ref=e658] [cursor=pointer]:
+          - /url: /
+          - img "MDN" [ref=e659]
+        - paragraph [ref=e661]: Your blueprint for a better internet.
+      - list [ref=e662]:
+        - listitem [ref=e663]:
+          - link "MDN on GitHub" [ref=e664] [cursor=pointer]:
+            - /url: https://github.com/mdn/
+        - listitem [ref=e665]:
+          - link "MDN on Bluesky" [ref=e666] [cursor=pointer]:
+            - /url: https://bsky.app/profile/developer.mozilla.org
+        - listitem [ref=e667]:
+          - link "MDN on X" [ref=e668] [cursor=pointer]:
+            - /url: https://x.com/mozdevnet
+        - listitem [ref=e669]:
+          - link "MDN on Mastodon" [ref=e670] [cursor=pointer]:
+            - /url: https://mastodon.social/@mdn
+        - listitem [ref=e671]:
+          - link "MDN blog RSS feed" [ref=e672] [cursor=pointer]:
+            - /url: /en-US/blog/rss.xml
+      - generic [ref=e673]:
+        - term [ref=e674]: MDN
+        - definition [ref=e675]:
+          - list [ref=e676]:
+            - listitem [ref=e677]:
+              - link "About" [ref=e678] [cursor=pointer]:
+                - /url: /en-US/about
+            - listitem [ref=e679]:
+              - link "Blog" [ref=e680] [cursor=pointer]:
+                - /url: /en-US/blog/
+            - listitem [ref=e681]:
+              - link "Mozilla careers (external)" [ref=e682] [cursor=pointer]:
+                - /url: https://www.mozilla.org/en-US/careers/listings/
+            - listitem [ref=e683]:
+              - link "Advertise with us" [ref=e684] [cursor=pointer]:
+                - /url: /en-US/advertising
+            - listitem [ref=e685]:
+              - link "MDN Plus" [ref=e686] [cursor=pointer]:
+                - /url: /en-US/plus
+            - listitem [ref=e687]:
+              - link "Product help (external)" [ref=e688] [cursor=pointer]:
+                - /url: https://support.mozilla.org/products/mdn-plus
+      - generic [ref=e689]:
+        - term [ref=e690]: Contribute
+        - definition [ref=e691]:
+          - list [ref=e692]:
+            - listitem [ref=e693]:
+              - link "MDN Community" [ref=e694] [cursor=pointer]:
+                - /url: /en-US/community
+            - listitem [ref=e695]:
+              - link "Community resources" [ref=e696] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Community
+            - listitem [ref=e697]:
+              - link "Writing guidelines" [ref=e698] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Writing_guidelines
+            - listitem [ref=e699]:
+              - link "MDN Discord (external)" [ref=e700] [cursor=pointer]:
+                - /url: /discord
+            - listitem [ref=e701]:
+              - link "MDN on GitHub (external)" [ref=e702] [cursor=pointer]:
+                - /url: https://github.com/mdn
+      - generic [ref=e703]:
+        - term [ref=e704]: Developers
+        - definition [ref=e705]:
+          - list [ref=e706]:
+            - listitem [ref=e707]:
+              - link "Web technologies" [ref=e708] [cursor=pointer]:
+                - /url: /en-US/docs/Web
+            - listitem [ref=e709]:
+              - link "Learn web development" [ref=e710] [cursor=pointer]:
+                - /url: /en-US/docs/Learn_web_development
+            - listitem [ref=e711]:
+              - link "Guides" [ref=e712] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Guides
+            - listitem [ref=e713]:
+              - link "Tutorials" [ref=e714] [cursor=pointer]:
+                - /url: /en-US/docs/MDN/Tutorials
+            - listitem [ref=e715]:
+              - link "Glossary" [ref=e716] [cursor=pointer]:
+                - /url: /en-US/docs/Glossary
+            - listitem [ref=e717]:
+              - link "Hacks blog (external)" [ref=e718] [cursor=pointer]:
+                - /url: https://hacks.mozilla.org/
+    - generic [ref=e719]:
+      - link "Mozilla logo" [ref=e720] [cursor=pointer]:
+        - /url: https://www.mozilla.org/
+        - img "Mozilla" [ref=e721]
+      - list [ref=e723]:
+        - listitem [ref=e724]:
+          - link "Website Privacy Notice (external)" [ref=e725] [cursor=pointer]:
+            - /url: https://www.mozilla.org/privacy/websites/
+        - listitem [ref=e726]:
+          - link "Telemetry Settings (external)" [ref=e727] [cursor=pointer]:
+            - /url: https://www.mozilla.org/en-US/privacy/websites/data-preferences/
+        - listitem [ref=e728]:
+          - link "Legal (external)" [ref=e729] [cursor=pointer]:
+            - /url: https://www.mozilla.org/about/legal/terms/mozilla
+        - listitem [ref=e730]:
+          - link "Community Participation Guidelines (external)" [ref=e731] [cursor=pointer]:
+            - /url: https://www.mozilla.org/about/governance/policies/participation/
+      - paragraph [ref=e732]:
+        - text: Portions of this content are ©1998–2026 by individual mozilla.org contributors. Content available under
+        - link "a Creative Commons license" [ref=e733] [cursor=pointer]:
+          - /url: /docs/MDN/Writing_guidelines/Attrib_copyright_license
+        - text: .

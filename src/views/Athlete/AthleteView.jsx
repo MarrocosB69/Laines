@@ -1,21 +1,27 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  CalendarDays,
-  FileText,
-  LayoutDashboard
-} from 'lucide-react';
+import { ClipboardCheck, LayoutDashboard, TrendingUp, UserRound } from 'lucide-react';
 import AthleteSidebar from './AthleteSidebar';
 import AthleteHeader from './AthleteHeader';
 import AthletePortal from './AthletePortal';
+import { useAreaNavegacao } from '../../hooks/useAreaNavegacao';
 import '../admin/AdminView/AdminView.css';
 import './AthleteView.css';
 
+// UX-07 / UPD-18: mesmas abas que AthleteSidebar.jsx (MENU_ITEMS) expõe.
+// "dashboard" (Visão geral) é a aba inicial desde 26/09/2026 — decisão 2 de
+// docs/implementacao/visao-geral-v2/change-intent.md.
+const ATHLETE_AREAS = ['dashboard', 'pendencias', 'cadastro', 'acompanhamento'];
+
 const AthleteView = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const { area: activeTab, setArea: setActiveTab } = useAreaNavegacao({
+    allowedAreas: ATHLETE_AREAS,
+    defaultArea: 'dashboard'
+  });
+  const [isSidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
   const [darkMode, setDarkMode] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -30,9 +36,7 @@ const AthleteView = () => {
   useEffect(() => {
     if (!isMobile || !isSidebarOpen) return;
     const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setSidebarOpen(false);
-      }
+      if (event.key === 'Escape') setSidebarOpen(false);
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
@@ -40,8 +44,9 @@ const AthleteView = () => {
 
   const tabIcons = useMemo(() => ({
     dashboard: <LayoutDashboard size={16} />,
-    agenda: <CalendarDays size={16} />,
-    prontuario: <FileText size={16} />
+    pendencias: <ClipboardCheck size={16} />,
+    cadastro: <UserRound size={16} />,
+    acompanhamento: <TrendingUp size={16} />
   }), []);
 
   return (
@@ -60,6 +65,8 @@ const AthleteView = () => {
           setActiveTab={setActiveTab}
           isOpen={isSidebarOpen}
           onToggle={() => setSidebarOpen(!isSidebarOpen)}
+          isMobile={isMobile}
+          pendingCount={pendingCount}
         />
 
         {isMobile && isSidebarOpen && (
@@ -71,7 +78,7 @@ const AthleteView = () => {
           />
         )}
 
-        <main className={`admin-main-content ${!isSidebarOpen ? 'expanded' : ''}`}>
+        <main className={`admin-main-content ${!isSidebarOpen ? (isMobile ? 'expanded' : 'collapsed') : ''}`}>
           <AthleteHeader
             activeTab={activeTab}
             activeIcon={tabIcons[activeTab]}
@@ -89,7 +96,12 @@ const AthleteView = () => {
                 transition={{ duration: 0.2 }}
                 className="dynamic-content"
               >
-                <AthletePortal focusSection={activeTab} hideInternalHeader />
+                <AthletePortal
+                  activeTab={activeTab}
+                  hideInternalHeader
+                  onPendingCountChange={setPendingCount}
+                  onNavigate={setActiveTab}
+                />
               </motion.div>
             </AnimatePresence>
           </div>

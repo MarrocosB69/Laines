@@ -1,321 +1,1171 @@
-﻿.area-page {
-  --area-surface: color-mix(in srgb, var(--admin-surface, #ffffff) 94%, #f8fbff 6%);
-  --area-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #f3f8fd) 90%, #ffffff 10%);
-  --area-border: color-mix(in srgb, var(--admin-border, rgba(20, 53, 84, 0.14)) 84%, transparent);
-  --area-text: var(--admin-text, #143554);
-  --area-muted: var(--admin-muted, #5a728b);
-  --area-shadow: var(--admin-shadow-soft, 0 18px 42px -34px rgba(20, 53, 84, 0.45));
-  --area-shadow-strong: 0 28px 54px -36px rgba(20, 53, 84, 0.4);
-  --area-focus: rgba(47, 111, 166, 0.24);
+/* Vocabulário `area-*` das áreas de conteúdo da Liga (Ensino, Extensão e
+   Comunicação), na direção "Energia e velocidade" da landing
+   (docs/design/landing-guia-visual.md, seção "Direção vigente";
+   docs/implementacao/areas-v2/change-intent.md). Os nomes de classe são os
+   de antes: Extensao.jsx e Comunicacao.jsx usam este mesmo arquivo.
+
+   Mesmo desenho das peças da Visão geral (src/components/painel/painel.css):
+   cartões brancos com --lt-radius-card, títulos de seção em Sofia 700,
+   título da área na voz de campanha, alvos de 44 px e foco com
+   --lt-focus-ring. Todo texto fica sobre superfície própria (branco, campo
+   ou --lt-color-track-tint), então o contraste vale também com o modo
+   escuro dos portais, que só escurece o fundo da página.
+
+   Tudo escopado em `.area-page`, o que também vence as regras globais de
+   theme.css sobre `.area-card` (hover que sobe 1px) e `.area-badge`.
+   Armadilhas globais redeclaradas: h1…h6 em Poppins e com cor, `p` com
+   entrelinha 1,6, `label` a 13 px, `button { white-space: nowrap;
+   display: inline-flex }`, `*:focus-visible` com contorno verde e
+   `input:not([type=checkbox]):not([type=radio])` com especificidade 0,2,1.
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs. Nenhum tom
+   novo: só tokens --lt-* e o par de "atenção" já medido em painel.css.
+
+   As fontes vêm aqui pelo mesmo motivo de painel.css: ao recarregar direto
+   num portal, a folha da landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.area-page {
+  --area-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --area-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --area-atencao-fundo · 6,84:1 sobre --lt-color-surface-field */
+  --area-atencao-fundo: #fff7ed;
+  --area-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+  --area-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
 
   display: flex;
   flex-direction: column;
-  gap: clamp(0.9rem, 1.8vw, 1.3rem);
-  color: var(--area-text);
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.admin-view.dark-mode .area-page {
-  --area-surface: color-mix(in srgb, var(--admin-surface, #17273a) 95%, transparent 5%);
-  --area-surface-soft: color-mix(in srgb, var(--admin-surface-soft, #1d3046) 92%, transparent 8%);
-  --area-border: color-mix(in srgb, var(--admin-border, rgba(148, 163, 184, 0.24)) 85%, transparent);
-  --area-shadow: 0 20px 40px -32px rgba(2, 12, 24, 0.8);
-  --area-shadow-strong: 0 30px 58px -40px rgba(2, 12, 24, 0.9);
-  --area-focus: rgba(127, 197, 232, 0.26);
-}
-
-.area-header {
-  border-radius: 1.18rem;
-  border: 1px solid var(--area-border);
-  background: linear-gradient(150deg, var(--area-surface) 0%, var(--area-surface-soft) 100%);
-  box-shadow: var(--area-shadow);
-  padding: clamp(0.9rem, 2vw, 1.3rem);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.84rem;
-  flex-wrap: wrap;
-}
-
-.area-header h2 {
+/* Reset dos globais de título e parágrafo; cada peça abaixo dá o resto. */
+.area-page :is(h2, h3) {
   margin: 0;
-  font-size: clamp(1.2rem, 2.1vw, 1.58rem);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--area-text);
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
-.area-header p {
-  margin: 0.24rem 0 0;
-  color: var(--area-muted);
-  font-size: 0.87rem;
-}
+.area-page p { margin: 0; line-height: var(--lt-leading-normal); }
 
-.area-badges {
+/* ── Cabeçalho da área: título na voz de campanha ────────────────────── */
+.area-page .area-header {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  margin: 0;
+  padding: var(--area-respiro) var(--area-respiro) calc(var(--area-respiro) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--area-sombra);
 }
 
-.area-badge {
-  min-height: 2rem;
-  border-radius: 999px;
-  border: 1px solid rgba(47, 111, 166, 0.24);
-  background: rgba(47, 111, 166, 0.12);
-  color: #1d4f79;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+/* A raia azul e verde no pé, a mesma do cabeçalho da Visão geral. */
+.area-page .area-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.area-page .area-header > div:not(.area-badges) { flex: 1 1 18rem; min-width: 0; }
+
+.area-page .area-header h2 {
+  position: relative;
+  padding: 0 0.1em 0 0.32em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+/* Marca verde de largada, o gesto de .painel-cabecalho__titulo::before. */
+.area-page .area-header h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.04em;
+  bottom: 0.04em;
+  width: 0.1em;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+  transform-origin: 0 100%;
+}
+
+.area-page .area-header p {
+  margin-top: var(--lt-space-2);
+  padding-left: calc(var(--lt-text-xl) * 0.32);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
+
+.area-page .area-badges { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); min-width: 0; }
+
+/* Azul sobre --lt-color-track-tint: 5,57:1. */
+.area-page .area-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.22rem;
-  padding: 0 0.58rem;
+  gap: var(--lt-space-1);
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
 }
 
-.area-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.62rem;
-}
+.area-page .area-badge svg { flex: none; }
 
-.area-card {
-  border: 1px solid var(--area-border);
-  border-radius: 1rem;
-  background: var(--area-surface);
-  box-shadow: var(--area-shadow-strong);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 420px;
-}
-
-.area-card-header {
-  border-bottom: 1px solid var(--area-border);
-  background: color-mix(in srgb, var(--area-surface-soft) 82%, transparent);
-  padding: 0.72rem 0.8rem;
+/* ── Aviso de só leitura: informativo, nunca de erro ──────────────────
+   Texto na cor de tinta sobre --lt-color-track-tint (12,39:1), ícone e
+   raia em azul. O texto não muda nesta onda (change-intent, decisão 2). */
+.area-page .area-readonly-note,
+.area-page .area-readonly-inline {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.area-card-header h3 {
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: var(--area-text);
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
 }
 
-.area-card-header p {
-  margin: 0.2rem 0 0;
-  font-size: 0.74rem;
-  color: color-mix(in srgb, var(--area-muted) 86%, transparent);
+.area-page .area-readonly-note::before,
+.area-page .area-readonly-inline::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-12deg);
 }
 
-.area-card > .area-form,
-.area-card > .area-list {
-  padding-left: 0.8rem;
-  padding-right: 0.8rem;
+.area-page .area-readonly-note svg { flex: none; margin-top: 0.0625rem; color: var(--lt-color-brand-blue); }
+
+/* ── Grade e cartões ─────────────────────────────────────────────────── */
+.area-page .area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--lt-space-4);
+  min-width: 0;
 }
 
-.area-form {
-  padding-top: 0.68rem;
+.area-page .area-grid--single { grid-template-columns: minmax(0, 1fr); }
+
+/* Cartão de subseção e painel de acesso restrito: o mesmo cartão branco
+   de .painel-secao. A visão geral das três áreas usa as próprias peças
+   de src/components/painel/ (ver "Painel da área", mais abaixo).
+   `.area-card--triagem` não precisa de regra: a altura mínima de antes
+   (420px) saiu da base. */
+.area-page .area-card,
+.area-page .area-restricted-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: var(--area-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--area-sombra);
+  color: var(--lt-color-text);
+  transform: none;
+  transition: none;
 }
 
-.area-form input,
-.area-form select,
-.area-form textarea {
+.area-page .area-card:hover { transform: none; box-shadow: var(--area-sombra); }
+
+/* Cabeça do cartão: título Sofia 700 e descrição de apoio, como
+   .painel-secao__cabeca. Sem a faixa de fundo e o traço de antes. */
+.area-page .area-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.area-page .area-card-header > div { flex: 1 1 14rem; min-width: 0; }
+
+.area-page .area-card-header h3 {
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+  overflow-wrap: anywhere;
+}
+
+.area-page .area-card-header p {
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.area-page .area-card-header > svg { flex: none; color: var(--lt-color-brand-blue); }
+
+/* ── Formulário: campos no padrão da inscrição ───────────────────────
+   Uma coluna com largura de leitura; 48 px de altura, borda
+   --lt-color-border-field (3,91:1, WCAG 1.4.11) e texto a 16 px, que
+   evita o zoom do iOS no foco. O `:not([type="file"])` deixa de fora o
+   campo de anexo, que é escondido e representado pela miniatura. */
+.area-page .area-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
   width: 100%;
-  min-height: 2.54rem;
-  border-radius: 0.78rem;
-  border: 1px solid var(--area-border);
-  background: var(--area-surface-soft);
-  color: var(--area-text);
-  font-size: 0.82rem;
-  font-weight: 500;
-  padding: 0.52rem 0.68rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  max-width: 46rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.area-form textarea {
-  min-height: 5.6rem;
+.area-page .area-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.area-page .area-form select,
+.area-page .area-form textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  text-overflow: ellipsis;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.area-page .area-form textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 0.7rem 0.875rem;
   resize: vertical;
 }
 
-.area-form input::placeholder,
-.area-form textarea::placeholder {
-  color: color-mix(in srgb, var(--area-muted) 82%, transparent);
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o hex fica igual ao de inscricao-campos.css. */
+.area-page .area-form select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  cursor: pointer;
 }
 
-.area-form input:focus,
-.area-form select:focus,
-.area-form textarea:focus,
-.area-action:focus-visible,
-.area-link:focus-visible,
-.area-list-item button:focus-visible {
+.area-page .area-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.area-page .area-form select:focus,
+.area-page .area-form textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 3px var(--area-focus);
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
 }
 
-.area-form input:focus,
-.area-form select:focus,
-.area-form textarea:focus {
-  border-color: color-mix(in srgb, var(--area-border) 62%, #2f6fa6 38%);
+/* O placeholder é a única indicação do campo (texto que não muda nesta
+   onda): --lt-color-text-subtle, 5,60:1 sobre branco, e não o cinza claro
+   padrão. `opacity: 1` porque o Firefox o esmaece. */
+.area-page .area-form input::placeholder,
+.area-page .area-form textarea::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
 }
 
-.area-action {
-  min-height: 2.42rem;
-  border-radius: 0.72rem;
-  border: 1px solid transparent;
-  background: linear-gradient(135deg, #2f6fa6 0%, #1d4f79 100%);
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+/* ── Anexo: a miniatura é o alvo; o campo de arquivo fica escondido ──── */
+.area-page .area-form-attachment {
+  position: relative;
+  display: grid;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* O rótulo "Anexo", como .ip-label da inscrição. */
+.area-page .area-form-attachment > span {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* 0,3,1: vence `input:not(...):not(...)` de theme.css (0,2,1), que daria
+   largura total e borda ao campo escondido. */
+.area-page .area-form input.attachment-thumbnail__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+/* A miniatura de AttachmentThumbnail (ui.css) com borda de campo; vazia,
+   tracejada sobre o fundo de campo. O nome do arquivo quebra linha em
+   vez de ganhar reticências. */
+.area-page .area-form-attachment .attachment-thumbnail {
+  box-sizing: border-box;
+  min-height: 4.5rem;
+  padding: var(--lt-space-3);
+  gap: var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  transition: border-color 160ms, background-color 160ms, box-shadow 160ms;
+}
+
+.area-page .area-form-attachment .attachment-thumbnail--empty {
+  border-style: dashed;
+  background: var(--lt-color-surface-field);
+}
+
+@media (hover: hover) {
+  .area-page .area-form-attachment:hover .attachment-thumbnail {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+}
+
+/* Foco do campo escondido aparece na miniatura. */
+.area-page .area-form-attachment:focus-within .attachment-thumbnail {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.area-page .attachment-thumbnail .attachment-thumbnail__preview {
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+/* Branco sobre --lt-color-text: 14,09:1. */
+.area-page .attachment-thumbnail .attachment-thumbnail__extension {
+  background: var(--lt-color-text);
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.area-page .attachment-thumbnail .attachment-thumbnail__title,
+.area-page .attachment-thumbnail .attachment-thumbnail__description {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.area-page .attachment-thumbnail .attachment-thumbnail__title {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.area-page .attachment-thumbnail .attachment-thumbnail__description {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  line-height: var(--lt-leading-snug);
+}
+
+.area-page .attachment-thumbnail__remove {
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text); /* 5,91:1 */
+}
+
+.area-page .attachment-thumbnail__remove:hover,
+.area-page .attachment-thumbnail__remove:focus-visible {
+  border-color: var(--lt-color-danger-text);
+  background: var(--lt-color-danger-bg);
+}
+
+.area-page .attachment-thumbnail__remove:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Botão primário: o único sólido do formulário ─────────────────────
+   Degradê de largada da landing; branco a 4,82:1 no topo e 6,20:1 na base. */
+.area-page .area-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.32rem;
-  padding: 0 0.82rem;
+  align-self: flex-start;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: 48px;
+  margin: var(--lt-space-1) 0 0;
+  padding: 0 var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transform: none;
+  transition: box-shadow 160ms;
 }
 
-.area-action:hover {
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .area-page .area-action:hover { box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
 }
 
-.area-list {
-  margin-top: 0.66rem;
-  padding-bottom: 0.74rem;
+.area-page .area-action:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Lista de itens: linhas de 44 px ou mais no fundo de campo ───────── */
+.area-page .area-list {
   display: flex;
   flex-direction: column;
-  gap: 0.42rem;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.area-list-item {
-  border-radius: 0.78rem;
-  border: 1px solid var(--area-border);
-  background: var(--area-surface-soft);
-  padding: 0.5rem 0.58rem;
+/* Com pouco espaço, as ações descem para uma segunda linha, à direita,
+   em vez de espremer o título. */
+.area-page .area-list-item {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-3) var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+}
+
+/* A raia da linha, como .painel-lista__linha::before. Só gráfico. */
+.area-page .area-list-item::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.3125rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--area-raia);
+  transform: skewX(-12deg);
+}
+
+.area-page .area-item-info {
+  display: flex;
+  flex: 1 1 14rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.area-page .area-list-item strong {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* Metadados (tipo e data, equipe, autoria) e o "Sem link" solto na linha:
+   apoio sobre o fundo de campo, 6,17:1. */
+.area-page .area-item-info > span,
+.area-page .area-list-item > span {
+  display: block;
+  max-width: 100%;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.area-page .area-list-item > span { flex: none; }
+
+/* Nome do arquivo anexado: azul sobre o fundo de campo, 5,93:1. Quebra
+   linha em vez de cortar. */
+.area-page .area-item-info > .area-item-filename {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.45rem;
+  gap: var(--lt-space-1);
+  min-width: 0;
+  color: var(--lt-color-brand-blue);
+  font-weight: 600;
 }
 
-.area-list-item strong {
-  margin: 0;
-  display: block;
-  font-size: 0.8rem;
-  line-height: 1.28;
+.area-page .area-item-filename svg { flex: none; }
+
+/* Miniatura compacta da linha: só a prévia (o nome já está no texto). */
+.area-page .area-item-thumbnail { flex: none; width: auto; }
+.area-page .area-item-thumbnail .attachment-thumbnail__content { display: none; }
+
+.area-page .attachment-thumbnail.area-item-thumbnail .attachment-thumbnail__preview {
+  width: 2.75rem;
+  height: 2.75rem;
+  background: var(--lt-color-surface);
+}
+
+/* ── Selo de status: sempre escrito; a cor só acompanha ───────────────
+   Padrão (em_andamento, sem_status e qualquer outro): azul sobre
+   --lt-color-track-tint, 5,57:1. 0,3,0 para vencer o seletor de
+   metadados acima. */
+.area-page .area-item-info > .area-status-chip,
+.area-page .area-triagem-summary > .area-status-chip,
+.area-page .area-status-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.125rem 0;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-2xs);
   font-weight: 700;
-  color: var(--area-text);
-}
-
-.area-list-item span {
-  display: block;
-  font-size: 0.69rem;
-  color: color-mix(in srgb, var(--area-muted) 86%, transparent);
-}
-
-.area-list-item button {
-  width: 1.85rem;
-  height: 1.85rem;
-  border-radius: 0.58rem;
-  border: 1px solid transparent;
-  background: transparent;
-  color: color-mix(in srgb, var(--area-muted) 86%, transparent);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-.area-list-item button:hover {
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.28);
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.area-link {
-  min-height: 1.88rem;
-  border-radius: 0.56rem;
-  border: 1px solid rgba(47, 111, 166, 0.24);
-  background: rgba(47, 111, 166, 0.12);
-  color: #1d4f79;
-  font-size: 0.67rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Aguardando alguém: o par de "atenção" de painel.css, 6,88:1. */
+.area-page .area-status-chip.area-status-chip--rascunho,
+.area-page .area-status-chip.area-status-chip--pendente_aprovacao {
+  background: var(--area-atencao-fundo);
+  color: var(--area-atencao-texto);
+}
+
+/* Aprovado ou publicado: 6,81:1. */
+.area-page .area-status-chip.area-status-chip--aprovado,
+.area-page .area-status-chip.area-status-chip--publicado {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+/* Arquivado: apoio sobre branco (6,59:1), com contorno para se separar do
+   fundo de campo da linha. */
+.area-page .area-status-chip.area-status-chip--arquivado {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+}
+
+/* ── Ações da linha: alvos de 44 px, só ícone (o nome vem do title) ──── */
+.area-page .area-item-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-1);
+  margin-left: auto;
+}
+
+.area-page .area-item-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  padding: 0 0.5rem;
-}
-
-.area-link:hover {
-  background: rgba(47, 111, 166, 0.18);
-}
-
-.area-empty {
-  border-radius: 0.78rem;
-  border: 1px dashed var(--area-border);
-  background: color-mix(in srgb, var(--area-surface-soft) 80%, transparent);
-  color: color-mix(in srgb, var(--area-muted) 84%, transparent);
-  font-size: 0.76rem;
-  text-align: center;
-  padding: 0.58rem 0.65rem;
-}
-
-.area-placeholder {
-  border: 1px solid var(--area-border);
-  border-radius: 1rem;
-  background: var(--area-surface);
-  box-shadow: var(--area-shadow-strong);
-  padding: 1rem;
-}
-
-.area-placeholder h2 {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--area-text);
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 160ms, background-color 160ms, border-color 160ms;
 }
 
-.area-placeholder p {
-  margin: 0.22rem 0 0;
-  font-size: 0.8rem;
-  color: var(--area-muted);
+.area-page .area-item-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.area-page .area-item-btn:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.area-page .area-item-btn--download { color: var(--lt-color-brand-blue); }
+
+@media (hover: hover) {
+  .area-page .area-item-btn--download:hover:not(:disabled),
+  .area-page .area-item-btn--attach:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
+
+  .area-page .area-item-btn--remove-file:hover:not(:disabled) {
+    border-color: var(--area-atencao-texto);
+    background: var(--area-atencao-fundo);
+    color: var(--area-atencao-texto);
+  }
+
+  .area-page .area-item-btn--delete:hover:not(:disabled) {
+    border-color: var(--lt-color-danger-text);
+    background: var(--lt-color-danger-bg);
+    color: var(--lt-color-danger-text);
+  }
 }
 
-@media (max-width: 760px) {
-  .area-page {
-    gap: 0.78rem;
+.area-page .area-item-uploading {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+/* ── Link externo: ação secundária em contorno ─────────────────────── */
+.area-page .area-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  width: fit-content;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue); /* 6,33:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-decoration: none;
+  text-transform: none;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+@media (hover: hover) {
+  .area-page .area-link:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+.area-page .area-link:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Vazio e carregando: o tom de .painel-estado ─────────────────────
+   0,2,0 vence `.laines-feedback-state` de index.css e theme.css. */
+.area-page .area-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text); /* 13,19:1 */
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* ── Acesso restrito (triagens de Extensão para quem não gerencia) ───
+   Informativo, no tom de .painel-estado: ícone azul num círculo claro,
+   título e o aviso de sempre. Nenhum dado de triagem aparece aqui. */
+.area-page .area-restricted-panel { align-items: flex-start; gap: var(--lt-space-2); }
+
+.area-page .area-restricted-panel__icone {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: var(--lt-space-1);
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+.area-page .area-restricted-panel strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-title);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+}
+
+.area-page .area-restricted-panel p {
+  max-width: 40rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+}
+
+/* ── Triagens públicas (Extensão) ────────────────────────────────────
+   Cada triagem é uma linha de campo que abre e fecha: o resumo é um botão
+   de 44 px ou mais com aria-expanded, e o estado também se vê (fundo
+   claro e seta para cima quando aberta). O detalhe é uma lista de
+   descrição em células brancas; os chips são selos escritos.
+   `.area-triagem-list` vem sempre com `.area-list`, que já dá a coluna e
+   o espaçamento. */
+.area-page .area-card-header > .area-triagem-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+
+.area-page .area-triagem-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.area-page .area-triagem-export:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+.area-page .area-triagem-export:disabled { opacity: 0.55; cursor: not-allowed; }
+.area-page .area-triagem-export svg { flex: none; }
+
+.area-page .area-triagem-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.area-page .area-triagem-controls > p {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+.area-page .area-triagem-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.area-page .area-triagem-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.area-page .area-triagem-filter select {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font: inherit;
+}
+
+.area-page .area-triagem-filter select:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.area-page .area-triagem-item {
+  min-width: 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.area-page .area-triagem-prioridade {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.area-page .area-triagem-prioridade::before {
+  content: '';
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.area-page .area-triagem-prioridade--vermelho {
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+}
+
+.area-page .area-triagem-prioridade--amarelo {
+  background: var(--area-atencao-fundo);
+  color: var(--area-atencao-texto);
+}
+
+.area-page .area-triagem-prioridade--verde {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.area-page .area-triagem-summary__posicao {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0 var(--lt-space-2);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-weight: 700;
+}
+
+.area-page .area-triagem-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms;
+}
+
+@media (hover: hover) {
+  .area-page .area-triagem-summary:hover { background: var(--lt-color-track-tint); }
+}
+
+.area-page .area-triagem-summary:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* Aberta: fundo claro só em cima, colado ao detalhe (texto 12,39:1). */
+.area-page .area-triagem-summary[aria-expanded="true"] {
+  border-radius: var(--lt-radius-control) var(--lt-radius-control) 0 0;
+  background: var(--lt-color-track-tint);
+}
+
+.area-page .area-triagem-summary__texto {
+  display: flex;
+  flex: 1 1 14rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.area-page .area-triagem-summary strong {
+  display: block;
+  color: var(--lt-color-text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Prontuário e modalidade: apoio, 6,17:1 no fundo de campo e 5,79:1 no
+   fundo aceso. */
+.area-page .area-triagem-summary__texto > span {
+  display: block;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.area-page .area-triagem-seta {
+  flex: none;
+  color: var(--lt-color-brand-blue);
+  transition: transform 160ms;
+}
+
+.area-page .area-triagem-summary[aria-expanded="true"] .area-triagem-seta { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .area-page .area-triagem-seta { transition: none; }
+}
+
+.area-page .area-triagem-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  margin: 0 var(--lt-space-4);
+  padding: var(--lt-space-3) 0 var(--lt-space-4);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.area-page .area-triagem-justificativa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+}
+
+.area-page .area-triagem-justificativa strong {
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+}
+
+.area-page .area-triagem-justificativa ul {
+  margin: 0;
+  padding-left: var(--lt-space-4);
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+.area-page .area-triagem-justificativa p {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+}
+
+/* Em `dl`: cada rótulo (dt) fica ligado ao valor (dd) para o leitor de
+   tela. Células de 13rem ou mais: 2 a 4 colunas no desktop, 1 a 390 px. */
+.area-page .area-triagem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.area-page .area-triagem-grid > div,
+.area-page .area-triagem-row {
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+}
+
+/* Rótulo do campo em caixa alta: apoio sobre branco, 6,59:1. */
+.area-page .area-triagem-grid dt,
+.area-page .area-triagem-row > span {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Valor a 15 px, peso normal: o bloco é de leitura, não de destaque. */
+.area-page .area-triagem-grid dd,
+.area-page .area-triagem-row > strong {
+  display: block;
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* Os chips são uma lista (ul): o leitor anuncia quantos itens há. */
+.area-page .area-triagem-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Selo escrito: o texto é o dado; tinta sobre --lt-color-track-tint,
+   12,39:1, com contorno azul claro. Neutro de propósito: a lista não
+   interpreta nada clinicamente, só repete o que a pessoa informou. */
+.area-page .area-triagem-chips > li {
+  max-width: 100%;
+  margin: 0;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--area-raia);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* ── Painel da área com as peças de src/components/painel/ ────────────
+   Ensino, Extensão e Comunicação. A seção "Operação…" ocupa
+   a linha; as duas raias dividem a de baixo. 0,5,0 vence
+   `.painel > .painel-secao:last-child:nth-child(odd)`, que esticaria a
+   segunda raia sozinha numa linha. */
+@media (min-width: 72rem) {
+  .area-page .painel.area-painel > .painel-secao.area-painel__operacao { grid-column: 1 / -1; }
+  .area-page .painel.area-painel > .painel-secao.area-painel__raia { grid-column: auto; }
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 30rem) {
+  .area-page .area-action { align-self: stretch; }
+
+  /* Os placeholders longos ("Equipe de organizacao (separe por virgula)")
+     cabem a 390 px; o texto digitado continua a 16 px. O recuo lateral
+     cai de 14 para 12 px para dar a eles mais espaço. */
+  .area-page .area-form input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
-  .area-header {
-    padding: 0.8rem;
-  }
+  .area-page .area-form input::placeholder,
+  .area-page .area-form textarea::placeholder { font-size: var(--lt-text-sm); }
 
-  .area-grid {
-    grid-template-columns: 1fr;
-  }
+  /* O mais longo é o link de materiais da Extensão, "Link (drive, pdf,
+     etc) — opcional se anexar arquivo" (51 caracteres): um campo de linha
+     única não quebra o placeholder, então ele desce a 12 px para caber sem
+     reticências nos cerca de 300 px úteis do campo a 390 px. */
+  .area-page .area-form input[type="url"]::placeholder { font-size: var(--lt-text-xs); }
+}
 
-  .area-card,
-  .area-placeholder {
-    border-radius: 0.92rem;
-  }
+/* ── Movimento: a marca de largada se desenha uma vez ────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .area-page .area-header h2::before { animation: area-largada 420ms var(--lt-ease-out) 120ms backwards; }
 
-  .area-card {
-    min-height: auto;
-  }
+  @keyframes area-largada { from { transform: skewX(-12deg) scaleY(0); } }
 }

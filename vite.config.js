@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite' // Importamos o motor do tailwind
+import tailwindcss from '@tailwindcss/vite'
 
 const apiProxy = {
   target: 'http://127.0.0.1:4000',
@@ -12,14 +12,20 @@ const apiProxy = {
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(), // Ativamos o motor
+    tailwindcss(),
   ],
   server: {
+    host: true,
+    port: 5174,
+    strictPort: false,
     proxy: {
       '/api': apiProxy,
     },
   },
   preview: {
+    host: true,
+    port: 4173,
+    strictPort: false,
     proxy: {
       '/api': apiProxy,
     },

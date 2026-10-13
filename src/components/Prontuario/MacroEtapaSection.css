@@ -1,3 +1,6 @@
+/* LEGADO SEM CONSUMIDOR (onda E1): esta folha só é importada por
+   MacroEtapaSection.jsx, que nenhum arquivo importa; nada daqui chega à
+   tela. Guardada sem mudança até a decisão de apagar o componente. */
 .macro-etapa-section {
   display: grid;
   gap: 0.75rem;

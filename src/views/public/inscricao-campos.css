@@ -1,0 +1,466 @@
+/* Vocabulario de campos do formulario publico: titulo da etapa, secoes,
+   paineis, campos, grade, radio e termo. Direcao "Energia e velocidade"
+   (docs/implementacao/inscricao-v2/change-intent.md): usa os tokens --lt-*
+   de src/views/landing/landing-tokens.css diretamente (InscricaoPublica.jsx
+   ja importa essa folha) em vez dos --ip-* legados declarados por A em
+   .ip-page - o mesmo vocabulario do painel de login
+   (src/views/landing/landing-login.css). Nenhum texto muda aqui, so
+   markup/classes/CSS. */
+
+/* ── Etapa ──────────────────────────────────────────────────────────────── */
+/* Caixa de cada uma das seis etapas. Nao tinha regra (so estrutura); o
+   min-width: 0 impede que um item largo (chips, faixa da urina) estique o
+   cartao alem da tela quando a etapa e item de grade ou flex. */
+.ip-step { min-width: 0; }
+
+/* ── Titulo da etapa ─────────────────────────────────────────────────────── */
+/* src/index.css tem "h1,h2,h3,h4,h5,h6{font-family;font-weight;line-height}"
+   e "h2{font-size;color}" (especificidade 0,0,1) - uma classe ja vence por
+   especificidade, mas so nas propriedades que ela proprio declara; por isso
+   toda propriedade que o global define e redeclarada aqui. */
+.ip-step-title {
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 1rem + 2vw, 2.125rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--lt-color-text);
+  margin: 0 0 0.5rem;
+}
+
+.ip-step-subtitle {
+  font-size: var(--lt-text-lead);
+  color: var(--lt-color-text-muted);
+  margin: 0 0 1.9rem;
+  line-height: var(--lt-leading-normal);
+}
+
+/* ── Secoes ──────────────────────────────────────────────────────────────── */
+.ip-section-label {
+  font-size: var(--lt-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  /* --lt-color-brand-green (grafico) nao vale como texto (4,21:1); a
+     variante -text (5,37:1) e a segura, mesmo par que o eyebrow do login. */
+  color: var(--lt-color-brand-green-text);
+  margin: 2.4rem 0 1.15rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--lt-color-border-brand);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  line-height: var(--lt-leading-snug);
+}
+
+.ip-section-label:first-child { margin-top: 0; }
+
+/* Agrupador de perguntas relacionadas. */
+.ip-panel {
+  margin: 0 0 var(--lt-space-5);
+  padding: 1.3rem 1.35rem 1.1rem;
+  background: var(--lt-color-surface-field);
+  border: 1px solid var(--lt-color-border-brand);
+  border-radius: var(--lt-radius-card);
+}
+
+.ip-panel > .ip-panel-title {
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  color: var(--lt-color-text);
+  margin: 0 0 0.3rem;
+  letter-spacing: -0.01em;
+  line-height: var(--lt-leading-snug);
+}
+
+.ip-panel > .ip-help-text { margin-bottom: 1.1rem; }
+.ip-panel > .ip-field:last-child { margin-bottom: 0; }
+
+.ip-sport-card { min-width: 0; }
+
+.ip-sport-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.ip-sport-card-header .ip-panel-title {
+  margin: 0;
+  font-size: var(--lt-text-md);
+  color: var(--lt-color-text);
+}
+
+.ip-sport-remove.ip-btn {
+  height: 44px;
+  padding: 0 0.9rem;
+}
+
+.ip-sport-add.ip-btn { margin-bottom: 0.65rem; }
+
+.ip-sport-limit { margin-bottom: 0; }
+
+.ip-urgent-guidance {
+  margin: 0 0 1.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--lt-color-border-brand);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+.ip-help-text {
+  font-size: var(--lt-text-sm);
+  color: var(--lt-color-text-subtle);
+  margin: 0 0 0.7rem;
+  line-height: var(--lt-leading-normal);
+  max-width: 62ch;
+}
+
+/* ── Campos ──────────────────────────────────────────────────────────────── */
+.ip-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin-bottom: var(--lt-space-5);
+  min-width: 0;
+}
+
+.ip-label {
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  color: var(--lt-color-text);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: -0.005em;
+}
+
+.ip-required { color: var(--lt-color-danger-text); margin-left: 2px; font-weight: 700; }
+
+/* Texto so para leitor de tela (mesma tecnica de
+   src/views/landing/landing-modais.css, .recovery-steps__label). */
+.ip-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Especificidade igualada a input:not([type=checkbox]):not([type=radio])
+   de src/styles/theme.css (0,2,1) - a mesma armadilha ja documentada em
+   src/views/landing/landing-login.css. O :not() repetido tambem casa (sem
+   efeito) em select/textarea, entao uma regra so cobre os tres. */
+.ip-input:not([type="checkbox"]):not([type="radio"]) {
+  display: block;
+  width: 100%;
+  height: 48px;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* Chevron proprio: o mesmo azul de --lt-color-brand-blue (a cor nao pode
+   vir de var() dentro do data URI, entao o hex fica igual e comentado). */
+select.ip-input:not([type="checkbox"]):not([type="radio"]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  padding-right: 2.6rem;
+}
+
+select.ip-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background-color: var(--lt-color-surface-field);
+}
+
+.ip-input:not([type="checkbox"]):not([type="radio"]):focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-surface);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Placeholders sao dica, nao rotulo - continuam com o mesmo texto de hoje,
+   so o tom muda para o token de contraste correto (nao avaliado em 4,5:1
+   porque nao e o rotulo do campo, mas legivel). */
+.ip-input:not([type="checkbox"]):not([type="radio"])::placeholder { color: var(--lt-color-text-subtle); }
+.ip-input--mt { margin-top: 0.55rem; }
+
+.ip-textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 0.7rem 0.875rem;
+  resize: vertical;
+  line-height: var(--lt-leading-normal);
+}
+
+.ip-field--error .ip-input:not([type="checkbox"]):not([type="radio"]) {
+  border-color: var(--lt-color-danger-text);
+  background: var(--lt-color-danger-bg);
+}
+
+/* Erro com icone (nao so a cor): o AlertCircle vem de campos.jsx. */
+.ip-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--lt-text-sm);
+  color: var(--lt-color-danger-text);
+  margin: 0;
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+.ip-error-msg svg { flex-shrink: 0; }
+
+/* Usado fora daqui, em InscricaoPublica.jsx (agente A), para o erro do
+   consentimento - mesmo vocabulario de cor/borda/raio. */
+.ip-error-msg--block {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--lt-color-danger-bg);
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  border-radius: var(--lt-radius-control);
+  padding: 0.7rem 0.95rem;
+  margin-top: 1rem;
+  font-size: var(--lt-text-sm);
+  color: var(--lt-color-danger-text);
+  font-weight: 600;
+  line-height: var(--lt-leading-normal);
+}
+.ip-error-msg--block svg { flex-shrink: 0; margin-top: 1px; }
+
+/* ── Grid ────────────────────────────────────────────────────────────────── */
+.ip-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.15rem;
+  align-items: start;
+}
+
+/* Estado e uma sigla, cidade e um nome: as larguras seguem o conteudo. */
+.ip-grid-uf {
+  display: grid;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1fr);
+  gap: 0 0.7rem;
+  align-items: start;
+}
+
+.ip-grid-2 > .ip-span-2 { grid-column: 1 / -1; }
+
+@media (max-width: 620px) {
+  .ip-grid-2 { grid-template-columns: 1fr; }
+  .ip-grid-uf { grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr); }
+}
+
+/* Abaixo de 420px, lado a lado, a cidade cortava ate o proprio aviso
+   ("Escolha o estado prin...") e cortaria nomes longos de municipio. */
+@media (max-width: 420px) {
+  .ip-grid-uf { grid-template-columns: 1fr; }
+}
+
+/* ── Radio ───────────────────────────────────────────────────────────────── */
+.ip-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ip-radio-group--inline { flex-direction: row; flex-wrap: wrap; }
+
+/* A opcao inteira e clicavel (label envolve o input) e tem 48px ou mais -
+   o controle de 20px (abaixo) fica dentro dessa area maior. */
+.ip-radio-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 48px;
+  padding: 0.65rem 1rem;
+  background: var(--lt-color-surface);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  cursor: pointer;
+  font-size: var(--lt-text-base);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.ip-radio-group--inline .ip-radio-item {
+  border-radius: var(--lt-radius-pill);
+  padding: 0.5rem 1rem;
+}
+
+.ip-radio-item:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.ip-radio-item input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ip-radio-item.selected {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-weight: 600;
+}
+
+/* ── Caixa de aceite ─────────────────────────────────────────────────────── */
+.ip-consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  min-height: 48px;
+  padding: 0.9rem 1.1rem;
+  background: var(--lt-color-surface);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  cursor: pointer;
+  font-size: var(--lt-text-base);
+  font-weight: 500;
+  color: var(--lt-color-text);
+  transition: border-color 0.18s, background 0.18s;
+  user-select: none;
+  line-height: var(--lt-leading-normal);
+  font-family: var(--lt-font-family);
+  box-sizing: border-box;
+}
+
+.ip-consent-label:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.ip-consent-label input[type="checkbox"] {
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Estado verde discreto (nunca solido: o unico solido da regiao e o botao
+   da moldura, de A) - mesmo par de --lt-color-success-bg usado em mensagens
+   de sucesso do sistema, reaproveitado aqui como "aceito". */
+.ip-consent-label.accepted {
+  border-color: var(--lt-color-brand-green-text);
+  background: var(--lt-color-success-bg);
+}
+
+/* ── Termo ───────────────────────────────────────────────────────────────── */
+/* O wrapper existe para o degrade de fim de texto sinalizar que ha rolagem;
+   o conteudo do <pre> (texto legal) nao muda. */
+.ip-termo-wrap { position: relative; margin: 1.1rem 0; }
+
+.ip-termo-box {
+  padding: 1.1rem 1.25rem 1.6rem;
+  background: var(--lt-color-surface-field);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-card);
+  max-height: min(42vh, 340px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 96, 168, 0.3) transparent;
+  overscroll-behavior: contain;
+}
+
+.ip-termo-box::-webkit-scrollbar { width: 5px; }
+.ip-termo-box::-webkit-scrollbar-thumb {
+  background: rgba(37, 96, 168, 0.3);
+  border-radius: 999px;
+}
+
+/* rgba(243, 248, 253, 0) e --lt-color-surface-field (#f3f8fd) com alfa 0 -
+   var() nao pode entrar num gradiente com alfa variavel, entao o literal
+   fica comentado para acompanhar o token se ele mudar. */
+.ip-termo-wrap::after {
+  content: '';
+  position: absolute;
+  left: 1px; right: 6px; bottom: 1px;
+  height: 3.1rem;
+  border-radius: 0 0 var(--lt-radius-card) var(--lt-radius-card);
+  background: linear-gradient(to bottom, rgba(243, 248, 253, 0), var(--lt-color-surface-field) 78%);
+  pointer-events: none;
+}
+
+.ip-termo-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-subtle);
+  margin: 0.55rem 0 0;
+  line-height: var(--lt-leading-snug);
+}
+
+/* Leitura confortavel: 16px (piso da escala do painel de login para texto
+   digitado/longo) e entrelinha 1,5 declarada. */
+.ip-termo-text {
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  line-height: var(--lt-leading-normal);
+  color: var(--lt-color-text-muted);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+/* Alvo de 24px (piso WCAG 2.5.8 - --lt-target-min e 44px, a preferencia de
+   conforto para controles autonomos; este e um link em linha dentro de uma
+   frase, por isso o piso, nao o conforto). */
+.ip-termo-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  gap: 0.3rem;
+  color: var(--lt-color-brand-blue);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(37, 96, 168, 0.35);
+}
+
+.ip-termo-link:hover { border-bottom-color: var(--lt-color-brand-blue); }
+.ip-termo-link:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); border-radius: 3px; }
+
+/* ── Telas estreitas ─────────────────────────────────────────────────────── */
+@media (max-width: 620px) {
+  .ip-panel { padding: 1.05rem 1rem 0.9rem; }
+  .ip-step-title { font-size: 1.5rem; }
+  .ip-step-subtitle { margin-bottom: 1.5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-input,
+  .ip-radio-item,
+  .ip-consent-label,
+  .ip-termo-link { transition: none; }
+}

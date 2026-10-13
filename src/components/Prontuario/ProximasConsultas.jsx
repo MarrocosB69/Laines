@@ -4,6 +4,8 @@ import { Clock, Download, History, PlusCircle } from 'lucide-react';
 const ProximasConsultas = ({
   continuityItems = [],
   canCreateActions = false,
+  canCreateAppointment = canCreateActions,
+  canCreateEvaluation = canCreateActions,
   canExport = false,
   onOpenAppointmentModal,
   onCreateEvaluation,
@@ -13,7 +15,7 @@ const ProximasConsultas = ({
   <section className="pron-card pron-panel">
     <header className="pron-panel-header">
       <div>
-        <h2>Próximos Passos</h2>
+        <h2>Próximos passos</h2>
         <p>Itens de continuidade clínica para acompanhamento.</p>
       </div>
     </header>
@@ -28,13 +30,13 @@ const ProximasConsultas = ({
     </div>
 
     <div className="pron-inline-actions">
-      {canCreateActions ? (
+      {canCreateAppointment ? (
         <button type="button" className="pron-btn pron-btn-secondary" onClick={onOpenAppointmentModal}>
           <Clock size={14} />
           Nova consulta
         </button>
       ) : null}
-      {canCreateActions ? (
+      {canCreateEvaluation ? (
         <button type="button" className="pron-btn pron-btn-secondary" onClick={onCreateEvaluation}>
           <PlusCircle size={14} />
           Abrir avaliações

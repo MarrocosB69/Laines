@@ -1,0 +1,710 @@
+- generic [ref=e1]:
+  - link "Skip to main page content" [ref=e2] [cursor=pointer]:
+    - /url: "#article-details"
+  - generic [ref=e6]:
+    - img "U.S. flag" [ref=e7]
+    - paragraph [ref=e8]: An official website of the United States government
+    - button "Here's how you know" [ref=e9] [cursor=pointer]
+  - banner [ref=e10]:
+    - generic [ref=e12]:
+      - link "NCBI Logo" [ref=e14] [cursor=pointer]:
+        - /url: https://www.ncbi.nlm.nih.gov/
+        - img "NIH NLM Logo" [ref=e15]
+      - link "Log in" [ref=e17] [cursor=pointer]:
+        - /url: https://account.ncbi.nlm.nih.gov/?back_url=https%3A%2F%2Fpubmed.ncbi.nlm.nih.gov%2F31553429%2F
+  - navigation "access keys":
+    - link "Access keys" [ref=e18] [cursor=pointer]:
+      - /url: https://www.ncbi.nlm.nih.gov/guide/browsers/#ncbi_accesskeys
+    - link "NCBI Homepage" [ref=e19] [cursor=pointer]:
+      - /url: https://www.ncbi.nlm.nih.gov
+    - link "MyNCBI Homepage" [ref=e20] [cursor=pointer]:
+      - /url: /myncbi/
+    - link "Main Content" [ref=e21] [cursor=pointer]:
+      - /url: "#maincontent"
+    - link "Main Navigation" [ref=e22] [cursor=pointer]:
+      - /url: "#"
+  - navigation "Main page content below"
+  - search [ref=e23]:
+    - generic [ref=e24]:
+      - link "Pubmed Logo" [ref=e25] [cursor=pointer]:
+        - /url: /
+        - img "pubmed logo" [ref=e26]
+      - search [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: "Search:"
+          - generic [ref=e30]:
+            - combobox "Search:" [active] [ref=e31]: "\"Detailed 3-dimensional body shape features predict body composition\""
+            - status [ref=e32]: 0 results are available, use up and down arrow keys to navigate.
+          - button "Clear search input" [ref=e33] [cursor=pointer]
+          - button "Search" [ref=e34] [cursor=pointer]
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - link "Advanced" [ref=e37] [cursor=pointer]:
+            - /url: /advanced/
+          - link "Create alert" [ref=e38] [cursor=pointer]:
+            - /url: https://account.ncbi.nlm.nih.gov/?back_url=https%3A%2F%2Fpubmed.ncbi.nlm.nih.gov%2F31553429%2F%23open-saved-search-panel
+          - button "Create RSS" [ref=e39] [cursor=pointer]
+        - navigation "User guide" [ref=e40]:
+          - link "User Guide" [ref=e41] [cursor=pointer]:
+            - /url: /help/
+  - generic [ref=e42]:
+    - generic [ref=e45]:
+      - generic [ref=e47]: Found 1 result for "Detailed 3-dimensional body shape features predict body composition"
+      - region "save, email, send to" [ref=e48]:
+        - button "Save" [ref=e49] [cursor=pointer]
+        - button "Email" [ref=e50] [cursor=pointer]
+        - button "Send to" [ref=e52] [cursor=pointer]
+      - region [ref=e53]:
+        - button "Display options" [ref=e54] [cursor=pointer]:
+          - generic [ref=e55]: Display options
+    - generic: "* * * *"
+  - generic [ref=e56]:
+    - complementary [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e60]:
+          - heading "Full text links" [level=3] [ref=e61]
+          - generic [ref=e62]:
+            - link "Elsevier Science full text link" [ref=e63] [cursor=pointer]:
+              - /url: https://linkinghub.elsevier.com/retrieve/pii/S0002-9165(22)01327-2
+              - img "Elsevier Science full text link" [ref=e64]
+            - link "Free full text at PubMed Central" [ref=e65] [cursor=pointer]:
+              - /url: https://pmc.ncbi.nlm.nih.gov/articles/pmid/31553429/
+        - generic [ref=e66]:
+          - heading "Actions" [level=3] [ref=e67]
+          - generic [ref=e68]:
+            - button "Open dialog with citation text in different styles" [ref=e69] [cursor=pointer]: Cite
+            - button "Save article in MyNCBI collections." [ref=e71] [cursor=pointer]: Collections
+            - button "Permalink" [ref=e73] [cursor=pointer]
+        - navigation "Page navigation" [ref=e74]:
+          - generic [ref=e75]:
+            - heading "Page navigation" [level=3] [ref=e76]
+            - list [ref=e77]:
+              - listitem [ref=e78]:
+                - link "navigate to Title & authors section" [ref=e79] [cursor=pointer]:
+                  - /url: "#heading"
+                  - text: Title & authors
+              - listitem [ref=e80]:
+                - link "navigate to Abstract section" [ref=e81] [cursor=pointer]:
+                  - /url: "#abstract"
+                  - text: Abstract
+              - listitem [ref=e82]:
+                - link "navigate to Figures section" [ref=e83] [cursor=pointer]:
+                  - /url: "#figures"
+                  - text: Figures
+              - listitem [ref=e84]:
+                - link "navigate to Comment in section" [ref=e85] [cursor=pointer]:
+                  - /url: "#linked-commentary"
+                  - text: Comment in
+              - listitem [ref=e86]:
+                - link "navigate to Similar articlessection" [ref=e87] [cursor=pointer]:
+                  - /url: "#similar"
+                  - text: Similar articles
+              - listitem [ref=e88]:
+                - link "navigate to Cited bysection" [ref=e89] [cursor=pointer]:
+                  - /url: "#citedby"
+                  - text: Cited by
+              - listitem [ref=e90]:
+                - link "navigate to References section" [ref=e91] [cursor=pointer]:
+                  - /url: "#references"
+                  - text: References
+              - listitem [ref=e92]:
+                - link "navigate to Publication types section" [ref=e93] [cursor=pointer]:
+                  - /url: "#publication-types"
+                  - text: Publication types
+              - listitem [ref=e94]:
+                - link "navigate to MeSH terms section" [ref=e95] [cursor=pointer]:
+                  - /url: "#mesh-terms"
+                  - text: MeSH terms
+              - listitem [ref=e96]:
+                - link "navigate to Substances section" [ref=e97] [cursor=pointer]:
+                  - /url: "#substances"
+                  - text: Substances
+              - listitem [ref=e98]:
+                - link "navigate to Associated data section" [ref=e99] [cursor=pointer]:
+                  - /url: "#supplemental-data"
+                  - text: Associated data
+              - listitem [ref=e100]:
+                - link "navigate to Related informationsection" [ref=e101] [cursor=pointer]:
+                  - /url: "#related-links"
+                  - text: Related information
+              - listitem [ref=e102]:
+                - link "navigate to Grants and funding section" [ref=e103] [cursor=pointer]:
+                  - /url: "#grants"
+                  - text: Grants and funding
+              - listitem [ref=e104]:
+                - link "navigate to LinkOut - more resources section" [ref=e105] [cursor=pointer]:
+                  - /url: "#linkout"
+                  - text: LinkOut - more resources
+    - main [ref=e106]:
+      - generic [ref=e108]:
+        - generic [ref=e109]:
+          - generic [ref=e110]: Observational Study
+          - generic [ref=e111]:
+            - button "Toggle dropdown menu for journal The American journal of clinical nutrition" [ref=e113] [cursor=pointer]: Am J Clin Nutr
+            - text: .
+            - generic [ref=e114]: 2019 Dec 1;110(6):1316-1326.
+          - generic [ref=e115]: "doi: 10.1093/ajcn/nqz218."
+        - 'heading "Detailed 3-dimensional body shape features predict body composition, blood metabolites, and functional strength: the Shape Up! studies" [level=1] [ref=e116]'
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - link "Bennett K Ng" [ref=e121] [cursor=pointer]:
+              - /url: /?term=Ng+BK&cauthor_id=31553429
+            - superscript [ref=e122]:
+              - link "1" [ref=e123] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+              - link "2" [ref=e124] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e125]:
+            - link "Markus J Sommer" [ref=e126] [cursor=pointer]:
+              - /url: /?term=Sommer+MJ&cauthor_id=31553429
+            - superscript [ref=e127]:
+              - link "2" [ref=e128] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e129]:
+            - link "Michael C Wong" [ref=e130] [cursor=pointer]:
+              - /url: /?term=Wong+MC&cauthor_id=31553429
+            - superscript [ref=e131]:
+              - link "1" [ref=e132] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+            - text: ","
+          - generic [ref=e133]:
+            - link "Ian Pagano" [ref=e134] [cursor=pointer]:
+              - /url: /?term=Pagano+I&cauthor_id=31553429
+            - superscript [ref=e135]:
+              - link "1" [ref=e136] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+            - text: ","
+          - generic [ref=e137]:
+            - link "Yilin Nie" [ref=e138] [cursor=pointer]:
+              - /url: /?term=Nie+Y&cauthor_id=31553429
+            - superscript [ref=e139]:
+              - link "2" [ref=e140] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e141]:
+            - link "Bo Fan" [ref=e142] [cursor=pointer]:
+              - /url: /?term=Fan+B&cauthor_id=31553429
+            - superscript [ref=e143]:
+              - link "2" [ref=e144] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e145]:
+            - link "Samantha Kennedy" [ref=e146] [cursor=pointer]:
+              - /url: /?term=Kennedy+S&cauthor_id=31553429
+            - superscript [ref=e147]:
+              - link "3" [ref=e148] [cursor=pointer]:
+                - /url: "#full-view-affiliation-3"
+            - text: ","
+          - generic [ref=e149]:
+            - link "Brianna Bourgeois" [ref=e150] [cursor=pointer]:
+              - /url: /?term=Bourgeois+B&cauthor_id=31553429
+            - superscript [ref=e151]:
+              - link "3" [ref=e152] [cursor=pointer]:
+                - /url: "#full-view-affiliation-3"
+            - text: ","
+          - generic [ref=e153]:
+            - link "Nisa Kelly" [ref=e154] [cursor=pointer]:
+              - /url: /?term=Kelly+N&cauthor_id=31553429
+            - superscript [ref=e155]:
+              - link "1" [ref=e156] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+              - link "2" [ref=e157] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e158]:
+            - link "Yong E Liu" [ref=e159] [cursor=pointer]:
+              - /url: /?term=Liu+YE&cauthor_id=31553429
+            - superscript [ref=e160]:
+              - link "1" [ref=e161] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+              - link "2" [ref=e162] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+            - text: ","
+          - generic [ref=e163]:
+            - link "Phoenix Hwaung" [ref=e164] [cursor=pointer]:
+              - /url: /?term=Hwaung+P&cauthor_id=31553429
+            - superscript [ref=e165]:
+              - link "3" [ref=e166] [cursor=pointer]:
+                - /url: "#full-view-affiliation-3"
+            - text: ","
+          - generic [ref=e167]:
+            - link "Andrea K Garber" [ref=e168] [cursor=pointer]:
+              - /url: /?term=Garber+AK&cauthor_id=31553429
+            - superscript [ref=e169]:
+              - link "4" [ref=e170] [cursor=pointer]:
+                - /url: "#full-view-affiliation-4"
+            - text: ","
+          - generic [ref=e171]:
+            - link "Dominic Chow" [ref=e172] [cursor=pointer]:
+              - /url: /?term=Chow+D&cauthor_id=31553429
+            - superscript [ref=e173]:
+              - link "1" [ref=e174] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+            - text: ","
+          - generic [ref=e175]:
+            - link "Christian Vaisse" [ref=e176] [cursor=pointer]:
+              - /url: /?term=Vaisse+C&cauthor_id=31553429
+            - superscript [ref=e177]:
+              - link "5" [ref=e178] [cursor=pointer]:
+                - /url: "#full-view-affiliation-5"
+            - text: ","
+          - generic [ref=e179]:
+            - link "Brian Curless" [ref=e180] [cursor=pointer]:
+              - /url: /?term=Curless+B&cauthor_id=31553429
+            - superscript [ref=e181]:
+              - link "6" [ref=e182] [cursor=pointer]:
+                - /url: "#full-view-affiliation-6"
+            - text: ","
+          - generic [ref=e183]:
+            - link "Steven B Heymsfield" [ref=e184] [cursor=pointer]:
+              - /url: /?term=Heymsfield+SB&cauthor_id=31553429
+            - superscript [ref=e185]:
+              - link "3" [ref=e186] [cursor=pointer]:
+                - /url: "#full-view-affiliation-3"
+            - text: ","
+          - generic [ref=e187]:
+            - link "John A Shepherd" [ref=e188] [cursor=pointer]:
+              - /url: /?term=Shepherd+JA&cauthor_id=31553429
+            - superscript [ref=e189]:
+              - link "1" [ref=e190] [cursor=pointer]:
+                - /url: "#full-view-affiliation-1"
+              - link "2" [ref=e191] [cursor=pointer]:
+                - /url: "#full-view-affiliation-2"
+        - generic [ref=e192]:
+          - text: Affiliations
+          - button "Expand" [ref=e193] [cursor=pointer]
+        - list [ref=e194]:
+          - listitem [ref=e195]:
+            - generic [ref=e196]:
+              - text: "PMID:"
+              - strong [ref=e197]: "31553429"
+          - listitem [ref=e198]:
+            - generic [ref=e199]:
+              - text: "PMCID:"
+              - link "PMC6885475" [ref=e200] [cursor=pointer]:
+                - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC6885475/
+          - listitem [ref=e201]:
+            - generic [ref=e202]:
+              - text: "DOI:"
+              - link "external, opens in new tab. 10.1093/ajcn/nqz218" [ref=e203] [cursor=pointer]:
+                - /url: https://doi.org/10.1093/ajcn/nqz218
+                - text: 10.1093/ajcn/nqz218
+      - text: …
+      - generic [ref=e204]:
+        - heading "Abstract" [level=2] [ref=e205]
+        - generic [ref=e206]:
+          - paragraph [ref=e207]:
+            - strong [ref=e208]: "Background:"
+            - text: Three-dimensional optical (3DO) body scanning has been proposed for automatic anthropometry. However, conventional measurements fail to capture detailed body shape. More sophisticated shape features could better indicate health status.
+          - paragraph [ref=e209]:
+            - strong [ref=e210]: "Objectives:"
+            - text: The objectives were to predict DXA total and regional body composition, serum lipid and diabetes markers, and functional strength from 3DO body scans using statistical shape modeling.
+          - paragraph [ref=e211]:
+            - strong [ref=e212]: "Methods:"
+            - text: Healthy adults underwent whole-body 3DO and DXA scans, blood tests, and strength assessments in the Shape Up! Adults cross-sectional observational study. Principal component analysis was performed on registered 3DO scans. Stepwise linear regressions were performed to estimate body composition, serum biomarkers, and strength using 3DO principal components (PCs). 3DO model accuracy was compared with simple anthropometric models and precision was compared with DXA.
+          - paragraph [ref=e213]:
+            - strong [ref=e214]: "Results:"
+            - text: "This analysis included 407 subjects. Eleven PCs for each sex captured 95% of body shape variance. 3DO body composition accuracy to DXA was: fat mass R2 = 0.88 male, 0.93 female; visceral fat mass R2 = 0.67 male, 0.75 female. 3DO body fat test-retest precision was: root mean squared error = 0.81 kg male, 0.66 kg female. 3DO visceral fat was as precise (%CV = 7.4 for males, 6.8 for females) as DXA (%CV = 6.8 for males, 7.4 for females). Multiple 3DO PCs were significantly correlated with serum HDL cholesterol, triglycerides, glucose, insulin, and HOMA-IR, independent of simple anthropometrics. 3DO PCs improved prediction of isometric knee strength (combined model R2 = 0.67 male, 0.59 female; anthropometrics-only model R2 = 0.34 male, 0.24 female)."
+          - paragraph [ref=e215]:
+            - strong [ref=e216]: "Conclusions:"
+            - text: 3DO body shape PCs predict body composition with good accuracy and precision comparable to existing methods. 3DO PCs improve prediction of serum lipid and diabetes markers, and functional strength measurements. The safety and accessibility of 3DO scanning make it appropriate for monitoring individual body composition, and metabolic health and functional strength in epidemiological settings.This trial was registered at clinicaltrials.gov as
+            - link "NCT03637855" [ref=e217] [cursor=pointer]:
+              - /url: http://clinicaltrials.gov/show/NCT03637855
+            - text: .
+        - paragraph [ref=e218]:
+          - strong [ref=e219]: "Keywords:"
+          - text: body composition; diabetes; imaging; obesity; principal component analysis; strength.
+      - paragraph [ref=e220]: Copyright © American Society for Nutrition 2019.
+      - paragraph [ref=e221]:
+        - link "PubMed Disclaimer" [ref=e222] [cursor=pointer]:
+          - /url: /disclaimer/
+      - generic [ref=e223]:
+        - heading "Figures" [level=2] [ref=e224]
+        - generic [ref=e225]:
+          - figure "FIGURE 1 The average body shape of males and females in the sample. These 60,000-vertex 3-dimensional meshes are the sex-specific means of the registered meshes fitted to participant scans." [ref=e226] [cursor=pointer]:
+            - button "FIGURE 1" [ref=e227]:
+              - img "FIGURE 1" [ref=e228]
+            - generic [ref=e230]:
+              - strong [ref=e231]:
+                - paragraph [ref=e232]: FIGURE 1
+              - paragraph [ref=e234]: The average body shape of…
+          - figure "FIGURE 2 The first 11 principal components (PCs) that captured 95% of shape variance in males. Each component displays −3 SD to the left and +3 SD to the right." [ref=e235] [cursor=pointer]:
+            - button "FIGURE 2" [ref=e236]:
+              - img "FIGURE 2" [ref=e237]
+            - generic [ref=e239]:
+              - strong [ref=e240]:
+                - paragraph [ref=e241]: FIGURE 2
+              - paragraph [ref=e243]: The first 11 principal components…
+          - figure "FIGURE 3 The first 11 principal components (PCs) that captured 95% of shape variance in females. Each component displays −3 SD to the left and +3 SD to the right." [ref=e244] [cursor=pointer]:
+            - button "FIGURE 3" [ref=e245]:
+              - img "FIGURE 3" [ref=e246]
+            - generic [ref=e248]:
+              - strong [ref=e249]:
+                - paragraph [ref=e250]: FIGURE 3
+              - paragraph [ref=e252]: The first 11 principal components…
+      - generic [ref=e253]:
+        - heading "Comment in" [level=2] [ref=e254]
+        - list [ref=e255]:
+          - listitem [ref=e256]:
+            - generic [ref=e257]:
+              - link "Three-dimensional optical scanning for clinical body shape assessment comes of age." [ref=e258] [cursor=pointer]:
+                - /url: /31622453/
+              - generic [ref=e259]:
+                - generic [ref=e260]: Wells JCK.
+                - generic [ref=e261]: "Am J Clin Nutr. 2019 Dec 1;110(6):1272-1274. doi: 10.1093/ajcn/nqz258."
+                - generic [ref=e262]: "PMID: 31622453"
+                - generic [ref=e263]: No abstract available.
+      - generic [ref=e264]:
+        - heading "Similar articles" [level=2] [ref=e265]
+        - list [ref=e266]:
+          - listitem [ref=e267]:
+            - generic [ref=e268]:
+              - link "Accuracy and Precision of 3-dimensional Optical Imaging for Body Composition by Age, BMI, and Ethnicity." [ref=e269] [cursor=pointer]:
+                - /url: /37474106/
+              - generic [ref=e270]:
+                - generic [ref=e271]: Wong MC, Bennett JP, Quon B, Leong LT, Tian IY, Liu YE, Kelly NN, McCarthy C, Chow D, Pujades S, Garber AK, Maskarinec G, Heymsfield SB, Shepherd JA.
+                - generic [ref=e272]: "Am J Clin Nutr. 2023 Sep;118(3):657-671. doi: 10.1016/j.ajcnut.2023.07.010. Epub 2023 Jul 19."
+                - generic [ref=e273]: "PMID: 37474106"
+                - generic [ref=e274]: Free PMC article.
+          - listitem [ref=e275]:
+            - generic [ref=e276]:
+              - link "A device-agnostic shape model for automated body composition estimates from 3D optical scans." [ref=e277] [cursor=pointer]:
+                - /url: /35837761/
+              - generic [ref=e278]:
+                - generic [ref=e279]: Tian IY, Wong MC, Kennedy S, Kelly NN, Liu YE, Garber AK, Heymsfield SB, Curless B, Shepherd JA.
+                - generic [ref=e280]: "Med Phys. 2022 Oct;49(10):6395-6409. doi: 10.1002/mp.15843. Epub 2022 Jul 22."
+                - generic [ref=e281]: "PMID: 35837761"
+                - generic [ref=e282]: Free PMC article.
+          - listitem [ref=e283]:
+            - generic [ref=e284]:
+              - link "Monitoring body composition change for intervention studies with advancing 3D optical imaging technology in comparison to dual-energy X-ray absorptiometry." [ref=e285] [cursor=pointer]:
+                - /url: /36796647/
+              - generic [ref=e286]:
+                - generic [ref=e287]: Wong MC, Bennett JP, Leong LT, Tian IY, Liu YE, Kelly NN, McCarthy C, Wong JMW, Ebbeling CB, Ludwig DS, Irving BA, Scott MC, Stampley J, Davis B, Johannsen N, Matthews R, Vincellette C, Garber AK, Maskarinec G, Weiss E, Rood J, Varanoske AN, Pasiakos SM, Heymsfield SB, Shepherd JA.
+                - generic [ref=e288]: "Am J Clin Nutr. 2023 Apr;117(4):802-813. doi: 10.1016/j.ajcnut.2023.02.006. Epub 2023 Feb 14."
+                - generic [ref=e289]: "PMID: 36796647"
+                - generic [ref=e290]: Free PMC article.
+          - listitem [ref=e291]:
+            - generic [ref=e292]:
+              - link "A pose-independent method for accurate and precise body composition from 3D optical scans." [ref=e293] [cursor=pointer]:
+                - /url: /34549543/
+              - generic [ref=e294]:
+                - generic [ref=e295]: Wong MC, Ng BK, Tian I, Sobhiyeh S, Pagano I, Dechenaud M, Kennedy SF, Liu YE, Kelly NN, Chow D, Garber AK, Maskarinec G, Pujades S, Black MJ, Curless B, Heymsfield SB, Shepherd JA.
+                - generic [ref=e296]: "Obesity (Silver Spring). 2021 Nov;29(11):1835-1847. doi: 10.1002/oby.23256. Epub 2021 Sep 21."
+                - generic [ref=e297]: "PMID: 34549543"
+                - generic [ref=e298]: Free PMC article.
+          - listitem [ref=e299]:
+            - generic [ref=e300]:
+              - link "Assessment of clinical measures of total and regional body composition from a commercial 3-dimensional optical body scanner." [ref=e301] [cursor=pointer]:
+                - /url: /34915272/
+              - generic [ref=e302]:
+                - generic [ref=e303]: Bennett JP, Liu YE, Quon BK, Kelly NN, Wong MC, Kennedy SF, Chow DC, Garber AK, Weiss EJ, Heymsfield SB, Shepherd JA.
+                - generic [ref=e304]: "Clin Nutr. 2022 Jan;41(1):211-218. doi: 10.1016/j.clnu.2021.11.031. Epub 2021 Dec 7."
+                - generic [ref=e305]: "PMID: 34915272"
+                - generic [ref=e306]: Free PMC article.
+        - link "See all similar articles" [ref=e308] [cursor=pointer]:
+          - /url: /?linkname=pubmed_pubmed&from_uid=31553429
+      - generic [ref=e309]:
+        - heading "Cited by" [level=2] [ref=e310]
+        - list [ref=e311]:
+          - listitem [ref=e312]:
+            - generic [ref=e313]:
+              - link "Digital Single-Image Smartphone Assessment of Total Body Fat and Abdominal Fat Using Machine Learning." [ref=e314] [cursor=pointer]:
+                - /url: /36366063/
+              - generic [ref=e315]:
+                - generic [ref=e316]: Farina GL, Orlandi C, Lukaski H, Nescolarde L.
+                - generic [ref=e317]: "Sensors (Basel). 2022 Oct 31;22(21):8365. doi: 10.3390/s22218365."
+                - generic [ref=e318]: "PMID: 36366063"
+                - generic [ref=e319]: Free PMC article.
+          - listitem [ref=e320]:
+            - generic [ref=e321]:
+              - 'link "How shape-based anthropometry can complement traditional anthropometric techniques: a cross-sectional study." [ref=e322] [cursor=pointer]':
+                - /url: /32699270/
+              - generic [ref=e323]:
+                - generic [ref=e324]: Thelwell M, Chiu CY, Bullas A, Hart J, Wheat J, Choppin S.
+                - generic [ref=e325]: "Sci Rep. 2020 Jul 22;10(1):12125. doi: 10.1038/s41598-020-69099-4."
+                - generic [ref=e326]: "PMID: 32699270"
+                - generic [ref=e327]: Free PMC article.
+          - listitem [ref=e328]:
+            - generic [ref=e329]:
+              - link "Equations for smartphone prediction of adiposity and appendicular lean mass in youth soccer players." [ref=e330] [cursor=pointer]:
+                - /url: /38007571/
+              - generic [ref=e331]:
+                - generic [ref=e332]: Minetto MA, Pietrobelli A, Ferraris A, Busso C, Magistrali M, Vignati C, Sieglinger B, Bruner D, Shepherd JA, Heymsfield SB.
+                - generic [ref=e333]: "Sci Rep. 2023 Nov 25;13(1):20734. doi: 10.1038/s41598-023-48055-y."
+                - generic [ref=e334]: "PMID: 38007571"
+                - generic [ref=e335]: Free PMC article.
+          - listitem [ref=e336]:
+            - generic [ref=e337]:
+              - 'link "Validity of non-traditional measures of obesity compared to total body fat across the life course: A systematic review and meta-analysis." [ref=e338] [cursor=pointer]':
+                - /url: /39861925/
+              - generic [ref=e339]:
+                - generic [ref=e340]: Palumbo AM, Jacob CM, Khademioore S, Sakib MN, Yoshida-Montezuma Y, Christodoulakis N, Yassa P, Vanama MS, Gamra S, Ho PJ, Sadana R, De Rubeis V, Griffith LE, Anderson LN.
+                - generic [ref=e341]: "Obes Rev. 2025 Jun;26(6):e13894. doi: 10.1111/obr.13894. Epub 2025 Jan 24."
+                - generic [ref=e342]: "PMID: 39861925"
+                - generic [ref=e343]: Free PMC article.
+          - listitem [ref=e344]:
+            - generic [ref=e345]:
+              - link "Distinct phenotypic characteristics of normal-weight adults at risk of developing cardiovascular and metabolic diseases." [ref=e346] [cursor=pointer]:
+                - /url: /32687153/
+              - generic [ref=e347]:
+                - generic [ref=e348]: Stanley A, Schuna J, Yang S, Kennedy S, Heo M, Wong M, Shepherd J, Heymsfield SB.
+                - generic [ref=e349]: "Am J Clin Nutr. 2020 Oct 1;112(4):967-978. doi: 10.1093/ajcn/nqaa194."
+                - generic [ref=e350]: "PMID: 32687153"
+                - generic [ref=e351]: Free PMC article.
+        - link "See all \"Cited by\" articles" [ref=e353] [cursor=pointer]:
+          - /url: /?linkname=pubmed_pubmed_citedin&from_uid=31553429
+      - generic [ref=e354]:
+        - heading "References" [level=2] [ref=e355]
+        - generic [ref=e357]:
+          - list [ref=e358]:
+            - listitem [ref=e359]:
+              - list [ref=e360]:
+                - listitem [ref=e361]:
+                  - text: Zhang C, Rexrode KM, van Dam RM, Li TY, Hu FB. Abdominal obesity and the risk of all-cause, cardiovascular, and cancer mortality. Circulation. 2008;117(13):1658–67. -
+                  - link "PubMed" [ref=e362] [cursor=pointer]:
+                    - /url: /18362231/
+            - listitem [ref=e363]:
+              - list [ref=e364]:
+                - listitem [ref=e365]:
+                  - text: "Eckel RH, Kahn SE, Ferrannini E, Goldfine AB, Nathan DM, Schwartz MW, Smith RJ, Smith SR. Obesity and type 2 diabetes: what can be unified and what needs to be individualized?. J Clin Endocrinol Metab. 2011;96(6):1654–63. -"
+                  - link "PMC" [ref=e366] [cursor=pointer]:
+                    - /url: https://pmc.ncbi.nlm.nih.gov/articles/PMC3206399/
+                  - text: "-"
+                  - link "PubMed" [ref=e367] [cursor=pointer]:
+                    - /url: /21602457/
+            - listitem [ref=e368]:
+              - list [ref=e369]:
+                - listitem [ref=e370]:
+                  - text: "Calle EE, Kaaks R. Overweight, obesity and cancer: epidemiological evidence and proposed mechanisms. Nat Rev Cancer. 2004;4(8):579–91. -"
+                  - link "PubMed" [ref=e371] [cursor=pointer]:
+                    - /url: /15286738/
+            - listitem [ref=e372]:
+              - list [ref=e373]:
+                - listitem [ref=e374]:
+                  - text: "Price GM, Uauy R, Breeze E, Bulpitt CJ, Fletcher AE. Weight, shape, and mortality risk in older persons: elevated waist-hip ratio, not high body mass index, is associated with a greater risk of death. Am J Clin Nutr. 2006;84(2):449–60. -"
+                  - link "PubMed" [ref=e375] [cursor=pointer]:
+                    - /url: /16895897/
+            - listitem [ref=e376]:
+              - list [ref=e377]:
+                - listitem [ref=e378]:
+                  - text: Kuk JL, Katzmarzyk PT, Nichaman MZ, Church TS, Blair SN, Ross R. Visceral fat is an independent predictor of all‐cause mortality in men. Obesity. 2012;14(2):336–41. -
+                  - link "PubMed" [ref=e379] [cursor=pointer]:
+                    - /url: /16571861/
+          - button "Show all 26 references" [ref=e381] [cursor=pointer]
+      - generic [ref=e382]:
+        - heading "Publication types" [level=2] [ref=e383]
+        - list [ref=e384]:
+          - listitem [ref=e385]:
+            - button "Toggle dropdown menu for keyword Observational Study" [ref=e387] [cursor=pointer]: Observational Study
+          - listitem [ref=e388]:
+            - button "Toggle dropdown menu for keyword Research Support, N.I.H., Extramural" [ref=e390] [cursor=pointer]: Research Support, N.I.H., Extramural
+      - generic [ref=e391]:
+        - heading "MeSH terms" [level=2] [ref=e392]
+        - list [ref=e393]:
+          - listitem [ref=e394]:
+            - button "Toggle dropdown menu for keyword Absorptiometry, Photon" [ref=e396] [cursor=pointer]: Absorptiometry, Photon
+          - listitem [ref=e397]:
+            - button "Toggle dropdown menu for keyword Adipose Tissue / diagnostic imaging*" [ref=e399] [cursor=pointer]: Adipose Tissue / diagnostic imaging*
+          - listitem [ref=e400]:
+            - button "Toggle dropdown menu for keyword Adolescent" [ref=e402] [cursor=pointer]: Adolescent
+          - listitem [ref=e403]:
+            - button "Toggle dropdown menu for keyword Adult" [ref=e405] [cursor=pointer]: Adult
+          - listitem [ref=e406]:
+            - button "Toggle dropdown menu for keyword Anthropometry" [ref=e408] [cursor=pointer]: Anthropometry
+          - listitem [ref=e409]:
+            - button "Toggle dropdown menu for keyword Body Composition*" [ref=e411] [cursor=pointer]: Body Composition*
+          - listitem [ref=e412]:
+            - button "Toggle dropdown menu for keyword Cross-Sectional Studies" [ref=e414] [cursor=pointer]: Cross-Sectional Studies
+          - listitem [ref=e415]:
+            - button "Toggle dropdown menu for keyword Female" [ref=e417] [cursor=pointer]: Female
+          - listitem [ref=e418]:
+            - button "Toggle dropdown menu for keyword Humans" [ref=e420] [cursor=pointer]: Humans
+          - listitem [ref=e421]:
+            - button "Toggle dropdown menu for keyword Imaging, Three-Dimensional" [ref=e423] [cursor=pointer]: Imaging, Three-Dimensional
+          - listitem [ref=e424]:
+            - button "Toggle dropdown menu for keyword Insulin / blood" [ref=e426] [cursor=pointer]: Insulin / blood
+          - listitem [ref=e427]:
+            - button "Toggle dropdown menu for keyword Knee / physiology*" [ref=e429] [cursor=pointer]: Knee / physiology*
+          - listitem [ref=e430]:
+            - button "Toggle dropdown menu for keyword Lipoproteins, HDL / blood" [ref=e432] [cursor=pointer]: Lipoproteins, HDL / blood
+          - listitem [ref=e433]:
+            - button "Toggle dropdown menu for keyword Male" [ref=e435] [cursor=pointer]: Male
+          - listitem [ref=e436]:
+            - button "Toggle dropdown menu for keyword Middle Aged" [ref=e438] [cursor=pointer]: Middle Aged
+          - listitem [ref=e439]:
+            - button "Toggle dropdown menu for keyword Triglycerides / blood" [ref=e441] [cursor=pointer]: Triglycerides / blood
+          - listitem [ref=e442]:
+            - button "Toggle dropdown menu for keyword Young Adult" [ref=e444] [cursor=pointer]: Young Adult
+      - generic [ref=e445]:
+        - heading "Substances" [level=2] [ref=e446]
+        - list [ref=e447]:
+          - listitem [ref=e448]:
+            - button "Toggle dropdown menu for keyword Insulin" [ref=e450] [cursor=pointer]: Insulin
+          - listitem [ref=e451]:
+            - button "Toggle dropdown menu for keyword Lipoproteins, HDL" [ref=e453] [cursor=pointer]: Lipoproteins, HDL
+          - listitem [ref=e454]:
+            - button "Toggle dropdown menu for keyword Triglycerides" [ref=e456] [cursor=pointer]: Triglycerides
+      - generic [ref=e457]:
+        - heading "Associated data" [level=2] [ref=e458]
+        - list [ref=e459]:
+          - listitem [ref=e460]:
+            - button "ClinicalTrials.gov/NCT03637855" [ref=e462] [cursor=pointer]
+      - generic [ref=e463]:
+        - heading "Related information" [level=2] [ref=e464]
+        - list [ref=e465]:
+          - listitem [ref=e466]:
+            - link "GEO Profiles" [ref=e467] [cursor=pointer]:
+              - /url: https://www.ncbi.nlm.nih.gov/geoprofiles?linkname=pubmed_geoprofiles&from_uid=31553429
+          - listitem [ref=e468]:
+            - link "PubChem Compound (MeSH Keyword)" [ref=e469] [cursor=pointer]:
+              - /url: https://www.ncbi.nlm.nih.gov/pccompound?linkname=pubmed_pccompound_mesh&from_uid=31553429
+      - generic [ref=e470]:
+        - heading "Grants and funding" [level=2] [ref=e471]
+        - list [ref=e473]:
+          - listitem [ref=e474]:
+            - link "P30 DK040561/DK/NIDDK NIH HHS/United States" [ref=e475] [cursor=pointer]:
+              - /url: /?term=P30+DK040561%2FDK%2FNIDDK+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e476]:
+            - link "R01 DK111698/DK/NIDDK NIH HHS/United States" [ref=e477] [cursor=pointer]:
+              - /url: /?term=R01+DK111698%2FDK%2FNIDDK+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e478]:
+            - link "P30 DK072476/DK/NIDDK NIH HHS/United States" [ref=e479] [cursor=pointer]:
+              - /url: /?term=P30+DK072476%2FDK%2FNIDDK+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e480]:
+            - link "U54 MD007601/MD/NIMHD NIH HHS/United States" [ref=e481] [cursor=pointer]:
+              - /url: /?term=U54+MD007601%2FMD%2FNIMHD+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+          - listitem [ref=e482]:
+            - link "U54 MD007584/MD/NIMHD NIH HHS/United States" [ref=e483] [cursor=pointer]:
+              - /url: /?term=U54+MD007584%2FMD%2FNIMHD+NIH+HHS%2FUnited+States%5BGrants+and+Funding%5D&sort=date&sort_order=desc
+        - button "Show all 8 grants" [ref=e485] [cursor=pointer]
+      - generic [ref=e486]:
+        - heading "LinkOut - more resources" [level=2] [ref=e487]
+        - list [ref=e488]:
+          - listitem [ref=e489]:
+            - heading "Full Text Sources" [level=3] [ref=e490]
+            - list [ref=e491]:
+              - listitem [ref=e492]:
+                - link "external, opens in new tab. Elsevier Science" [ref=e493] [cursor=pointer]:
+                  - /url: https://linkinghub.elsevier.com/retrieve/pii/S0002-9165(22)01327-2
+                  - text: Elsevier Science
+              - listitem [ref=e494]:
+                - link "external, opens in new tab. Europe PMC" [ref=e495] [cursor=pointer]:
+                  - /url: https://europepmc.org/abstract/MED/31553429
+                  - text: Europe PMC
+              - listitem [ref=e496]:
+                - link "external, opens in new tab. Ovid Technologies, Inc." [ref=e497] [cursor=pointer]:
+                  - /url: https://www.ovid.com/31553429.pmid
+                  - text: Ovid Technologies, Inc.
+              - listitem [ref=e498]:
+                - link "PubMed Central" [ref=e499] [cursor=pointer]:
+                  - /url: https://pmc.ncbi.nlm.nih.gov/articles/pmid/31553429/
+              - listitem [ref=e500]:
+                - link "external, opens in new tab. eScholarship, University of California - Access Free Full Text" [ref=e501] [cursor=pointer]:
+                  - /url: https://escholarship.org/uc/item/qt8f99f7m1
+                  - text: eScholarship, University of California - Access Free Full Text
+          - listitem [ref=e502]:
+            - heading "Other Literature Sources" [level=3] [ref=e503]
+            - list [ref=e504]:
+              - listitem [ref=e505]:
+                - link "external, opens in new tab. The Lens - Patent Citations Database" [ref=e506] [cursor=pointer]:
+                  - /url: https://www.lens.org/lens/search/patent/list?q=reference_cited.npl.ids.pmid:31553429
+                  - text: The Lens - Patent Citations Database
+          - listitem [ref=e507]:
+            - heading "Medical" [level=3] [ref=e508]
+            - list [ref=e509]:
+              - listitem [ref=e510]:
+                - link "ClinicalTrials.gov" [ref=e511] [cursor=pointer]:
+                  - /url: https://clinicaltrials.gov/search?term=AREA%5BReferencePMID%5D31553429
+    - option "AMA"
+    - option "APA"
+    - option "MLA"
+    - option "NLM" [selected]
+  - generic [ref=e512]:
+    - complementary "Links to NCBI Literature Resources" [ref=e513]:
+      - generic [ref=e514]:
+        - paragraph [ref=e515]: NCBI Literature Resources
+        - paragraph [ref=e516]:
+          - link "MeSH" [ref=e517] [cursor=pointer]:
+            - /url: https://www.ncbi.nlm.nih.gov/mesh/
+          - link "PMC" [ref=e518] [cursor=pointer]:
+            - /url: https://www.ncbi.nlm.nih.gov/pmc/
+          - link "Bookshelf" [ref=e519] [cursor=pointer]:
+            - /url: https://www.ncbi.nlm.nih.gov/books
+          - link "Disclaimer" [ref=e520] [cursor=pointer]:
+            - /url: /disclaimer/
+        - paragraph [ref=e521]: The PubMed wordmark and PubMed logo are registered trademarks of the U.S. Department of Health and Human Services (HHS). Unauthorized use of these marks is strictly prohibited.
+    - contentinfo [ref=e522]:
+      - generic [ref=e523]:
+        - generic [ref=e524]: Follow NCBI
+        - generic [ref=e526]:
+          - link "Twitter" [ref=e527] [cursor=pointer]:
+            - /url: https://twitter.com/ncbi
+            - img "Twitter" [ref=e528]
+          - link "Facebook" [ref=e531] [cursor=pointer]:
+            - /url: https://www.facebook.com/ncbi.nlm
+            - img "Facebook" [ref=e532]
+          - link "LinkedIn" [ref=e533] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/ncbinlm
+            - img "LinkedIn" [ref=e534]
+          - link "GitHub" [ref=e535] [cursor=pointer]:
+            - /url: https://github.com/ncbi
+            - img "GitHub" [ref=e536]
+          - link "Blog" [ref=e539] [cursor=pointer]:
+            - /url: https://ncbiinsights.ncbi.nlm.nih.gov/
+            - img [ref=e540]
+      - generic [ref=e543]:
+        - generic [ref=e544]:
+          - generic [ref=e545]:
+            - paragraph [ref=e546]:
+              - link "Connect with NLM" [ref=e547] [cursor=pointer]:
+                - /url: https://www.nlm.nih.gov/socialmedia/index.html
+            - list [ref=e548]:
+              - listitem [ref=e549]:
+                - link "Twitter" [ref=e550] [cursor=pointer]:
+                  - /url: https://twitter.com/NLM_NIH
+                  - img "Twitter" [ref=e551]
+              - listitem [ref=e555]:
+                - link "Facebook" [ref=e556] [cursor=pointer]:
+                  - /url: https://www.facebook.com/nationallibraryofmedicine
+                  - img "SM-Facebook" [ref=e557]
+              - listitem [ref=e562]:
+                - link "Youtube" [ref=e563] [cursor=pointer]:
+                  - /url: https://www.youtube.com/user/NLMNIH
+                  - img "SM-Youtube" [ref=e564]
+          - paragraph [ref=e569]:
+            - text: National Library of Medicine
+            - link "8600 Rockville Pike Bethesda, MD 20894" [ref=e570] [cursor=pointer]:
+              - /url: https://www.google.com/maps/place/8600+Rockville+Pike,+Bethesda,+MD+20894/@38.9959508,-77.101021,17z/data=!3m1!4b1!4m5!3m4!1s0x89b7c95e25765ddb:0x19156f88b27635b8!8m2!3d38.9959508!4d-77.0988323
+              - text: 8600 Rockville Pike
+              - text: Bethesda, MD 20894
+          - paragraph [ref=e572]:
+            - link "Web Policies" [ref=e573] [cursor=pointer]:
+              - /url: https://www.nlm.nih.gov/web_policies.html
+            - link "FOIA" [ref=e574] [cursor=pointer]:
+              - /url: https://www.nih.gov/institutes-nih/nih-office-director/office-communications-public-liaison/freedom-information-act-office
+            - link "HHS Vulnerability Disclosure" [ref=e575] [cursor=pointer]:
+              - /url: https://www.hhs.gov/vulnerability-disclosure-policy/index.html
+          - paragraph [ref=e577]:
+            - link "Help" [ref=e578] [cursor=pointer]:
+              - /url: https://support.nlm.nih.gov/?pagename=pubmed%3Apubmed%3Aabstract%3ANONE
+            - link "Accessibility" [ref=e579] [cursor=pointer]:
+              - /url: https://www.nlm.nih.gov/accessibility.html
+            - link "Careers" [ref=e580] [cursor=pointer]:
+              - /url: https://www.nlm.nih.gov/careers/careers.html
+        - navigation [ref=e583]:
+          - list [ref=e584]:
+            - listitem [ref=e585]:
+              - link "NLM" [ref=e586] [cursor=pointer]:
+                - /url: //www.nlm.nih.gov/
+            - listitem [ref=e587]:
+              - link "NIH" [ref=e588] [cursor=pointer]:
+                - /url: https://www.nih.gov/
+            - listitem [ref=e589]:
+              - link "HHS" [ref=e590] [cursor=pointer]:
+                - /url: https://www.hhs.gov/
+            - listitem [ref=e591]:
+              - link "USA.gov" [ref=e592] [cursor=pointer]:
+                - /url: https://www.usa.gov/

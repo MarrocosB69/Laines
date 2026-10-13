@@ -1,106 +1,108 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+// Trimestres do calendário (horário de Brasília) que caem no período, com
+// o realizado e nada mais: o selo "Meta" saiu porque a meta era o próprio
+// realizado (max(avaliações, 10)) e a direção ainda não definiu uma (WI-016,
+// decisão 1). Trimestre só em parte dentro do período diz quais dias conta.
+// Os números vêm escritos; as barras são só desenho (aria-hidden).
+
 const toPercent = (value, maxValue) => {
   if (!Number.isFinite(value) || value <= 0) return 0;
   const baseline = Math.max(1, maxValue);
   return Math.min(100, (value / baseline) * 100);
 };
 
+const hasNumber = (value) => value !== null && value !== undefined && Number.isFinite(Number(value));
+
+const formatDay = (day) => {
+  const [year, month, date] = String(day || '').split('-');
+  return year && month && date ? `${date}/${month}` : '';
+};
+
+const SERIES = [
+  { key: 'atendimentos', label: 'Atendimentos realizados', color: 'blue' },
+  { key: 'pacientes', label: 'Novos atletas', color: 'emerald' },
+  { key: 'avaliacoes', label: 'Avaliações', color: 'purple' }
+];
+
 const QuarterlyPanel = ({ quarterlyData }) => {
-  const maxAlunos = Math.max(1, ...quarterlyData.map((quarter) => Number(quarter.alunos || 0)));
-  const maxPacientes = Math.max(1, ...quarterlyData.map((quarter) => Number(quarter.pacientes || 0)));
-  const maxAvaliacoes = Math.max(
-    1,
-    ...quarterlyData.map((quarter) => Math.max(Number(quarter.avaliacoes || 0), Number(quarter.meta || 0)))
-  );
+  // Servidor antigo não manda `noPeriodo`: mostra tudo, como antes.
+  const quarters = quarterlyData.filter((quarter) => quarter.noPeriodo !== false);
+  const maxBySeries = Object.fromEntries(SERIES.map((serie) => [
+    serie.key,
+    Math.max(1, ...quarters.map((quarter) => Number(quarter[serie.key] || 0)))
+  ]));
 
   return (
     <div className="quarterly-panel">
       <div className="quarterly-header">
         <div className="quarterly-header-left">
-          <h3 className="quarterly-title">Desempenho trimestral</h3>
-          <p className="quarterly-subtitle">Escala dinâmica por série (normalizada pelo maior valor do período)</p>
+          <h3 className="quarterly-title">Realizado por trimestre</h3>
+          <p className="quarterly-subtitle">
+            Trimestres do calendário dentro do período. Sem meta definida: mostra só o realizado.
+          </p>
         </div>
         <div className="quarterly-legend">
-          <div className="legend-item">
-            <div className="legend-dot blue"></div>
-            <span className="legend-label">Alunos</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-dot emerald"></div>
-            <span className="legend-label">Pacientes</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-dot purple"></div>
-            <span className="legend-label">Avaliações</span>
-          </div>
+          {SERIES.map((serie) => (
+            <div key={serie.key} className="legend-item">
+              <div className={`legend-dot ${serie.color}`}></div>
+              <span className="legend-label">{serie.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
       <div className="quarterly-grid">
-        {quarterlyData.map((quarter, index) => (
+        {quarters.length === 0 && (
+          <div className="reports-empty-state laines-feedback-state">
+            Sem trimestre para mostrar neste período.
+          </div>
+        )}
+        {quarters.map((quarter, index) => (
           <motion.div
-            key={quarter.period}
+            key={`${quarter.period}-${quarter.ano ?? index}`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 + index * 0.1 }}
-            whileHover={{ y: -8 }}
             className="quarter-card"
           >
             <div className="quarter-card-header">
-              <h4 className="quarter-card-title">{quarter.period}</h4>
-              <div className={`quarter-meta ${quarter.avaliacoes >= quarter.meta ? 'meta-achieved' : 'meta-pending'}`}>
-                Meta
-              </div>
+              <h4 className="quarter-card-title">
+                {quarter.period}{quarter.ano ? ` ${quarter.ano}` : ''}
+              </h4>
+              {quarter.parcial && quarter.inicio && quarter.fim && (
+                <span className="quarter-parcial">
+                  {`Parcial: ${formatDay(quarter.inicio)} a ${formatDay(quarter.fim)}`}
+                </span>
+              )}
             </div>
 
             <div className="quarter-metrics">
-              <div className="quarter-metric">
-                <div className="metric-header">
-                  <span className="metric-label">Alunos</span>
-                  <span className="metric-value blue">{quarter.alunos}</span>
-                </div>
-                <div className="metric-bar">
-                  <div
-                    className="metric-bar-fill blue"
-                    style={{ width: `${toPercent(Number(quarter.alunos || 0), maxAlunos)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="quarter-metric">
-                <div className="metric-header">
-                  <span className="metric-label">Pacientes</span>
-                  <span className="metric-value emerald">{quarter.pacientes}</span>
-                </div>
-                <div className="metric-bar">
-                  <div
-                    className="metric-bar-fill emerald"
-                    style={{ width: `${toPercent(Number(quarter.pacientes || 0), maxPacientes)}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="quarter-metric">
-                <div className="metric-header">
-                  <span className="metric-label">Avaliações</span>
-                  <span className="metric-value purple">{quarter.avaliacoes}</span>
-                </div>
-                <div className="metric-bar">
-                  <div
-                    className="metric-bar-fill purple"
-                    style={{ width: `${toPercent(Number(quarter.avaliacoes || 0), maxAvaliacoes)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="quarter-card-footer">
-              <div className="meta-info">
-                <span className="meta-label">Meta:</span>
-                <span className="meta-value">{quarter.meta} av.</span>
-              </div>
+              {SERIES.map((serie) => {
+                const value = quarter[serie.key];
+                return (
+                  <div key={serie.key} className="quarter-metric">
+                    <div className="metric-header">
+                      <span className="metric-label">{serie.label}</span>
+                      <span className="metric-value">
+                        {hasNumber(value) ? Number(value).toLocaleString('pt-BR') : (
+                          <>
+                            <span aria-hidden="true">—</span>
+                            <span className="reports-sr">sem valor</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <div className="metric-bar" aria-hidden="true">
+                      <div
+                        className={`metric-bar-fill ${serie.color}`}
+                        style={{ width: `${toPercent(Number(value || 0), maxBySeries[serie.key])}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
         ))}

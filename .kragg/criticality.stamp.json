@@ -1,0 +1,11 @@
+{
+ "version": 2,
+ "scan_paths": [
+  "server/src",
+  "scripts/test-security-realtime.cjs"
+ ],
+ "files": 217,
+ "bytes": 1164870,
+ "source_digest": "65eb6720e9549994ccd1eb68d17d730f572583b8280b705236f2d32f24d6669f",
+ "inputs_digest": "0d152bbad4b10bf328091a70974214d37cd5717504617351082938c2b8027aa1"
+}

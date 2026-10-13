@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useCallback, useEffect, useId, useState } from 'react';
+import { Plus, Trash2, X } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../services/api';
 import './AthleteOnboardingWizard.css';
 
@@ -78,6 +78,40 @@ const SPORT_CONTEXT_CONFIG = {
   },
 };
 
+// UX-07 / CLI cadastro (UPD-18): o cadastro do paciente (inscrição pública
+// ou cadastro feito pela equipe) pode já conter telefone, cidade, estado,
+// data de nascimento e rotina de treino — ver src/views/public/
+// InscricaoPublica.jsx e server/src/pacientes/athlete-cadastro.utils.ts
+// (buildCadastroAtletaConsolidado). Sem isso, o atleta reescrevia tudo do
+// zero aqui. `origemCadastro` identifica de onde veio o dado; `createdAt`
+// do paciente é usado como "quando foi registrado". Nunca prefiltra o
+// campo "Sexo biológico": o cadastro não expõe `sexoBiologico` ao atleta
+// (só `genero`, que também carrega identidade de gênero em outros fluxos),
+// e esse campo alimenta cálculo clínico — melhor deixar em branco do que
+// arriscar um valor com semântica ambígua.
+const CADASTRO_ORIGEM_LABELS = {
+  inscricao_publica: 'inscrição pública',
+  equipe: 'cadastro feito pela equipe',
+  atleta: 'seu cadastro anterior',
+  desconhecida: 'seu cadastro'
+};
+
+const formatDatePtBr = (value) => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleDateString('pt-BR');
+};
+
+const toDateInputValue = (value) => {
+  const text = String(value || '');
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : '';
+};
+
+const STEP1_PREFILL_KEYS = ['dataNascimento', 'telefone', 'cidade', 'estado'];
+const STEP2_PREFILL_KEYS = ['frequenciaSemanal', 'duracaoSessao', 'modalidade'];
+const hasPrefillFor = (fields, keys) => keys.some((key) => fields[key]);
+
 /* ─── Factory helpers ────────────────────────────────────────────────────── */
 
 let _seq = 0;
@@ -152,6 +186,18 @@ const CheckboxGrid = ({ options, selected, onToggle }) => (
   </div>
 );
 
+// Grupo de opções marcáveis: o título visível vira o nome do grupo
+// (role="group" + aria-labelledby); a marcação em volta é a de antes.
+const CheckboxGroup = ({ label, children }) => {
+  const labelId = useId();
+  return (
+    <div className="athlete-wizard-field-full" role="group" aria-labelledby={labelId}>
+      <p id={labelId} className="athlete-wizard-field-label">{label}</p>
+      {children}
+    </div>
+  );
+};
+
 const ToggleRow = ({ label, checked, onChange }) => (
   <label className="athlete-wizard-checkbox athlete-wizard-field-full" style={{ marginBottom: '0.3rem' }}>
     <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
@@ -159,10 +205,23 @@ const ToggleRow = ({ label, checked, onChange }) => (
   </label>
 );
 
+// Avisa de onde vieram os campos pré-preenchidos e quando o cadastro de
+// origem foi registrado, sem esconder que a pessoa pode corrigir qualquer
+// valor — nunca trava o campo, só explica.
+const PrefillNote = ({ origemLabel, registradoEm }) => (
+  <p className="athlete-wizard-mandatory-note athlete-wizard-field-full">
+    Alguns campos já vieram do seu cadastro{origemLabel ? ` (via ${origemLabel})` : ''}
+    {registradoEm ? `, registrado em ${registradoEm}` : ''}. Confira e corrija se necessário.
+  </p>
+);
+
 /* ─── Step components ────────────────────────────────────────────────────── */
 
-const StepPessoal = ({ data, onChange }) => (
+const StepPessoal = ({ data, onChange, prefillFields, prefillMeta }) => (
   <div className="athlete-wizard-grid">
+    {hasPrefillFor(prefillFields, STEP1_PREFILL_KEYS) && (
+      <PrefillNote origemLabel={prefillMeta.origemLabel} registradoEm={prefillMeta.registradoEm} />
+    )}
     <Field label="Data de nascimento">
       <input type="date" name="dataNascimento" value={data.dataNascimento} onChange={onChange} />
     </Field>
@@ -188,12 +247,15 @@ const StepPessoal = ({ data, onChange }) => (
   </div>
 );
 
-const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva }) => {
+const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva, prefillFields, prefillMeta }) => {
   const isElite = ['elite', 'federado'].includes(data.nivel);
   const sportCfg = SPORT_CONTEXT_CONFIG[data.modalidade];
 
   return (
     <div className="athlete-wizard-grid">
+      {hasPrefillFor(prefillFields, STEP2_PREFILL_KEYS) && (
+        <PrefillNote origemLabel={prefillMeta.origemLabel} registradoEm={prefillMeta.registradoEm} />
+      )}
       <Field label="Modalidade principal">
         <Sel name="modalidade" value={data.modalidade} onChange={onChange} options={SPORT_MODALITIES} />
       </Field>
@@ -207,10 +269,9 @@ const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva
         </Field>
       )}
       {sportCfg?.type === 'checkboxes' && (
-        <div className="athlete-wizard-field-full">
-          <p className="athlete-wizard-field-label">{sportCfg.label}</p>
+        <CheckboxGroup label={sportCfg.label}>
           <CheckboxGrid options={sportCfg.options} selected={data.provas} onToggle={onProva} />
-        </div>
+        </CheckboxGroup>
       )}
       {!sportCfg && data.modalidade && (
         <Field label="Posição / especialidade">
@@ -277,7 +338,7 @@ const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva
             <div key={item.id} className="athlete-wizard-list-row athlete-wizard-field-full">
               <input className="athlete-wizard-list-input" value={item.local} placeholder="Local da lesão" onChange={(e) => onLesao(item.id, 'local', e.target.value)} />
               <input className="athlete-wizard-list-input" value={item.tempoAfastado} placeholder="Tempo afastado" onChange={(e) => onLesao(item.id, 'tempoAfastado', e.target.value)} />
-              {i > 0 && <button type="button" className="athlete-wizard-icon-btn" onClick={() => onLesao(item.id, '__remove', '')}><Trash2 size={13} /></button>}
+              {i > 0 && <button type="button" className="athlete-wizard-icon-btn" aria-label="Remover lesão" onClick={() => onLesao(item.id, '__remove', '')}><Trash2 size={13} /></button>}
             </div>
           ))}
           <button type="button" className="athlete-wizard-add-btn athlete-wizard-field-full" onClick={() => onLesao(null, '__add', '')}>
@@ -296,8 +357,8 @@ const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva
           {data.proximasCompeticoes.map((item, i) => (
             <div key={item.id} className="athlete-wizard-list-row athlete-wizard-field-full">
               <input className="athlete-wizard-list-input" value={item.nome} placeholder="Nome da competição" onChange={(e) => onCompeticao(item.id, 'nome', e.target.value)} />
-              <input className="athlete-wizard-list-input" type="date" value={item.data} onChange={(e) => onCompeticao(item.id, 'data', e.target.value)} />
-              {i > 0 && <button type="button" className="athlete-wizard-icon-btn" onClick={() => onCompeticao(item.id, '__remove', '')}><Trash2 size={13} /></button>}
+              <input className="athlete-wizard-list-input" type="date" aria-label="Data da competição" value={item.data} onChange={(e) => onCompeticao(item.id, 'data', e.target.value)} />
+              {i > 0 && <button type="button" className="athlete-wizard-icon-btn" aria-label="Remover competição" onClick={() => onCompeticao(item.id, '__remove', '')}><Trash2 size={13} /></button>}
             </div>
           ))}
           <button type="button" className="athlete-wizard-add-btn athlete-wizard-field-full" onClick={() => onCompeticao(null, '__add', '')}>
@@ -309,7 +370,7 @@ const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva
       {data.genero === 'feminino' && (
         <label className="athlete-wizard-checkbox athlete-wizard-field-full" style={{ marginTop: '0.5rem' }}>
           <input type="checkbox" checked={data.historicaREDS} onChange={(e) => onChange({ target: { name: 'historicaREDS', value: e.target.checked } })} />
-          <span>Histórico prévio sugestivo de RED-S / deficiência energética relativa</span>
+          <span>Histórico prévio sugestivo de baixa disponibilidade energética</span>
         </label>
       )}
     </div>
@@ -318,17 +379,15 @@ const StepEsportivo = ({ data, onChange, onCarga, onLesao, onCompeticao, onProva
 
 const StepSaude = ({ data, onChange, onToggle, onMed, onSup }) => (
   <div className="athlete-wizard-grid">
-    <div className="athlete-wizard-field-full">
-      <p className="athlete-wizard-field-label">Objetivos principais</p>
+    <CheckboxGroup label="Objetivos principais">
       <CheckboxGrid options={GOAL_OPTIONS} selected={data.objetivos} onToggle={(v) => onToggle('objetivos', v)} />
-    </div>
+    </CheckboxGroup>
     <Field label="Queixa principal / motivo da consulta" full>
       <textarea name="queixaPrincipal" value={data.queixaPrincipal} onChange={onChange} rows={3} placeholder="Ex: emagrecimento com performance, dores musculares recorrentes…" />
     </Field>
-    <div className="athlete-wizard-field-full">
-      <p className="athlete-wizard-field-label">Diagnósticos / patologias</p>
+    <CheckboxGroup label="Diagnósticos / patologias">
       <CheckboxGrid options={PATHOLOGY_OPTIONS} selected={data.patologias} onToggle={(v) => onToggle('patologias', v)} />
-    </div>
+    </CheckboxGroup>
 
     <ToggleRow
       label="Uso medicamentos regularmente"
@@ -342,7 +401,7 @@ const StepSaude = ({ data, onChange, onToggle, onMed, onSup }) => (
             <input className="athlete-wizard-list-input" value={med.nome} placeholder="Nome" onChange={(e) => onMed(med.id, 'nome', e.target.value)} />
             <input className="athlete-wizard-list-input" value={med.dose} placeholder="Dose" onChange={(e) => onMed(med.id, 'dose', e.target.value)} />
             <input className="athlete-wizard-list-input" value={med.frequencia} placeholder="Frequência" onChange={(e) => onMed(med.id, 'frequencia', e.target.value)} />
-            {i > 0 && <button type="button" className="athlete-wizard-icon-btn" onClick={() => onMed(med.id, '__remove', '')}><Trash2 size={13} /></button>}
+            {i > 0 && <button type="button" className="athlete-wizard-icon-btn" aria-label="Remover medicamento" onClick={() => onMed(med.id, '__remove', '')}><Trash2 size={13} /></button>}
           </div>
         ))}
         <button type="button" className="athlete-wizard-add-btn athlete-wizard-field-full" onClick={() => onMed(null, '__add', '')}>
@@ -363,7 +422,7 @@ const StepSaude = ({ data, onChange, onToggle, onMed, onSup }) => (
             <input className="athlete-wizard-list-input" value={sup.nome} placeholder="Nome (ex: creatina, whey)" onChange={(e) => onSup(sup.id, 'nome', e.target.value)} />
             <input className="athlete-wizard-list-input" value={sup.dose} placeholder="Dose" onChange={(e) => onSup(sup.id, 'dose', e.target.value)} />
             <input className="athlete-wizard-list-input" value={sup.frequencia} placeholder="Frequência" onChange={(e) => onSup(sup.id, 'frequencia', e.target.value)} />
-            {i > 0 && <button type="button" className="athlete-wizard-icon-btn" onClick={() => onSup(sup.id, '__remove', '')}><Trash2 size={13} /></button>}
+            {i > 0 && <button type="button" className="athlete-wizard-icon-btn" aria-label="Remover suplemento" onClick={() => onSup(sup.id, '__remove', '')}><Trash2 size={13} /></button>}
           </div>
         ))}
         <button type="button" className="athlete-wizard-add-btn athlete-wizard-field-full" onClick={() => onSup(null, '__add', '')}>
@@ -430,20 +489,80 @@ const StepEstilo = ({ data, onChange, onToggle }) => (
       </>
     )}
 
-    <div className="athlete-wizard-field-full">
-      <p className="athlete-wizard-field-label">Histórico familiar</p>
+    <CheckboxGroup label="Histórico familiar">
       <CheckboxGrid options={FAMILY_OPTIONS} selected={data.comorbidadesFamiliares} onToggle={(v) => onToggle('comorbidadesFamiliares', v)} />
-    </div>
+    </CheckboxGroup>
   </div>
 );
 
 /* ─── Main component ─────────────────────────────────────────────────────── */
 
-const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete }) => {
+const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete, onClose }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState(defaultData);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [prefillFields, setPrefillFields] = useState({});
+  const [prefillMeta, setPrefillMeta] = useState({ origemLabel: '', registradoEm: '' });
+
+  // UX-07 / CLI cadastro: busca o cadastro já existente do paciente e
+  // pré-preenche o que ele já tem — nunca sobrescreve o que a pessoa já
+  // digitou nesta sessão, e nunca bloqueia o preenchimento se a busca
+  // falhar ou vier vazia (mesma degradação silenciosa de sempre).
+  useEffect(() => {
+    if (!pacienteId) return undefined;
+    let active = true;
+
+    (async () => {
+      try {
+        const { data: paciente } = await api.get(`/pacientes/${pacienteId}`);
+        if (!active || !paciente) return;
+
+        const base = paciente.cadastroAtleta?.dadosBase || {};
+        const candidates = {
+          dataNascimento: toDateInputValue(paciente.dataNascimento),
+          telefone: typeof base.telefone === 'string' ? base.telefone : '',
+          cidade: typeof base.cidade === 'string' ? base.cidade : '',
+          estado: typeof base.estado === 'string' ? base.estado : '',
+          frequenciaSemanal: paciente.frequenciaSemanal != null ? String(paciente.frequenciaSemanal) : '',
+          duracaoSessao: paciente.duracaoSessao != null ? String(paciente.duracaoSessao) : ''
+        };
+        const modalidadeLabel = String(paciente.modalidadePrincipal || '').trim().toLowerCase();
+        const matchedModalidade = SPORT_MODALITIES.find(
+          (option) => option.value && option.label.toLowerCase() === modalidadeLabel
+        );
+        if (matchedModalidade) candidates.modalidade = matchedModalidade.value;
+
+        const prefilled = {};
+        setData((prev) => {
+          const next = { ...prev };
+          Object.entries(candidates).forEach(([key, value]) => {
+            if (!value) return;
+            const current = prev[key];
+            const isUntouched = current === '' || current === undefined || current === null;
+            if (!isUntouched) return;
+            next[key] = value;
+            prefilled[key] = true;
+          });
+          return next;
+        });
+
+        if (active && Object.keys(prefilled).length > 0) {
+          setPrefillFields(prefilled);
+          const origemKey = paciente.cadastroAtleta?.origemCadastro || 'desconhecida';
+          setPrefillMeta({
+            origemLabel: CADASTRO_ORIGEM_LABELS[origemKey] || CADASTRO_ORIGEM_LABELS.desconhecida,
+            registradoEm: formatDatePtBr(paciente.createdAt)
+          });
+        }
+      } catch {
+        // Sem cadastro previo legivel: segue com os campos em branco, sem
+        // bloquear o preenchimento manual.
+      }
+    })();
+
+    return () => { active = false; };
+  }, [pacienteId]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -520,6 +639,9 @@ const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete }) => {
     setSaving(true);
     setError('');
     try {
+      if (!pacienteId) {
+        throw new Error('Paciente nao informado para completar o cadastro clinico.');
+      }
       const num = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : undefined; };
       const str = (v) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
       const isElite = ['elite', 'federado'].includes(data.nivel);
@@ -528,6 +650,12 @@ const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete }) => {
       const payload = {
         dataNascimento: str(data.dataNascimento),
         genero: str(data.genero),
+        // O campo acima e rotulado "Sexo biologico" na tela e e o que alimenta
+        // formula clinica. Enviar so `genero` deixava `sexoBiologico` vazio no
+        // cadastro, e a referencia nutricional (DRI por sexo e faixa etaria)
+        // respondia "sexo biologico nao informado" para quem acabara de informar.
+        // Identidade de genero continua em campo proprio, com outro significado.
+        sexoBiologico: str(data.genero),
         identidadeGenero: str(data.identidadeGenero),
         telefone: str(data.telefone),
         cidade: str(data.cidade),
@@ -602,6 +730,11 @@ const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete }) => {
     setStepIndex((prev) => Math.max(prev - 1, 0));
   };
 
+  const handleClose = () => {
+    if (saving || typeof onClose !== 'function') return;
+    onClose();
+  };
+
   const stepProps = {
     data,
     onChange: handleChange,
@@ -612,6 +745,8 @@ const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete }) => {
     onMed: handleMed,
     onSup: handleSup,
     onProva: handleProva,
+    prefillFields,
+    prefillMeta,
   };
 
   const currentStep = stepIndex + 1;
@@ -632,6 +767,18 @@ const AthleteOnboardingWizard = ({ pacienteId, patientName, onComplete }) => {
               {firstName ? `Bem-vindo, ${firstName}!` : 'Complete seu perfil'}
             </h2>
           </div>
+          {typeof onClose === 'function' && (
+            <button
+              type="button"
+              className="athlete-wizard-close"
+              onClick={handleClose}
+              disabled={saving}
+              aria-label="Fechar cadastro clinico"
+              title="Fechar"
+            >
+              <X size={17} />
+            </button>
+          )}
         </header>
 
         <div className="athlete-wizard-progress" aria-label={`Passo ${currentStep} de ${STEPS.length}`}>

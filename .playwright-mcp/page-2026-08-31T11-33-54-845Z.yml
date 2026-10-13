@@ -1,0 +1,85 @@
+- generic [ref=e129]:
+  - complementary [ref=e130]:
+    - generic [ref=e131]:
+      - generic [ref=e132]:
+        - generic [ref=e133]:
+          - img "LAINES Logo" [ref=e135]
+          - generic [ref=e136]:
+            - generic [ref=e137]: LAINES
+            - generic [ref=e138]: Liga Acadêmica Interprofissional de Nutrição Esportiva
+        - 'generic "Perfil: Administração" [ref=e139]': Administração
+      - button "Recolher barra lateral" [ref=e141] [cursor=pointer]
+    - navigation "Navegação principal" [ref=e144]:
+      - region "Visão Geral" [ref=e145]:
+        - heading "Visão Geral" [level=3] [ref=e146]
+        - button "Início" [ref=e148] [cursor=pointer]
+      - region "Áreas" [ref=e157]:
+        - heading "Áreas" [level=3] [ref=e158]
+        - generic [ref=e159]:
+          - button "Pesquisa" [expanded] [ref=e160] [cursor=pointer]
+          - 'group "Pesquisa: subsecoes" [ref=e478]':
+            - button "Painel" [ref=e479] [cursor=pointer]
+            - button "Repositório" [active] [ref=e482] [cursor=pointer]
+            - button "Projetos" [ref=e485] [cursor=pointer]
+            - button "Ideias" [ref=e488] [cursor=pointer]
+          - button "Ensino" [ref=e165] [cursor=pointer]
+          - button "Extensão" [ref=e170] [cursor=pointer]
+      - button "Ir para Área do Aluno" [ref=e177] [cursor=pointer]
+    - generic [ref=e186]:
+      - generic [ref=e187]: JC
+      - generic [ref=e188]:
+        - paragraph [ref=e189]: Juliana Costa
+        - paragraph [ref=e190]: Sessão ativa
+      - button "Encerrar sessão" [ref=e192] [cursor=pointer]
+  - main [ref=e196]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - heading "Repositório" [level=1] [ref=e689]
+        - paragraph [ref=e204]: Painel administrativo
+      - generic [ref=e205]:
+        - button "Tarefas pendentes" [ref=e206] [cursor=pointer]
+        - button "Notificacoes" [ref=e210] [cursor=pointer]
+        - button [ref=e214] [cursor=pointer]
+        - generic [ref=e218]: JC
+    - generic [ref=e691]:
+      - generic [ref=e692]:
+        - generic [ref=e693]:
+          - generic [ref=e694]: PESQUISA
+          - heading "Repositório" [level=1] [ref=e697]
+          - paragraph [ref=e698]: Produções científicas, arquivos e links validados pela pesquisa.
+        - button "Nova produção" [ref=e700] [cursor=pointer]
+      - generic [ref=e704]:
+        - generic [ref=e705]:
+          - generic [ref=e706]: Produções
+          - generic [ref=e707]: "1"
+        - generic [ref=e708]:
+          - generic [ref=e709]: Publicadas
+          - generic [ref=e710]: "1"
+        - generic [ref=e711]:
+          - generic [ref=e712]: Em revisão
+          - generic [ref=e713]: "0"
+        - generic [ref=e714]:
+          - generic [ref=e715]: Projetos
+          - generic [ref=e716]: "7"
+      - generic [ref=e717]:
+        - textbox "Buscar por título, autor, arquivo ou link" [ref=e722]
+        - generic "Modo de visualização" [ref=e723]:
+          - button "Visualizar em lista" [ref=e724] [cursor=pointer]
+          - button "Visualizar em quadro" [ref=e726] [cursor=pointer]
+      - article [ref=e733]:
+        - generic [ref=e734]:
+          - generic [ref=e735]: PDF
+          - generic [ref=e741]:
+            - generic [ref=e742]:
+              - generic [ref=e743]: Artigo
+              - generic [ref=e744]: Publicado
+            - heading "TCC" [level=3] [ref=e745]
+            - paragraph [ref=e746]: Sem descrição registrada.
+            - generic [ref=e747]:
+              - generic [ref=e748]: Projeto E2E LAINES
+              - generic [ref=e749]: "2026"
+              - generic [ref=e750]: 30/08/2026
+            - generic [ref=e751]:
+              - generic [ref=e752]: Bruno Alex
+              - generic [ref=e753]: Thaiz Sureira
+        - button "Arquivo" [ref=e755] [cursor=pointer]

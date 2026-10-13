@@ -291,7 +291,7 @@ export class ConteudosService {
       ...this.normalizePayload(dto),
       ...(nextStatus ? { status: nextStatus } : {})
     }, nextStatus, user, conteudo.status) as Partial<Conteudo>;
-    const merged = this.repo.merge(conteudo, payload as any);
+    const merged = this.repo.merge(conteudo, payload);
     const saved = await this.repo.save(merged);
     this.realtime.emit('conteudos.updated', saved);
     return saved;

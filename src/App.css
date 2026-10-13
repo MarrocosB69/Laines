@@ -16,9 +16,12 @@
   --color-success:       var(--pn-ok);
 }
 
+/* Fundo da página, o mesmo da inscrição pública. Nos portais e nas rotas
+   com barra lateral, .admin-view cobre a tela e este fundo não aparece; na
+   landing, landing-base.css o deixa transparente. */
 #root {
   min-height: 100vh;
-  background: var(--color-background);
+  background: var(--lt-color-bg-app);
 }
 
 /* Lightweight utility aliases used by some legacy screens */

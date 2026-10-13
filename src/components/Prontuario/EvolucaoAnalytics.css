@@ -1,0 +1,465 @@
+/* Evolução longitudinal (EvolucaoAnalytics.jsx), aba Evoluções do
+   prontuário, na direção "Energia e velocidade" (docs/design/
+   landing-guia-visual.md, seção "Direção vigente"; desenho do WI-007).
+
+   O painel é um .pron-card.pron-panel (ProntuarioPatch.css); aqui ficam as
+   peças de dentro: período como grupo de botões, grupos como abas com a
+   aba aberta tingida e sublinhada, indicadores por métrica, um gráfico por
+   unidade e a tabela alternativa. O estado aparece escrito (aria-pressed,
+   aria-selected, "Cobertura parcial", "sem registro"), nunca só pela cor.
+
+   Escopo `.prontuario-root`, carregada depois de ProntuarioPatch.css; as
+   cores são os tokens --lt-* e os --prt-* declarados lá. As duas regras
+   sem escopo logo abaixo ficaram como estavam (ver o bloco). */
+
+/* Regras de antes, mantidas sem mudança: o sufixo do seletor coincide com
+   classes da página de avaliações, então a prova da onda E1 as trata como
+   capazes de alcançá-la. O visual no prontuário vem das regras escopadas
+   em .evolucao-analytics__unidade-head, mais abaixo. */
+.evolucao-analytics__unidade-rotulo {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--pn-navy, #1D3350);
+}
+
+.evolucao-analytics__unidade-rotulo span {
+  font-weight: 400;
+  opacity: 0.55;
+}
+
+/* ── Cabeçalho: período e contagem de grupos ──────────────────────────── */
+.prontuario-root .evolucao-analytics__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  min-width: 0;
+}
+
+/* Período: grupo de botões na pista; o escolhido fica branco, com contorno
+   azul e peso 700, além do aria-pressed. */
+.prontuario-root .evolucao-analytics__periodo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-1);
+  padding: var(--lt-space-1);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+}
+
+.prontuario-root .evolucao-analytics__periodo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  box-shadow: none;
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 160ms, color 160ms;
+}
+
+.prontuario-root .evolucao-analytics__periodo-btn.is-active {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-brand-blue);
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.prontuario-root .evolucao-analytics__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Grupos: abas com contagem de pontos ──────────────────────────────── */
+.prontuario-root .evolucao-analytics__switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+}
+
+.prontuario-root .evolucao-analytics__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-border-field);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, box-shadow 160ms;
+}
+
+.prontuario-root .evolucao-analytics__pill.is-active {
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-brand-blue), inset 0 -3px 0 var(--lt-color-brand-green);
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.prontuario-root .evolucao-analytics__pill span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.prontuario-root .evolucao-analytics__pill.is-active span { background: var(--lt-color-surface); }
+
+/* ── Métricas do grupo: pontos e cobertura escritos ───────────────────── */
+.prontuario-root .evolucao-analytics__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--lt-space-3);
+}
+
+.prontuario-root .evolucao-analytics__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+}
+
+.prontuario-root .evolucao-analytics__metric > span {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.prontuario-root .evolucao-analytics__metric strong {
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.prontuario-root :is(.evolucao-analytics__cobertura-parcial, .evolucao-analytics__origem-mista) {
+  margin-top: var(--lt-space-1);
+  font-size: var(--lt-text-sm);
+  font-style: normal;
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* Cobertura parcial rebaixa a confiança: tom de atenção e o texto diz. */
+.prontuario-root .evolucao-analytics__cobertura-parcial { color: var(--prt-atencao-texto); }
+.prontuario-root .evolucao-analytics__origem-mista { color: var(--lt-color-text-muted); }
+
+/* ── Gráficos: um por unidade, com o aviso de leitura acima ───────────── */
+.prontuario-root .evolucao-analytics__chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.prontuario-root .evolucao-analytics__chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--lt-space-3);
+  padding: var(--lt-space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.prontuario-root .evolucao-analytics__chart-head h3 {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+}
+
+.prontuario-root .evolucao-analytics__chart-head p {
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Aviso de leitura: informativo, na pista, com o traço inclinado. */
+.prontuario-root .evolucao-analytics__disclaimer {
+  position: relative;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+.prontuario-root .evolucao-analytics__disclaimer::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-12deg);
+}
+
+.prontuario-root .evolucao-analytics__unidade { min-width: 0; }
+
+.prontuario-root .evolucao-analytics__unidade + .evolucao-analytics__unidade {
+  margin-top: 0;
+  padding-top: var(--lt-space-4);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.prontuario-root .evolucao-analytics__unidade-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  margin-bottom: var(--lt-space-2);
+}
+
+.prontuario-root .evolucao-analytics__unidade-head .evolucao-analytics__unidade-rotulo {
+  flex: 1 1 14rem;
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.prontuario-root .evolucao-analytics__unidade-head .evolucao-analytics__unidade-rotulo span {
+  color: var(--lt-color-text-muted);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.prontuario-root .evolucao-analytics__tabela-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.prontuario-root .evolucao-analytics__chart {
+  box-sizing: border-box;
+  width: 100%;
+  height: 330px;
+  padding: var(--lt-space-2) 0 0;
+}
+
+/* Legenda: o recharts pinta o texto com a cor da série (o verde fica em
+   4,21:1); o nome vai na tinta do texto e o traço ao lado mostra a cor e o
+   tracejado. O resumo em texto do gráfico está no aria-label do contêiner. */
+.prontuario-root .evolucao-analytics__legenda {
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-weight: 600;
+}
+
+/* Tooltip do gráfico: cartão branco pequeno; o nome da série e a origem
+   vão escritos, a bolinha só repete a cor da linha. */
+.prontuario-root .evolucao-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 11rem;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: var(--prt-sombra);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+}
+
+.prontuario-root .evolucao-tooltip strong {
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.prontuario-root .evolucao-tooltip span {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+.prontuario-root .evolucao-tooltip i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--metric-color, var(--lt-color-brand-blue));
+}
+
+/* ── Tabela alternativa ao gráfico: rola por dentro, com foco ─────────── */
+.prontuario-root .evolucao-analytics__table-wrap {
+  margin-top: var(--lt-space-3);
+  overflow-x: auto;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+}
+
+.prontuario-root .evolucao-analytics__table-wrap:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+.prontuario-root .evolucao-analytics__table {
+  width: 100%;
+  min-width: 26rem;
+  border-collapse: collapse;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.prontuario-root .evolucao-analytics__table caption {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  text-align: left;
+  caption-side: top;
+}
+
+.prontuario-root .evolucao-analytics__table :is(th, td) {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.prontuario-root .evolucao-analytics__table thead th {
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.prontuario-root .evolucao-analytics__table tbody th[scope="row"] { font-weight: 700; }
+
+.prontuario-root .evolucao-analytics__table tbody tr:last-child :is(th, td) { border-bottom: 0; }
+
+.prontuario-root .evolucao-analytics__sort-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-color-brand-blue);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── Estados: passar o mouse e foco ──────────────────────────────────── */
+@media (hover: hover) {
+  .prontuario-root .evolucao-analytics__periodo-btn:not(.is-active):hover { background: var(--lt-color-surface); color: var(--lt-color-text); }
+  .prontuario-root .evolucao-analytics__pill:not(.is-active):hover { background: var(--lt-color-track-tint); box-shadow: inset 0 0 0 1.5px var(--lt-color-brand-blue); }
+  .prontuario-root .evolucao-analytics__tabela-toggle:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+  .prontuario-root .evolucao-analytics__sort-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+
+.prontuario-root :is(.evolucao-analytics__periodo-btn, .evolucao-analytics__pill, .evolucao-analytics__tabela-toggle, .evolucao-analytics__sort-btn):focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .prontuario-root .evolucao-analytics__switcher { flex-direction: column; }
+  .prontuario-root .evolucao-analytics__pill { justify-content: space-between; width: 100%; }
+  .prontuario-root .evolucao-analytics__chart { height: 300px; }
+  .prontuario-root .evolucao-analytics__tabela-toggle { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prontuario-root :is(.evolucao-analytics__periodo-btn, .evolucao-analytics__pill) { transition: none; }
+}

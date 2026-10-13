@@ -107,32 +107,45 @@ export const normalizeEvolucaoRetornoPayload = <T extends PayloadShape>(payload:
 
   const responseScore = toResponseScore(respostaPercebida);
 
-  const computedScore = clampScore(
-    ((Number.isFinite(adesaoPlanoAlimentar) ? (adesaoPlanoAlimentar as number) : 0) * 0.5)
-    + ((Number.isFinite(adesaoAtividadeFisica) ? (adesaoAtividadeFisica as number) : 0) * 0.35)
-    + ((Number.isFinite(responseScore) ? (responseScore as number) : 0) * 0.15)
-  );
+  // WI-013, decisão 3, igual ao cliente (calculateEvolutionReturnEvaluation):
+  // componente ausente sai e os pesos se redistribuem entre os presentes; sem
+  // nenhum, escore e prioridade são nulos. O servidor recalcula sempre, em vez
+  // de gravar o escore enviado (um cliente antigo mandava ausência como 0).
+  const componentes = [
+    { valor: Number.isFinite(adesaoPlanoAlimentar) ? clampScore(adesaoPlanoAlimentar as number) : null, peso: 0.5 },
+    { valor: Number.isFinite(adesaoAtividadeFisica) ? clampScore(adesaoAtividadeFisica as number) : null, peso: 0.35 },
+    { valor: responseScore, peso: 0.15 }
+  ].filter((item): item is { valor: number; peso: number } => Number.isFinite(item.valor));
+  const pesoPresente = componentes.reduce((soma, item) => soma + item.peso, 0);
 
-  const scoreAdesaoGeral = toNumber(canonicalResultadosCalculados.scoreAdesaoGeral) ?? computedScore;
+  const scoreAdesaoGeral: number | null = pesoPresente > 0
+    ? Number((componentes.reduce((soma, item) => soma + (item.valor * item.peso), 0) / pesoPresente).toFixed(2))
+    : null;
 
   const redSignal = intercorrencias.length >= 15 || sintomas.length >= 15;
-  const prioridadeRetorno = scoreAdesaoGeral < 50 || redSignal
-    ? 'alta'
-    : scoreAdesaoGeral < 75
-      ? 'moderada'
-      : 'baixa';
+  const prioridadeRetorno: string | null = scoreAdesaoGeral === null
+    ? null
+    : scoreAdesaoGeral < 50 || redSignal
+      ? 'alta'
+      : scoreAdesaoGeral < 75
+        ? 'moderada'
+        : 'baixa';
 
   const resumoObjetivos = asArray(canonicalResultadosCalculados.resumoObjetivos).length
     ? asArray(canonicalResultadosCalculados.resumoObjetivos)
     : [
       compact({
         objetivo: 'Plano atual',
-        status: scoreAdesaoGeral >= 75 ? 'melhora' : scoreAdesaoGeral >= 50 ? 'estavel' : 'piora',
-        justificativa: prioridadeRetorno === 'alta'
-          ? 'Baixa adesao ou intercorrencias relevantes.'
-          : prioridadeRetorno === 'moderada'
-            ? 'Adesao parcial, manter monitoramento proximo.'
-            : 'Boa adesao global e resposta favoravel.'
+        status: scoreAdesaoGeral === null
+          ? 'sem_classificacao'
+          : scoreAdesaoGeral >= 75 ? 'melhora' : scoreAdesaoGeral >= 50 ? 'estavel' : 'piora',
+        justificativa: prioridadeRetorno === null
+          ? 'Informe adesao alimentar e/ou adesao de atividade fisica para calcular score.'
+          : prioridadeRetorno === 'alta'
+            ? 'Baixa adesao ou intercorrencias relevantes.'
+            : prioridadeRetorno === 'moderada'
+              ? 'Adesao parcial, manter monitoramento proximo.'
+              : 'Boa adesao global e resposta favoravel.'
       })
     ];
 
@@ -142,8 +155,10 @@ export const normalizeEvolucaoRetornoPayload = <T extends PayloadShape>(payload:
     formulaVersion: toText(payload.formulaVersion) || toText(canonicalMetadadosFormula.formulaVersion) || '1.0.0'
   });
 
-  const classificacao = toText(payload.classificacao) || prioridadeRetorno;
-  const classificacaoLabel = toText(payload.classificacaoLabel) || `Prioridade ${prioridadeRetorno}`;
+  // Código e rótulo seguem a prioridade calculada aqui; sem prioridade, o
+  // código "sem_classificacao" e o rótulo "Sem classificação".
+  const classificacao = prioridadeRetorno ?? 'sem_classificacao';
+  const classificacaoLabel = prioridadeRetorno ? `Prioridade ${prioridadeRetorno}` : 'Sem classificação';
 
   const normalizedDados = compact({
     ...dados,

@@ -1,3 +1,7 @@
+/* Modal "Complete seu cadastro" (todo perfil vê no primeiro acesso), na
+   direção "Energia e velocidade": a moldura vem de app-modal-* (tokens
+   --lt-*, src/styles/modalSystem.css); aqui ficam só a lista de campos
+   obrigatórios e a grade do formulário. Textos e fluxo não mudam. */
 .profile-completion-modal {
   width: min(760px, calc(100vw - 2rem));
 }
@@ -9,101 +13,142 @@
 .profile-completion-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
   display: grid;
   place-items: center;
-  background: rgba(86, 173, 219, 0.12);
-  color: var(--color-navy, #1D3350);
-  border: 1px solid rgba(13, 148, 136, 0.2);
 }
 
 .profile-completion-form {
   display: grid;
-  gap: 0.9rem;
+  gap: var(--lt-space-4);
 }
 
+/* Lista do que falta: o nome do campo é escrito e o ícone muda de forma
+   (alerta ou confirmação); para leitor de tela, o estado vai em texto
+   oculto. Pares: atenção 6,88:1 (o de painel.css), sucesso 6,81:1. */
 .profile-completion-required {
-  border: 1px solid #e2e8f0;
-  border-radius: 0.92rem;
-  padding: 0.72rem;
-  background: #f8fbff;
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  padding: var(--lt-space-3);
+  background: var(--lt-color-surface-field);
   display: grid;
-  gap: 0.46rem;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
 }
 
 .profile-completion-required-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
+  gap: var(--lt-space-2);
 }
 
 .profile-completion-required-item {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border-radius: 999px;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.76rem;
-  font-weight: 600;
+  border-radius: var(--lt-radius-pill);
+  padding: 0.25rem 0.65rem;
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
 }
 
 .profile-completion-required-item.ok {
-  background: rgba(16, 185, 129, 0.12);
-  color: #047857;
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 .profile-completion-required-item.pending {
-  background: rgba(245, 158, 11, 0.16);
-  color: #92400e;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.profile-completion-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .profile-completion-grid {
   display: grid;
-  gap: 0.74rem;
+  gap: var(--lt-space-4);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .profile-completion-field {
   display: grid;
-  gap: 0.35rem;
+  gap: var(--lt-space-2);
+  margin: 0;
 }
 
-.profile-completion-field span {
-  font-size: 0.8rem;
-  color: #475569;
-  font-weight: 600;
+.profile-completion-field > span {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
 }
 
-.profile-completion-field input,
+.profile-completion-field small {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 400;
+}
+
+/* Campo de 48 px. O :not() repetido passa a especificidade de
+   `input:not([type=checkbox]):not([type=radio])` de theme.css (0,2,1), que
+   vencia a regra anterior e desenhava o campo no padrão antigo. */
+.profile-completion-field input:not([type="checkbox"]):not([type="radio"]),
 .profile-completion-field select {
+  box-sizing: border-box;
   width: 100%;
-  border: 1px solid #dbe3ee;
-  border-radius: 0.82rem;
-  min-height: 2.56rem;
-  padding: 0.56rem 0.72rem;
-  font-size: 0.86rem;
-  color: #0f172a;
-  background: #fff;
+  min-height: 48px;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  line-height: var(--lt-leading-normal);
 }
 
-.profile-completion-field input:focus,
+.profile-completion-field input:not([type="checkbox"]):not([type="radio"]):focus,
 .profile-completion-field select:focus {
   outline: none;
-  border-color: #103355;
-  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.12);
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.profile-completion-field select:disabled {
+  background: var(--lt-color-surface-field);
+  cursor: wait;
 }
 
 .profile-completion-field--full {
   grid-column: 1 / -1;
 }
 
+/* Erro: ícone e texto, na cor de erro sobre o próprio fundo (5,91:1). */
 .profile-completion-error {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #b91c1c;
-  font-size: 0.8rem;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1px solid rgba(185, 28, 28, 0.28);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-sm);
   font-weight: 600;
+}
+
+.profile-completion-error svg {
+  flex: none;
+  margin-top: 0.15rem;
 }
 
 @media (max-width: 760px) {
@@ -114,50 +159,4 @@
   .profile-completion-field--full {
     grid-column: auto;
   }
-}
-
-/* Parte 3 — harmonização visual (Completar cadastro) */
-.profile-completion-icon {
-  border-radius: var(--radius-md);
-  background: rgba(16, 51, 85, 0.1);
-  color: var(--color-navy);
-  border: 1px solid rgba(16, 51, 85, 0.16);
-}
-
-.profile-completion-required {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: #f8fafc;
-}
-
-.profile-completion-required-item {
-  border-radius: 999px;
-}
-
-.profile-completion-required-item.ok {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.profile-completion-required-item.pending {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-.profile-completion-field span {
-  color: var(--color-text-muted);
-}
-
-.profile-completion-field input,
-.profile-completion-field select {
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  min-height: 2.6rem;
-  color: var(--color-text-primary);
-}
-
-.profile-completion-field input:focus,
-.profile-completion-field select:focus {
-  border-color: var(--color-green);
-  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.15);
 }

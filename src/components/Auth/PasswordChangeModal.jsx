@@ -38,6 +38,16 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, canClose, handleRequestClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setError('');
+      setSuccess(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -96,7 +106,7 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="password-modal-header app-modal-header">
-          <div className="password-modal-icon app-modal-header-icon">
+          <div className="password-modal-icon app-modal-header-icon" aria-hidden="true">
             <ShieldCheck size={22} />
           </div>
           <div className="app-modal-heading">
@@ -105,7 +115,7 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
           </div>
           {canClose && (
             <button type="button" className="password-modal-close app-modal-close" onClick={handleRequestClose} aria-label="Fechar">
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -115,7 +125,7 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
             <label className="password-field">
               <span>Senha atual</span>
               <div className="password-input">
-                <Lock size={16} />
+                <Lock size={16} aria-hidden="true" />
                 <input
                   type="password"
                   value={currentPassword}
@@ -128,7 +138,7 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
             <label className="password-field">
               <span>Nova senha</span>
               <div className="password-input">
-                <Lock size={16} />
+                <Lock size={16} aria-hidden="true" />
                 <input
                   type="password"
                   value={newPassword}
@@ -144,7 +154,7 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
             <label className="password-field">
               <span>Confirmar senha</span>
               <div className="password-input">
-                <Lock size={16} />
+                <Lock size={16} aria-hidden="true" />
                 <input
                   type="password"
                   value={confirmPassword}
@@ -156,14 +166,14 @@ const PasswordChangeModal = ({ isOpen, user, onClose = null }) => {
             </label>
 
             {error && (
-              <div className="password-message error">
-                <AlertCircle size={16} />
+              <div className="password-message error" role="alert">
+                <AlertCircle size={16} aria-hidden="true" />
                 <span>{error}</span>
               </div>
             )}
             {success && (
-              <div className="password-message success">
-                <ShieldCheck size={16} />
+              <div className="password-message success" role="status">
+                <ShieldCheck size={16} aria-hidden="true" />
                 <span>Senha atualizada com sucesso.</span>
               </div>
             )}

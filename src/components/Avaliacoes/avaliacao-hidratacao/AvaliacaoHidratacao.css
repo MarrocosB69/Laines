@@ -1,74 +1,82 @@
-.avaliacao-hidratacao .eval-textarea {
-  background: #f8fafc;
+/* Hidratação: só o que é deste formulário. Raiz, seções, campos,
+   prontidão, resultados, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). */
+
+/* ── Escala de cor da urina (Armstrong 1–8) ────────────────────────────
+   As cores das bolinhas são o dado da escala e ficam no JSX; o texto ao
+   lado de cada uma diz o que ela significa. */
+.av-modulo .eval-urine-guide {
+  margin: 0;
+  padding: 0 var(--lt-space-4) var(--lt-space-1);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
 }
 
-.eval-urine-guide {
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.eval-urine-guide summary {
+/* Alvo de 44 px; o triângulo nativo do summary continua (display: list-item). */
+.av-modulo .eval-urine-guide summary {
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-3) 0;
+  border-radius: var(--lt-radius-control);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 500;
-  color: var(--color-text-secondary);
-  user-select: none;
 }
 
-.eval-urine-guide summary:hover {
-  color: var(--color-text);
-}
-
-.eval-urine-scale {
-  margin: 8px 0 4px;
-  padding: 0;
-  list-style: none;
+.av-modulo .eval-urine-scale {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--lt-space-1);
+  margin: 0 0 var(--lt-space-2);
+  padding: 0;
+  list-style: none;
 }
 
-.eval-urine-scale li {
+.av-modulo .eval-urine-scale li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  line-height: 1.5;
+  gap: var(--lt-space-2);
+  margin: 0;
+  line-height: var(--lt-leading-normal);
 }
 
-.eval-urine-dot {
+/* O número em --lt-color-text: 13,12:1 a 4,80:1 sobre as bolinhas 1–5.
+   O contorno em --lt-color-border-field (3,66:1 sobre --lt-color-surface-field) marca
+   as bolinhas mais claras, que quase somem sobre o fundo. */
+.av-modulo .eval-urine-dot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  flex: none;
+  box-sizing: border-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--lt-color-border-field);
   border-radius: 50%;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-xs);
   font-weight: 700;
-  font-size: 11px;
-  color: #44403c;
-  border: 1px solid rgba(0,0,0,0.12);
-  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.eval-urine-note {
-  margin: 6px 0 0;
-  font-size: 11px;
-  font-style: italic;
-  color: var(--color-text-muted);
+/* Bolinhas 6–8: número em --lt-color-text-inverse, 7,09:1 a 15,71:1. */
+.av-modulo .eval-urine-dot--escura { color: var(--lt-color-text-inverse); }
+
+.av-modulo .eval-urine-note {
+  margin: 0 0 var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
 }
 
-@media (max-width: 768px) {
-  .avaliacao-hidratacao .eval-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .avaliacao-hidratacao {
-    padding: 0.75rem 0.5rem !important;
-  }
-
-  .avaliacao-hidratacao .eval-card,
-  .avaliacao-hidratacao .eval-section {
-    padding: 0.75rem !important;
-  }
+/* ── Classificação e alerta: o valor é uma frase, não um número ─────── */
+.av-modulo .hidratacao-resultado--texto .av-resultado__numero {
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
 }

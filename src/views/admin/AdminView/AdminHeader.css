@@ -1,3 +1,9 @@
+/* Cabeçalho de todos os portais (AdminHeader, AthleteHeader,
+   ProfessorHeader, StudentHeader e RouteSidebarLayout usam estas classes),
+   na direção "Energia e velocidade": tinta e Sofia 700 no título, botões de
+   44 px com o anel --lt-focus-ring, contagens em selo sólido com o número
+   escrito. A altura de 56 px e os respiros ficam; no celular,
+   SidebarShell.css reserva o espaço do botão da barra lateral. */
 .admin-header {
   position: sticky;
   top: 0;
@@ -9,9 +15,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: var(--color-white);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--lt-color-surface);
+  border-bottom: 1px solid var(--lt-color-border);
   box-shadow: var(--shadow-sm);
+  font-family: var(--lt-font-family);
 }
 
 .header-left {
@@ -21,31 +28,37 @@
   justify-content: center;
 }
 
+/* O título é um h1: fonte, cor e tamanho declarados aqui vencem o h1 global. */
 .header-page-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--color-navy);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  color: var(--lt-color-text);
   line-height: 1.1;
+  overflow-wrap: break-word;
 }
 
 .header-page-title-row {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
+/* Ícone da aba: verde de texto da marca, 5,37:1. */
 .icon-wrapper {
   display: inline-flex;
   align-items: center;
-  color: var(--color-green-dark);
+  flex: none;
+  color: var(--lt-color-brand-green-text);
 }
 
 .header-page-subtitle {
   margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--color-text-muted);
-  line-height: 1;
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-muted);
+  line-height: 1.2;
 }
 
 .header-controls {
@@ -56,23 +69,30 @@
 }
 
 .header-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  color: var(--color-text-muted);
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border-radius: var(--lt-radius-control);
+  border: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: var(--transition);
+  transition: color 160ms, border-color 160ms, background-color 160ms;
 }
 
 .header-btn:hover {
-  color: var(--color-navy);
-  border-color: #cbd5e1;
-  background: #f8fafc;
+  color: var(--lt-color-text);
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+}
+
+.header-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
 .notifications-btn,
@@ -80,46 +100,56 @@
   position: relative;
 }
 
+/* Contagem: branco sobre o vermelho de texto (6,47:1) e sobre o verde de
+   sucesso (7,13:1). O número é o conteúdo; a cor só distingue os dois. */
 .notification-badge,
 .task-badge {
   position: absolute;
   top: -4px;
   right: -4px;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  font-size: 10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-2xs);
   font-weight: 700;
-  color: #fff;
+  line-height: 1;
+  color: var(--lt-color-text-inverse);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--color-white);
+  border: 2px solid var(--lt-color-surface);
 }
 
 .notification-badge {
-  background: #dc2626;
+  background: var(--lt-color-danger-text);
 }
 
 .task-badge {
-  background: #15803d;
+  background: var(--lt-color-success-text);
 }
 
+/* Painéis de tarefas e notificações (NotificationTaskCenter): cartão
+   branco, itens com borda neutra, etiqueta sempre com o tipo escrito. */
 .notifications-panel {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   z-index: 60;
   width: min(360px, 90vw);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-white);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
   box-shadow: var(--shadow-lg);
   padding: 12px;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
 }
 
+/* Um botão de 44 px mais o espaço de 8 px entre eles. */
 .tasks-panel {
-  right: 40px;
+  right: 52px;
 }
 
 .panel-header {
@@ -129,18 +159,20 @@
   justify-content: space-between;
 }
 
+/* h4: fonte e cor redeclaradas contra o título global. */
 .panel-header h4 {
   margin: 0;
-  font-size: 12px;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--lt-color-text-muted);
 }
 
 .panel-header span {
-  font-size: 11px;
-  color: var(--color-text-muted);
+  font-size: var(--lt-text-2xs);
+  color: var(--lt-color-text-muted);
 }
 
 .panel-list {
@@ -150,12 +182,24 @@
   gap: 8px;
 }
 
+.tasks-panel .panel-list {
+  max-height: min(70vh, 420px);
+}
+
+.panel-item-task {
+  flex-wrap: wrap;
+}
+
+.panel-item-task > .task-completion-editor {
+  flex: 0 0 100%;
+}
+
 .panel-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  border: 1px solid #eef2f7;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
   padding: 8px;
 }
 
@@ -163,44 +207,47 @@
   flex: 1;
 }
 
+/* Etiqueta do tipo ou do status. Pares: azul sobre --lt-color-track-tint
+   5,57:1, tinta sobre o mesmo fundo 12,4:1, sucesso 6,81:1, apoio sobre o
+   campo 6,17:1 e o par de atenção de painel.css, 6,88:1. */
 .panel-tag {
   flex-shrink: 0;
-  border-radius: 20px;
+  border-radius: var(--lt-radius-pill);
   padding: 3px 8px;
-  font-size: 10px;
+  font-size: var(--lt-text-2xs);
   font-weight: 700;
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
 .panel-tag.avaliacao {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
 }
 
 .panel-tag.consulta {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 .panel-tag.tarefa {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
 }
 
 .panel-tag.tarefa.status-pendente {
-  background: #fef9c3;
-  color: #854d0e;
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 .panel-tag.tarefa.status-em_andamento {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
 .panel-tag.tarefa.status-concluida {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
 }
 
 .panel-content {
@@ -211,45 +258,60 @@
 
 .panel-title {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  color: var(--lt-color-text);
 }
 
 .panel-meta {
   margin: 0;
-  font-size: 11px;
-  color: var(--color-text-muted);
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-muted);
 }
 
 .panel-empty {
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
+  border: 1px dashed var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
   text-align: center;
   padding: 12px;
-  font-size: 12px;
-  color: var(--color-text-muted);
+  font-size: var(--lt-text-sm);
+  color: var(--lt-color-text-muted);
 }
 
+/* Desenho de 36 px; a área de toque chega a 44 px pelo ::before, sem
+   engordar cada linha do painel. */
 .panel-resolve-btn {
-  width: 26px;
-  height: 26px;
+  position: relative;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   flex-shrink: 0;
-  border-radius: var(--radius-md);
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-  color: #15803d;
+  border-radius: var(--lt-radius-control);
+  border: 1.5px solid rgba(22, 101, 52, 0.28);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: var(--transition);
+  transition: border-color 160ms, background-color 160ms;
+}
+
+.panel-resolve-btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
 }
 
 .panel-resolve-btn:hover:not(:disabled) {
-  background: #dcfce7;
-  border-color: #86efac;
-  color: #166534;
+  border-color: var(--lt-color-success-text);
+}
+
+.panel-resolve-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
 .panel-resolve-btn:disabled {
@@ -262,15 +324,16 @@
   display: inline-flex;
 }
 
+/* Iniciais em branco sobre o azul do estádio: 13,93:1. */
 .user-profile-mini .avatar,
 .user-profile .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-navy);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
+  background: var(--lt-color-stadium);
+  color: var(--lt-color-text-inverse);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +359,12 @@
   }
 
   .header-page-title {
-    font-size: 14px;
+    font-size: var(--lt-text-base);
+  }
+
+  /* Três botões de 44 px no celular: o espaço entre eles cede, o alvo não. */
+  .header-controls {
+    gap: 4px;
   }
 
   .help-btn {

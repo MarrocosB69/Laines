@@ -221,7 +221,7 @@ export class NotificacoesService {
     if (!notificacao) {
       throw new NotFoundException('Notificacao nao encontrada.');
     }
-    const merged = this.repo.merge(notificacao, dto as any);
+    const merged = this.repo.merge(notificacao, dto);
     const saved = await this.repo.save(merged);
     this.realtime.emit('notificacoes.updated', saved);
     return saved;
@@ -233,7 +233,7 @@ export class NotificacoesService {
       throw new NotFoundException('Notificacao nao encontrada.');
     }
     await this.repo.delete(id);
-    this.realtime.emit('notificacoes.deleted', { id });
+    this.realtime.emit('notificacoes.deleted', { id, userId: notificacao.userId });
     return { success: true };
   }
 }

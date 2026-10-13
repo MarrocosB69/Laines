@@ -11,7 +11,7 @@ import api, { getApiErrorMessage } from '../../services/api';
 import { logAudit } from '../../services/audit';
 import { useAuth } from '../AuthContext';
 import { useUiFeedback } from '../UiFeedbackContext';
-import { isStudentMemberRole } from '../../constants/roles';
+import { isStudentMemberRole, normalizeRole } from '../../constants/roles';
 import {
   getUserDisplayName,
   normalizeUserList,
@@ -87,11 +87,27 @@ export const PacienteCoreProvider = ({ children }) => {
 
   const filterPacientesByRole = useCallback((items) => {
     if (!user?.role) return items;
-    if (isStudentMemberRole(user.role)) {
+    const role = normalizeRole(user.role);
+    const canSeeWaitlistSummary = role === 'presidente' || role === 'vice';
+    if (isStudentMemberRole(role)) {
       return items.filter((p) => {
         const isAlunoResponsavel = p.alunoResponsavelId === user.uid || p.alunoResponsavel?.id === user.uid;
-        const isTeamMember = Array.isArray(p.equipeTecnicaIds) && p.equipeTecnicaIds.includes(user.uid);
-        return isAlunoResponsavel || isTeamMember;
+        const isTeamMember = (
+          (Array.isArray(p.equipeTecnicaIds) && p.equipeTecnicaIds.includes(user.uid))
+          || (Array.isArray(p.equipeMultiIds) && p.equipeMultiIds.includes(user.uid))
+          || (
+            Array.isArray(p.equipeProfissional)
+            && p.equipeProfissional.some((member) => String(member?.userId || '') === user.uid)
+          )
+        );
+        const normalizedStatus = String(p.status || '').toLowerCase().trim();
+        const isWaitlistSummary = Boolean(p.restricted)
+          || normalizedStatus === 'lista de espera'
+          || normalizedStatus === 'lista_espera'
+          || normalizedStatus === 'triagem'
+          || normalizedStatus === 'triagem publica'
+          || normalizedStatus === 'triagem_publica';
+        return isAlunoResponsavel || isTeamMember || (canSeeWaitlistSummary && isWaitlistSummary);
       });
     }
     return items;
@@ -171,30 +187,24 @@ export const PacienteCoreProvider = ({ children }) => {
         'coordenacao',
         'presidente',
         'vice',
-        'coord_atendimento',
         'professor',
-        'profissional',
-        'pesquisador',
-        'colaborador',
-        'tecnico',
-        'aluno'
+        'profissional'
       ]);
-      if (!allowedCreatorRoles.has(user?.role)) {
+      const role = normalizeRole(user?.role);
+      if (!allowedCreatorRoles.has(role)) {
         throw new Error('Seu perfil não possui permissão para cadastrar pacientes.');
       }
-      const shouldAutoLinkAluno = isStudentMemberRole(user?.role) && !pacienteData.alunoResponsavel;
-      const alunoResponsavel = shouldAutoLinkAluno ? {
-        id: user.uid,
-        nome: user.name || user.email
-      } : pacienteData.alunoResponsavel || null;
+      const canManageClinicalLinks = ['admin', 'coordenacao'].includes(role);
+      const alunoResponsavel = canManageClinicalLinks ? pacienteData.alunoResponsavel || null : null;
+      const professorSupervisor = canManageClinicalLinks ? pacienteData.professorSupervisor || null : null;
 
       const pacienteToSave = sanitizePacientePayload({
         ...pacienteData,
         status: 'Lista de Espera',
         alunoResponsavelId: alunoResponsavel?.id || null,
         alunoResponsavelNome: alunoResponsavel?.nome || null,
-        professorSupervisorId: pacienteData.professorSupervisor?.id || null,
-        professorSupervisorNome: pacienteData.professorSupervisor?.nome || null
+        professorSupervisorId: professorSupervisor?.id || null,
+        professorSupervisorNome: professorSupervisor?.nome || null
       });
 
       const { data } = await api.post('/pacientes', pacienteToSave);
@@ -225,7 +235,7 @@ export const PacienteCoreProvider = ({ children }) => {
     try {
       const payload = sanitizePacientePayload(pacienteData);
 
-      await api.patch(`/pacientes/${id}`, payload);
+      const { data } = await api.patch(`/pacientes/${id}`, payload);
       logAudit({
         user,
         action: 'paciente_update',
@@ -233,6 +243,9 @@ export const PacienteCoreProvider = ({ children }) => {
         entityId: id
       });
       await fetchPacientes();
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        return mapPaciente(data) || data;
+      }
       return true;
     } catch (err) {
       console.error('Erro ao atualizar paciente:', err);
@@ -243,7 +256,7 @@ export const PacienteCoreProvider = ({ children }) => {
       });
       throw err;
     }
-  }, [fetchPacientes, notify, user]);
+  }, [fetchPacientes, mapPaciente, notify, user]);
 
   const deletePaciente = useCallback(async (id, options = {}) => {
     try {
@@ -329,7 +342,15 @@ export const PacienteCoreProvider = ({ children }) => {
   const estatisticas = useMemo(() => {
     const total = pacientes.length;
     const ativos = pacientes.filter((p) => p.status === 'Ativo').length;
-    const emEspera = pacientes.filter((p) => p.status === 'Lista de Espera').length;
+    const emEspera = pacientes.filter((p) => {
+      const status = String(p.status || '').toLowerCase().trim();
+      return status === 'lista de espera'
+        || status === 'lista_espera'
+        || status === 'espera'
+        || status === 'triagem'
+        || status === 'triagem publica'
+        || status === 'triagem_publica';
+    }).length;
     const vinculados = pacientes.filter((p) => p.alunoResponsavel).length;
 
     return {
@@ -343,7 +364,7 @@ export const PacienteCoreProvider = ({ children }) => {
 
   const getAlunosDisponiveis = useCallback(async () => {
     try {
-      const { data } = await api.get('/users');
+      const { data } = await api.get('/users/equipe-atendimento');
       const users = normalizeUserList(data);
       return users
         .filter((item) => {

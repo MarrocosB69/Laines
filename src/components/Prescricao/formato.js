@@ -1,13 +1,13 @@
 /** Formatação compartilhada da prescrição. Ausência é traço, nunca zero. */
 
 export const n = (v, casas = 0) => (
-  v === null || v === undefined
+  !Number.isFinite(v)
     ? '—'
     : v.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas })
 );
 
 export const sinal = (v, casas = 0) => (
-  v === null || v === undefined ? '—' : `${v > 0 ? '+' : ''}${n(v, casas)}`
+  !Number.isFinite(v) ? '—' : `${v > 0 ? '+' : ''}${n(v, casas)}`
 );
 
 /** Quantidade prescrita: inteiro quando é inteiro, uma casa quando é meia. */

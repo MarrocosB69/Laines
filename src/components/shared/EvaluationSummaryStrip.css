@@ -1,124 +1,140 @@
+/* Faixa de resumo da avaliação (EvaluationSummaryStrip.jsx), no detalhe
+   das métricas da Visão geral do professor. Direção "Energia e velocidade"
+   (docs/design/landing-guia-visual.md, seção "Direção vigente";
+   docs/implementacao/telas-v2/change-intent.md, onda C).
+
+   Ela abre dentro de uma seção branca do Painel: aqui é um trecho no fundo
+   de campo, não outro cartão com sombra. O estado do registro vem escrito
+   num selo em caixa alta (o mesmo de ClinicalEvaluationResultCard.css); a
+   cor só acompanha. Ausência aparece escrita ("Não informado", a mensagem
+   de vazio), nunca como zero. Título redeclara fonte e cor contra os h1…h6
+   globais. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../views/landing/landing-tokens.css';
+
 .evaluation-summary-strip {
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), #ffffff);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-  padding: 0.95rem 1rem;
+  --ess-atencao-texto: #9a3412; /* 6,88:1 sobre --ess-atencao-fundo */
+  --ess-atencao-fundo: #fff7ed;
+
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
 }
 
-.evaluation-summary-strip__header {
+.evaluation-summary-strip .evaluation-summary-strip__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  min-width: 0;
 }
 
-.evaluation-summary-strip__title-group h4 {
+.evaluation-summary-strip .evaluation-summary-strip__title-group { flex: 1 1 14rem; min-width: 0; }
+
+/* 0,2,1: vence h1…h6 globais (Poppins, cor e tamanho). */
+.evaluation-summary-strip .evaluation-summary-strip__title-group h4 {
   margin: 0;
-  font-size: 0.88rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #334155;
-  font-weight: 800;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
 }
 
-.evaluation-summary-strip__title-group p {
-  margin: 0.2rem 0 0;
-  color: #64748b;
-  font-size: 0.79rem;
-  font-weight: 500;
+.evaluation-summary-strip .evaluation-summary-strip__title-group p {
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text-muted); /* 6,17:1 sobre o campo */
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
 }
 
-.evaluation-summary-strip__status {
-  border-radius: 999px;
-  padding: 0.32rem 0.7rem;
-  font-size: 0.71rem;
-  font-weight: 800;
-  text-transform: uppercase;
+/* Estado do registro. Tons: sucesso 6,81:1; atenção 6,88:1; perigo
+   5,91:1; informação 5,57:1; neutro (apoio sobre branco) 6,59:1. */
+.evaluation-summary-strip .evaluation-summary-strip__status {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
   letter-spacing: 0.06em;
-  border: 1px solid transparent;
+  text-transform: uppercase;
 }
 
-.evaluation-summary-strip__status.tone-success {
-  background: #dcfce7;
-  color: #166534;
-  border-color: #86efac;
-}
+.evaluation-summary-strip .evaluation-summary-strip__status.tone-success { background: var(--lt-color-success-bg); box-shadow: none; color: var(--lt-color-success-text); }
+.evaluation-summary-strip .evaluation-summary-strip__status.tone-warning { background: var(--ess-atencao-fundo); box-shadow: none; color: var(--ess-atencao-texto); }
+.evaluation-summary-strip .evaluation-summary-strip__status.tone-info { background: var(--lt-color-track-tint); box-shadow: none; color: var(--lt-color-brand-blue); }
+.evaluation-summary-strip .evaluation-summary-strip__status.tone-danger { background: var(--lt-color-danger-bg); box-shadow: none; color: var(--lt-color-danger-text); }
 
-.evaluation-summary-strip__status.tone-warning {
-  background: #fffbeb;
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.evaluation-summary-strip__status.tone-info {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-
-.evaluation-summary-strip__status.tone-danger {
-  background: #fff1f2;
-  color: #be123c;
-  border-color: #fecdd3;
-}
-
-.evaluation-summary-strip__status.tone-neutral {
-  background: #f1f5f9;
-  color: #334155;
-  border-color: #cbd5e1;
-}
-
-.evaluation-summary-strip__grid {
-  margin: 0;
+.evaluation-summary-strip .evaluation-summary-strip__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.65rem 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--lt-space-3);
+  margin: 0;
 }
 
-.evaluation-summary-strip__item {
+.evaluation-summary-strip .evaluation-summary-strip__item {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.125rem;
+  min-width: 0;
 }
 
-.evaluation-summary-strip__item dt {
+.evaluation-summary-strip .evaluation-summary-strip__item dt {
   margin: 0;
-  color: #64748b;
-  font-size: 0.68rem;
-  letter-spacing: 0.07em;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-weight: 700;
 }
 
-.evaluation-summary-strip__item dd {
+.evaluation-summary-strip .evaluation-summary-strip__item dd {
   margin: 0;
-  color: #0f172a;
-  font-size: 0.85rem;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
   font-weight: 700;
-  line-height: 1.3;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
 }
 
-.evaluation-summary-strip__empty {
+.evaluation-summary-strip .evaluation-summary-strip__empty {
   margin: 0;
-  border-radius: 0.75rem;
-  border: 1px dashed #cbd5e1;
-  color: #64748b;
-  font-size: 0.84rem;
-  padding: 0.75rem 0.8rem;
-  background: #f8fafc;
-}
-
-@media (max-width: 640px) {
-  .evaluation-summary-strip {
-    padding: 0.85rem 0.85rem;
-  }
-
-  .evaluation-summary-strip__grid {
-    grid-template-columns: 1fr;
-  }
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted); /* 6,59:1 sobre branco */
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-normal);
 }

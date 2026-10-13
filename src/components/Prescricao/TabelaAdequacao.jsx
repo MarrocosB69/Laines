@@ -9,45 +9,70 @@ import LinhaAdequacao from './LinhaAdequacao.jsx';
  * CSS: a lista tem oito linhas e ninguém navegando por teclado ou leitor de
  * tela deveria atravessá-las para chegar ao resto da página.
  */
-export default function TabelaAdequacao({ macros, micros }) {
+export default function TabelaAdequacao({ macros, micros, contexto }) {
   const [microAberto, setMicroAberto] = useState(false);
+  const referencias = contexto?.referencias;
+  const origemMetas = contexto?.origemMetas;
+  const restricoes = contexto?.restricoes;
+  const origem = (registro) => registro
+    ? `${registro.status} · ${String(registro.data || 'data não informada').slice(0, 10)} · ${registro.metodo || 'método não informado'} · ${registro.origem || 'origem não informada'}`
+    : 'Nenhuma avaliação finalizada disponível';
 
   return (
-    <div className="mt-3 rounded-xl border border-stone-200 bg-white px-4 py-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-sm text-stone-900">Adequação nutricional</p>
-        <span className="whitespace-nowrap text-xs text-stone-400">DRI · homem 19–30 anos</span>
+    <div className="pp-cartao pp-adequacao">
+      <div className="pp-cartao__cabeca">
+        <h3 className="pp-cartao__titulo">Adequação nutricional</h3>
+        <span className="pp-selo-dri">
+          {referencias?.grupo ? `DRI · ${referencias.grupo}` : 'DRI indisponível para este paciente'}
+        </span>
+      </div>
+      {/* Contexto de onde vêm metas e referências: leitura de apoio, em
+          corpo menor e agrupada, antes da tabela que ela explica. */}
+      <div className="pp-notas">
+        <p className="pp-nota">Metas individuais: GET · {origem(origemMetas)}.</p>
+        {referencias?.grupo && <p className="pp-nota">Fonte: {referencias.fonte}. Perfil conferido em {referencias.dataReferencia}.</p>}
+        {referencias?.motivo && <p className="pp-nota pp-nota--forte">{referencias.motivo}</p>}
+        <p className="pp-nota">RDA/AI são referências populacionais; atingir a referência não comprova adequação individual. Limite e meta individual têm interpretações distintas.</p>
+        <p className="pp-nota">
+          Restrições: {restricoes?.descricao || 'não informadas'} · {origem(restricoes?.origem)}
+          {restricoes?.pendenteRevisao === false && (restricoes.semRestricao ? ' · conferidas: nenhuma se aplica' : ` · conferidas: ${(restricoes.grupos || []).length} grupo(s), ${(restricoes.alimentoIds || []).length} alimento(s)`)}.
+        </p>
+        {restricoes?.pendenteRevisao && <p role="status" className="pp-nota pp-nota--atencao">{restricoes.motivo}</p>}
+        {referencias?.observacao && <p className="pp-nota">{referencias.observacao}</p>}
+        {[...macros, ...micros].some((linha) => Number.isFinite(linha.cobertura) && linha.cobertura < 1) && (
+          <p className="pp-nota">* Valor parcial: subtotal dos alimentos com composição disponível. A cobertura indica quanto do plano tem esse dado; — indica ausência de composição.</p>
+        )}
       </div>
 
-      <table className="w-full border-collapse text-xs">
-        <caption className="sr-only">
+      <table className="pp-adequacao__tabela">
+        <caption className="pp-sr">
           Adequação do plano frente às referências de ingestão
         </caption>
         <thead>
-          <tr className="border-b border-stone-200 text-stone-400">
-            <th scope="col" className="pb-1 text-left font-normal">Nutriente</th>
-            <th scope="col" className="pb-1 text-right font-normal">Plano</th>
-            <th scope="col" className="pb-1 text-right font-normal">Referência</th>
-            <th scope="col" className="pb-1">
-              <span className="sr-only">Proporção</span>
+          <tr>
+            <th scope="col" className="pp-adequacao__cab">Nutriente</th>
+            <th scope="col" className="pp-adequacao__cab pp-adequacao__cab--num">Plano</th>
+            <th scope="col" className="pp-adequacao__cab pp-adequacao__cab--num">Referência</th>
+            <th scope="col" className="pp-adequacao__cab">
+              <span className="pp-sr">Proporção</span>
             </th>
-            <th scope="col" className="pb-1 text-right font-normal">Cobert.</th>
+            <th scope="col" className="pp-adequacao__cab pp-adequacao__cab--num">Cobert.</th>
           </tr>
         </thead>
         <tbody>
           {macros.map((l) => <LinhaAdequacao key={l.nutriente} linha={l} />)}
 
-          <tr>
-            <td colSpan={5} className="pt-1">
+          <tr className="pp-adequacao__dobra">
+            <td colSpan={5}>
               <button
                 type="button"
                 onClick={() => setMicroAberto((v) => !v)}
                 aria-expanded={microAberto}
-                className="flex w-full items-center gap-1.5 py-1.5 text-xs text-stone-600 hover:text-stone-900"
+                className="pp-botao pp-botao--dobra"
               >
                 {microAberto
-                  ? <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-                  : <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />}
+                  ? <ChevronDown className="pp-icone" aria-hidden="true" />
+                  : <ChevronRight className="pp-icone" aria-hidden="true" />}
                 Micronutrientes
               </button>
             </td>

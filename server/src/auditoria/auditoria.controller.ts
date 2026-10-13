@@ -19,36 +19,40 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { hasGlobalAccess, hasTeamScopedAccess, isStudentMemberRole, normalizeRole } from '../auth/access-control';
-import { ADMIN_ROLES } from '../common/domain/access.constants';
+import { ADMIN_ROLES, getDiretoriaPermissionSource } from '../common/domain/access.constants';
 
 type AuditUser = {
   id: string;
   email?: string;
   role?: string;
   name?: string;
+  diretoria?: string | null;
+  permissions?: string[];
 };
 
 type ClientAuditRule = {
   entity: string;
   action: string;
-  canRegister: (role: string) => boolean;
+  canRegister: (user: AuditUser | undefined, role: string) => boolean;
 };
 
 const isAdminAuditRole = (role: string) => (ADMIN_ROLES as readonly string[]).includes(role);
-const isClinicalAuditRole = (role: string) => (
+const isClinicalAuditRole = (_user: AuditUser | undefined, role: string) => (
   hasGlobalAccess(role)
   || hasTeamScopedAccess(role)
   || isStudentMemberRole(role)
 );
-const isProjectAuditRole = (role: string) => (
-  isAdminAuditRole(role)
-  || role === 'diretoria_pesquisa'
-);
+const isProjectAuditRole = (user: AuditUser | undefined, role: string) => {
+  const diretoria = getDiretoriaPermissionSource(user || {});
+  return isAdminAuditRole(role)
+    || role === 'diretoria_pesquisa'
+    || (isStudentMemberRole(role) && diretoria === 'diretoria_pesquisa');
+};
 
 const CLIENT_AUDIT_RULES: ClientAuditRule[] = [
   { entity: 'pacientes', action: 'paciente_create', canRegister: isClinicalAuditRole },
   { entity: 'pacientes', action: 'paciente_update', canRegister: isClinicalAuditRole },
-  { entity: 'pacientes', action: 'paciente_delete', canRegister: isAdminAuditRole },
+  { entity: 'pacientes', action: 'paciente_delete', canRegister: (_user, role) => isAdminAuditRole(role) },
   { entity: 'pacientes', action: 'paciente_link', canRegister: isClinicalAuditRole },
   { entity: 'pacientes', action: 'paciente_bulk_project', canRegister: isClinicalAuditRole },
   { entity: 'avaliacoes', action: 'avaliacao_create', canRegister: isClinicalAuditRole },
@@ -57,11 +61,12 @@ const CLIENT_AUDIT_RULES: ClientAuditRule[] = [
   { entity: 'avaliacoes', action: 'avaliacao_sync', canRegister: isProjectAuditRole },
   { entity: 'agendamentos', action: 'agendamento_create', canRegister: isClinicalAuditRole },
   { entity: 'agendamentos', action: 'agendamento_update', canRegister: isClinicalAuditRole },
-  { entity: 'agendamentos', action: 'agendamento_reschedule', canRegister: (role) => isClinicalAuditRole(role) || role === 'atleta' },
+  { entity: 'agendamentos', action: 'agendamento_reschedule', canRegister: (user, role) => isClinicalAuditRole(user, role) || role === 'atleta' },
   { entity: 'projetos_pesquisa', action: 'projeto_create', canRegister: isProjectAuditRole },
   { entity: 'projetos_pesquisa', action: 'projeto_update', canRegister: isProjectAuditRole },
-  { entity: 'solicitacoes_acesso', action: 'solicitacao_aprovada', canRegister: isAdminAuditRole },
-  { entity: 'admin_settings', action: 'settings_upsert', canRegister: isAdminAuditRole }
+  { entity: 'projetos_pesquisa', action: 'projeto_delete', canRegister: isProjectAuditRole },
+  { entity: 'solicitacoes_acesso', action: 'solicitacao_aprovada', canRegister: (_user, role) => isAdminAuditRole(role) },
+  { entity: 'admin_settings', action: 'settings_upsert', canRegister: (_user, role) => isAdminAuditRole(role) }
 ];
 
 const findClientAuditRule = (entity: string, action: string) => (
@@ -87,7 +92,7 @@ export class AuditoriaController {
     if (!rule) {
       throw new BadRequestException('Evento de auditoria nao permitido para registro pelo cliente.');
     }
-    if (!role || !rule.canRegister(role)) {
+    if (!role || !rule.canRegister(req.user, role)) {
       throw new ForbiddenException('Seu perfil nao pode registrar este evento de auditoria.');
     }
 
@@ -110,7 +115,7 @@ export class AuditoriaController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'coordenacao', 'presidente', 'vice')
+  @Roles(...ADMIN_ROLES)
   @Get()
   findAll(
     @Query('action') action?: string,
@@ -128,7 +133,7 @@ export class AuditoriaController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'coordenacao', 'presidente', 'vice')
+  @Roles(...ADMIN_ROLES)
   @Get(':id')
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     const registro = await this.auditoriaService.findById(id);
@@ -139,7 +144,7 @@ export class AuditoriaController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'coordenacao', 'presidente', 'vice')
+  @Roles(...ADMIN_ROLES)
   @Delete(':id')
   remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auditoriaService.remove(id);

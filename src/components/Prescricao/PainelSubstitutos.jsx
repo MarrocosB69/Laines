@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import { X, Plus, Search, Bookmark, BookmarkCheck } from 'lucide-react';
 import Selo from './Selo.jsx';
 import SeloEquivalencia from './SeloEquivalencia.jsx';
@@ -14,7 +14,9 @@ const ROTULO_ANCORA = {
 
 const MOTIVO_TEXTO = {
   'sem-grupo': 'Alimento sem grupo de equivalência classificado.',
-  'ancora-indisponivel': 'Sem dado suficiente para ancorar a equivalência.'
+  'ancora-indisponivel': 'Sem dado suficiente para ancorar a equivalência.',
+  'restricoes-pendentes': 'Sugestões suspensas até a conferência das restrições do paciente.',
+  'grupo-restrito': 'Grupo marcado como restrição confirmada; sem sugestões automáticas.'
 };
 
 /**
@@ -37,25 +39,29 @@ export default function PainelSubstitutos({
   onSalvarBloco,
   onAplicarBloco,
   busca,
+  buscaAtiva,
   onBuscarSubstituto,
-  onEscolherSubstituto
+  onEscolherSubstituto,
+  onAlternarBuscaSubstituto,
+  onFecharBusca
 }) {
-  const [buscando, setBuscando] = useState(false);
+  const botaoBuscaRef = useRef(null);
+  const buscando = buscaAtiva === `substituto:${base.id}`;
 
   return (
-    <div className="mb-1 ml-6 rounded-lg bg-stone-50 px-3 py-2">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-xs text-stone-500">
+    <div className="pp-substitutos">
+      <div className="pp-substitutos__cabeca">
+        <span className="pp-substitutos__titulo">
           Opções de substituição · âncora {ROTULO_ANCORA[ancora] ?? ancora}
         </span>
-        <div className="flex gap-2">
+        <div className="pp-substitutos__acoes">
           {blocoSalvo && (
             <button
               type="button"
               onClick={() => onAplicarBloco(base.id, blocoSalvo)}
-              className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900"
+              className="pp-botao pp-botao--link"
             >
-              <BookmarkCheck className="w-3.5 h-3.5" /> Aplicar “{blocoSalvo.nome}”
+              <BookmarkCheck className="pp-icone" aria-hidden="true" /> Usar bloco desta edição: “{blocoSalvo.nome}”
             </button>
           )}
           {/* As sugestoes so alcancam o mesmo grupo de equivalencia. Aqui o
@@ -64,19 +70,20 @@ export default function PainelSubstitutos({
           {onEscolherSubstituto && (
             <button
               type="button"
-              onClick={() => setBuscando((v) => !v)}
+              ref={botaoBuscaRef}
+              onClick={() => onAlternarBuscaSubstituto(base.id)}
               aria-expanded={buscando}
-              className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900"
+              className="pp-botao pp-botao--link"
             >
-              <Search className="w-3.5 h-3.5" /> Escolher substituto
+              <Search className="pp-icone" aria-hidden="true" /> Escolher substituto
             </button>
           )}
           <button
             type="button"
             onClick={() => onSalvarBloco(base)}
-            className="flex items-center gap-1 text-xs text-stone-600 hover:text-stone-900"
+            className="pp-botao pp-botao--link"
           >
-            <Bookmark className="w-3.5 h-3.5" /> Salvar alimento e substitutos
+            <Bookmark className="pp-icone" aria-hidden="true" /> Guardar bloco nesta edição
           </button>
         </div>
       </div>
@@ -84,24 +91,31 @@ export default function PainelSubstitutos({
       {buscando && onEscolherSubstituto && (
         <BuscaAlimento
           id={`busca-substituto-${base.id}`}
+          modo="substituto"
           termo={busca?.termo ?? ''}
           resultados={busca?.resultados ?? []}
           carregando={busca?.carregando ?? false}
           erro={busca?.erro ?? ''}
           onTermo={onBuscarSubstituto}
-          onEscolher={(alimento) => { onEscolherSubstituto(base.id, alimento); setBuscando(false); }}
-          onFechar={() => setBuscando(false)}
+          onEscolher={(alimento, _quantidade, medidaIdx) => {
+            onEscolherSubstituto(base.id, alimento, medidaIdx);
+            botaoBuscaRef.current?.focus();
+          }}
+          onFechar={() => {
+            onFecharBusca();
+            botaoBuscaRef.current?.focus();
+          }}
         />
       )}
 
       {opcoes.length === 0 && !buscando && (
-        <p className="py-1 text-xs text-stone-400">Nenhuma opção prescrita ainda.</p>
+        <p className="pp-substitutos__vazio">Nenhuma opção prescrita ainda.</p>
       )}
 
       {opcoes.map((op) => (
-        <div key={op.alimentoId} className="flex items-center gap-2 border-t border-stone-200 py-1 text-xs">
-          <span className="w-3 text-stone-400">ou</span>
-          <span className="min-w-0 flex-1 text-stone-800">
+        <div key={op.alimentoId} className="pp-opcao">
+          <span className="pp-opcao__ou">ou</span>
+          <span className="pp-opcao__nome">
             {op.nome}
             <Selo fonte={op.fonte} />
           </span>
@@ -109,22 +123,24 @@ export default function PainelSubstitutos({
               prescreve a substituicao em vez de so aceitar a equivalencia
               calculada. Digitar aqui trava a opcao em modo fixo, e o selo
               passa a mostrar o quanto ela de fato reproduz. */}
-          <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-stone-600">
-            <label className="sr-only" htmlFor={`qtd-${base.id}-${op.alimentoId}`}>
+          <span className="pp-opcao__qtd">
+            <label className="pp-sr" htmlFor={`qtd-${base.id}-${op.alimentoId}`}>
               Quantidade de {op.nome}
             </label>
             <input
               id={`qtd-${base.id}-${op.alimentoId}`}
               type="number"
-              min="0"
+              min="0.5"
               step="0.5"
-              value={op.quantidade}
-              onChange={(e) => onQuantidadeSubstituto(base.id, op.alimentoId, Number(e.target.value))}
-              className="pp-largura-num rounded border border-stone-200 text-right"
+              value={op.quantidade ?? ''}
+              onChange={(e) => onQuantidadeSubstituto(base.id, op.alimentoId,
+                e.target.value === '' ? '' : Number(e.target.value))}
+              className="pp-controle pp-controle--num"
             />
             <span>{op.medida.descricao || 'g'}</span>
-            {op.medida.descricao && <span className="text-stone-400">· {n(op.gramas)} g</span>}
+            {op.medida.descricao && <span className="pp-opcao__gramas">· {n(op.gramas)} g</span>}
           </span>
+          {op.pendenteQuantidade && <span role="status" className="pp-substitutos__motivo">Informe a quantidade desta opção antes de salvar.</span>}
           <SeloEquivalencia desvio={op.desvio} />
           {/* So faz sentido voltar ao automatico quando existe automatico:
               sem equivalencia calculavel, nao ha o que recalcular. */}
@@ -133,51 +149,51 @@ export default function PainelSubstitutos({
               type="button"
               onClick={() => onQuantidadeSubstituto(base.id, op.alimentoId, null)}
               title="Voltar à quantidade equivalente calculada"
-              className="pp-selo-equiv pp-selo-equiv--sem"
+              className="pp-selo-equiv pp-selo-equiv--sem pp-selo-equiv--botao"
             >
               prescrita
             </button>
           )}
-          <span className="shrink-0 whitespace-nowrap text-right"><DeltasMacro op={op} /></span>
+          <span className="pp-opcao__deltas"><DeltasMacro op={op} /></span>
           <button
             type="button"
             onClick={() => onRemover(base.id, op.alimentoId)}
             aria-label={`Remover ${op.nome} das opções`}
-            className="text-stone-400 hover:text-stone-700"
+            className="pp-icone-botao pp-icone-botao--perigo"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="pp-icone" aria-hidden="true" />
           </button>
         </div>
       ))}
 
-      <p className="mt-2 mb-1 text-xs text-stone-400">
+      <p className="pp-substitutos__motivo">
         {MOTIVO_TEXTO[motivo] ?? 'Sugestões dentro de 10% após arredondar para medida caseira'}
       </p>
 
       {sugestoes.map((op) => (
-        <div key={op.alimentoId} className="flex items-center gap-2 border-t border-stone-200 py-1 text-xs">
+        <div key={op.alimentoId} className="pp-opcao pp-opcao--sugestao">
           <button
             type="button"
             onClick={() => onAdicionar(base.id, op)}
             aria-label={`Adicionar ${op.nome} como opção`}
-            className="text-stone-400 hover:text-stone-900"
+            className="pp-icone-botao pp-icone-botao--adicionar"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="pp-icone" aria-hidden="true" />
           </button>
-          <span className="min-w-0 flex-1 text-stone-600">
+          <span className="pp-opcao__nome">
             {op.nome}
             <Selo fonte={op.fonte} />
           </span>
           {/* Sem medida caseira a quantidade JA e a grama: repetir daria
               "73,5 · 74 g", que parece dois numeros diferentes. */}
-          <span className="shrink-0 whitespace-nowrap text-stone-500">
+          <span className="pp-opcao__medida">
             {op.medida.descricao
               ? `${n(op.quantidade, op.quantidade % 1 ? 1 : 0)} ${op.medida.descricao} · ${n(op.gramas)} g`
               : `${n(op.gramas)} g`}
           </span>
           <SeloEquivalencia desvio={op.desvio} />
-          <span className="shrink-0 whitespace-nowrap text-right"><DeltasMacro op={op} /></span>
-          <span className="w-3.5" />
+          <span className="pp-opcao__deltas"><DeltasMacro op={op} /></span>
+          <span className="pp-opcao__espaco" />
         </div>
       ))}
     </div>

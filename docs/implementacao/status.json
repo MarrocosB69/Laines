@@ -1,0 +1,189 @@
+{
+  "atualizadoEm": "2026-09-30T20:57:07.980Z",
+  "nota": "Estado local verificado; não é aprovação de produção. Auditoria original e suas notas permanecem como histórico.",
+  "verificacoes": {
+    "core": 101,
+    "credenciais": 16,
+    "realtime": 8,
+    "acessoUpload": 11,
+    "prescricao": 14,
+    "postgresql": 5,
+    "navegador": 10,
+    "lint": {
+      "erros": 0,
+      "avisos": 8
+    },
+    "buildFrontend": 0,
+    "buildBackend": "ok",
+    "dependenciasProducao": {
+      "frontend": 0,
+      "backendModeradas": 4
+    },
+    "yaml": "valido",
+    "schemaGuard": "passou",
+    "autorizacao": 15,
+    "prontuario": 5,
+    "visualizacao": 9,
+    "navegacao": 23,
+    "acessibilidade": 9,
+    "supervisaoFila": 14,
+    "supervisaoEnvio": 12,
+    "contextoNavegacao": 11,
+    "edicaoPendente": 15,
+    "vinculoAtendimento": 10,
+    "testUi": 129,
+    "testSecurity": 82,
+    "landingConteudo": 6,
+    "landingContraste": 27,
+    "inscricaoVisual": 5
+  },
+  "itens": [
+    {
+      "id": "UPD-01",
+      "titulo": "Recuperação e credenciais",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-02",
+      "titulo": "Eventos clínicos e sessão",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-03",
+      "titulo": "Relatórios e exportações",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-04",
+      "titulo": "Upload de conteúdo",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-05",
+      "titulo": "Inscrição duplicada",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-06",
+      "titulo": "Contrato e migração da prescrição",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-07",
+      "titulo": "Revisão e autoria",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-08",
+      "titulo": "Pipeline de publicação",
+      "status": "correcoes_locais_validadas_ci_remoto_pendente"
+    },
+    {
+      "id": "UPD-09",
+      "titulo": "Dependências",
+      "status": "implementado_validado_local",
+      "residual": "4 avisos moderados na árvore de MinIO; aplicabilidade documentada, sem downgrade forçado."
+    },
+    {
+      "id": "UPD-10",
+      "titulo": "Emitir e entregar plano",
+      "status": "implementado_validado_local"
+    },
+    {
+      "id": "UPD-11",
+      "titulo": "Referências e restrições",
+      "status": "implementado_validado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-12",
+      "titulo": "Contrato de autorização",
+      "status": "implementado_validado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-13",
+      "titulo": "Navegação da liga",
+      "status": "implementado_revisado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-14",
+      "titulo": "Prontuário e pendências",
+      "status": "implementado_revisado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-15",
+      "titulo": "Gráficos e tabelas",
+      "status": "implementado_revisado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-16",
+      "titulo": "Mobile e acessibilidade",
+      "status": "implementado_revisado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-17",
+      "titulo": "Supervisão por jornada",
+      "status": "implementado_revisado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-18",
+      "titulo": "Contexto e preenchimento",
+      "status": "implementado_validado_local",
+      "evidencia": "docs/implementacao/onda-2/README.md"
+    },
+    {
+      "id": "UPD-19",
+      "titulo": "Documentação e organização",
+      "status": "recorte_documental_validado_inventario_release_pendente",
+      "evidencia": "docs/implementacao/onda-3/README.md",
+      "inventarioCandidatoLocal": "tmp/onda3-inventario/candidato-local-01.json",
+      "pendencia": "Inventário local dos bytes do pacote verificado; release imutável e CI remoto ainda pendentes."
+    },
+    {
+      "id": "UPD-20",
+      "titulo": "Testes de jornadas",
+      "status": "jornada_integrada_local_validada",
+      "evidencia": "docs/implementacao/onda-3/README.md",
+      "pendencia": "Navegador real e CI remoto em revisão imutável permanecem sem evidência desta onda."
+    },
+    {
+      "id": "UPD-21",
+      "titulo": "Homologação e restauração",
+      "status": "restauracao_aplicacao_local_validada_homologacao_pendente",
+      "evidencia": "docs/implementacao/onda-3/README.md",
+      "pendencia": "Rollback entre versões, ambiente final, TLS, storage e CI remoto."
+    },
+    {
+      "id": "UPD-22",
+      "titulo": "Imagem experimental",
+      "status": "implementado_validado_local_homologacao_pendente",
+      "evidencia": "docs/inception/fechamento/WI-004/README.md"
+    },
+    {
+      "id": "UPD-23",
+      "titulo": "PWA e desempenho",
+      "status": "pendente"
+    },
+    {
+      "id": "UPD-24",
+      "titulo": "Consistência e dívida de UI",
+      "status": "pendente"
+    }
+  ],
+  "ondas": {
+    "onda-2": "itens implementados e validados localmente; homologacao pendente (UPD-21)",
+    "onda-3": "UPD-20 e restauracao local de UPD-21 validados em PostgreSQL isolado; UPD-19 parcial, UPD-22 local; homologacao operacional pendente; ver docs/implementacao/onda-3/README.md",
+    "landing-v2": "primeira pagina na direcao Energia e velocidade implementada, verificada em navegador (API sintetica) e aprovada com ressalvas pela revisao independente, ressalvas corrigidas; sem commit nem deploy; ver docs/implementacao/landing-v2/",
+    "inscricao-v2": "formulario publico (/inscricao) no padrao Energia e velocidade: separacao sem mudanca visivel (0 px em 24 capturas), redesenho por 3 agentes, envio identico ao original, 0 campos sem rotulo (eram 22); aprovado com ressalvas pela revisao independente, ressalvas corrigidas; sem commit nem deploy; ver docs/implementacao/inscricao-v2/",
+    "areas-v2": "4 areas da Liga (Ensino, Extensao, Comunicacao, Pesquisa) no padrao Energia e velocidade; checagem leve (eslint, diff contra tmp/areas-v1); navegador e revisao independente pendentes; ver docs/implementacao/areas-v2/",
+    "plano-v2": "pagina /prescricao-plano no padrao novo; contrato de prescricao 14/14, logica identica ao backup; navegador pendente; ver docs/implementacao/plano-v2/",
+    "avaliacoes-v2": "base comum consolidada + pagina AvaliacaoCompleta + as 17 avaliacoes migradas (GET e Imagem na onda E2); checagem leve; navegador e revisao independente pendentes; ver docs/implementacao/avaliacoes-v2/change-intent.md",
+    "telas-v2": "ondas A (fundacoes), B (atleta e equipe), C (agendas), D1 (relatorios, configuracoes, solicitacoes), D2 (cadastros), E1 (prontuario), E2 (GET, Imagem, busca de alimentos) e F (acabamentos) concluidas com checagem leve (eslint, postcss, SSR sintetico, diff contra backups tmp/telas-v1, v1b, prontuario-v1); todo CSS vivo em uso esta no padrao novo, restando so codigo morto e blocos de legado isolados; navegador, lint/test:ui/build completos e revisao independente pendentes; ver docs/implementacao/telas-v2/change-intent.md"
+  }
+}

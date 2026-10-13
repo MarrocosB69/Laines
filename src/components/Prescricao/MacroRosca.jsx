@@ -6,10 +6,18 @@ import { n } from './formato.js';
  * Aqui só há geometria de arco — converter grama em energia é cálculo
  * nutricional e mora no núcleo.
  */
-export default function MacroRosca({ dia, metas, distribuicao, cores }) {
+export default function MacroRosca({ dia, metas, distribuicao, cores, energia, composicaoIncompleta = false }) {
   const r = 42;
   const c = 2 * Math.PI * r;
   const { cho: fCho, ptn: fPtn, lip: fLip } = distribuicao;
+  // Sem meta de energia nao ha percentual: `x / null` da NaN e a rosca
+  // escrevia "NaN% da meta" na cara do usuario.
+  const semEnergia = energia?.valor === null;
+  const energiaParcial = !semEnergia && Number.isFinite(energia?.cobertura) && energia.cobertura < 1;
+  const kcalExibida = semEnergia ? '—' : n(dia.kcal);
+  const rotuloMeta = semEnergia ? 'sem composição'
+    : energiaParcial ? 'subtotal conhecido'
+      : metas.kcal ? `${n((dia.kcal / metas.kcal) * 100, 1)}% da meta` : 'sem meta definida';
 
   const arco = (fracao, offset, cor) => (
     <circle
@@ -26,24 +34,24 @@ export default function MacroRosca({ dia, metas, distribuicao, cores }) {
   );
 
   return (
-    // Abaixo de 1000px o painel vira faixa e a rosca reduz junto. O viewBox
-    // mantem a geometria; so a caixa muda.
+    // O tamanho da caixa vem do CSS (o painel muda de forma com a largura);
+    // o viewBox mantem a geometria. Com role="img" o texto de dentro nao e
+    // lido, entao o rotulo acessivel repete a energia e a meta, alem da
+    // divisao entre os macronutrientes.
     <svg
       viewBox="0 0 110 110"
-      className="h-[180px] w-[180px] shrink-0 max-[999px]:h-[110px] max-[999px]:w-[110px]"
+      className="pp-rosca"
       role="img"
-      aria-label={`Carboidrato ${Math.round(fCho * 100)}%, proteína ${Math.round(fPtn * 100)}%, lipídio ${Math.round(fLip * 100)}%`}
+      aria-label={`${composicaoIncompleta ? 'Distribuição apenas dos nutrientes conhecidos. ' : ''}Carboidrato ${Math.round(fCho * 100)}%, proteína ${Math.round(fPtn * 100)}%, lipídio ${Math.round(fLip * 100)}%. ${kcalExibida} de ${n(metas.kcal)} kcal, ${rotuloMeta}`}
     >
-      <circle cx="55" cy="55" r={r} fill="none" stroke="#E7E5E4" strokeWidth="11" />
+      <circle className="pp-rosca__trilho" cx="55" cy="55" r={r} fill="none" strokeWidth="11" />
       {arco(fCho, 0, cores.cho)}
       {arco(fPtn, fCho, cores.ptn)}
       {arco(fLip, fCho + fPtn, cores.lip)}
-      <text x="55" y="51" textAnchor="middle" fontSize="15" fill="#1C1917">{n(dia.kcal)}</text>
-      <text x="55" y="62" textAnchor="middle" fontSize="7.5" fill="#78716C">de {n(metas.kcal)} kcal</text>
-      <text x="55" y="72" textAnchor="middle" fontSize="7.5" fill="#78716C">
-        {/* Sem meta de energia nao ha percentual: `x / null` da NaN e a rosca
-            escrevia "NaN% da meta" na cara do usuario. */}
-        {metas.kcal ? `${n((dia.kcal / metas.kcal) * 100, 1)}% da meta` : 'sem meta definida'}
+      <text className="pp-rosca__valor" x="55" y="51" textAnchor="middle" fontSize="15">{kcalExibida}</text>
+      <text className="pp-rosca__apoio" x="55" y="62" textAnchor="middle" fontSize="7.5">de {n(metas.kcal)} kcal</text>
+      <text className="pp-rosca__apoio" x="55" y="72" textAnchor="middle" fontSize="7.5">
+        {rotuloMeta}
       </text>
     </svg>
   );

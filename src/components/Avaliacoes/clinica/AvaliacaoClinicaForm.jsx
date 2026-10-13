@@ -1,7 +1,6 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Heart } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Button } from '../../ui';
-import MiniSparkline from '../../shared/MiniSparkline';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
   buildComparativeDeltas,
@@ -9,17 +8,35 @@ import {
 } from '../../../services/calculationEngine';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao,
+  Tendencia
+} from '../base';
 import './AvaliacaoClinicaForm.css';
+import { CLINICAL_SIGN_OPTIONS } from '../../../constants/clinicalInstruments';
 
-const CLINICAL_SIGN_OPTIONS = [
-  { value: 'palidez', label: 'Palidez' },
-  { value: 'queda_cabelo', label: 'Queda de cabelo' },
-  { value: 'unhas_frageis', label: 'Unhas frageis' },
-  { value: 'glossite', label: 'Glossite' },
-  { value: 'queilite_angular', label: 'Queilite angular' },
-  { value: 'xeroftalmia', label: 'Xeroftalmia' },
-  { value: 'fraqueza_muscular', label: 'Fraqueza muscular' }
+// Índice "Neste formulário": os mesmos títulos de seção de antes. Os
+// resultados vêm logo depois dos sinais vitais que os geram.
+const CLINICA_INDICE = [
+  { id: 'clinica-sinais', titulo: 'Sinais vitais' },
+  { id: 'clinica-resultados', titulo: 'Resultados calculados' },
+  { id: 'clinica-opcionais', titulo: 'Dados opcionais' },
+  { id: 'clinica-esportivo', titulo: 'Contexto esportivo' },
+  { id: 'clinica-observacoes', titulo: 'Observacoes clinicas' }
 ];
+
+// Gravidade das red flags no aviso da base: além da cor, o ícone muda de
+// forma e o leitor de tela ouve "Alerta:" ou "Atenção:". Antes todas levavam
+// o mesmo triângulo; a gravidade vem do motor de regras, como antes.
+const RED_FLAG_TIPO_AVISO = { danger: 'perigo', warning: 'atencao' };
 
 const GLUCOSE_CONTEXT_OPTIONS = [
   { value: 'nao_informado', label: 'Nao informado' },
@@ -281,6 +298,11 @@ const AvaliacaoClinicaForm = ({
     dados.temperatureC
   ]);
 
+  const selectedClinicalSignsDetails = useMemo(
+    () => buildClinicalSignsDetails(dados.clinicalSigns),
+    [dados.clinicalSigns]
+  );
+
   const heartRateValue = useMemo(
     () => parseNumeric(dados.heartRate),
     [dados.heartRate]
@@ -387,6 +409,17 @@ const AvaliacaoClinicaForm = ({
     if (!hasExpectedAthleteBradycardia) return flags;
     return flags.filter((item) => String(item?.id || '').trim() !== 'fc_critica');
   }, [evaluation, hasExpectedAthleteBradycardia]);
+
+  // Há o que as regras de red flag avaliam: PA completa, FC, glicemia ou
+  // edema acima do grau 0 (o padrão do formulário). Sem isso, a contagem
+  // não existe e o cartão mostra "—", nunca "0 alertas".
+  const hasRedFlagInputs = useMemo(() => {
+    const input = evaluation?.inputNormalized || {};
+    return (Number.isFinite(input.systolic) && Number.isFinite(input.diastolic))
+      || Number.isFinite(input.heartRate)
+      || Number.isFinite(input.glucoseMgDl)
+      || (Number.isFinite(input.edemaGrade) && input.edemaGrade > 0);
+  }, [evaluation]);
 
   const heartRateClassification = useMemo(() => {
     if (!hasExpectedAthleteBradycardia) return evaluation?.classifications?.heartRate;
@@ -525,6 +558,7 @@ const AvaliacaoClinicaForm = ({
         clinicalSigns: Array.isArray(evaluation?.inputNormalized?.clinicalSigns)
           ? evaluation.inputNormalized.clinicalSigns
           : [],
+        clinicalSignsDetails: selectedClinicalSignsDetails,
         esportivo: esportivoPayload,
         observacoes: toTextInput(dados.observacoes) || null
       },
@@ -552,6 +586,7 @@ const AvaliacaoClinicaForm = ({
         sinaisCarenciaisCount: Array.isArray(evaluation?.inputNormalized?.clinicalSigns)
           ? evaluation.inputNormalized.clinicalSigns.length
           : 0,
+        sintomasClinicosDetalhados: selectedClinicalSignsDetails,
         prioridadeCuidado: evaluation?.summary?.carePriority?.level || null,
         justificativaPrioridade: evaluation?.summary?.carePriority?.reason || null
       },
@@ -594,7 +629,8 @@ const AvaliacaoClinicaForm = ({
     hasExpectedAthleteBradycardia,
     heartRateClassification,
     previous,
-    redFlags
+    redFlags,
+    selectedClinicalSignsDetails
   ]);
 
   const payloadResults = useMemo(() => ({
@@ -732,30 +768,23 @@ const AvaliacaoClinicaForm = ({
   const redFlagTone = redFlags.some((item) => item.severity === 'danger') ? 'danger' : 'warning';
 
   return (
-    <div className={`eval-card clinica-form clinica-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <Heart size={20} />
-        </div>
-        <div>
-          <h3 className="eval-title">Avaliacao clinica</h3>
-          <p className="eval-subtitle">
-            Triagem de sinais vitais, classificacao automatica de PA e alertas clinicos de seguranca.
-          </p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card clinica-form clinica-form--modern${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Avaliacao clinica"
+      descricao="Triagem de sinais vitais, classificacao automatica de PA e alertas clinicos de seguranca."
+      icone={<Heart size={20} />}
+    >
+      <AvaliacaoIndice itens={CLINICA_INDICE} />
 
       {onboardingInsights.length ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto do onboarding:</strong> {onboardingInsights.join(' - ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Sinais vitais</h4>
-        <div className="clinica-grid">
-          <div className="eval-field">
-            <label className="eval-label">Data da avaliacao</label>
+      <AvaliacaoSecao id="clinica-sinais" titulo="Sinais vitais" className="eval-section eval-section--primary">
+        <div className="av-grade">
+          <Campo rotulo="Data da avaliacao" className="eval-field">
             <input
               type="date"
               className="eval-input"
@@ -763,7 +792,7 @@ const AvaliacaoClinicaForm = ({
               onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'dataAvaliacao', event.target.value)}
               disabled={readOnly}
             />
-          </div>
+          </Campo>
 
           <NumericField
             label="PA sistolica"
@@ -823,17 +852,128 @@ const AvaliacaoClinicaForm = ({
 
           {hasExpectedAthleteBradycardia && (
             <div className="eval-field eval-field-full">
-              <span className="clinica-athlete-badge">Bradicardia fisiologica esperada em atletas</span>
+              <AvisoAvaliacao tipo="info" className="clinica-athlete-badge">Bradicardia fisiologica esperada em atletas</AvisoAvaliacao>
             </div>
           )}
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Dados opcionais</h4>
+      <AvaliacaoSecao id="clinica-resultados" titulo="Resultados calculados" className="eval-section">
+        <div className="av-resultados">
+          <ResultCard
+            title="Pressao arterial"
+            valueDisplay={formatPressure(
+              evaluation?.inputNormalized?.systolic,
+              evaluation?.inputNormalized?.diastolic
+            )}
+            classification={evaluation?.classifications?.bloodPressure}
+            delta={comparisonByKey?.systolic?.delta}
+            tooltipInfo={INDICATOR_INFO.bloodPressure}
+          />
+          <ResultCard
+            title="PAM"
+            valueDisplay={formatMetricValue(evaluation?.derived?.meanArterialPressure, 'mmHg', 1)}
+            classification={evaluation?.classifications?.bloodPressure}
+            delta={comparisonByKey?.map?.delta}
+            tooltipInfo={INDICATOR_INFO.map}
+          />
+          <ResultCard
+            title="Pressao de pulso"
+            valueDisplay={formatMetricValue(evaluation?.derived?.pulsePressure, 'mmHg', 1)}
+            classification={evaluation?.classifications?.bloodPressure}
+            tooltipInfo={INDICATOR_INFO.pulsePressure}
+          />
+          <ResultCard
+            title="Frequencia cardiaca"
+            valueDisplay={formatMetricValue(evaluation?.inputNormalized?.heartRate, 'bpm', 0)}
+            classification={heartRateClassification}
+            delta={comparisonByKey?.heartRate?.delta}
+            tooltipInfo={INDICATOR_INFO.heartRate}
+          />
+          <ResultCard
+            title="Glicemia capilar"
+            valueDisplay={formatMetricValue(evaluation?.inputNormalized?.glucoseMgDl, 'mg/dL', 0)}
+            classification={evaluation?.classifications?.glucose}
+            delta={comparisonByKey?.glucose?.delta}
+            tooltipInfo={INDICATOR_INFO.glucose}
+          />
+          <ResultCard
+            title="Red flags"
+            valueDisplay={redFlags.length > 0 || hasRedFlagInputs
+              ? formatMetricValue(redFlags.length, 'alertas', 0)
+              : null}
+            classification={{
+              label: redFlags.length > 0
+                ? `${redFlags.length} alerta(s)`
+                : hasRedFlagInputs ? 'Sem alertas' : 'Sem dados',
+              tone: redFlags.length > 0 ? redFlagTone : hasRedFlagInputs ? 'success' : 'neutral',
+              source: 'Regras de triagem'
+            }}
+            tooltipInfo={INDICATOR_INFO.redFlags}
+          />
+        </div>
 
-        <div className="eval-field-group">
-          <span className="eval-field-group__label">Glicemia capilar</span>
+        {redFlags.length ? (
+          <div className="clinica-flag-list">
+            {redFlags.map((flag) => (
+              <AvisoAvaliacao
+                key={flag.id}
+                tipo={RED_FLAG_TIPO_AVISO[flag.severity] || 'atencao'}
+                className={`clinica-flag-item severity-${flag.severity}`}
+              >
+                <strong>{flag.label}</strong>
+                <small>{flag.detail || flag.source}</small>
+              </AvisoAvaliacao>
+            ))}
+          </div>
+        ) : (
+          <AvisoAvaliacao tipo="info">Sem red flags clinicas para a avaliacao atual.</AvisoAvaliacao>
+        )}
+
+        <AvaliacaoSecao titulo="Comparacao longitudinal" className="clinica-comparison">
+          <div className="clinica-table-wrap">
+            <table className="clinica-table">
+              <thead>
+                <tr>
+                  <th>Indicador</th>
+                  <th>Atual</th>
+                  <th>Anterior</th>
+                  <th>Primeira</th>
+                  <th>Delta abs.</th>
+                  <th>Delta %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => (
+                  <tr key={row.key}>
+                    <td>{row.label}</td>
+                    <td>{formatMetricValue(row.current, row.unit, row.digits)}</td>
+                    <td>{formatMetricValue(row.previous, row.unit, row.digits)}</td>
+                    <td>{formatMetricValue(row.first, row.unit, row.digits)}</td>
+                    <td className={resolveDeltaClass(row.delta?.deltaAbs)}>
+                      {formatSigned(row.delta?.deltaAbs, row.unit, row.digits)}
+                    </td>
+                    <td className={resolveDeltaClass(row.delta?.deltaPct)}>
+                      {formatSigned(row.delta?.deltaPct, '%', 2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="clinica-sparklines">
+            <SparklineCard label="PA sistolica (ultimos 6)" values={sparklineSystolic} />
+            <SparklineCard label="Frequencia cardiaca (ultimos 6)" values={sparklineHeartRate} />
+          </div>
+          <p className="clinica-interpretation">{autoInterpretation}</p>
+        </AvaliacaoSecao>
+      </AvaliacaoSecao>
+
+      <AvaliacaoSecao id="clinica-opcionais" titulo="Dados opcionais" className="eval-section">
+        {/* Os dois grupos de antes viram subseções (h5), com o mesmo texto do
+            rótulo de grupo e a mesma classe .eval-field-group. */}
+        <AvaliacaoSecao titulo="Glicemia capilar" className="eval-field-group">
           <div className="eval-field-group__grid">
             <NumericField
               label="Glicemia capilar"
@@ -863,10 +1003,9 @@ const AvaliacaoClinicaForm = ({
               onChange={(value) => handleFieldValueChange(setDados, setHasUserInput, 'glucoseContext', value)}
             />
           </div>
-        </div>
+        </AvaliacaoSecao>
 
-        <div className="eval-field-group">
-          <span className="eval-field-group__label">Exame físico</span>
+        <AvaliacaoSecao titulo="Exame físico" className="eval-field-group">
           <div className="eval-field-group__grid">
             <NumericField
               label="Temperatura"
@@ -883,12 +1022,16 @@ const AvaliacaoClinicaForm = ({
               onBlur={() => markTouched(setTouchedFields, 'temperatureC')}
             />
 
-            <div className="eval-field">
-              <label className="eval-label">
-                Local do edema
-                <span className="clinica-optional-badge">Opcional</span>
-                <InlineHelp lines={['Registre local predominante do edema (MMII, sacral, etc.).']} />
-              </label>
+            <Campo
+              rotulo={(
+                <>
+                  Local do edema
+                  <span className="clinica-optional-badge">Opcional</span>
+                </>
+              )}
+              dica={{ texto: ['Registre local predominante do edema (MMII, sacral, etc.).'], rotulo: ROTULO_DICA }}
+              className="eval-field"
+            >
               <input
                 type="text"
                 className="eval-input"
@@ -897,7 +1040,7 @@ const AvaliacaoClinicaForm = ({
                 disabled={readOnly}
                 placeholder="Ex.: Membros inferiores"
               />
-            </div>
+            </Campo>
 
             <SelectField
               label="Grau de edema"
@@ -919,32 +1062,56 @@ const AvaliacaoClinicaForm = ({
             />
 
             <div className="eval-field eval-field-full">
-              <label className="eval-label">
-                Sinais de carencias nutricionais
-                <span className="clinica-optional-badge">Opcional</span>
-                <InlineHelp lines={['Checklist semiologico para rastreio clinico-nutricional.']} />
-              </label>
-              <div className="clinica-sign-grid">
+              <GrupoOpcoes
+                legenda={(
+                  <>
+                    Sinais e sintomas clinico-nutricionais
+                    <span className="clinica-optional-badge">Opcional</span>
+                  </>
+                )}
+                dica={{
+                  texto: [
+                    'Checklist semiologico para rastreio clinico-nutricional.',
+                    'As relacoes de deficiencia/excesso sao sinais de triagem, nao diagnostico isolado.'
+                  ],
+                  rotulo: ROTULO_DICA
+                }}
+                className="clinica-sinais"
+              >
                 {CLINICAL_SIGN_OPTIONS.map((item) => (
-                  <label key={item.value} className="clinica-sign-item">
-                    <input
-                      type="checkbox"
-                      checked={dados.clinicalSigns.includes(item.value)}
-                      onChange={() => toggleStringArray(setDados, setHasUserInput, 'clinicalSigns', item.value)}
-                      disabled={readOnly}
-                    />
-                    <span>{item.label}</span>
-                  </label>
+                  <Opcao
+                    key={item.value}
+                    tipo="checkbox"
+                    className="clinica-sign-item"
+                    rotulo={item.label}
+                    descricao={(
+                      <>
+                        {item.nutrientDeficiency ? (
+                          <small>Deficiencia: {item.nutrientDeficiency}</small>
+                        ) : null}
+                        {item.nutrientExcess ? (
+                          <small>Excesso: {item.nutrientExcess}</small>
+                        ) : null}
+                      </>
+                    )}
+                    checked={dados.clinicalSigns.includes(item.value)}
+                    onChange={() => toggleStringArray(setDados, setHasUserInput, 'clinicalSigns', item.value)}
+                    disabled={readOnly}
+                  />
                 ))}
-              </div>
+              </GrupoOpcoes>
+              {selectedClinicalSignsDetails.length ? (
+                <p className="clinica-sign-summary">
+                  {selectedClinicalSignsDetails.length} sinal(is)/sintoma(s) selecionado(s) para compor a triagem clinico-nutricional.
+                </p>
+              ) : null}
             </div>
           </div>
-        </div>
-      </div>
+        </AvaliacaoSecao>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Contexto esportivo</h4>
-        <div className="clinica-grid">
+      <AvaliacaoSecao id="clinica-esportivo" titulo="Contexto esportivo" className="eval-section">
+        <div className="av-grade">
           <NumericField
             label="VO2max estimado"
             unit="mL/kg/min"
@@ -989,144 +1156,39 @@ const AvaliacaoClinicaForm = ({
             onChange={(value) => updateEsportivoGrip(setDados, setHasUserInput, 'esquerda', value)}
           />
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Resultados calculados</h4>
-        <div className="clinica-results-grid">
-          <ResultCard
-            title="Pressao arterial"
-            valueDisplay={formatPressure(
-              evaluation?.inputNormalized?.systolic,
-              evaluation?.inputNormalized?.diastolic
-            )}
-            classification={evaluation?.classifications?.bloodPressure}
-            delta={comparisonByKey?.systolic?.delta}
-            tooltipInfo={INDICATOR_INFO.bloodPressure}
+      <AvaliacaoSecao id="clinica-observacoes" titulo="Observacoes clinicas" className="eval-section">
+        {/* A área não tinha rótulo, só o título da seção: o mesmo texto vira
+            rótulo para o leitor de tela. Sem .eval-field, como antes. */}
+        <Campo rotulo="Observacoes clinicas" rotuloOculto>
+          <textarea
+            className="eval-textarea"
+            value={dados.observacoes}
+            onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'observacoes', event.target.value)}
+            disabled={readOnly}
+            placeholder="Anote conduta, orientacoes e encaminhamentos complementares."
           />
-          <ResultCard
-            title="PAM"
-            valueDisplay={formatMetricValue(evaluation?.derived?.meanArterialPressure, 'mmHg', 1)}
-            classification={evaluation?.classifications?.bloodPressure}
-            delta={comparisonByKey?.map?.delta}
-            tooltipInfo={INDICATOR_INFO.map}
-          />
-          <ResultCard
-            title="Pressao de pulso"
-            valueDisplay={formatMetricValue(evaluation?.derived?.pulsePressure, 'mmHg', 1)}
-            classification={evaluation?.classifications?.bloodPressure}
-            tooltipInfo={INDICATOR_INFO.pulsePressure}
-          />
-          <ResultCard
-            title="Frequencia cardiaca"
-            valueDisplay={formatMetricValue(evaluation?.inputNormalized?.heartRate, 'bpm', 0)}
-            classification={heartRateClassification}
-            delta={comparisonByKey?.heartRate?.delta}
-            tooltipInfo={INDICATOR_INFO.heartRate}
-          />
-          <ResultCard
-            title="Glicemia capilar"
-            valueDisplay={formatMetricValue(evaluation?.inputNormalized?.glucoseMgDl, 'mg/dL', 0)}
-            classification={evaluation?.classifications?.glucose}
-            delta={comparisonByKey?.glucose?.delta}
-            tooltipInfo={INDICATOR_INFO.glucose}
-          />
-          <ResultCard
-            title="Red flags"
-            valueDisplay={formatMetricValue(redFlags.length, 'alertas', 0)}
-            classification={{
-              label: redFlags.length > 0
-                ? `${redFlags.length} alerta(s)`
-                : 'Sem alertas',
-              tone: redFlags.length > 0 ? redFlagTone : 'success',
-              source: 'Regras de triagem'
-            }}
-            tooltipInfo={INDICATOR_INFO.redFlags}
-          />
-        </div>
+        </Campo>
+      </AvaliacaoSecao>
 
-        {redFlags.length ? (
-          <div className="clinica-flag-list">
-            {redFlags.map((flag) => (
-              <div key={flag.id} className={`clinica-flag-item severity-${flag.severity}`}>
-                <div className="clinica-flag-title">
-                  <AlertTriangle size={14} />
-                  <strong>{flag.label}</strong>
-                </div>
-                <small>{flag.detail || flag.source}</small>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="eval-note">Sem red flags clinicas para a avaliacao atual.</div>
-        )}
-
-        <div className="clinica-comparison">
-          <h5>Comparacao longitudinal</h5>
-          <div className="clinica-table-wrap">
-            <table className="clinica-table">
-              <thead>
-                <tr>
-                  <th>Indicador</th>
-                  <th>Atual</th>
-                  <th>Anterior</th>
-                  <th>Primeira</th>
-                  <th>Delta abs.</th>
-                  <th>Delta %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((row) => (
-                  <tr key={row.key}>
-                    <td>{row.label}</td>
-                    <td>{formatMetricValue(row.current, row.unit, row.digits)}</td>
-                    <td>{formatMetricValue(row.previous, row.unit, row.digits)}</td>
-                    <td>{formatMetricValue(row.first, row.unit, row.digits)}</td>
-                    <td className={resolveDeltaClass(row.delta?.deltaAbs)}>
-                      {formatSigned(row.delta?.deltaAbs, row.unit, row.digits)}
-                    </td>
-                    <td className={resolveDeltaClass(row.delta?.deltaPct)}>
-                      {formatSigned(row.delta?.deltaPct, '%', 2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="clinica-sparklines">
-            <SparklineCard label="PA sistolica (ultimos 6)" values={sparklineSystolic} />
-            <SparklineCard label="Frequencia cardiaca (ultimos 6)" values={sparklineHeartRate} />
-          </div>
-          <p className="clinica-interpretation">{autoInterpretation}</p>
-        </div>
-      </div>
-
-      <div className="eval-section">
-        <h4 className="eval-section-title">Observacoes clinicas</h4>
-        <textarea
-          className="eval-textarea"
-          value={dados.observacoes}
-          onChange={(event) => handleFieldValueChange(setDados, setHasUserInput, 'observacoes', event.target.value)}
-          disabled={readOnly}
-          placeholder="Anote conduta, orientacoes e encaminhamentos complementares."
-        />
-      </div>
-
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={handleSubmit} disabled={readOnly} loading={saveStatus === 'saving'}>
           Salvar avaliacao clinica
         </Button>
-      </div>
+      </BarraAcoesAvaliacao>
 
-      {error ? <div className="eval-note clinica-error-note">{error}</div> : null}
-    </div>
+      {error ? <AvisoAvaliacao tipo="perigo" anunciar className="clinica-error-note">{error}</AvisoAvaliacao> : null}
+    </AvaliacaoModulo>
   );
 };
 
 export default AvaliacaoClinicaForm;
 
+// Mesma assinatura. A unidade sai do rótulo para a caixa ao lado do campo;
+// `required` continua no input (o modo essencial conta [required]) e o
+// rótulo passa a escrever "obrigatório". A mensagem é a mesma de antes: o
+// erro vai em `erro` e o aviso de faixa fisiológica, em `ajuda`.
 const NumericField = ({
   label,
   unit,
@@ -1143,14 +1205,20 @@ const NumericField = ({
   onBlur,
   className = ''
 }) => (
-  <div className={`eval-field${className ? ` ${className}` : ''}`}>
-    <label className="eval-label">
-      {label}
-      <span className="clinica-unit-badge">{unit}</span>
-      {required ? <span className="clinica-required-dot" aria-hidden="true">*</span> : null}
-      {optional ? <span className="clinica-optional-badge">Opcional</span> : null}
-      <InlineHelp lines={tooltipLines} />
-    </label>
+  <Campo
+    rotulo={(
+      <>
+        {label}
+        {optional ? <span className="clinica-optional-badge">Opcional</span> : null}
+      </>
+    )}
+    dica={{ texto: tooltipLines, rotulo: ROTULO_DICA }}
+    unidade={unit}
+    obrigatorio={required}
+    erro={message && isInvalid ? message : undefined}
+    ajuda={message && !isInvalid ? message : undefined}
+    className={`eval-field${className ? ` ${className}` : ''}`}
+  >
     <input
       type="text"
       inputMode="decimal"
@@ -1160,10 +1228,10 @@ const NumericField = ({
       onChange={(event) => onChange(event.target.value)}
       onBlur={onBlur}
       disabled={disabled}
+      required={required}
       aria-invalid={isInvalid ? 'true' : 'false'}
     />
-    {message ? <small className={`clinica-field-message ${isInvalid ? 'is-error' : 'is-warning'}`}>{message}</small> : null}
-  </div>
+  </Campo>
 );
 
 const SelectField = ({
@@ -1178,12 +1246,18 @@ const SelectField = ({
   message = '',
   onChange
 }) => (
-  <div className="eval-field">
-    <label className="eval-label">
-      {label}
-      {optional ? <span className="clinica-optional-badge">Opcional</span> : null}
-      <InlineHelp lines={tooltipLines} />
-    </label>
+  <Campo
+    rotulo={(
+      <>
+        {label}
+        {optional ? <span className="clinica-optional-badge">Opcional</span> : null}
+      </>
+    )}
+    dica={{ texto: tooltipLines, rotulo: ROTULO_DICA }}
+    erro={message && isInvalid ? message : undefined}
+    ajuda={message && !isInvalid ? message : undefined}
+    className="eval-field"
+  >
     <select
       className={`eval-select ${isInvalid ? 'clinica-input-invalid' : ''} ${isWarning ? 'clinica-input-warning' : ''}`}
       value={value}
@@ -1195,20 +1269,12 @@ const SelectField = ({
         <option key={item.value} value={item.value}>{item.label}</option>
       ))}
     </select>
-    {message ? <small className={`clinica-field-message ${isInvalid ? 'is-error' : 'is-warning'}`}>{message}</small> : null}
-  </div>
+  </Campo>
 );
 
-const InlineHelp = ({ lines = [] }) => (
-  <span className="clinica-help" tabIndex={0} role="button" aria-label="Abrir informacao">
-    ?
-    <span className="clinica-help-tooltip" role="tooltip">
-      {lines.map((line, index) => (
-        <span key={`${line}-${index}`}>{line}</span>
-      ))}
-    </span>
-  </span>
-);
+// Nome do botão "?" (o aria-label de antes). A dica agora é da base: um
+// botão de 44 px fora do <label> e da legenda, com o mesmo texto.
+const ROTULO_DICA = 'Abrir informacao';
 
 const ResultCard = ({
   title,
@@ -1218,41 +1284,40 @@ const ResultCard = ({
   tooltipInfo
 }) => {
   const tone = resolveTone(classification?.tone);
+  // O valor já chega formatado (formatPressure/formatMetricValue, com a
+  // unidade no texto); '--' era a ausência e vira "—". A classificação
+  // continua escrita ("Sem classificacao" quando não há) e o tom só acompanha
+  // uma classificação de verdade. A variação vai no texto de apoio.
   return (
-    <article className="clinica-result-card">
-      <div className="clinica-result-card__header">
-        <h6>{title}</h6>
-        <InlineHelp
-          lines={[
-            tooltipInfo?.name || 'Indicador',
-            `Formula: ${tooltipInfo?.formula || 'N/A'}`,
-            `Referencia: ${tooltipInfo?.reference || 'N/A'}`,
-            `Ano/Fonte: ${tooltipInfo?.year || 'N/A'}`
-          ]}
-        />
-      </div>
-      <strong className="clinica-result-card__value">{valueDisplay || '--'}</strong>
-      <div className="clinica-result-card__meta">
-        <span className={`clinica-status-badge clinica-tone-${tone}`}>
-          {classification?.label || 'Sem classificacao'}
-        </span>
-        {classification?.source ? <small>{classification.source}</small> : null}
-      </div>
-      {delta && Number.isFinite(delta.deltaAbs) ? (
-        <p className={`clinica-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
+    <ResultadoCalculado
+      className="clinica-result-card"
+      rotulo={title}
+      dica={{
+        texto: [
+          tooltipInfo?.name || 'Indicador',
+          `Formula: ${tooltipInfo?.formula || 'N/A'}`,
+          `Referencia: ${tooltipInfo?.reference || 'N/A'}`,
+          `Ano/Fonte: ${tooltipInfo?.year || 'N/A'}`
+        ],
+        rotulo: ROTULO_DICA
+      }}
+      valor={valueDisplay && valueDisplay !== '--' ? valueDisplay : null}
+      classificacao={classification?.label || 'Sem classificacao'}
+      tom={classification?.label ? tone : 'neutral'}
+      referencia={classification?.source || undefined}
+      metodo={delta && Number.isFinite(delta.deltaAbs) ? (
+        <span className={`clinica-delta ${resolveDeltaClass(delta.deltaAbs)}`}>
           {formatSigned(delta.deltaAbs, '', 1)}
           {Number.isFinite(delta.deltaPct) ? ` (${formatSigned(delta.deltaPct, '%', 2)})` : ''}
-        </p>
+        </span>
       ) : null}
-    </article>
+    />
   );
 };
 
+// A mesma série e o mesmo tamanho de antes; sem linha de referência, como antes.
 const SparklineCard = ({ label, values = [] }) => (
-  <div className="clinica-sparkline-card">
-    <p>{label}</p>
-    <MiniSparkline values={values} width={220} height={72} />
-  </div>
+  <Tendencia rotulo={label} valores={values} largura={220} altura={72} className="clinica-sparkline-card" />
 );
 
 function handleFieldValueChange(setDados, setHasUserInput, key, value) {
@@ -1418,6 +1483,19 @@ function normalizeStringArray(value) {
   const token = toTextInput(value);
   if (!token) return [];
   return token.split(/[,\n;]+/g).map((item) => item.trim()).filter(Boolean);
+}
+
+function buildClinicalSignsDetails(values = []) {
+  return normalizeStringArray(values).map((value) => {
+    const option = CLINICAL_SIGN_OPTIONS.find((item) => item.value === value);
+    return {
+      value,
+      label: option?.label || value,
+      nutrientDeficiency: option?.nutrientDeficiency || null,
+      nutrientExcess: option?.nutrientExcess || null,
+      source: option?.source || null
+    };
+  });
 }
 
 function validateNumericField({

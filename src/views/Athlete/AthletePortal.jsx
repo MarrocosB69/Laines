@@ -1,35 +1,34 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Activity, AlertTriangle, Apple, Calendar, CheckCircle2, ChevronDown,
-  ClipboardList, Droplets, Dumbbell, FileText, LogOut, RefreshCw, TrendingUp
+  AlertTriangle, ClipboardList, LogOut
 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePacientes } from '../../contexts/PacienteContext';
 import { useUiFeedback } from '../../contexts/UiFeedbackContext';
 import { getEvaluationTypeLabel } from '../../components/shared/evaluationSummaryUtils';
+import { subscribeRealtimeEvent } from '../../services/realtime';
 import AthleteOnboardingModal from './AthleteOnboardingModal';
 import AthleteOnboardingWizard from '../../components/Atleta/AthleteOnboardingWizard';
 import AthleteEbiaModal from './AthleteEbiaModal';
 import AthleteSelfEvaluationModal from './AthleteSelfEvaluationModal';
 import {
+  ATHLETE_SELF_EVALUATION_CONFIGS,
   getAthleteSelfEvaluationRelease,
   isAthleteSelfEvaluationReleased,
   listReleasedAthleteSelfEvaluationConfigs
 } from './athleteSelfEvaluations';
 import AppointmentModal from '../Student/Patients/AppointmentModal';
-import { FeedbackState, Skeleton } from '../../components/ui';
+import { FeedbackState } from '../../components/ui';
+import AthleteTabPendencias from './AthleteTabPendencias';
+import AthleteTabCadastro from './AthleteTabCadastro';
+import AthleteTabAcompanhamento from './AthleteTabAcompanhamento';
+import AthleteVisaoGeral from './AthleteVisaoGeral';
 import './AthletePortal.css';
 
 /* ─── Constants ──────────────────────────────────────────── */
 
-const APPOINTMENT_STATUS_LABELS = {
-  agendada: 'Agendada',
-  realizada: 'Realizada',
-  remarcada: 'Remarcada',
-  falta: 'Falta'
-};
 const APPOINTMENT_TYPE_LABELS = {
   primeira_consulta: 'Primeira consulta',
   retorno: 'Retorno'
@@ -50,6 +49,10 @@ const TIPOS_COMPOSICAO = new Set([
   'composicao_corporal_integrada', 'bioimpedancia', 'dobras_cutaneas', 'perimetros'
 ]);
 
+const ATHLETE_SELF_EVALUATION_TYPES = new Set(
+  ATHLETE_SELF_EVALUATION_CONFIGS.map((config) => config.type)
+);
+
 /* ─── Module-level helpers ───────────────────────────────── */
 
 const normalizeStatusToken = (value) => String(value || '')
@@ -67,6 +70,51 @@ const formatPortalValue = (value, fallback = 'Nao informado') => {
   if (value === null || value === undefined) return fallback;
   const text = String(value).trim();
   return text || fallback;
+};
+
+const compactObject = (record) => Object.fromEntries(
+  Object.entries(record).filter(([, value]) => value !== undefined)
+);
+
+const toOptionalString = (value) => {
+  const text = String(value || '').trim();
+  return text || undefined;
+};
+
+const toOptionalStringArray = (value) => {
+  const items = Array.isArray(value)
+    ? value
+    : String(value || '').split(',');
+  const normalized = items
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+  return normalized.length > 0 ? normalized : undefined;
+};
+
+const buildAthleteNutritionOnboardingPayload = (formData, patient) => {
+  const currentConfirmation = patient?.confirmacaoAtleta && typeof patient.confirmacaoAtleta === 'object'
+    ? patient.confirmacaoAtleta
+    : {};
+  const currentDados = currentConfirmation?.dados && typeof currentConfirmation.dados === 'object'
+    ? currentConfirmation.dados
+    : {};
+
+  return compactObject({
+    dataNascimento: toOptionalString(formData.dataNascimento),
+    queixaPrincipal: toOptionalString(formData.observacoes || formData.motivoAtendimento),
+    patologias: toOptionalStringArray(formData.comorbidadesPessoais),
+    alergias: toOptionalString(formData.alergiaIntolerancia),
+    alcoolUso: toOptionalString(formData.bebidaAlcoolica),
+    tabacoUso: toOptionalString(formData.fuma),
+    comorbidadesFamiliares: toOptionalStringArray(formData.comorbidadesFamiliares),
+    confirmacaoAtleta: {
+      ...currentConfirmation,
+      dados: {
+        ...currentDados,
+        ...formData
+      }
+    }
+  });
 };
 
 const maskCpf = (value) => {
@@ -112,16 +160,25 @@ const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 
 /* ─── AthletePortal ──────────────────────────────────────── */
 
-const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false }) => {
+const AthletePortal = ({
+  activeTab = 'dashboard',
+  hideInternalHeader = false,
+  onPendingCountChange,
+  onNavigate
+}) => {
   const { user, logout } = useAuth();
   const { notify } = useUiFeedback();
   const { formatDate, convertFirebaseDate } = usePacientes();
+  const currentUserId = user?.uid || user?.id || '';
 
   const [patient, setPatient] = useState(null);
   const [evaluations, setEvaluations] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loadingPatient, setLoadingPatient] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  // Visão geral: separa "falhou ao carregar" de "sem registro". As chamadas
+  // de loadAthleteDetails não mudam.
+  const [detailsError, setDetailsError] = useState(false);
   const [showClinicalOnboarding, setShowClinicalOnboarding] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showEbiaModal, setShowEbiaModal] = useState(false);
@@ -131,29 +188,30 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [isNoShowLoading, setIsNoShowLoading] = useState(false);
-  const [isDossieOpen, setIsDossieOpen] = useState(false);
-
-  const overviewSectionRef = useRef(null);
-  const agendaSectionRef = useRef(null);
-  const pendingSectionRef = useRef(null);
-  const prontuarioSectionRef = useRef(null);
-  const avaliacoesSectionRef = useRef(null);
 
   /* ── Data loading ── */
 
-  const loadLinkedPatient = useCallback(async () => {
-    if (!user?.uid) { setPatient(null); return; }
-    setLoadingPatient(true);
+  const loadLinkedPatient = useCallback(async (options = {}) => {
+    const silent = Boolean(options?.silent);
+    if (!currentUserId) { setPatient(null); return; }
+    if (!silent) setLoadingPatient(true);
     try {
       const { data } = await api.get('/pacientes');
       const list = Array.isArray(data) ? data : [];
-      setPatient(list.find((item) => item.atletaUserId === user.uid) || null);
+      const linkedPatient = (
+        list.find((item) => item.atletaUserId === currentUserId)
+        || list[0]
+        || null
+      );
+      setPatient(linkedPatient);
+      return linkedPatient;
     } catch {
       setPatient(null);
+      return null;
     } finally {
-      setLoadingPatient(false);
+      if (!silent) setLoadingPatient(false);
     }
-  }, [user?.uid]);
+  }, [currentUserId]);
 
   useEffect(() => { loadLinkedPatient(); }, [loadLinkedPatient]);
 
@@ -164,9 +222,16 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       setActiveSelfEvaluationType(null);
       return;
     }
-    const clinicalDone = Boolean(patient.confirmacaoAtleta?.completadoEm);
+    const clinicalDone = Boolean(
+      patient.confirmacaoAtleta?.completadoEm
+      || patient.confirmacaoAtleta?.submittedAt
+      || patient.confirmacaoAtleta?.completed
+    );
     const nutritionDone = Boolean(patient.confirmacaoAtleta?.completed);
-    const ebiaReleased = Boolean(patient.confirmacaoAtleta?.ebiaSelfForm?.enabled);
+    const ca = patient?.cadastroAtleta;
+    const ebiaReleased = ca
+      ? Boolean(ca.ebiaSelfForm?.enabled)
+      : Boolean(patient.confirmacaoAtleta?.ebiaSelfForm?.enabled);
     const ebiaDismissed = Boolean(sessionStorage.getItem('laines_ebia_dismissed'));
     setShowClinicalOnboarding(!clinicalDone);
     setShowOnboarding(clinicalDone && !nutritionDone);
@@ -179,13 +244,15 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     try {
       const [evalRes, appRes] = await Promise.all([
         api.get('/avaliacoes', { params: { pacienteId: patient.id } }),
-        api.get('/agendamentos', { params: { pacienteId: patient.id } })
+        api.get('/agendamentos', { params: { limit: 200 } })
       ]);
       setEvaluations(Array.isArray(evalRes.data) ? evalRes.data : []);
       setAppointments(Array.isArray(appRes.data) ? appRes.data : []);
+      setDetailsError(false);
     } catch (error) {
       setEvaluations([]);
       setAppointments([]);
+      setDetailsError(true);
       notify({
         type: 'error',
         title: 'Erro ao carregar dados',
@@ -197,6 +264,45 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
   }, [notify, patient?.id]);
 
   useEffect(() => { loadAthleteDetails(); }, [loadAthleteDetails]);
+
+  useEffect(() => {
+    if (!patient?.id) return undefined;
+    const refreshPortalData = () => {
+      loadLinkedPatient({ silent: true });
+      loadAthleteDetails();
+    };
+    const intervalId = window.setInterval(refreshPortalData, 60000);
+    const handleFocus = refreshPortalData;
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadAthleteDetails, loadLinkedPatient, patient?.id]);
+
+  useEffect(() => {
+    if (!patient?.id) return undefined;
+    const refreshDetails = () => loadAthleteDetails();
+    const refreshPatient = (updatedPatient) => {
+      if (!updatedPatient?.id || updatedPatient.id === patient.id) {
+        loadLinkedPatient({ silent: true });
+      }
+    };
+    const refreshPortalData = () => {
+      loadLinkedPatient({ silent: true });
+      loadAthleteDetails();
+    };
+    const unsubscribers = [
+      subscribeRealtimeEvent('agendamentos.created', refreshDetails),
+      subscribeRealtimeEvent('agendamentos.updated', refreshDetails),
+      subscribeRealtimeEvent('agendamentos.deleted', refreshDetails),
+      subscribeRealtimeEvent('notificacoes.created', refreshPortalData),
+      subscribeRealtimeEvent('pacientes.updated', refreshPatient)
+    ];
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [loadAthleteDetails, loadLinkedPatient, patient?.id]);
 
   /* ── Derived data ── */
 
@@ -323,8 +429,8 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       status,
       statusLabel,
       sedePercebida: safeNum(d.sedePercebida),
-      aguardando: Boolean(latest?.meta?.aguardandoRevisao),
-      revisado: isCompletedEvaluationStatus(latest.status) && !latest?.meta?.aguardandoRevisao,
+      aguardando: Boolean(latest?.meta?.aguardandoRevisao) && !latest?.revisadoEm,
+      revisado: Boolean(latest?.revisadoEm) || (isCompletedEvaluationStatus(latest.status) && !latest?.meta?.aguardandoRevisao),
       date,
       dateLabel: date ? formatDate(date) : null
     };
@@ -334,13 +440,13 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     const latest = evaluationsSorted.find((e) => normalizeType(e?.tipo) === 'alimentar');
     if (!latest) return null;
     const d = latest.dados || {};
-    const aguardando = Boolean(latest?.meta?.aguardandoRevisao);
+    const aguardando = Boolean(latest?.meta?.aguardandoRevisao) && !latest?.revisadoEm;
     const date = convertFirebaseDate(latest.updatedAt || latest.createdAt || latest.data);
     return {
       isAtletaReport: Boolean(latest?.meta?.atletaSelfReport),
       adesao: safeNum(d.adesao),
       aguardando,
-      revisado: isCompletedEvaluationStatus(latest.status) && !aguardando,
+      revisado: Boolean(latest?.revisadoEm) || (isCompletedEvaluationStatus(latest.status) && !aguardando),
       date,
       dateLabel: date ? formatDate(date) : null
     };
@@ -350,31 +456,75 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     const latest = evaluationsSorted.find((e) => normalizeType(e?.tipo) === 'carga_treino');
     if (!latest) return null;
     const d = latest.dados || {};
-    const aguardando = Boolean(latest?.meta?.aguardandoRevisao);
+    const aguardando = Boolean(latest?.meta?.aguardandoRevisao) && !latest?.revisadoEm;
     const date = convertFirebaseDate(latest.updatedAt || latest.createdAt || latest.data);
     return {
       carga: safeNum(d.cargaSemanaAtual),
       rpe: safeNum(d.rpePercebido),
       faseLabel: FASE_TREINO_LABELS[d.faseAtual] || d.faseAtual || null,
       aguardando,
-      revisado: isCompletedEvaluationStatus(latest.status) && !aguardando,
+      revisado: Boolean(latest?.revisadoEm) || (isCompletedEvaluationStatus(latest.status) && !aguardando),
       date,
       dateLabel: date ? formatDate(date) : null
     };
   }, [evaluationsSorted, convertFirebaseDate, formatDate]);
 
+  /* ── cadastroAtleta — fonte preferencial do backend consolidado ── */
+
+  const cadastroAtleta = useMemo(() => {
+    const raw = patient?.cadastroAtleta;
+    return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : null;
+  }, [patient?.cadastroAtleta]);
+
+  const formulariosLiberados = useMemo(() => (
+    cadastroAtleta?.formulariosLiberados
+    || patient?.confirmacaoAtleta?.formulariosLiberados
+    || {}
+  ), [cadastroAtleta, patient?.confirmacaoAtleta?.formulariosLiberados]);
+
   /* ── Self-evaluation helpers ── */
 
-  const canSubmitSelfEvaluations = Boolean(patient?.confirmacaoAtleta?.completed);
+  const canSubmitSelfEvaluations = cadastroAtleta
+    ? !cadastroAtleta.cadastroPendente
+    : Boolean(patient?.confirmacaoAtleta?.completed);
 
-  const releasedSelfEvaluationConfigs = useMemo(
-    () => listReleasedAthleteSelfEvaluationConfigs(patient?.confirmacaoAtleta),
-    [patient?.confirmacaoAtleta]
-  );
+  const plannedSelfEvaluationTypes = useMemo(() => {
+    const types = new Set();
+    upcomingAppointments.forEach((appointment) => {
+      const plannedTypes = Array.isArray(appointment.evaluations) ? appointment.evaluations : [];
+      plannedTypes.forEach((evaluationType) => {
+        const normalizedType = normalizeType(evaluationType);
+        if (ATHLETE_SELF_EVALUATION_TYPES.has(normalizedType)) {
+          types.add(normalizedType);
+        }
+      });
+    });
+    return types;
+  }, [upcomingAppointments]);
+
+  const releasedSelfEvaluationConfigs = useMemo(() => {
+    const configsByType = new Map();
+    listReleasedAthleteSelfEvaluationConfigs(formulariosLiberados).forEach((config) => {
+      configsByType.set(config.type, { ...config, releaseSource: 'manual' });
+    });
+    ATHLETE_SELF_EVALUATION_CONFIGS.forEach((config) => {
+      if (plannedSelfEvaluationTypes.has(config.type) && !configsByType.has(config.type)) {
+        configsByType.set(config.type, { ...config, releaseSource: 'appointment' });
+      }
+    });
+    return Array.from(configsByType.values());
+  }, [formulariosLiberados, plannedSelfEvaluationTypes]);
 
   const athleteSelfEvaluationCards = useMemo(() => (
     releasedSelfEvaluationConfigs.map((config) => {
-      const release = getAthleteSelfEvaluationRelease(patient?.confirmacaoAtleta, config.type);
+      const explicitRelease = getAthleteSelfEvaluationRelease(formulariosLiberados, config.type);
+      const isPlannedForAppointment = plannedSelfEvaluationTypes.has(config.type);
+      const release = explicitRelease?.enabled
+        ? explicitRelease
+        : {
+          enabled: isPlannedForAppointment,
+          source: isPlannedForAppointment ? 'appointment' : null
+        };
       const latest = evaluationsSorted.find((item) => (
         normalizeType(item?.tipo) === config.type
         && (normalizeType(item?.meta?.origemPreenchimento) === 'atleta' || item?.meta?.atletaSelfReport === true)
@@ -385,11 +535,19 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       return {
         ...config,
         release,
+        releaseSource: config.releaseSource || (isPlannedForAppointment ? 'appointment' : 'manual'),
         latest,
         latestDateLabel: latestDate ? formatDate(latestDate) : null
       };
     })
-  ), [convertFirebaseDate, evaluationsSorted, formatDate, patient?.confirmacaoAtleta, releasedSelfEvaluationConfigs]);
+  ), [
+    convertFirebaseDate,
+    evaluationsSorted,
+    formatDate,
+    formulariosLiberados,
+    plannedSelfEvaluationTypes,
+    releasedSelfEvaluationConfigs
+  ]);
 
   /* ── Pending items (unified action list) ── */
 
@@ -398,7 +556,8 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     upcomingAppointments.forEach((appointment) => {
       const types = Array.isArray(appointment.evaluations) ? appointment.evaluations : [];
       types.forEach((evaluationType, index) => {
-        const normalizedType = String(evaluationType || '').toLowerCase().trim();
+        const normalizedType = normalizeType(evaluationType);
+        if (ATHLETE_SELF_EVALUATION_TYPES.has(normalizedType)) return;
         const scheduledDate = appointment.dateObj || null;
         items.push({
           id: `agenda-${appointment.id || 'consulta'}-${normalizedType || index}`,
@@ -415,7 +574,6 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     if (!patient) return [];
     const items = [];
 
-    // Bloqueantes
     if (showOnboarding) {
       items.push({
         id: 'onboarding',
@@ -435,11 +593,10 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       });
     }
 
-    // Formulários liberados: se onboarding pendente, avisa; se completo, mostra ações
-    if (!canSubmitSelfEvaluations && releasedSelfEvaluationConfigs.length > 0) {
+    if (!canSubmitSelfEvaluations && athleteSelfEvaluationCards.length > 0) {
       items.push({
         id: 'forms-gate',
-        title: `${releasedSelfEvaluationConfigs.length} formulário${releasedSelfEvaluationConfigs.length > 1 ? 's' : ''} liberado${releasedSelfEvaluationConfigs.length > 1 ? 's' : ''} pela equipe`,
+        title: `${athleteSelfEvaluationCards.length} formulário${athleteSelfEvaluationCards.length > 1 ? 's' : ''} disponível${athleteSelfEvaluationCards.length > 1 ? 'eis' : ''} para resposta`,
         description: 'Conclua o cadastro inicial para poder preenchê-los.',
         level: 'medium'
       });
@@ -449,7 +606,9 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
           && (Date.now() - new Date(card.release.releasedAt).getTime()) < 48 * 3600 * 1000;
         const releasedLabel = card.release?.releasedAt
           ? `Liberado ${formatDate(new Date(card.release.releasedAt))}`
-          : 'Liberado pela equipe';
+          : card.releaseSource === 'appointment'
+            ? 'Solicitado em consulta agendada'
+            : 'Liberado pela equipe';
 
         if (!card.latest) {
           items.push({
@@ -461,8 +620,8 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
             formType: card.type
           });
         } else {
-          const aguardando = Boolean(card.latest?.meta?.aguardandoRevisao);
-          const revisado = isCompletedEvaluationStatus(card.latest?.status) && !aguardando;
+          const aguardando = Boolean(card.latest?.meta?.aguardandoRevisao) && !card.latest?.revisadoEm;
+          const revisado = Boolean(card.latest?.revisadoEm) || (isCompletedEvaluationStatus(card.latest?.status) && !aguardando);
           if (!revisado) {
             items.push({
               id: `form-enviado-${card.type}`,
@@ -475,20 +634,21 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       });
     }
 
-    // Consentimento
-    if (String(patient.consentimentoPesquisa || '').toLowerCase() === 'pendente') {
+    const consentStatus = String(patient.consentimentoPesquisa || '').toLowerCase();
+    if (consentStatus !== 'aceito' && consentStatus !== 'aceite') {
+      const consentRejected = consentStatus === 'recusado';
       items.push({
         id: 'consentimento',
-        title: 'Consentimento de pesquisa pendente',
-        description: 'A assinatura do termo ainda não foi registrada.',
+        title: consentRejected ? 'Consentimento de pesquisa recusado' : 'Consentimento de pesquisa pendente',
+        description: consentRejected
+          ? 'Sua participação em pesquisa nao esta autorizada.'
+          : 'A assinatura do termo ainda não foi registrada.',
         level: 'medium'
       });
     }
 
-    // Avaliações planejadas na próxima consulta
     plannedEvaluationItems.forEach((item) => items.push(item));
 
-    // Sem consulta agendada
     if (!nextAppointment) {
       items.push({
         id: 'agenda',
@@ -498,7 +658,6 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       });
     }
 
-    // Lista de espera
     if (String(patient.status || '').toLowerCase() === 'lista de espera') {
       items.push({
         id: 'status',
@@ -516,11 +675,16 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     nextAppointment,
     patient,
     plannedEvaluationItems,
-    releasedSelfEvaluationConfigs,
     showOnboarding
   ]);
 
   const hasCriticalPending = pendingItems.some((i) => i.level === 'high' || i.level === 'medium');
+
+  /* ── Notify parent of pending count changes ── */
+
+  useEffect(() => {
+    if (onPendingCountChange) onPendingCountChange(pendingItems.length);
+  }, [onPendingCountChange, pendingItems.length]);
 
   /* ── Appointment helpers ── */
 
@@ -604,12 +768,14 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
   const handleSubmitSelfEvaluation = useCallback(async (payload) => {
     if (!patient?.id || isSubmittingSelfEvaluation) return;
     const requestedType = normalizeType(activeSelfEvaluationType || payload?.tipo);
-    if (!isAthleteSelfEvaluationReleased(patient?.confirmacaoAtleta, requestedType)) {
+    const isExplicitlyReleased = isAthleteSelfEvaluationReleased(formulariosLiberados, requestedType);
+    const isAppointmentPlanned = plannedSelfEvaluationTypes.has(requestedType);
+    if (!isExplicitlyReleased && !isAppointmentPlanned) {
       notify({ type: 'warning', title: 'Formulario indisponivel', message: 'A equipe suspendeu este formulario.' });
       setActiveSelfEvaluationType(null);
       return;
     }
-    const release = getAthleteSelfEvaluationRelease(patient?.confirmacaoAtleta, requestedType);
+    const release = getAthleteSelfEvaluationRelease(formulariosLiberados, requestedType);
     setIsSubmittingSelfEvaluation(true);
     try {
       await api.post('/avaliacoes', {
@@ -625,7 +791,8 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
           atletaSelfReport: true,
           aguardandoRevisao: true,
           formularioLiberado: requestedType,
-          releaseId: release?.releaseId || null
+          releaseId: release?.releaseId || null,
+          origemLiberacao: isExplicitlyReleased ? 'formularios_liberados' : 'consulta_planejada'
         }
       });
       notify({ type: 'success', title: 'Formulario enviado', message: 'Seu envio está disponível para revisão da equipe.' });
@@ -638,21 +805,21 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
     }
   }, [
     isSubmittingSelfEvaluation, activeSelfEvaluationType, loadAthleteDetails,
-    notify, patient?.confirmacaoAtleta, patient?.id, patient?.projetoId, patient?.projetoNome
+    notify, formulariosLiberados, patient?.id, patient?.projetoId, patient?.projetoNome,
+    plannedSelfEvaluationTypes
   ]);
 
-  /* ── Focus scroll effect ── */
-
-  useEffect(() => {
-    if (!patient || loadingPatient || !focusSection || focusSection === 'dashboard') return;
-    const map = {
-      resumo: overviewSectionRef, agenda: agendaSectionRef, pendencias: pendingSectionRef,
-      prontuario: prontuarioSectionRef, avaliacoes: avaliacoesSectionRef
-    };
-    map[focusSection]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [focusSection, loadingPatient, patient]);
-
-  /* ── Pending item interaction handler ── */
+  const handleCompleteOnboarding = useCallback(() => {
+    const hasSomeClinicalData = Boolean(
+      patient?.confirmacaoAtleta?.completadoEm
+      || patient?.confirmacaoAtleta?.submittedAt
+    );
+    if (hasSomeClinicalData) {
+      setShowOnboarding(true);
+    } else {
+      setShowClinicalOnboarding(true);
+    }
+  }, [patient]);
 
   const handlePendingItemClick = useCallback((item) => {
     if (item.action === 'open_ebia') {
@@ -668,16 +835,18 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
   }, [handlePendingItemClick]);
 
   const handleSaveOnboarding = useCallback(async (payload) => {
-    if (!patient?.id) return;
+    if (!patient?.id) throw new Error('Atleta vinculado nao encontrado.');
     try {
-      await api.patch(`/pacientes/${patient.id}`, payload);
+      const onboardingPayload = buildAthleteNutritionOnboardingPayload(payload, patient);
+      await api.patch(`/pacientes/${patient.id}/onboarding`, onboardingPayload);
       notify({ type: 'success', title: 'Cadastro concluído', message: 'Seus dados foram salvos.' });
       setShowOnboarding(false);
       await loadLinkedPatient();
     } catch (error) {
       notify({ type: 'error', title: 'Erro ao salvar cadastro', message: getApiErrorMessage(error, 'Não foi possível salvar o cadastro.') });
+      throw error;
     }
-  }, [patient?.id, notify, loadLinkedPatient]);
+  }, [patient, notify, loadLinkedPatient]);
 
   /* ── Render ── */
 
@@ -721,244 +890,77 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
           size="lg"
         />
       ) : (
-        <div className="ap-body">
-
-          {/* 1 — Hero */}
-          <section className="ap-hero" ref={overviewSectionRef}>
-            <div className="ap-hero__profile">
-              <div className="ap-hero__avatar">{athleteInitials}</div>
-              <div className="ap-hero__meta">
-                <h2 className="ap-hero__name">{athleteDisplayName}</h2>
-                <p className="ap-hero__sub">{patient.modalidadePrincipal || 'Modalidade não informada'}</p>
-                <p className="ap-hero__sub">{formatPortalValue(patient?.alunoResponsavelNome || patient?.alunoResponsavel?.nome, 'Equipe LAINES')}</p>
-                {athleteAge != null && <span className="ap-hero__age">{athleteAge} anos</span>}
-              </div>
-            </div>
-            <div className="ap-hero__stats">
-              <div className="ap-hero__stat">
-                <span>Avaliações</span>
-                <strong>{evaluationsSorted.length}</strong>
-              </div>
-              <div className="ap-hero__stat">
-                <span>Última avaliação</span>
-                <strong>{latestEvaluationDateLabel}</strong>
-              </div>
-              <div className={`ap-hero__stat ${patient?.confirmacaoAtleta?.completed ? 'ap-hero__stat--ok' : 'ap-hero__stat--warn'}`}>
-                <span>Cadastro</span>
-                <strong>{patient?.confirmacaoAtleta?.completed ? 'Concluído' : 'Pendente'}</strong>
-              </div>
-              <div className={`ap-hero__stat ${String(patient?.consentimentoPesquisa || '').toLowerCase() === 'aceito' ? 'ap-hero__stat--ok' : 'ap-hero__stat--warn'}`}>
-                <span>Consentimento</span>
-                <strong>{String(patient?.consentimentoPesquisa || '').toLowerCase() === 'aceito' ? 'Aceito' : 'Pendente'}</strong>
-              </div>
-            </div>
-            {hideInternalHeader && (
-              <button type="button" className="athlete-logout-btn ap-hero__logout" onClick={handleLogout}>
-                <LogOut size={14} /><span>Sair</span>
-              </button>
-            )}
-          </section>
-
-          {/* 2 — Agenda + Ações unificadas */}
-          <div className="ap-row-2">
-
-            <section className="ap-card ap-card--agenda" ref={agendaSectionRef}>
-              <div className="ap-card__header">
-                <Calendar size={16} /><span>Próxima consulta</span>
-              </div>
-              {loadingDetails ? (
-                <Skeleton lines={3} />
-              ) : nextAppointment ? (
-                <div className="athlete-metric">
-                  <strong>{formatDate(nextAppointment.dateObj)}</strong>
-                  <span>{nextAppointment.time || '--:--'} · {APPOINTMENT_STATUS_LABELS[nextAppointment.statusNorm] || 'Agendada'}</span>
-                  <small>Tipo: {getAppointmentTypeLabel(nextAppointment)}</small>
-                  <small>{(nextAppointment.evaluations || []).length} avaliação(ões) planejada(s)</small>
-                  {nextAppointmentDeadline && (
-                    <small className="athlete-deadline-note">
-                      Remarcação até {formatDate(nextAppointmentDeadline)}
-                    </small>
-                  )}
-                  <div className="athlete-appointment-actions">
-                    {canRescheduleNextAppointment ? (
-                      <button type="button" className="athlete-action-btn" onClick={handleOpenReschedule}>
-                        <RefreshCw size={14} /><span>Remarcar</span>
-                      </button>
-                    ) : (
-                      <button type="button" className="athlete-action-btn athlete-action-btn--danger"
-                        onClick={handleMarkNoShow} disabled={isNoShowLoading}>
-                        <AlertTriangle size={14} />
-                        <span>{isNoShowLoading ? 'Registrando...' : 'Avisar ausência'}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p className="athlete-text">Sem consultas agendadas.</p>
-              )}
-            </section>
-
-            <section className="ap-card" ref={pendingSectionRef}>
-              <div className="ap-card__header">
-                <AlertTriangle size={16} /><span>O que fazer agora</span>
-              </div>
-              {loadingDetails ? (
-                <Skeleton lines={3} />
-              ) : (
-                <>
-                  {!hasCriticalPending && (
-                    <div className="athlete-empty-inline">
-                      <CheckCircle2 size={16} />
-                      <span>
-                        Tudo em dia{nextAppointment
-                          ? ` — próxima consulta ${formatDate(nextAppointment.dateObj)}`
-                          : ''}.
-                      </span>
-                    </div>
-                  )}
-                  {pendingItems.length > 0 && (
-                    <div className="athlete-pending-list">
-                      {pendingItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`athlete-pending-item ${item.level}${item.action ? ' athlete-pending-item--action' : ''}`}
-                          onClick={item.action ? () => handlePendingItemClick(item) : undefined}
-                          role={item.action ? 'button' : undefined}
-                          tabIndex={item.action ? 0 : undefined}
-                          onKeyDown={item.action ? (e) => handlePendingItemKeyDown(e, item) : undefined}
-                        >
-                          <AlertTriangle size={15} />
-                          <div>
-                            <strong>{item.title}</strong>
-                            <span>{item.description}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </section>
-
-          </div>
-
-          {/* 3 — Minha evolução: painéis de domínio */}
-          <section className="ap-card ap-card--full" ref={avaliacoesSectionRef}>
-            <div className="ap-card__header">
-              <TrendingUp size={16} /><span>Minha evolução</span>
-            </div>
-            <div className="ap-evolution-grid">
-
-              <DomainPanel icon={Activity} title="Composição corporal" empty={!composicaoPanel}>
-                {composicaoPanel && (
-                  <>
-                    {composicaoPanel.peso !== null && (
-                      <DomainStat label="Peso" value={`${composicaoPanel.peso} kg`} />
-                    )}
-                    {composicaoPanel.percGordura !== null && (
-                      <DomainStat
-                        label="% Gordura"
-                        value={`${composicaoPanel.percGordura}%`}
-                        delta={composicaoPanel.deltaPercGordura}
-                        deltaInverse
-                      />
-                    )}
-                    {composicaoPanel.massaMagra !== null && (
-                      <DomainStat label="Massa magra" value={`${composicaoPanel.massaMagra} kg`} />
-                    )}
-                    <p className="ap-domain-panel__date">Última: {composicaoPanel.dateLabel}</p>
-                  </>
-                )}
-              </DomainPanel>
-
-              <DomainPanel icon={Droplets} title="Hidratação" empty={!hidratacaoPanel}>
-                {hidratacaoPanel && (
-                  <>
-                    {hidratacaoPanel.status !== 'sem_dado' && (
-                      <div className={`ap-domain-badge ap-domain-badge--${hidratacaoPanel.status}`}>
-                        {hidratacaoPanel.statusLabel}
-                      </div>
-                    )}
-                    {hidratacaoPanel.perda !== null && (
-                      <DomainStat label="Perda de peso" value={`${hidratacaoPanel.perda}%`} />
-                    )}
-                    {hidratacaoPanel.sedePercebida !== null && (
-                      <DomainStat label="Sede percebida" value={`${hidratacaoPanel.sedePercebida}/10`} />
-                    )}
-                    <DomainStatus aguardando={hidratacaoPanel.aguardando} revisado={hidratacaoPanel.revisado} />
-                    <p className="ap-domain-panel__date">Última: {hidratacaoPanel.dateLabel}</p>
-                  </>
-                )}
-              </DomainPanel>
-
-              <DomainPanel icon={Apple} title="Alimentação" empty={!alimentacaoPanel}>
-                {alimentacaoPanel && (
-                  <>
-                    {alimentacaoPanel.adesao !== null && (
-                      <DomainStat label="Adesão ao plano" value={`${alimentacaoPanel.adesao}/10`} />
-                    )}
-                    <DomainStatus aguardando={alimentacaoPanel.aguardando} revisado={alimentacaoPanel.revisado} />
-                    <p className="ap-domain-panel__date">Última: {alimentacaoPanel.dateLabel}</p>
-                  </>
-                )}
-              </DomainPanel>
-
-              <DomainPanel icon={Dumbbell} title="Treino" empty={!treinoPanel}>
-                {treinoPanel && (
-                  <>
-                    {treinoPanel.faseLabel && (
-                      <DomainStat label="Fase" value={treinoPanel.faseLabel} />
-                    )}
-                    {treinoPanel.carga !== null && (
-                      <DomainStat label="Carga semanal" value={`${treinoPanel.carga} UA`} />
-                    )}
-                    {treinoPanel.rpe !== null && (
-                      <DomainStat label="RPE médio" value={`${treinoPanel.rpe}/10`} />
-                    )}
-                    <DomainStatus aguardando={treinoPanel.aguardando} revisado={treinoPanel.revisado} />
-                    <p className="ap-domain-panel__date">Última: {treinoPanel.dateLabel}</p>
-                  </>
-                )}
-              </DomainPanel>
-
-            </div>
-          </section>
-
-          {/* 4 — Meu dossiê: identidade */}
-          <section className="ap-card ap-card--full ap-dossie" ref={prontuarioSectionRef}>
-            <button type="button" className="ap-dossie__toggle" onClick={() => setIsDossieOpen((v) => !v)}>
-              <FileText size={16} />
-              <span>Meu dossiê</span>
-              <span className="ap-dossie__subtitle">identificação · vínculo · status</span>
-              <ChevronDown size={15} className={`ap-dossie__chevron${isDossieOpen ? ' ap-dossie__chevron--open' : ''}`} />
-            </button>
-            {isDossieOpen && (
-              <div className="ap-dossie__body">
-                <div className="ap-dossie__pills">
-                  <span className="athlete-pill neutral">Nº {formatPortalValue(patient?.prontuario, 'Pendente')}</span>
-                  <span className={`athlete-pill ${patient?.confirmacaoAtleta?.completed ? 'ok' : 'pending'}`}>
-                    {patient?.confirmacaoAtleta?.completed ? 'Cadastro concluído' : 'Cadastro pendente'}
-                  </span>
-                  <span className={`athlete-pill ${String(patient?.consentimentoPesquisa || '').toLowerCase() === 'aceito' ? 'ok' : 'pending'}`}>
-                    {String(patient?.consentimentoPesquisa || '').toLowerCase() === 'aceito' ? 'Consentimento aceito' : 'Consentimento pendente'}
-                  </span>
-                </div>
-                <div className="ap-dossie__section">
-                  <h3>Identificação</h3>
-                  <div className="athlete-prontuario-grid">
-                    {prontuarioIdentityItems.map((item) => (
-                      <div key={item.label} className="athlete-prontuario-item">
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-        </div>
+        <>
+          {activeTab === 'dashboard' && (
+            <AthleteVisaoGeral
+              nome={athleteDisplayName.split(/\s+/)[0]}
+              pendingItems={pendingItems}
+              hasCriticalPending={hasCriticalPending}
+              onPendingItemClick={handlePendingItemClick}
+              nextAppointment={nextAppointment}
+              upcomingAppointments={upcomingAppointments}
+              getAppointmentTypeLabel={getAppointmentTypeLabel}
+              evaluationsCount={evaluationsSorted.length}
+              latestEvaluationDateLabel={latestEvaluationDateLabel}
+              composicaoPanel={composicaoPanel}
+              hidratacaoPanel={hidratacaoPanel}
+              alimentacaoPanel={alimentacaoPanel}
+              treinoPanel={treinoPanel}
+              loadingDetails={loadingDetails}
+              detailsError={detailsError}
+              onTentarNovamente={loadAthleteDetails}
+              formatDate={formatDate}
+              onNavigate={onNavigate}
+            />
+          )}
+          {activeTab === 'pendencias' && (
+            <AthleteTabPendencias
+              patient={patient}
+              pendingItems={pendingItems}
+              hasCriticalPending={hasCriticalPending}
+              nextAppointment={nextAppointment}
+              nextAppointmentDeadline={nextAppointmentDeadline}
+              canRescheduleNextAppointment={canRescheduleNextAppointment}
+              loadingDetails={loadingDetails}
+              isNoShowLoading={isNoShowLoading}
+              formatDate={formatDate}
+              getAppointmentTypeLabel={getAppointmentTypeLabel}
+              onOpenReschedule={handleOpenReschedule}
+              onMarkNoShow={handleMarkNoShow}
+              onPendingItemClick={handlePendingItemClick}
+              onPendingItemKeyDown={handlePendingItemKeyDown}
+              releasedSelfEvaluationCards={athleteSelfEvaluationCards}
+              canSubmitSelfEvaluations={canSubmitSelfEvaluations}
+            />
+          )}
+          {activeTab === 'cadastro' && (
+            <AthleteTabCadastro
+              patient={patient}
+              cadastroAtleta={cadastroAtleta}
+              athleteInitials={athleteInitials}
+              athleteDisplayName={athleteDisplayName}
+              athleteAge={athleteAge}
+              athleteInitialData={athleteInitialData}
+              prontuarioIdentityItems={prontuarioIdentityItems}
+              evaluationsSorted={evaluationsSorted}
+              latestEvaluationDateLabel={latestEvaluationDateLabel}
+              onCompleteOnboarding={handleCompleteOnboarding}
+            />
+          )}
+          {activeTab === 'acompanhamento' && (
+            <AthleteTabAcompanhamento
+              patient={patient}
+              evaluationsSorted={evaluationsSorted}
+              upcomingAppointments={upcomingAppointments}
+              composicaoPanel={composicaoPanel}
+              hidratacaoPanel={hidratacaoPanel}
+              alimentacaoPanel={alimentacaoPanel}
+              treinoPanel={treinoPanel}
+              loadingDetails={loadingDetails}
+              formatDate={formatDate}
+            />
+          )}
+        </>
       )}
 
       {showClinicalOnboarding && patient && (
@@ -987,7 +989,7 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
       <AthleteEbiaModal
         isOpen={showEbiaModal}
         patient={patient}
-        release={patient?.confirmacaoAtleta?.ebiaSelfForm || null}
+        release={cadastroAtleta?.ebiaSelfForm || patient?.confirmacaoAtleta?.ebiaSelfForm || null}
         isSubmitting={isSubmittingEbia}
         onClose={() => { sessionStorage.setItem('laines_ebia_dismissed', '1'); setShowEbiaModal(false); }}
         onSubmit={handleSubmitEbia}
@@ -1005,53 +1007,6 @@ const AthletePortal = ({ focusSection = 'dashboard', hideInternalHeader = false 
 };
 
 export default AthletePortal;
-
-/* ─── Sub-components ─────────────────────────────────────── */
-
-function DomainPanel({ icon: Icon, title, empty, children }) {
-  return (
-    <div className="ap-domain-panel">
-      <div className="ap-domain-panel__header">
-        <Icon size={14} />
-        <span>{title}</span>
-      </div>
-      {empty
-        ? <p className="ap-domain-panel__empty">A equipe ainda não realizou esta avaliação.</p>
-        : <div className="ap-domain-panel__body">{children}</div>
-      }
-    </div>
-  );
-}
-
-function DomainStat({ label, value, delta, deltaInverse }) {
-  const tone = delta === null || delta === undefined ? null
-    : (deltaInverse ? delta < 0 : delta > 0) ? 'ok'
-    : (deltaInverse ? delta > 0 : delta < 0) ? 'warn'
-    : null;
-  return (
-    <div className="ap-domain-stat">
-      <span>{label}</span>
-      <strong>
-        {value}
-        {delta !== null && delta !== undefined && (
-          <span className={`ap-trend${tone ? ` ap-trend--${tone}` : ''}`}>
-            {delta > 0 ? '+' : ''}{delta}
-          </span>
-        )}
-      </strong>
-    </div>
-  );
-}
-
-function DomainStatus({ aguardando, revisado }) {
-  if (aguardando) {
-    return <p className="ap-domain-panel__waiting">Seu relato está aguardando revisão</p>;
-  }
-  if (revisado) {
-    return <p className="ap-domain-panel__ok">Revisado pela equipe</p>;
-  }
-  return null;
-}
 
 /* ─── normalizeType ──────────────────────────────────────── */
 

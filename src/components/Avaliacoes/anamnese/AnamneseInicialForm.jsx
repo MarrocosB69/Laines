@@ -1,10 +1,25 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ClipboardList, Plus, Trash2 } from 'lucide-react';
+import { ClipboardList, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import { calculateAnamneseInitialEvaluation } from '../../../services/calculationEngine';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  Campo,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../base';
 import './AnamneseInicialForm.css';
+
+// Gravidade das flags de risco no aviso da base: além da cor, o ícone muda
+// de forma e o leitor de tela ouve "Alerta:" ou "Atenção:". Só apresentação;
+// as flags e a gravidade vêm do motor de regras, como antes.
+const FLAG_TIPO_AVISO = { danger: 'perigo', warning: 'atencao' };
 
 const GOAL_OPTIONS = [
   { value: 'emagrecimento', label: 'Emagrecimento' },
@@ -173,7 +188,7 @@ const AnamneseInicialForm = ({
       dataAvaliacao: normalizeDate(firstDefined(moduleSnapshot?.data, source?.dataAvaliacao, dadosBrutos?.dataAvaliacao, prev.dataAvaliacao)),
       nomePaciente: toText(firstDefined(dadosBrutos?.nomePaciente, source?.nomePaciente, patient?.nome)),
       dataNascimento: toText(firstDefined(dadosBrutos?.dataNascimento, source?.dataNascimento, patient?.dataNascimento)),
-      sexoBiologico: toText(firstDefined(dadosBrutos?.sexoBiologico, source?.sexoBiologico, patient?.sexo)),
+      sexoBiologico: toText(firstDefined(dadosBrutos?.sexoBiologico, source?.sexoBiologico, patient?.sexoBiologico, patient?.sexo)),
       identidadeGenero: toText(firstDefined(dadosBrutos?.identidadeGenero, source?.identidadeGenero)),
       objetivos: normalizeArray(firstDefined(dadosBrutos?.objetivos, source?.objetivos)),
       objetivoOutros: toText(firstDefined(dadosBrutos?.objetivoOutros, source?.objetivoOutros)),
@@ -248,7 +263,7 @@ const AnamneseInicialForm = ({
     }));
 
     loadedSnapshotIdRef.current = snapshotId;
-  }, [moduleSnapshot, patient?.dataNascimento, patient?.nome, patient?.sexo]);
+  }, [moduleSnapshot, patient?.dataNascimento, patient?.nome, patient?.sexo, patient?.sexoBiologico]);
 
   useEffect(() => {
     if (hasUserInput) return;
@@ -259,7 +274,7 @@ const AnamneseInicialForm = ({
       modalidade: onboardingContext?.modalidadePrincipal || '',
       frequencia: onboardingContext?.frequenciaSemanal || '',
       duracao: onboardingContext?.duracaoSessao || '',
-      genero: onboardingContext?.genero || '',
+      sexoBiologico: onboardingContext?.sexoBiologico || '',
       status: onboardingContext?.status || '',
       observacoesIniciais: onboardingContext?.observacoesIniciais || '',
       historicoSaude: onboardingContext?.historicoSaude || '',
@@ -451,21 +466,22 @@ const AnamneseInicialForm = ({
   const flags = evaluation?.flags || [];
 
   return (
-    <div className={`eval-card anamnese-form anamnese-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon"><ClipboardList size={20} /></div>
-        <div>
-          <h3 className="eval-title">Anamnese inicial</h3>
-          <p className="eval-subtitle">Coleta inicial de contexto clínico e risco para a conduta nutricional.</p>
-        </div>
-      </div>
-
+    <AvaliacaoModulo
+      className={`eval-card anamnese-form anamnese-form--modern${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Anamnese inicial"
+      descricao="Coleta inicial de contexto clínico e risco para a conduta nutricional."
+      icone={<ClipboardList size={20} />}
+    >
       {onboardingSummary.length > 0 ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Pré-preenchimento do onboarding:</strong> {onboardingSummary.join(' - ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
 
+      {/* As abas já são a navegação deste formulário (só a aba ativa é
+          montada), por isso não há índice "Neste formulário": um link para
+          uma seção de outra aba cairia no #id nativo e mudaria a URL. */}
+      <div className="anamnese-navegacao">
       {(() => {
         const activeIndex = TAB_ITEMS.findIndex((t) => t.id === activeTab);
         const progress = Math.round(((activeIndex + 1) / TAB_ITEMS.length) * 100);
@@ -514,67 +530,72 @@ const AnamneseInicialForm = ({
           </>
         );
       })()}
+      </div>
 
       {activeTab === 'identificacao' && (
-        <div className="eval-section">
-          <h4 className="eval-section-title">Identificação e objetivo</h4>
-          <div className="anamnese-grid">
+        <AvaliacaoSecao id="anamnese-identificacao" titulo="Identificação e objetivo" className="eval-section">
+          <div className="av-grade">
             <InputField label="Data avaliacao" type="date" value={dados.dataAvaliacao} onChange={(v) => updateField(setDados, setHasUserInput, 'dataAvaliacao', v)} disabled={readOnly} />
             <InputField label="Nome" value={dados.nomePaciente} required onChange={(v) => updateField(setDados, setHasUserInput, 'nomePaciente', v)} disabled={readOnly} />
             <InputField label="Data nascimento" type="date" value={dados.dataNascimento} onChange={(v) => updateField(setDados, setHasUserInput, 'dataNascimento', v)} disabled={readOnly} />
             <SelectField label="Sexo biologico" value={dados.sexoBiologico} required options={[{ value: '', label: 'Selecione' }, { value: 'masculino', label: 'Masculino' }, { value: 'feminino', label: 'Feminino' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'sexoBiologico', v)} disabled={readOnly} />
             <InputField label="Identidade de gênero" value={dados.identidadeGenero} onChange={(v) => updateField(setDados, setHasUserInput, 'identidadeGenero', v)} disabled={readOnly} />
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Objetivos principais <span className="anamnese-required">*</span></label>
-              <div className="anamnese-checkbox-grid">
-                {GOAL_OPTIONS.map((option) => (
-                  <label key={option.value} className="anamnese-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={dados.objetivos.includes(option.value)}
-                      onChange={() => toggleArray(setDados, setHasUserInput, 'objetivos', option.value)}
-                      disabled={readOnly}
-                    />
-                    <span>{option.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+          </div>
+          <div className="av-grade">
+            <GrupoOpcoes
+              legenda="Objetivos principais"
+              obrigatorio
+              classeObrigatorio="anamnese-required"
+              className="eval-field eval-field-full anamnese-opcoes"
+            >
+              {GOAL_OPTIONS.map((option) => (
+                <Opcao
+                  key={option.value}
+                  tipo="checkbox"
+                  rotulo={option.label}
+                  checked={dados.objetivos.includes(option.value)}
+                  onChange={() => toggleArray(setDados, setHasUserInput, 'objetivos', option.value)}
+                  disabled={readOnly}
+                />
+              ))}
+            </GrupoOpcoes>
             <InputField label="Outros objetivos" value={dados.objetivoOutros} onChange={(v) => updateField(setDados, setHasUserInput, 'objetivoOutros', v)} disabled={readOnly} />
             <AreaField label="Queixa principal" value={dados.queixaPrincipal} onChange={(v) => updateField(setDados, setHasUserInput, 'queixaPrincipal', v)} disabled={readOnly} />
           </div>
-        </div>
+        </AvaliacaoSecao>
       )}
 
       {activeTab === 'historico' && (
-        <div className="eval-section">
-          <h4 className="eval-section-title">Histórico clínico</h4>
-          <div className="anamnese-grid">
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Patologias</label>
-              <div className="anamnese-checkbox-grid">
-                {PATHOLOGY_OPTIONS.map((item) => (
-                  <label key={item} className="anamnese-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={dados.patologias.includes(item)}
-                      onChange={() => toggleArray(setDados, setHasUserInput, 'patologias', item)}
-                      disabled={readOnly}
-                    />
-                    <span>{item}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+        <AvaliacaoSecao id="anamnese-historico" titulo="Histórico clínico" className="eval-section">
+          <div className="av-grade">
+            <GrupoOpcoes legenda="Patologias" className="eval-field eval-field-full anamnese-opcoes">
+              {PATHOLOGY_OPTIONS.map((item) => (
+                <Opcao
+                  key={item}
+                  tipo="checkbox"
+                  rotulo={item}
+                  checked={dados.patologias.includes(item)}
+                  onChange={() => toggleArray(setDados, setHasUserInput, 'patologias', item)}
+                  disabled={readOnly}
+                />
+              ))}
+            </GrupoOpcoes>
             <InputField label="Outras patologias" value={dados.patologiasOutras} onChange={(v) => updateField(setDados, setHasUserInput, 'patologiasOutras', v)} disabled={readOnly} />
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Medicamentos em uso</label>
+            {/* Linhas repetidas: cada campo tem rótulo só para o leitor de
+                tela, com o nome da lista, a linha e o placeholder de antes. */}
+            <Campo rotulo="Medicamentos em uso" className="eval-field eval-field-full">
               <div className="anamnese-med-list">
-                {dados.medicamentos.map((med) => (
+                {dados.medicamentos.map((med, linha) => (
                   <div className="anamnese-med-row" key={med.id}>
-                    <input className="eval-input" type="text" value={med.nome} placeholder="Nome" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'nome', e.target.value)} disabled={readOnly} />
-                    <input className="eval-input" type="text" value={med.dose} placeholder="Dose" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'dose', e.target.value)} disabled={readOnly} />
-                    <input className="eval-input" type="text" value={med.frequencia} placeholder="Frequência" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'frequencia', e.target.value)} disabled={readOnly} />
+                    <Campo rotuloOculto rotulo={`Medicamentos em uso ${linha + 1}: Nome`}>
+                      <input className="eval-input" type="text" value={med.nome} placeholder="Nome" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'nome', e.target.value)} disabled={readOnly} />
+                    </Campo>
+                    <Campo rotuloOculto rotulo={`Medicamentos em uso ${linha + 1}: Dose`}>
+                      <input className="eval-input" type="text" value={med.dose} placeholder="Dose" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'dose', e.target.value)} disabled={readOnly} />
+                    </Campo>
+                    <Campo rotuloOculto rotulo={`Medicamentos em uso ${linha + 1}: Frequência`}>
+                      <input className="eval-input" type="text" value={med.frequencia} placeholder="Frequência" onChange={(e) => updateMedication(setDados, setHasUserInput, med.id, 'frequencia', e.target.value)} disabled={readOnly} />
+                    </Campo>
                     <button type="button" className="anamnese-icon-btn" disabled={readOnly || dados.medicamentos.length <= 1} onClick={() => removeMedication(setDados, setHasUserInput, med.id)}>
                       <Trash2 size={14} />
                     </button>
@@ -584,15 +605,20 @@ const AnamneseInicialForm = ({
               <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addMedication(setDados, setHasUserInput)}>
                 <Plus size={14} /> Adicionar medicamento
               </Button>
-            </div>
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Suplementos em uso</label>
+            </Campo>
+            <Campo rotulo="Suplementos em uso" className="eval-field eval-field-full">
               <div className="anamnese-med-list">
-                {dados.suplementos.map((sup) => (
+                {dados.suplementos.map((sup, linha) => (
                   <div className="anamnese-med-row" key={sup.id}>
-                    <input className="eval-input" type="text" value={sup.nome} placeholder="Nome" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'nome', e.target.value)} disabled={readOnly} />
-                    <input className="eval-input" type="text" value={sup.dose} placeholder="Dose" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'dose', e.target.value)} disabled={readOnly} />
-                    <input className="eval-input" type="text" value={sup.frequencia} placeholder="Frequência" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'frequencia', e.target.value)} disabled={readOnly} />
+                    <Campo rotuloOculto rotulo={`Suplementos em uso ${linha + 1}: Nome`}>
+                      <input className="eval-input" type="text" value={sup.nome} placeholder="Nome" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'nome', e.target.value)} disabled={readOnly} />
+                    </Campo>
+                    <Campo rotuloOculto rotulo={`Suplementos em uso ${linha + 1}: Dose`}>
+                      <input className="eval-input" type="text" value={sup.dose} placeholder="Dose" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'dose', e.target.value)} disabled={readOnly} />
+                    </Campo>
+                    <Campo rotuloOculto rotulo={`Suplementos em uso ${linha + 1}: Frequência`}>
+                      <input className="eval-input" type="text" value={sup.frequencia} placeholder="Frequência" onChange={(e) => updateSuplemento(setDados, setHasUserInput, sup.id, 'frequencia', e.target.value)} disabled={readOnly} />
+                    </Campo>
                     <button type="button" className="anamnese-icon-btn" disabled={readOnly || dados.suplementos.length <= 1} onClick={() => removeSuplemento(setDados, setHasUserInput, sup.id)}>
                       <Trash2 size={14} />
                     </button>
@@ -602,31 +628,41 @@ const AnamneseInicialForm = ({
               <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addSuplemento(setDados, setHasUserInput)}>
                 <Plus size={14} /> Adicionar suplemento
               </Button>
-            </div>
+            </Campo>
             <AreaField label="Alergias/intolerâncias" value={dados.alergias} onChange={(v) => updateField(setDados, setHasUserInput, 'alergias', v)} disabled={readOnly} />
             <AreaField label="Cirurgias relevantes" value={dados.cirurgias} onChange={(v) => updateField(setDados, setHasUserInput, 'cirurgias', v)} disabled={readOnly} />
           </div>
-        </div>
+        </AvaliacaoSecao>
       )}
 
       {activeTab === 'estilo' && (
-        <div className="eval-section">
-          <h4 className="eval-section-title">Estilo de vida</h4>
-          <div className="anamnese-grid">
+        <AvaliacaoSecao id="anamnese-estilo" titulo="Estilo de vida" className="eval-section">
+          {/* Mesmos campos e mesma ordem, em blocos: atividade física; sono e
+              estresse; álcool e tabaco; ciclo menstrual. */}
+          <div className="av-grade">
             <InputField label="Atividade tipo" value={dados.atividadeTipo} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeTipo', v)} disabled={readOnly} />
             <InputField label="Frequência semanal" value={dados.atividadeFrequencia} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeFrequencia', v)} disabled={readOnly} />
             <InputField label="Duração média (min)" value={dados.atividadeDuracao} onChange={(v) => updateField(setDados, setHasUserInput, 'atividadeDuracao', v)} disabled={readOnly} />
+          </div>
+          <div className="av-grade">
             <InputField label="Sono horas/noite" value={dados.sonoHoras} onChange={(v) => updateField(setDados, setHasUserInput, 'sonoHoras', v)} disabled={readOnly} />
             <SelectField label="Qualidade sono (1-5)" value={dados.sonoQualidade} options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => updateField(setDados, setHasUserInput, 'sonoQualidade', v)} disabled={readOnly} />
             <SelectField label="Estresse (1-10)" value={dados.estresseNivel} options={Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))} onChange={(v) => updateField(setDados, setHasUserInput, 'estresseNivel', v)} disabled={readOnly} />
+          </div>
+          <div className="av-grade">
             <SelectField label="Álcool" value={dados.alcoolUso} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'nao', label: 'Não' }, { value: 'eventual', label: 'Eventual' }, { value: 'frequente', label: 'Frequente' }, { value: 'alto', label: 'Alto/diário' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'alcoolUso', v)} disabled={readOnly} />
             <SelectField label="Tabaco" value={dados.tabacoUso} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'nao', label: 'Não' }, { value: 'eventual', label: 'Eventual' }, { value: 'sim', label: 'Sim' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'tabacoUso', v)} disabled={readOnly} />
+          </div>
+          <div className="av-grade">
             <SelectField label="Ciclo menstrual" value={dados.cicloMenstrualRegularidade} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'regular', label: 'Regular' }, { value: 'irregular', label: 'Irregular' }, { value: 'nao_aplicavel', label: 'Não aplicável' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'cicloMenstrualRegularidade', v)} disabled={readOnly} />
             <SelectField label="Contraceptivo" value={dados.cicloMenstrualContraceptivo} options={[{ value: 'nao_informado', label: 'Não informado' }, { value: 'nao', label: 'Não' }, { value: 'sim', label: 'Sim' }, { value: 'nao_aplicavel', label: 'Não aplicável' }]} onChange={(v) => updateField(setDados, setHasUserInput, 'cicloMenstrualContraceptivo', v)} disabled={readOnly} />
           </div>
 
-          <h4 className="eval-section-title">Contexto esportivo</h4>
-          <div className="anamnese-grid">
+          {/* Era um segundo h4 dentro da mesma .eval-section; como subseção
+              (h5) a aba continua com uma .eval-section só, e o modo
+              essencial esconde as duas partes juntas, como antes. */}
+          <AvaliacaoSecao id="anamnese-esportivo" titulo="Contexto esportivo">
+          <div className="av-grade">
             <SelectField
               label="Modalidade"
               value={dados.esportivo.modalidade}
@@ -665,7 +701,9 @@ const AnamneseInicialForm = ({
               onChange={(v) => updateEsportivoField(setDados, setHasUserInput, 'clube', v)}
               disabled={readOnly}
             />
+          </div>
 
+          <div className="av-grade">
             <InputField
               label="Carga técnica (h/sem)"
               value={dados.esportivo.cargaSemanal.tecnico}
@@ -690,7 +728,9 @@ const AnamneseInicialForm = ({
               onChange={(v) => updateEsportivoCarga(setDados, setHasUserInput, 'preventivo', v)}
               disabled={readOnly}
             />
+          </div>
 
+          <div className="av-grade">
             <SelectField
               label="Fase de periodização"
               value={dados.esportivo.fasePeriodizacao}
@@ -704,27 +744,30 @@ const AnamneseInicialForm = ({
               disabled={readOnly}
             />
 
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Histórico de lesões</label>
+            <Campo rotulo="Histórico de lesões" className="eval-field eval-field-full">
               <div className="anamnese-med-list">
-                {dados.esportivo.historicoLesoes.map((item) => (
+                {dados.esportivo.historicoLesoes.map((item, linha) => (
                   <div className="anamnese-med-row" key={item.id}>
-                    <input
-                      className="eval-input"
-                      type="text"
-                      placeholder="Local da lesão"
-                      value={item.local}
-                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, 'local', e.target.value)}
-                      disabled={readOnly}
-                    />
-                    <input
-                      className="eval-input"
-                      type="text"
-                      placeholder="Tempo afastado"
-                      value={item.tempoAfastado}
-                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, 'tempoAfastado', e.target.value)}
-                      disabled={readOnly}
-                    />
+                    <Campo rotuloOculto rotulo={`Histórico de lesões ${linha + 1}: Local da lesão`}>
+                      <input
+                        className="eval-input"
+                        type="text"
+                        placeholder="Local da lesão"
+                        value={item.local}
+                        onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, 'local', e.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
+                    <Campo rotuloOculto rotulo={`Histórico de lesões ${linha + 1}: Tempo afastado`}>
+                      <input
+                        className="eval-input"
+                        type="text"
+                        placeholder="Tempo afastado"
+                        value={item.tempoAfastado}
+                        onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', item.id, 'tempoAfastado', e.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
                     <button
                       type="button"
                       className="anamnese-icon-btn"
@@ -739,28 +782,31 @@ const AnamneseInicialForm = ({
               <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addEsportivoArrayItem(setDados, setHasUserInput, 'historicoLesoes', createLesaoItem)}>
                 <Plus size={14} /> Adicionar lesão
               </Button>
-            </div>
+            </Campo>
 
-            <div className="eval-field eval-field-full">
-              <label className="eval-label">Próximas competições</label>
+            <Campo rotulo="Próximas competições" className="eval-field eval-field-full">
               <div className="anamnese-med-list">
-                {dados.esportivo.proximasCompeticoes.map((item) => (
+                {dados.esportivo.proximasCompeticoes.map((item, linha) => (
                   <div className="anamnese-med-row" key={item.id}>
-                    <input
-                      className="eval-input"
-                      type="text"
-                      placeholder="Nome da competição"
-                      value={item.nome}
-                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, 'nome', e.target.value)}
-                      disabled={readOnly}
-                    />
-                    <input
-                      className="eval-input"
-                      type="date"
-                      value={item.data}
-                      onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, 'data', e.target.value)}
-                      disabled={readOnly}
-                    />
+                    <Campo rotuloOculto rotulo={`Próximas competições ${linha + 1}: Nome da competição`}>
+                      <input
+                        className="eval-input"
+                        type="text"
+                        placeholder="Nome da competição"
+                        value={item.nome}
+                        onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, 'nome', e.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
+                    <Campo rotuloOculto rotulo={`Próximas competições ${linha + 1}: Data`}>
+                      <input
+                        className="eval-input"
+                        type="date"
+                        value={item.data}
+                        onChange={(e) => updateEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', item.id, 'data', e.target.value)}
+                        disabled={readOnly}
+                      />
+                    </Campo>
                     <button
                       type="button"
                       className="anamnese-icon-btn"
@@ -775,48 +821,51 @@ const AnamneseInicialForm = ({
               <Button type="button" variant="secondary" className="anamnese-add-btn" disabled={readOnly} onClick={() => addEsportivoArrayItem(setDados, setHasUserInput, 'proximasCompeticoes', createCompeticaoItem)}>
                 <Plus size={14} /> Adicionar competição
               </Button>
-            </div>
+            </Campo>
 
             {toText(dados.sexoBiologico).toLowerCase().includes('femin') && (
               <div className="eval-field eval-field-full">
-                <label className="anamnese-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(dados.esportivo.historicaREDS)}
-                    onChange={(e) => updateEsportivoField(setDados, setHasUserInput, 'historicaREDS', e.target.checked)}
-                    disabled={readOnly}
-                  />
-                  <span>Histórico pregresso sugestivo de RED-S</span>
-                </label>
+                <Opcao
+                  tipo="checkbox"
+                  rotulo="Histórico pregresso sugestivo de baixa disponibilidade energética"
+                  checked={Boolean(dados.esportivo.historicaREDS)}
+                  onChange={(e) => updateEsportivoField(setDados, setHasUserInput, 'historicaREDS', e.target.checked)}
+                  disabled={readOnly}
+                />
               </div>
             )}
           </div>
-        </div>
+          </AvaliacaoSecao>
+        </AvaliacaoSecao>
       )}
 
       {activeTab === 'familiar' && (
-        <div className="eval-section">
-          <h4 className="eval-section-title">Histórico familiar</h4>
-          <div className="anamnese-checkbox-grid">
+        <AvaliacaoSecao id="anamnese-familiar" titulo="Histórico familiar" className="eval-section">
+          {/* As caixas não tinham legenda própria: o grupo é rotulado pelo
+              título da seção. */}
+          <div className="anamnese-opcoes-grade" role="group" aria-labelledby="anamnese-familiar-titulo">
             {[
               { key: 'familyCardiovascular', label: 'Doença cardiovascular' },
               { key: 'familyDiabetes', label: 'Diabetes' },
               { key: 'familyCancer', label: 'Câncer' },
               { key: 'familyObesity', label: 'Obesidade' }
             ].map((item) => (
-              <label key={item.key} className="anamnese-checkbox">
-                <input type="checkbox" checked={Boolean(dados[item.key])} onChange={(e) => updateField(setDados, setHasUserInput, item.key, e.target.checked)} disabled={readOnly} />
-                <span>{item.label}</span>
-              </label>
+              <Opcao
+                key={item.key}
+                tipo="checkbox"
+                rotulo={item.label}
+                checked={Boolean(dados[item.key])}
+                onChange={(e) => updateField(setDados, setHasUserInput, item.key, e.target.checked)}
+                disabled={readOnly}
+              />
             ))}
           </div>
           <AreaField label="Observações" value={dados.observacoes} onChange={(v) => updateField(setDados, setHasUserInput, 'observacoes', v)} disabled={readOnly} />
-        </div>
+        </AvaliacaoSecao>
       )}
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Resumo de risco</h4>
-        <div className="anamnese-summary-grid">
+      <AvaliacaoSecao id="anamnese-resumo" titulo="Resumo de risco" className="eval-section">
+        <div className="av-resultados">
           <SummaryCard label="Prioridade" value={formatPriority(evaluation?.priority?.level)} tone={priorityTone(evaluation?.priority?.level)} detail={evaluation?.priority?.reason} />
           <SummaryCard label="Score" value={Number.isFinite(evaluation?.score) ? String(evaluation.score) : '--'} tone={priorityTone(evaluation?.priority?.level)} detail={evaluation?.formulas?.priorityBands} />
           <SummaryCard label="Encaminhamentos" value={(evaluation?.recommendations || []).join(', ') || 'Sem encaminhamento'} tone="info" />
@@ -824,20 +873,20 @@ const AnamneseInicialForm = ({
         {flags.length ? (
           <div className="anamnese-flag-list">
             {flags.map((flag) => (
-              <div className={`anamnese-flag-item severity-${flag.severity}`} key={flag.id}>
-                <div className="anamnese-flag-title">
-                  {flag.severity === 'danger' ? <AlertTriangle size={14} /> : null}
-                  <strong>{flag.label}</strong>
-                </div>
+              <AvisoAvaliacao
+                tipo={FLAG_TIPO_AVISO[flag.severity] || 'info'}
+                className={`anamnese-flag-item severity-${flag.severity}`}
+                key={flag.id}
+              >
+                <strong>{flag.label}</strong>
                 <small>{flag.detail || flag.source}</small>
-              </div>
+              </AvisoAvaliacao>
             ))}
           </div>
-        ) : <div className="eval-note">Sem flags automáticas de risco.</div>}
-      </div>
+        ) : <AvisoAvaliacao tipo="info">Sem flags automáticas de risco.</AvisoAvaliacao>}
+      </AvaliacaoSecao>
 
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         {TAB_ITEMS.findIndex((tab) => tab.id === activeTab) < TAB_ITEMS.length - 1 && (
           <Button type="button" variant="secondary" disabled={readOnly} onClick={() => {
             const index = TAB_ITEMS.findIndex((tab) => tab.id === activeTab);
@@ -849,45 +898,49 @@ const AnamneseInicialForm = ({
         <Button type="button" variant="primary" disabled={readOnly} onClick={handleSubmit} loading={saveStatus === 'saving'}>
           Salvar anamnese
         </Button>
-      </div>
+      </BarraAcoesAvaliacao>
 
-      {submitAttempted && hasRequiredMissing ? <div className="eval-note anamnese-error-note">Nome, sexo biológico e objetivo principal são obrigatórios.</div> : null}
-      {error ? <div className="eval-note anamnese-error-note">{error}</div> : null}
-    </div>
+      {submitAttempted && hasRequiredMissing ? <AvisoAvaliacao tipo="perigo" anunciar className="anamnese-error-note">Nome, sexo biológico e objetivo principal são obrigatórios.</AvisoAvaliacao> : null}
+      {error ? <AvisoAvaliacao tipo="perigo" anunciar className="anamnese-error-note">{error}</AvisoAvaliacao> : null}
+    </AvaliacaoModulo>
   );
 };
 
 export default AnamneseInicialForm;
 
+// Mesma assinatura de antes. O rótulo passa a ser ligado ao controle pela
+// base; a marca de obrigatório continua com a classe anamnese-required, que o
+// modo essencial de AvaliacaoCompleta procura dentro do .eval-field.
 const InputField = ({ label, value, onChange, disabled, type = 'text', required = false }) => (
-  <div className="eval-field">
-    <label className="eval-label">{label}{required ? <span className="anamnese-required">*</span> : null}</label>
+  <Campo rotulo={label} obrigatorio={required} classeObrigatorio="anamnese-required" className="eval-field">
     <input className="eval-input" type={type} value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
-  </div>
+  </Campo>
 );
 
 const SelectField = ({ label, value, onChange, disabled, options = [], required = false }) => (
-  <div className="eval-field">
-    <label className="eval-label">{label}{required ? <span className="anamnese-required">*</span> : null}</label>
+  <Campo rotulo={label} obrigatorio={required} classeObrigatorio="anamnese-required" className="eval-field">
     <select className="eval-select" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled}>
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
-  </div>
+  </Campo>
 );
 
 const AreaField = ({ label, value, onChange, disabled }) => (
-  <div className="eval-field eval-field-full">
-    <label className="eval-label">{label}</label>
+  <Campo rotulo={label} className="eval-field eval-field-full">
     <textarea className="eval-textarea" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} />
-  </div>
+  </Campo>
 );
 
+// O valor já chega escrito (a prioridade por extenso, o score, os
+// encaminhamentos). O tom de antes (tone-*) só pinta a raia do cartão, ao lado
+// de um valor que já diz o que é; '--' era a ausência do score e vira "—".
 const SummaryCard = ({ label, value, tone = 'neutral', detail = '' }) => (
-  <article className={`anamnese-summary-card tone-${tone}`}>
-    <span>{label}</span>
-    <strong>{value}</strong>
-    {detail ? <small>{detail}</small> : null}
-  </article>
+  <ResultadoCalculado
+    className={`anamnese-summary-card tone-${tone}`}
+    rotulo={label}
+    valor={value === '--' ? null : value}
+    metodo={detail || undefined}
+  />
 );
 
 function createId() {
@@ -1112,7 +1165,7 @@ function buildOnboardingPrefill(onboardingContext, patient) {
     onboardingContext?.duracaoSessao ?? onboardingContext?.raw?.duracaoSessao
   );
   const sexo = normalizeBiologicalSex(
-    onboardingContext?.genero || patient?.genero || patient?.sexo || onboardingContext?.raw?.sexoBiologico
+    onboardingContext?.sexoBiologico || patient?.sexoBiologico || onboardingContext?.raw?.sexoBiologico || patient?.sexo
   );
   const nivelCompetitivo = normalizeCompetitiveLevel(onboardingContext?.raw?.nivelCompetitivo);
   const motivoAtendimento = toText(onboardingContext?.raw?.motivoAtendimento);

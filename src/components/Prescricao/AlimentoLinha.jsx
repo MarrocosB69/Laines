@@ -1,5 +1,5 @@
 import React from 'react';
-import { GripVertical, Repeat, X } from 'lucide-react';
+import { Repeat, X } from 'lucide-react';
 import Selo from './Selo.jsx';
 import PainelSubstitutos from './PainelSubstitutos.jsx';
 import { n, qtd as fmtQtd } from './formato.js';
@@ -18,12 +18,14 @@ import { n, qtd as fmtQtd } from './formato.js';
  */
 export default function AlimentoLinha({
   item,
+  ordem,
   valores,
   ancora,
   aberto,
   opcoes,
   sugestoes,
   motivo,
+  restrito = null,
   blocoSalvo,
   colunas,
   metodo = 'alimentos',
@@ -34,85 +36,97 @@ export default function AlimentoLinha({
   onRemover,
   onQuantidadeSubstituto,
   busca,
+  buscaAtiva,
   onBuscarSubstituto,
   onEscolherSubstituto,
+  onAlternarBuscaSubstituto,
+  onFecharBusca,
   onExcluirItem,
   onSalvarBloco,
   onAplicarBloco
 }) {
   return (
     <>
-      <tr className="border-b border-stone-200 text-xs">
-        <td className="py-1.5 pr-1 align-middle">
-          <GripVertical className="w-3.5 h-3.5 text-stone-300" aria-hidden="true" />
+      <tr className="pp-item">
+        <td className="pp-item__alca">
+          {ordem}
         </td>
 
-        {/* A única coluna que encolhe. min-w-0 permite que ela ceda; as demais
-            têm whitespace-nowrap e ficam intactas. */}
-        <td className="py-1.5 pr-3 align-middle min-w-0">
-          <span className="text-stone-800">{item.nome}</span>
+        {/* A única coluna que encolhe (quebra linha); as demais não quebram e
+            ficam intactas — ver .pp-item__* no CSS. */}
+        <td className="pp-item__nome">
+          <span className="pp-item__alimento">{item.nome}</span>
           <Selo fonte={item.fonte} />
+          {restrito && (
+            <span
+              className={`pp-restricao ${restrito.justificada ? 'pp-restricao--justificada' : 'pp-restricao--pendente'}`}
+              title={restrito.motivo === 'alimento' ? 'Alimento marcado como restrição confirmada' : 'Grupo marcado como restrição confirmada'}
+            >
+              restrição{restrito.justificada ? ' · justificada' : ' · justificar'}
+            </span>
+          )}
           {opcoes.length > 0 && (
-            <span className="ml-1.5 whitespace-nowrap text-stone-400">
+            <span className="pp-item__opcoes">
               {opcoes.length} {opcoes.length === 1 ? 'opção' : 'opções'}
             </span>
           )}
         </td>
 
         {metodo !== 'alimentos' ? (
-          /* Nos outros metodos o paciente nao recebe grama: recebe porcao de
-             equivalencia, ou so o grupo. Uma celula so, atravessando as
-             colunas numericas. */
-          <td colSpan={6} className="py-1.5 pr-2 align-middle text-right text-stone-600">
+          /* Visualizacao da edicao; a entrega conserva alimento e quantidade. */
+          <td colSpan={6} className="pp-item__equivalencia">
             {metodo === 'equivalentes'
               ? (porcoes === null
-                ? <span className="text-stone-400">sem equivalência</span>
+                ? <span className="pp-item__apagado">sem equivalência</span>
                 : `${fmtQtd(porcoes)} ${porcoes === 1 ? 'porção' : 'porções'} de ${(item.grupo || '').toLowerCase()}`)
-              : <span className="text-stone-400">{item.grupo || 'sem grupo'}</span>}
+              : <span className="pp-item__apagado">{item.grupo || 'sem grupo'}</span>}
           </td>
         ) : (
         <>
-        <td className="py-1.5 pr-2 align-middle text-right">
+        <td className="pp-item__qtd">
           <input
             type="number"
-            min="0"
+            min="0.5"
             step="0.5"
-            value={item.quantidade}
-            onChange={(e) => onQuantidade(item.id, Number(e.target.value))}
+            value={item.quantidade ?? ''}
+            onChange={(e) => onQuantidade(item.id, e.target.value === '' ? '' : Number(e.target.value))}
             aria-label={`Quantidade de ${item.nome}`}
-            className="pp-largura-num rounded border border-stone-200 px-1 py-0.5 text-right text-xs"
+            className="pp-controle pp-controle--num"
           />
         </td>
 
-        <td className="py-1.5 pr-3 align-middle whitespace-nowrap text-stone-500">
+        <td className="pp-item__medida">
           {item.medida.descricao} · {n(valores.gramas)} g
         </td>
 
-        <td className="py-1.5 pr-2 align-middle whitespace-nowrap text-right text-stone-800">
+        {/* data-rotulo: quando a refeição fica estreita as linhas viram
+            blocos, o cabeçalho sai de vista e cada número mostra o próprio
+            rótulo (só visual; ver o CSS). */}
+        <td className="pp-item__num pp-item__num--kcal" data-rotulo="kcal">
           {n(valores.kcal)}
         </td>
-        <td className="py-1.5 pr-2 align-middle whitespace-nowrap text-right text-stone-500">
+        <td className="pp-item__num pp-item__num--cho" data-rotulo="C">
           {n(valores.cho)}
         </td>
-        <td className="py-1.5 pr-2 align-middle whitespace-nowrap text-right text-stone-500">
+        <td className="pp-item__num pp-item__num--ptn" data-rotulo="P">
           {n(valores.ptn)}
         </td>
-        <td className="py-1.5 pr-2 align-middle whitespace-nowrap text-right text-stone-500">
+        <td className="pp-item__num pp-item__num--lip" data-rotulo="L">
           {n(valores.lip)}
         </td>
         </>
         )}
 
-        <td className="py-1.5 align-middle">
-          <div className="flex items-center justify-end gap-1.5">
+        <td className="pp-item__acoes">
+          <div className="pp-item__botoes">
             <button
               type="button"
               onClick={() => onAlternar(item.id)}
               aria-expanded={aberto}
               aria-label={`Opções de substituição de ${item.nome}`}
-              className={`${aberto ? 'text-stone-900' : 'text-stone-400'} hover:text-stone-700`}
+              className={`pp-icone-botao${aberto ? ' pp-icone-botao--ativo' : ''}`}
             >
-              <Repeat className="w-3.5 h-3.5" />
+              <Repeat className="pp-icone" aria-hidden="true" />
             </button>
             {/* Ate aqui nao havia como tirar um alimento da refeicao: so
                 dava para zerar a quantidade, o que deixa a linha morta. */}
@@ -121,9 +135,9 @@ export default function AlimentoLinha({
                 type="button"
                 onClick={() => onExcluirItem(item.id)}
                 aria-label={`Remover ${item.nome} da refeição`}
-                className="pp-excluir text-stone-300 hover:text-red-600"
+                className="pp-icone-botao pp-icone-botao--perigo"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="pp-icone" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -131,8 +145,8 @@ export default function AlimentoLinha({
       </tr>
 
       {aberto && (
-        <tr>
-          <td colSpan={colunas} className="p-0">
+        <tr className="pp-item-substitutos">
+          <td colSpan={colunas} className="pp-item-substitutos__celula">
             <PainelSubstitutos
               base={item}
               ancora={ancora}
@@ -144,8 +158,11 @@ export default function AlimentoLinha({
               onRemover={onRemover}
               onQuantidadeSubstituto={onQuantidadeSubstituto}
               busca={busca}
+              buscaAtiva={buscaAtiva}
               onBuscarSubstituto={onBuscarSubstituto}
               onEscolherSubstituto={onEscolherSubstituto}
+              onAlternarBuscaSubstituto={onAlternarBuscaSubstituto}
+              onFecharBusca={onFecharBusca}
               onSalvarBloco={onSalvarBloco}
               onAplicarBloco={onAplicarBloco}
             />

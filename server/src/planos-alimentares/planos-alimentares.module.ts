@@ -8,9 +8,11 @@ import { TacoFood } from '../taco/taco.entity';
 import { PlanoAlimentarController } from './plano-alimentar.controller';
 import { PlanoAlimentar } from './plano-alimentar.entity';
 import { PlanoAlimentarService } from './plano-alimentar.service';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
+import { NotificacoesModule } from '../notificacoes/notificacoes.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlanoAlimentar, Paciente, Avaliacao, User, TacoFood])],
+  imports: [AuditoriaModule, NotificacoesModule, TypeOrmModule.forFeature([PlanoAlimentar, Paciente, Avaliacao, User, TacoFood])],
   controllers: [PlanoAlimentarController],
   providers: [PlanoAlimentarService, RolesGuard],
   exports: [PlanoAlimentarService, TypeOrmModule]

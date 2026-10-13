@@ -1,112 +1,1160 @@
-/* ============================================================
-   AthletePortal — token system
-   ============================================================ */
-.athlete-portal {
-  --ap-navy: #1D3350;
-  --ap-navy-mid: #264f6b;
-  --ap-accent: #56ADDB;
-  --ap-surface: #ffffff;
-  --ap-surface-2: #f3f8fb;
-  --ap-surface-3: #e8f1f6;
-  --ap-border: rgba(29, 51, 80, 0.10);
-  --ap-border-mid: rgba(29, 51, 80, 0.17);
-  --ap-shadow-1: 0 1px 4px rgba(29, 51, 80, 0.06);
-  --ap-shadow-2: 0 4px 18px rgba(29, 51, 80, 0.09), 0 1px 4px rgba(29, 51, 80, 0.05);
-  --ap-ok: #16a34a;
-  --ap-warn: #d97706;
-  --ap-danger: #dc2626;
+/* Portal do atleta: abas Pendências, Cadastro e Acompanhamento, na direção
+   "Energia e velocidade" da landing (docs/design/landing-guia-visual.md,
+   seção "Direção vigente"; docs/implementacao/telas-v2/change-intent.md,
+   onda B). A Visão geral (AthleteVisaoGeral.jsx) já usa as peças de
+   src/components/painel/painel.css; esta folha segue o mesmo desenho:
+   cartões brancos com --lt-radius-card, títulos em Sofia 700, alvos de
+   44 px, foco com --lt-focus-ring e estado escrito, nunca só cor.
 
+   Escopo: tudo começa em `.athlete-portal`. As regras de elemento (título,
+   parágrafo, botão) ficam dentro de `.ap-tab-body` ou de uma classe desta
+   folha, para não alcançar as peças `.painel`, que também moram na raiz.
+   Armadilhas globais de src/index.css e src/styles/theme.css declaradas de
+   volta aqui: h1 com degradê recortado no texto, h1…h6 em Poppins e com
+   cor, `p` com entrelinha 1,6, `button { white-space: nowrap; display:
+   inline-flex }` e `*:focus-visible` com contorno verde. A onda A muda
+   essas globais em paralelo; nada aqui depende delas.
+
+   Os textos, os estados e as condições de exibição vêm das abas
+   (AthleteTab*.jsx), que esta onda não edita: só o CSS muda o desenho.
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs. Nenhum tom
+   novo: tokens --lt-* e o par de "atenção" já medido em painel.css.
+
+   As fontes vêm aqui pelo mesmo motivo de painel.css: ao recarregar direto
+   no portal, a folha da landing não foi baixada. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
+.athlete-portal {
+  --ap-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --ap-atencao-texto: #9a3412;  /* 7,31:1 sobre branco · 6,88:1 sobre --ap-atencao-fundo · 6,84:1 sobre --lt-color-surface-field */
+  --ap-atencao-fundo: #fff7ed;
+  --ap-atencao-traco: #c2410c;  /* gráfico, não texto: 5,18:1 sobre branco */
+  --ap-positivo-fundo: #ecf6e8; /* --lt-color-brand-green-text sobre ele: 4,84:1 */
+  --ap-raia: rgba(37, 96, 168, 0.3); /* --lt-color-brand-blue a 30%: só gráfico */
+  --ap-esqueleto: #e7ecf3;
+  /* Ponto do tipo de avaliação nos auto-relatos: só gráfico, o tipo vem
+     escrito ao lado. Sobre branco: verde 4,21:1, azul 6,33:1, laranja
+     5,18:1, violeta 5,70:1 e cinza 3,91:1. O violeta é o único tom fora
+     do vocabulário --lt-*; repete o que o JSX pintava por style inline. */
+  --ap-tipo-alimentar: var(--lt-color-brand-green);
+  --ap-tipo-hidratacao: var(--lt-color-brand-blue);
+  --ap-tipo-treino: var(--ap-atencao-traco);
+  --ap-tipo-fisioterapia: #7c3aed;
+  --ap-tipo-outro: var(--lt-color-border-field);
+  --ap-sombra-largada: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  --ap-sombra-largada-forte: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+
+  box-sizing: border-box;
   min-height: 100vh;
   width: min(100%, var(--layout-content-width, 1200px));
+  min-width: 0;
   margin: 0 auto;
   padding: var(--layout-page-gutter, 1rem);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  color: #0f172a;
+  gap: var(--lt-space-4);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-/* ─── Internal header (standalone mode) ─────────────────── */
-.athlete-header {
+/* ── Cabeçalho interno (só quando hideInternalHeader é falso) ─────────
+   O mesmo desenho do cabeçalho da Visão geral: cartão branco e a raia
+   azul e verde no pé. */
+.athlete-portal .athlete-header {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
-  border-radius: 16px;
-  border: 1px solid var(--ap-border-mid);
-  background: var(--ap-surface);
-  padding: clamp(1rem, 2vw, 1.4rem);
-  box-shadow: var(--ap-shadow-2);
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
+  padding: var(--lt-space-5) var(--lt-space-5) calc(var(--lt-space-5) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--ap-sombra);
 }
 
-.athlete-header h1 {
-  margin: 0 0 0.28rem;
-  font-size: clamp(1.4rem, 2.3vw, 1.85rem);
-  font-weight: 800;
-  color: var(--ap-navy);
-  letter-spacing: -0.01em;
+.athlete-portal .athlete-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
 }
 
-.athlete-header p {
+.athlete-portal .athlete-header > div:first-child { flex: 1 1 18rem; min-width: 0; }
+
+/* Reset do h1 global: sem as quatro primeiras linhas o degradê recortado
+   vence `color` e o título some. */
+.athlete-portal .athlete-header h1 {
   margin: 0;
-  color: #64748b;
-  font-size: 0.86rem;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
 }
 
-.athlete-badges {
+.athlete-portal .athlete-header p {
+  margin: var(--lt-space-2) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .athlete-header-actions,
+.athlete-portal .athlete-badges {
   display: flex;
-  gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.athlete-header-actions {
-  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: var(--lt-space-2);
 }
 
-.athlete-badge {
+/* Azul sobre --lt-color-track-tint: 5,57:1. */
+.athlete-portal .athlete-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.28rem 0.62rem;
-  border: 1px solid var(--ap-border-mid);
-  border-radius: 999px;
-  background: var(--ap-surface-2);
-  color: var(--ap-navy);
-  font-size: 0.72rem;
+  gap: var(--lt-space-1);
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
   font-weight: 700;
+  line-height: var(--lt-leading-snug);
 }
 
-.athlete-logout-btn {
+/* Sair: ação secundária em contorno, no vermelho de texto (6,47:1). */
+.athlete-portal .athlete-logout-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  border: 1px solid rgba(220, 38, 38, 0.25);
-  background: #fff1f2;
-  color: #9f1239;
-  border-radius: 999px;
-  padding: 0.32rem 0.68rem;
-  font-size: 0.71rem;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-danger-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
   font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-.athlete-logout-btn:hover {
-  background: #ffe4e6;
-  border-color: rgba(220, 38, 38, 0.35);
-  color: #881337;
+@media (hover: hover) {
+  .athlete-portal .athlete-logout-btn:hover { border-color: var(--lt-color-danger-text); background: var(--lt-color-danger-bg); }
 }
 
-.athlete-logout-btn:focus-visible {
+.athlete-portal .athlete-logout-btn:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Carregando, vazio e erro (FeedbackState e Skeleton de components/ui)
+   No tom de .painel-estado. O shimmer global anima background-position em
+   laço infinito: aqui o esqueleto fica parado e só pulsa três vezes, com
+   movimento permitido (ver "Movimento", no fim). */
+.athlete-portal .ui-feedback-state:not(.ui-feedback-state--loading) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--ap-sombra);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  text-align: center;
+}
+
+.athlete-portal .ap-tab-body .ui-feedback-state:not(.ui-feedback-state--loading) {
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+}
+
+.athlete-portal .ui-feedback-state__icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  opacity: 1;
+}
+
+.athlete-portal .ui-feedback-state__title {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ui-feedback-state__description {
+  max-width: 36rem;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Quatro classes: vence a regra das abas acima, que troca o fundo. */
+.athlete-portal .ui-feedback-state.ui-feedback-state--error:not(.ui-feedback-state--loading) { background: var(--lt-color-danger-bg); }
+.athlete-portal .ui-feedback-state--error .ui-feedback-state__icon { background: var(--lt-color-surface); color: var(--lt-color-danger-text); }
+.athlete-portal .ui-feedback-state--error .ui-feedback-state__title { color: var(--lt-color-danger-text); }
+
+/* "Tentar novamente" (erro com onRetry): contorno azul de 44 px. */
+.athlete-portal .ui-feedback-state__action { margin-top: var(--lt-space-1); }
+
+.athlete-portal .ui-feedback-state__action .ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  transform: none;
+}
+
+@media (hover: hover) {
+  .athlete-portal .ui-feedback-state__action .ui-button:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+}
+
+.athlete-portal .ui-feedback-state__action .ui-button:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.athlete-portal .ui-skeleton-group { display: grid; gap: var(--lt-space-3); }
+
+.athlete-portal .ui-skeleton {
+  border-radius: var(--lt-radius-control);
+  background: var(--ap-esqueleto);
+  animation: none;
+}
+
+.athlete-portal .ui-skeleton-line { height: 1rem; }
+
+/* ── Corpo das abas: uma coluna de cartões ───────────────────────────── */
+.athlete-portal .ap-tab-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+.athlete-portal .ap-tab-body :where(h2, h3, h4) {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .ap-tab-body :where(p) { margin: 0; line-height: var(--lt-leading-normal); }
+.athlete-portal .ap-tab-body :where(button) { white-space: normal; }
+
+.athlete-portal .ap-tab-body :where(a, button, summary, [tabindex]):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+  box-shadow: var(--lt-focus-ring);
 }
 
-/* ─── Body grid ──────────────────────────────────────────── */
+/* ── Cartão ──────────────────────────────────────────────────────────── */
+.athlete-portal .ap-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--ap-sombra);
+  color: var(--lt-color-text);
+}
+
+/* Próxima consulta: a marca de largada no topo, como o acento dos
+   indicadores da Visão geral. Só gráfico. */
+.athlete-portal .ap-card--agenda::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-5);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--lt-color-brand-green);
+  transform: skewX(-20deg);
+}
+
+/* Título do cartão: o degrau de .painel-secao__titulo, sem caixa alta. */
+.athlete-portal .ap-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-title);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .ap-card__header svg { flex: none; width: 1.25rem; height: 1.25rem; color: var(--lt-color-brand-blue); }
+
+.athlete-portal .athlete-text {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+/* ── Botões: primário no degradê de largada, perigo em contorno ───────
+   Branco sobre o degradê: 4,82:1 no topo e 6,20:1 na base. */
+.athlete-portal .athlete-action-btn,
+.athlete-portal .ap-complete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: var(--ap-sombra-largada);
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  white-space: normal;
+  cursor: pointer;
+  opacity: 1;
+  transition: box-shadow 160ms;
+}
+
+.athlete-portal .athlete-action-btn svg,
+.athlete-portal .ap-complete-btn svg { flex: none; }
+
+/* Avisar ausência: ação de consequência, em contorno com o vermelho de
+   texto (6,47:1 sobre branco); o rótulo diz o que acontece. */
+.athlete-portal .athlete-action-btn--danger {
+  border: 1.5px solid var(--lt-color-danger-text);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-danger-text);
+}
+
+@media (hover: hover) {
+  .athlete-portal .athlete-action-btn:hover:not(:disabled),
+  .athlete-portal .ap-complete-btn:hover:not(:disabled) { box-shadow: var(--ap-sombra-largada-forte); }
+
+  .athlete-portal .athlete-action-btn--danger:hover:not(:disabled) { background: var(--lt-color-danger-bg); box-shadow: none; }
+}
+
+.athlete-portal .athlete-action-btn:focus-visible,
+.athlete-portal .ap-complete-btn:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.athlete-portal .athlete-action-btn:disabled,
+.athlete-portal .ap-complete-btn:disabled { box-shadow: none; opacity: 0.6; cursor: not-allowed; }
+
+/* ── Pendências: próxima consulta ────────────────────────────────────
+   A data na voz de campanha, abaixo do h1 do cabeçalho, como o número
+   dos indicadores da Visão geral. */
+.athlete-portal .athlete-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.athlete-portal .athlete-metric strong {
+  display: block;
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.875rem, 2.6vw, 2.375rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .athlete-metric > span {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+.athlete-portal .athlete-metric small {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+/* Prazo de remarcação: a informação que decide o botão, em tinta e 700. */
+.athlete-portal .athlete-metric .athlete-deadline-note {
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.athlete-portal .athlete-appointment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  margin-top: var(--lt-space-3);
+}
+
+/* ── Pendências: "O que fazer agora" ─────────────────────────────────
+   Linhas de 44 px no desenho de .painel-lista__linha: raia inclinada e
+   ícone no tom. O nível vem escrito no selo (.athlete-pending-item__nivel),
+   com o mesmo rótulo da Visão geral; a raia e o ícone só repetem. */
+.athlete-portal .athlete-pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.athlete-portal .athlete-pending-item {
+  --ap-tom: var(--ap-raia);
+  --ap-tom-icone-fundo: var(--lt-color-track-tint);
+  --ap-tom-icone: var(--lt-color-brand-blue);
+
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-3) var(--lt-space-3) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .athlete-pending-item::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ap-tom);
+  transform: skewX(-12deg);
+}
+
+.athlete-portal .athlete-pending-item.high { --ap-tom: var(--lt-color-danger-text); --ap-tom-icone-fundo: var(--lt-color-danger-bg); --ap-tom-icone: var(--lt-color-danger-text); }
+.athlete-portal .athlete-pending-item.medium { --ap-tom: var(--ap-atencao-traco); --ap-tom-icone-fundo: var(--ap-atencao-fundo); --ap-tom-icone: var(--ap-atencao-texto); }
+
+.athlete-portal .athlete-pending-item > svg {
+  flex: none;
+  box-sizing: content-box;
+  padding: 0.5rem;
+  border-radius: 50%;
+  background: var(--ap-tom-icone-fundo);
+  color: var(--ap-tom-icone);
+}
+
+.athlete-portal .athlete-pending-item > div { flex: 1 1 auto; min-width: 0; padding-top: 0.25rem; }
+
+.athlete-portal .athlete-pending-item strong {
+  display: block;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .athlete-pending-item span {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Selo do nível, no par do ícone: vermelho 5,91:1, atenção 6,88:1 e
+   azul 5,57:1, cada um sobre o próprio fundo. */
+.athlete-portal .athlete-pending-item__nivel {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-top: var(--lt-space-2);
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--ap-tom-icone-fundo);
+  color: var(--ap-tom-icone);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+}
+
+.athlete-portal .athlete-pending-item--action { cursor: pointer; transition: background-color 160ms; }
+
+@media (hover: hover) {
+  .athlete-portal .athlete-pending-item--action:hover { background: var(--lt-color-track-tint); }
+}
+
+.athlete-portal .athlete-pending-item--action:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* "Tudo em dia": estado escrito, no par de sucesso (6,81:1). */
+.athlete-portal .athlete-empty-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  align-self: flex-start;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .athlete-empty-inline svg { flex: none; }
+
+/* Aviso de cadastro incompleto: o par de "atenção" de painel.css. */
+.athlete-portal .ap-forms-gate {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-3) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--ap-atencao-fundo);
+  color: var(--ap-atencao-texto);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ap-forms-gate::before {
+  content: '';
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ap-atencao-traco);
+  transform: skewX(-12deg);
+}
+
+.athlete-portal .ap-forms-gate > svg { flex: none; color: var(--ap-atencao-traco); }
+.athlete-portal .ap-forms-gate > span { flex: 1 1 14rem; min-width: 0; overflow-wrap: anywhere; }
+.athlete-portal .ap-forms-gate strong { font-weight: 700; }
+
+/* ── Pendências: formulários liberados ───────────────────────────────
+   Cada formulário é um bloco no fundo de campo, dentro do cartão branco.
+   O domínio vem do ícone e do título; a cor do ícone é a mesma para todos. */
+.athlete-portal .athlete-self-forms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.athlete-portal .athlete-self-form-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  transform: none;
+}
+
+.athlete-portal .athlete-self-form-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+.athlete-portal .athlete-self-form-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.athlete-portal .athlete-self-form-content strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .athlete-self-form-content span {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Selo de situação: "aguardando revisão" em azul (5,57:1 sobre o tom),
+   "Revisado pela equipe" no par de sucesso. */
+.athlete-portal .athlete-self-form-content small {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .athlete-self-form-content .athlete-self-form-content__ok {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.athlete-portal .athlete-self-form-item .athlete-action-btn { width: 100%; margin-top: auto; }
+
+/* ── Cadastro: cabeçalho do atleta ───────────────────────────────────
+   Era um bloco azul-escuro com texto branco translúcido; agora é o
+   cartão branco do cabeçalho da Visão geral, com a raia no pé. */
+.athlete-portal .ap-hero {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-4) var(--lt-space-5);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-5) var(--lt-space-5) calc(var(--lt-space-5) + 3px);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--ap-sombra);
+  overflow: visible;
+}
+
+.athlete-portal .ap-hero::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.athlete-portal .ap-hero__profile { display: flex; flex: 1 1 16rem; align-items: center; gap: var(--lt-space-4); min-width: 0; }
+
+.athlete-portal .ap-hero__avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.athlete-portal .ap-hero__meta { display: flex; flex-direction: column; gap: 0.125rem; min-width: 0; }
+
+.athlete-portal .ap-hero .ap-hero__name {
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-lg);
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .ap-hero .ap-hero__sub {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ap-hero__age {
+  align-self: flex-start;
+  margin-top: var(--lt-space-1);
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+/* Quatro números do cadastro; a situação vem escrita ("Concluído",
+   "Pendente", "Aceito") e o tom só acompanha. */
+.athlete-portal .ap-hero__stats {
+  display: grid;
+  flex: 2 1 22rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.athlete-portal .ap-hero__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.athlete-portal .ap-hero__stat span {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ap-hero__stat strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .ap-hero__stat--ok { background: var(--lt-color-success-bg); }
+.athlete-portal .ap-hero__stat--ok strong { color: var(--lt-color-success-text); }
+.athlete-portal .ap-hero__stat--warn { background: var(--ap-atencao-fundo); }
+.athlete-portal .ap-hero__stat--warn strong { color: var(--ap-atencao-texto); }
+.athlete-portal .ap-hero__stat--warn span { color: var(--lt-color-text-muted); }
+
+/* ── Cadastro: barra de situação ─────────────────────────────────────── */
+.athlete-portal .ap-cadastro-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4) var(--lt-space-5);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--ap-sombra);
+}
+
+.athlete-portal .ap-cadastro-badges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2); min-width: 0; }
+
+.athlete-portal .ap-cadastro-badge,
+.athlete-portal .athlete-pill,
+.athlete-portal .athlete-prontuario-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.athlete-portal .ap-cadastro-badge svg { flex: none; }
+
+.athlete-portal .ap-cadastro-badge--origin { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+.athlete-portal .ap-cadastro-badge--ok,
+.athlete-portal .athlete-pill.ok { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.athlete-portal .ap-cadastro-badge--warn,
+.athlete-portal .athlete-pill.pending { background: var(--ap-atencao-fundo); color: var(--ap-atencao-texto); }
+.athlete-portal .ap-cadastro-badge--date { padding-inline: 0; background: none; color: var(--lt-color-text-muted); font-weight: 600; }
+
+/* ── Cadastro: dados em pares rótulo e valor ─────────────────────────── */
+.athlete-portal .ap-dossie__pills { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+.athlete-portal .athlete-prontuario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.athlete-portal .athlete-prontuario-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+/* Rótulo em caixa alta pequena, o degrau --lt-text-xs; apoio a 6,17:1. */
+.athlete-portal .athlete-prontuario-item span {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.athlete-portal .athlete-prontuario-item strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* ── Cadastro: histórico clínico ─────────────────────────────────────── */
+.athlete-portal .ap-dossie__body { display: flex; flex-direction: column; gap: var(--lt-space-4); min-width: 0; }
+.athlete-portal .ap-dossie__section { display: flex; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
+
+.athlete-portal .ap-dossie__section h3 {
+  padding: 0 0 var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ap-dossie__section .athlete-text { color: var(--lt-color-text); overflow-wrap: anywhere; }
+
+/* Selo solto no cartão (Consentimento): não estica na coluna. */
+.athlete-portal .ap-card > .athlete-pill { align-self: flex-start; }
+
+.athlete-portal .athlete-prontuario-chip-list { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+.athlete-portal .athlete-prontuario-chip { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+
+/* ── Acompanhamento: consultas e auto-relatos ────────────────────────── */
+.athlete-portal .ap-timeline { display: flex; flex-direction: column; margin: 0; padding: 0; }
+
+.athlete-portal .ap-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-3) 0;
+  border: 0;
+}
+
+.athlete-portal .ap-timeline-item + .ap-timeline-item { border-top: 1px solid var(--lt-color-border); }
+.athlete-portal .ap-timeline-item:last-child { padding-bottom: 0; }
+
+.athlete-portal .ap-timeline-item__date {
+  flex: none;
+  min-width: 5.75rem;
+  padding-top: 0.125rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+/* O ponto é gráfico (a cor vem da classe, por tipo de avaliação); o tipo
+   também vem escrito ao lado. */
+.athlete-portal .ap-timeline-item__dot {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-top: 0.375rem;
+  border-radius: 50%;
+  background: var(--ap-tipo-outro);
+}
+
+.athlete-portal .ap-timeline-item__dot--alimentar { background: var(--ap-tipo-alimentar); }
+.athlete-portal .ap-timeline-item__dot--hidratacao { background: var(--ap-tipo-hidratacao); }
+.athlete-portal .ap-timeline-item__dot--treino { background: var(--ap-tipo-treino); }
+.athlete-portal .ap-timeline-item__dot--fisioterapia { background: var(--ap-tipo-fisioterapia); }
+
+.athlete-portal .ap-timeline-item__content { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.125rem; min-width: 0; }
+
+.athlete-portal .ap-timeline-item__content strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* A situação ("Agendada", "Revisado", "Aguardando revisão") vem escrita;
+   o tom só repete. Sobre branco: verde de sucesso 7,13:1, azul 6,33:1 e
+   apoio 6,59:1 (o verde antigo, #16a34a, media 3,30:1). */
+.athlete-portal .ap-timeline-item__content > span {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ap-timeline-item__content > .ap-timeline-item__status--ok { color: var(--lt-color-success-text); }
+.athlete-portal .ap-timeline-item__content > .ap-timeline-item__status--info { color: var(--lt-color-brand-blue); }
+.athlete-portal .ap-timeline-item__content > .ap-timeline-item__status--neutro { color: var(--lt-color-text-muted); }
+
+/* ── Acompanhamento: minha evolução ──────────────────────────────────── */
+.athlete-portal .ap-evolution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.athlete-portal .ap-domain-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-4) calc(var(--lt-space-4) + 0.25rem);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.athlete-portal .ap-domain-panel::before {
+  content: '';
+  position: absolute;
+  top: 1rem;
+  bottom: 1rem;
+  left: 0.4375rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ap-raia);
+  transform: skewX(-12deg);
+}
+
+.athlete-portal .ap-domain-panel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.athlete-portal .ap-domain-panel__header svg { flex: none; width: 1.125rem; height: 1.125rem; color: var(--lt-color-brand-blue); }
+.athlete-portal .ap-domain-panel__body { display: flex; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
+
+/* "Sem registro" do domínio: legível como o dado presente. */
+.athlete-portal .ap-domain-panel__empty {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-style: normal;
+  line-height: var(--lt-leading-normal);
+}
+
+.athlete-portal .ap-domain-panel__date {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-portal .ap-domain-panel__waiting,
+.athlete-portal .ap-domain-panel__ok,
+.athlete-portal .ap-domain-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+}
+
+.athlete-portal .ap-domain-panel__waiting { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+.athlete-portal .ap-domain-panel__ok,
+.athlete-portal .ap-domain-badge--ok { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.athlete-portal .ap-domain-badge--atencao { background: var(--ap-atencao-fundo); color: var(--ap-atencao-texto); }
+.athlete-portal .ap-domain-badge--critico { background: var(--lt-color-danger-bg); color: var(--lt-color-danger-text); }
+
+.athlete-portal .ap-domain-stat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--lt-space-3);
+  min-width: 0;
+}
+
+.athlete-portal .ap-domain-stat > span { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); line-height: var(--lt-leading-snug); }
+
+.athlete-portal .ap-domain-stat strong {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--lt-space-1);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Variação da % de gordura: o sinal (+/−) vem escrito; o tom acompanha. */
+.athlete-portal .ap-trend { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 700; }
+.athlete-portal .ap-trend--ok { color: var(--lt-color-success-text); }
+.athlete-portal .ap-trend--warn { color: var(--ap-atencao-texto); }
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 30rem) {
+  .athlete-portal .ap-card,
+  .athlete-portal .ap-hero { padding-inline: var(--lt-space-4); }
+  .athlete-portal .athlete-appointment-actions > .athlete-action-btn,
+  .athlete-portal .ap-cadastro-status-bar > .ap-complete-btn { flex: 1 1 100%; }
+}
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com `prefers-reduced-motion: no-preference`, só opacity, sem
+   will-change e sem laço: o esqueleto pulsa três vezes e para. */
+@media (prefers-reduced-motion: no-preference) {
+  .athlete-portal .ui-skeleton { animation: ap-pulsar 1.6s ease-in-out 3; }
+
+  @keyframes ap-pulsar { 50% { opacity: 0.5; } }
+}
+
+/* ══ LEGADO SEM CONSUMIDOR: início ═════════════════════════════════════
+   Regras copiadas sem mudança de tmp/telas-v1/src/views/Athlete/
+   AthletePortal.css. Nenhuma classe daqui aparece em src/ (busca por
+   token exato em 28/09/2026, fora as montadas por template, como
+   ap-domain-panel--${domain}): são restos do layout anterior às abas.
+   Remover código morto depende de aprovação (telas-v2/change-intent.md,
+   "Não objetivos"), então o bloco fica isolado para sair de uma vez,
+   entre esta marca e a de "fim". As variáveis --ap-* antigas abaixo só
+   servem a este bloco. */
+.athlete-portal {
+  --ap-navy:      var(--color-navy,       #1D3350);
+  --ap-navy-mid:  var(--color-navy-light, #264f6b);
+  --ap-accent:    var(--color-blue,       #56ADDB);
+  --ap-surface:   var(--color-surface,    #ffffff);
+  --ap-surface-2: #f3f8fb;
+  --ap-surface-3: #e8f1f6;
+  --ap-border:     var(--color-border,       rgba(29, 51, 80, 0.11));
+  --ap-border-mid: var(--color-border-hover, rgba(29, 51, 80, 0.20));
+  --ap-shadow-1:  var(--shadow-sm,  0 1px 3px rgba(29, 51, 80, 0.07));
+  --ap-shadow-2:  var(--shadow-md,  0 4px 12px rgba(29, 51, 80, 0.09));
+  --ap-ok:        #16a34a;
+  --ap-warn:      var(--color-warn,   #d97706);
+  --ap-danger:    var(--color-danger, #dc2626);
+}
+
 .athlete-body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -114,11 +1162,10 @@
   align-items: start;
 }
 
-/* ─── Cards ──────────────────────────────────────────────── */
 .athlete-card {
   background: var(--ap-surface);
   border: 1px solid var(--ap-border);
-  border-radius: 16px;
+  border-radius: var(--radius-xl, 18px);
   padding: 1.1rem;
   box-shadow: var(--ap-shadow-1);
   display: flex;
@@ -136,7 +1183,6 @@
   grid-column: 1 / -1;
 }
 
-/* Profile card — dark inverted */
 .athlete-card--profile {
   background: linear-gradient(140deg, var(--ap-navy) 0%, var(--ap-navy-mid) 100%);
   border-color: rgba(255, 255, 255, 0.07);
@@ -162,17 +1208,14 @@
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-/* Agenda card — green top line */
 .athlete-card--agenda {
   border-top: 3px solid var(--ap-ok);
 }
 
-/* Pendencias card — amber top line */
 .athlete-card--pendencias {
   border-top: 3px solid var(--ap-warn);
 }
 
-/* ─── Card header ────────────────────────────────────────── */
 .athlete-card-header {
   display: flex;
   align-items: center;
@@ -197,7 +1240,6 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
-/* ─── Profile hero ───────────────────────────────────────── */
 .athlete-profile-hero {
   display: flex;
   align-items: center;
@@ -225,7 +1267,6 @@
   flex: 1;
 }
 
-/* ─── Text helpers ───────────────────────────────────────── */
 .athlete-card h2 {
   margin: 0;
   font-size: clamp(1.05rem, 1.8vw, 1.3rem);
@@ -252,169 +1293,9 @@
   font-size: 0.75rem;
 }
 
-.athlete-text {
-  margin: 0;
-  color: #475569;
-  font-size: 0.82rem;
-  line-height: 1.5;
-}
-
 .athlete-card--profile .athlete-text {
   color: rgba(255, 255, 255, 0.45);
   font-size: 0.74rem;
-}
-
-/* ─── Appointment metric ─────────────────────────────────── */
-.athlete-metric {
-  display: flex;
-  flex-direction: column;
-  gap: 0.14rem;
-}
-
-.athlete-metric strong {
-  font-size: 1rem;
-  font-weight: 700;
-  display: block;
-  color: var(--ap-navy);
-}
-
-.athlete-metric span,
-.athlete-metric small {
-  color: #64748b;
-  font-size: 0.76rem;
-}
-
-.athlete-deadline-note {
-  color: var(--ap-navy) !important;
-  font-weight: 700 !important;
-}
-
-.athlete-appointment-actions {
-  margin-top: 0.55rem;
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-/* ─── Action buttons ─────────────────────────────────────── */
-.athlete-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: linear-gradient(140deg, var(--ap-navy), var(--ap-navy-mid));
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.42rem 0.85rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(29, 51, 80, 0.18);
-  transition: opacity 0.15s, box-shadow 0.15s;
-}
-
-.athlete-action-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  box-shadow: 0 4px 14px rgba(29, 51, 80, 0.26);
-}
-
-.athlete-action-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
-  box-shadow: none;
-}
-
-.athlete-action-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(86, 173, 219, 0.22);
-}
-
-.athlete-action-btn--danger {
-  background: linear-gradient(140deg, #b91c1c, #991b1b);
-  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.18);
-}
-
-.athlete-action-btn--danger:hover:not(:disabled) {
-  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.26);
-}
-
-/* ─── Pending items ──────────────────────────────────────── */
-.athlete-pending-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.48rem;
-}
-
-.athlete-pending-item {
-  display: flex;
-  gap: 0.55rem;
-  align-items: flex-start;
-  border: 1px solid var(--ap-border);
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-  background: var(--ap-surface-2);
-}
-
-.athlete-pending-item svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.athlete-pending-item strong {
-  display: block;
-  font-size: 0.79rem;
-}
-
-.athlete-pending-item span {
-  display: block;
-  font-size: 0.72rem;
-  margin-top: 0.08rem;
-  opacity: 0.8;
-}
-
-.athlete-pending-item--action {
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.athlete-pending-item--action:hover {
-  filter: brightness(0.96);
-}
-
-.athlete-pending-item--action:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(86, 173, 219, 0.22);
-}
-
-.athlete-pending-item.high {
-  border-color: rgba(220, 38, 38, 0.22);
-  background: #fff1f2;
-  color: #b91c1c;
-}
-
-.athlete-pending-item.medium {
-  border-color: rgba(217, 119, 6, 0.22);
-  background: #fffbeb;
-  color: #92400e;
-}
-
-.athlete-pending-item.info {
-  border-color: rgba(2, 132, 199, 0.20);
-  background: #f0f9ff;
-  color: #0369a1;
-}
-
-.athlete-empty-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #166534;
-  background: #f0fdf4;
-  border: 1px solid rgba(22, 163, 74, 0.22);
-  border-radius: 10px;
-  padding: 0.48rem 0.65rem;
-  font-size: 0.77rem;
-  font-weight: 700;
 }
 
 .athlete-empty-inline--warn {
@@ -429,104 +1310,10 @@
   border-color: rgba(100, 116, 139, 0.22);
 }
 
-/* ─── Self-evaluation forms ──────────────────────────────── */
 .athlete-self-forms-card {
   gap: 0.9rem;
 }
 
-.athlete-self-forms-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 0.65rem;
-}
-
-.athlete-self-form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  border: 1px solid var(--ap-border);
-  border-radius: 14px;
-  background: var(--ap-surface);
-  padding: 1rem;
-  box-shadow: var(--ap-shadow-1);
-  transition: box-shadow 0.2s, border-color 0.18s;
-}
-
-.athlete-self-form-item:hover {
-  box-shadow: var(--ap-shadow-2);
-  border-color: var(--ap-border-mid);
-}
-
-.athlete-self-form-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  /* default */
-  color: var(--ap-navy);
-  background: var(--ap-surface-2);
-  border: 1px solid var(--ap-border-mid);
-}
-
-/* Domain-specific icon colors */
-.athlete-self-form-item[data-type="alimentar"] .athlete-self-form-icon {
-  background: rgba(22, 163, 74, 0.09);
-  border-color: rgba(22, 163, 74, 0.22);
-  color: #16a34a;
-}
-
-.athlete-self-form-item[data-type="hidratacao"] .athlete-self-form-icon {
-  background: rgba(2, 132, 199, 0.09);
-  border-color: rgba(2, 132, 199, 0.22);
-  color: #0284c7;
-}
-
-.athlete-self-form-item[data-type="carga_treino"] .athlete-self-form-icon {
-  background: rgba(234, 88, 12, 0.09);
-  border-color: rgba(234, 88, 12, 0.22);
-  color: #ea580c;
-}
-
-.athlete-self-form-item[data-type="fisioterapia"] .athlete-self-form-icon {
-  background: rgba(124, 58, 237, 0.09);
-  border-color: rgba(124, 58, 237, 0.22);
-  color: #7c3aed;
-}
-
-.athlete-self-form-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.18rem;
-}
-
-.athlete-self-form-content strong {
-  color: var(--ap-navy);
-  font-size: 0.88rem;
-}
-
-.athlete-self-form-content span {
-  color: #64748b;
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.athlete-self-form-content small {
-  color: #94a3b8;
-  font-size: 0.68rem;
-  font-weight: 600;
-}
-
-.athlete-self-form-item .athlete-action-btn {
-  width: 100%;
-  justify-content: center;
-  margin-top: auto;
-}
-
-/* ─── Evaluation list ────────────────────────────────────── */
 .athlete-list {
   display: flex;
   flex-direction: column;
@@ -550,7 +1337,6 @@
   font-weight: 500;
 }
 
-/* ─── Prontuário shell ───────────────────────────────────── */
 .athlete-prontuario-card {
   gap: 1rem;
 }
@@ -745,36 +1531,6 @@
   grid-column: 1 / -1;
 }
 
-.athlete-prontuario-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 0.48rem;
-}
-
-.athlete-prontuario-item {
-  border: 1px solid var(--ap-border);
-  border-radius: 10px;
-  background: var(--ap-surface-2);
-  padding: 0.56rem 0.65rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.14rem;
-}
-
-.athlete-prontuario-item span {
-  color: #64748b;
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.athlete-prontuario-item strong {
-  color: var(--ap-navy);
-  font-size: 0.8rem;
-  line-height: 1.35;
-}
-
 .athlete-prontuario-section {
   border: 1px solid var(--ap-border);
   border-radius: 12px;
@@ -803,66 +1559,19 @@
   margin-bottom: 0;
 }
 
-.athlete-prontuario-chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.38rem;
-}
-
-.athlete-prontuario-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid var(--ap-border-mid);
-  background: var(--ap-surface-2);
-  color: var(--ap-navy);
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-/* ─── Status pills ───────────────────────────────────────── */
-.athlete-pill {
-  padding: 0.22rem 0.56rem;
-  border-radius: 999px;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  border: 1px solid transparent;
-}
-
-.athlete-pill.ok {
-  background: #f0fdf4;
-  color: #16a34a;
-  border-color: rgba(22, 163, 74, 0.22);
-}
-
-.athlete-pill.pending {
-  background: #fff1f2;
-  color: #b91c1c;
-  border-color: rgba(220, 38, 38, 0.20);
-}
-
-.athlete-pill.neutral {
-  background: var(--ap-surface-2);
-  color: var(--ap-navy);
-  border-color: var(--ap-border-mid);
-}
-
-/* ─── Empty / feedback states ────────────────────────────── */
 .athlete-empty {
   border-radius: 12px;
   border: 1px dashed rgba(100, 116, 139, 0.28);
   background: var(--ap-surface-2);
   padding: 1rem;
-  color: #94a3b8;
+  /* UX-08: #94a3b8 media ~2,56:1 sobre este fundo claro (falha 4,5:1) — e
+     este e o texto que diz "sem registro", nao pode ficar ilegivel. */
+  color: var(--pn-text-4, #5f7188);
   text-align: center;
   font-size: 0.8rem;
   font-weight: 500;
 }
 
-/* ─── Eval items (legacy) ────────────────────────────────── */
 .athlete-eval-item {
   display: flex;
   justify-content: space-between;
@@ -895,121 +1604,18 @@
   color: #334155;
 }
 
-/* ─── New layout (ap-*) ─────────────────────────────────── */
 .ap-body { display: flex; flex-direction: column; gap: 0.85rem; }
 
-/* Hero */
-.ap-hero {
-  background: linear-gradient(140deg, var(--ap-navy) 0%, var(--ap-navy-mid) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 6px 24px rgba(29, 51, 80, 0.22), 0 1px 4px rgba(29, 51, 80, 0.12);
-  padding: 1.1rem 1.3rem;
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-  position: relative;
-  overflow: hidden;
-}
-.ap-hero::before {
-  content: '';
-  position: absolute;
-  top: -50px; right: -50px;
-  width: 180px; height: 180px;
-  border-radius: 50%;
-  background: rgba(86, 173, 219, 0.10);
-  pointer-events: none;
-}
-
-.ap-hero__profile { display: flex; align-items: center; gap: 0.85rem; flex-shrink: 0; }
-.ap-hero__avatar {
-  width: 52px; height: 52px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.13);
-  border: 1.5px solid rgba(255, 255, 255, 0.20);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-.ap-hero__meta { min-width: 0; }
-.ap-hero__name {
-  margin: 0;
-  color: #fff;
-  font-size: clamp(1rem, 1.8vw, 1.2rem);
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ap-hero__sub { margin: 0; color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; }
-.ap-hero__age { font-size: 0.67rem; font-weight: 700; color: rgba(255, 255, 255, 0.45); margin-top: 0.12rem; display: block; }
-
-.ap-hero__stats { display: flex; flex-wrap: wrap; gap: 0.45rem; flex: 1; min-width: 0; }
-.ap-hero__stat {
-  display: flex; flex-direction: column; gap: 0.1rem;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  padding: 0.42rem 0.65rem;
-  min-width: 88px;
-}
-.ap-hero__stat span { font-size: 0.57rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255, 255, 255, 0.48); }
-.ap-hero__stat strong { font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.3; }
-.ap-hero__stat--ok  { border-color: rgba(74, 222, 128, 0.35); background: rgba(74, 222, 128, 0.12); }
-.ap-hero__stat--ok  strong { color: #86efac; }
-.ap-hero__stat--warn { border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.10); }
-.ap-hero__stat--warn strong { color: #fde68a; }
 .ap-hero__logout { margin-left: auto; flex-shrink: 0; }
 
-/* 2-col row */
 .ap-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; align-items: start; }
 
-/* Cards */
-.ap-card {
-  background: var(--ap-surface);
-  border: 1px solid var(--ap-border);
-  border-radius: 16px;
-  padding: 1.1rem;
-  box-shadow: var(--ap-shadow-1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  transition: box-shadow 0.2s, border-color 0.18s;
-}
-.ap-card:hover { box-shadow: var(--ap-shadow-2); border-color: var(--ap-border-mid); }
-.ap-card--agenda { border-top: 3px solid var(--ap-ok); }
-.ap-card__header {
-  display: flex; align-items: center; gap: 0.45rem;
-  font-size: 0.68rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.07em;
-  color: #64748b;
-}
-.ap-card__header svg { color: var(--ap-accent); flex-shrink: 0; }
-
-/* Gate: cadastro incompleto mas formulários liberados */
-.ap-forms-gate {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
-  background: #fffbeb;
-  border: 1px solid rgba(217, 119, 6, 0.22);
-  color: #92400e;
-  font-size: 0.76rem;
-  line-height: 1.4;
-  margin-bottom: 0.4rem;
-}
-.ap-forms-gate svg { flex-shrink: 0; margin-top: 1px; color: #d97706; }
-
-/* Inline forms chips */
 .ap-forms-inline { display: flex; flex-direction: column; gap: 0; }
+
 .ap-section-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; margin: 0 0 0.38rem; }
+
 .ap-forms-chips { display: flex; flex-wrap: wrap; gap: 0.38rem; margin-bottom: 0.5rem; }
+
 .ap-form-chip {
   display: inline-flex; align-items: center; gap: 0.32rem;
   padding: 0.3rem 0.65rem;
@@ -1021,17 +1627,27 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
+
 .ap-form-chip:hover { background: var(--ap-navy); color: #fff; border-color: var(--ap-navy); }
+
 .ap-form-chip[data-type="alimentar"]  { border-color: rgba(22, 163, 74, 0.3);  color: #16a34a; }
+
 .ap-form-chip[data-type="alimentar"]:hover  { background: #16a34a;  color: #fff; border-color: #16a34a; }
+
 .ap-form-chip[data-type="hidratacao"] { border-color: rgba(2, 132, 199, 0.3);  color: #0284c7; }
+
 .ap-form-chip[data-type="hidratacao"]:hover { background: #0284c7;  color: #fff; border-color: #0284c7; }
+
 .ap-form-chip[data-type="carga_treino"] { border-color: rgba(234, 88, 12, 0.3); color: #ea580c; }
+
 .ap-form-chip[data-type="carga_treino"]:hover { background: #ea580c; color: #fff; border-color: #ea580c; }
+
 .ap-form-chip[data-type="fisioterapia"] { border-color: rgba(124, 58, 237, 0.3); color: #7c3aed; }
+
 .ap-form-chip[data-type="fisioterapia"]:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
 
 .ap-form-chip__label { line-height: 1; }
+
 .ap-form-chip__sent {
   font-size: 0.59rem;
   font-weight: 600;
@@ -1039,6 +1655,7 @@
   line-height: 1;
   white-space: nowrap;
 }
+
 .ap-form-chip--sent {
   flex-direction: column;
   align-items: flex-start;
@@ -1048,8 +1665,8 @@
   opacity: 0.82;
 }
 
-/* Dossiê collapsible */
 .ap-dossie { }
+
 .ap-dossie__toggle {
   display: flex; align-items: center; gap: 0.5rem;
   width: 100%; background: none; border: none; cursor: pointer;
@@ -1057,173 +1674,128 @@
   text-transform: uppercase; letter-spacing: 0.07em;
   padding: 0; text-align: left;
 }
+
 .ap-dossie__toggle svg:first-of-type { color: var(--ap-accent); flex-shrink: 0; }
+
 .ap-dossie__toggle:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(86, 173, 219, 0.3); border-radius: 4px; }
-.ap-dossie__subtitle { font-size: 0.61rem; font-weight: 500; color: #94a3b8; text-transform: none; letter-spacing: 0; flex: 1; }
-.ap-dossie__chevron { transition: transform 0.2s; margin-left: auto; color: #94a3b8; flex-shrink: 0; }
+
+.ap-dossie__subtitle { font-size: 0.61rem; font-weight: 500; color: var(--pn-text-4, #5f7188); text-transform: none; letter-spacing: 0; flex: 1; }
+
+.ap-dossie__chevron { transition: transform 0.2s; margin-left: auto; color: var(--pn-text-4, #5f7188); flex-shrink: 0; }
+
 .ap-dossie__chevron--open { transform: rotate(180deg); }
 
-.ap-dossie__body { display: flex; flex-direction: column; gap: 0.85rem; padding-top: 0.75rem; border-top: 1px solid var(--ap-border); margin-top: 0.2rem; }
-.ap-dossie__pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.ap-dossie__section { display: flex; flex-direction: column; gap: 0.5rem; }
-.ap-dossie__section h3 { margin: 0; color: var(--ap-navy); font-size: 0.75rem; font-weight: 800; padding-bottom: 0.4rem; border-bottom: 1px solid var(--ap-border); }
 .ap-dossie__clinical { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.48rem; }
+
 .ap-dossie__clinical-item { border: 1px solid var(--ap-border); border-radius: 10px; background: var(--ap-surface-2); padding: 0.52rem 0.65rem; display: flex; flex-direction: column; gap: 0.18rem; }
+
 .ap-dossie__clinical-item span { font-size: 0.59rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
+
 .ap-dossie__clinical-item p { margin: 0; font-size: 0.77rem; color: var(--ap-navy); line-height: 1.4; }
+
 .ap-dossie__comorbidade { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.5rem; }
+
 .ap-dossie__comorbidade > span { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; }
 
-/* ─── Card full-width variant ───────────────────────────── */
-.ap-card--full { grid-column: 1 / -1; }
+.ap-domain-panel--physio     { border-left-color: #7c3aed; }
 
-/* ─── Evolution grid ─────────────────────────────────────── */
-.ap-evolution-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
+.ap-domain-panel--physio    .ap-domain-panel__header svg { color: #7c3aed; }
+
+.ap-timeline-item__status {
+  font-weight: 600;
 }
 
-/* ─── Domain panels ──────────────────────────────────────── */
-.ap-domain-panel {
-  border: 1px solid var(--ap-border);
-  border-radius: 12px;
-  background: var(--ap-surface-2);
-  padding: 0.85rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.ap-domain-panel__header {
-  display: flex;
-  align-items: center;
-  gap: 0.38rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #64748b;
-}
-
-.ap-domain-panel__header svg { color: var(--ap-accent); flex-shrink: 0; }
-
-.ap-domain-panel__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.38rem;
-}
-
-.ap-domain-panel__empty {
-  margin: 0;
-  font-size: 0.76rem;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.ap-domain-panel__date {
-  margin: 0.1rem 0 0;
-  font-size: 0.65rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.ap-domain-panel__waiting {
-  margin: 0;
-  font-size: 0.7rem;
-  color: #0369a1;
-  background: #f0f9ff;
-  border: 1px solid rgba(2, 132, 199, 0.20);
-  border-radius: 6px;
-  padding: 0.25rem 0.5rem;
-}
-
-.ap-domain-panel__ok {
-  margin: 0;
-  font-size: 0.7rem;
-  color: #16a34a;
-  background: #f0fdf4;
-  border: 1px solid rgba(22, 163, 74, 0.22);
-  border-radius: 6px;
-  padding: 0.25rem 0.5rem;
-}
-
-/* ─── Domain badges (hydration status) ──────────────────── */
-.ap-domain-badge {
+.ap-sidebar-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.55rem;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border-radius: 999px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  width: fit-content;
-  border: 1px solid transparent;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
-.ap-domain-badge--ok {
-  background: #f0fdf4;
-  color: #16a34a;
-  border-color: rgba(22, 163, 74, 0.22);
+.ap-sidebar-badge--dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
 }
 
-.ap-domain-badge--atencao {
-  background: #fffbeb;
-  color: #d97706;
-  border-color: rgba(217, 119, 6, 0.22);
-}
-
-.ap-domain-badge--critico {
-  background: #fff1f2;
-  color: #dc2626;
-  border-color: rgba(220, 38, 38, 0.22);
-}
-
-/* ─── Domain stat row ────────────────────────────────────── */
-.ap-domain-stat {
+.ap-forms-list {
   display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.ap-form-item {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--ap-bg-soft, #f8fafc);
+  border: 1px solid var(--ap-border);
+  border-radius: 8px;
 }
 
-.ap-domain-stat span {
-  font-size: 0.74rem;
-  color: #64748b;
-}
-
-.ap-domain-stat strong {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--ap-navy);
+.ap-form-item__info {
   display: flex;
-  align-items: center;
-  gap: 0.28rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
-/* ─── Trend delta indicator ──────────────────────────────── */
-.ap-trend {
-  font-size: 0.65rem;
-  font-weight: 600;
+.ap-form-item__info strong {
+  font-size: 0.83rem;
+  color: var(--ap-navy);
+}
+
+.ap-form-item__info span {
+  font-size: 0.75rem;
   color: #64748b;
 }
 
-.ap-trend--ok { color: var(--ap-ok); }
-.ap-trend--warn { color: var(--ap-warn); }
+.ap-form-item__status {
+  font-size: 0.71rem;
+  color: #0369a1;
+  font-weight: 600;
+}
 
-/* ─── Responsive ─────────────────────────────────────────── */
+.ap-form-btn {
+  flex-shrink: 0;
+  padding: 0.38rem 0.9rem;
+  border-radius: var(--radius-sm, 6px);
+  border: none;
+  background: var(--ap-accent);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition-fast, 0.15s);
+}
+
+.ap-form-btn:hover {
+  opacity: 0.88;
+}
+
 @media (max-width: 640px) {
-  .athlete-portal { padding: 0.75rem; }
   .ap-row-2 { grid-template-columns: 1fr; }
-  .ap-evolution-grid { grid-template-columns: 1fr; }
-  .ap-hero { flex-direction: column; align-items: flex-start; }
   .ap-hero__logout { margin-left: 0; }
-  .ap-hero__stats { width: 100%; }
   .ap-dossie__clinical { grid-template-columns: 1fr; }
-
-  /* legacy prontuário responsive (kept for fallback) */
   .athlete-prontuario-layout { grid-template-columns: 1fr; }
   .athlete-prontuario-heading, .athlete-prontuario-badges { width: 100%; }
   .athlete-prontuario-hero-main, .athlete-prontuario-stats-grid, .athlete-prontuario-summary { grid-template-columns: 1fr; }
-  .athlete-prontuario-grid { grid-template-columns: 1fr; }
 }
+/* ══ LEGADO SEM CONSUMIDOR: fim ═════════════════════════════════════ */

@@ -3,6 +3,7 @@ import { HelpCircle } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useUiFeedback } from "../../../contexts/UiFeedbackContext";
 import NotificationTaskCenter from "../../../components/shared/NotificationTaskCenter";
+import { getAcademicTabLabel } from "../../../constants/academicNavigation";
 import "./AdminHeader.css";
 
 const AdminHeader = ({ activeTab, activeIcon }) => {
@@ -20,23 +21,25 @@ const AdminHeader = ({ activeTab, activeIcon }) => {
   }, [user]);
 
   const tabLabels = {
-    dashboard: "Inicio",
+    dashboard: "Início",
     users: "Membros",
     patients: "Atletas",
     reports: "Relatorios",
-    research: "Projetos",
+    research: "Pesquisa",
     ensino: "Ensino",
     extensao: "Extensao",
+    comunicacao: "Comunicacao",
     requests: "Solicitacoes",
     settings: "Configuracoes"
   };
+  const currentLabel = getAcademicTabLabel(activeTab) || tabLabels[activeTab] || activeTab;
 
   return (
     <header className="admin-header">
       <div className="header-left">
         <div className="header-page-title-row">
           {activeIcon ? <span className="icon-wrapper">{activeIcon}</span> : null}
-          <h1 className="header-page-title">{tabLabels[activeTab] || activeTab}</h1>
+          <h1 className="header-page-title">{currentLabel}</h1>
         </div>
         <p className="header-page-subtitle">Painel administrativo</p>
       </div>
@@ -47,6 +50,7 @@ const AdminHeader = ({ activeTab, activeIcon }) => {
         <button
           type="button"
           className="header-btn help-btn"
+          aria-label="Ajuda e suporte"
           onClick={() => {
             notify({
               type: "info",
@@ -55,7 +59,7 @@ const AdminHeader = ({ activeTab, activeIcon }) => {
             });
           }}
         >
-          <HelpCircle size={20} />
+          <HelpCircle size={20} aria-hidden="true" />
         </button>
 
         <div className="user-profile-mini">

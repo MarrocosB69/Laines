@@ -1,15 +1,28 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Flame, RefreshCw } from 'lucide-react';
-import MiniSparkline from '../../shared/MiniSparkline';
+import { Flame, RefreshCw } from 'lucide-react';
 import { Button } from '../../ui';
 import api from '../../../services/api';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
   buildComparativeDeltas,
-  calculateGetEvaluation
+  calculateGetEvaluation,
+  calculateWeeklyPal,
+  sumWeeklyActivityExpenditure
 } from '../../../services/calculationEngine';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
+import { restoreSavedGetForDisplay } from './getSavedDisplay';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao,
+  Tendencia,
+  idTituloSecao
+} from '../base';
 import './GastoEnergeticoTotalForm.css';
 
 const ACTIVITY_OPTIONS = [
@@ -37,15 +50,6 @@ const DIAS_SEMANA = [
   { key: 'domingo', label: 'Domingo' }
 ];
 
-const CHO_PERIODIZADO_BY_FASE = Object.freeze({
-  preparacao_geral: { label: 'Preparação geral', choRange: '5-7 g/kg/dia' },
-  preparacao_especifica: { label: 'Preparação específica', choRange: '6-8 g/kg/dia' },
-  pre_competicao: { label: 'Pré-competição', choRange: '7-10 g/kg/dia' },
-  competicao: { label: 'Competição', choRange: '8-12 g/kg/dia' },
-  transicao: { label: 'Transição', choRange: '3-5 g/kg/dia' },
-  taper: { label: 'Taper', choRange: '5-7 g/kg/dia' }
-});
-
 const createSemanaRow = (dia) => ({
   dia,
   metId: '',
@@ -64,8 +68,7 @@ const buildSemanaPadrao = () => DIAS_SEMANA.map((item) => createSemanaRow(item.k
 const createEsportivoData = (nivelCompetitivo = 'amador') => ({
   palSubjetivoLegado: '',
   nivelCompetitivo,
-  registroAtividadesSemana: buildSemanaPadrao(),
-  cargaTreinoIntegracao: null
+  registroAtividadesSemana: buildSemanaPadrao()
 });
 
 const createInitialData = (nivelCompetitivo = 'amador') => ({
@@ -75,6 +78,22 @@ const createInitialData = (nivelCompetitivo = 'amador') => ({
   esportivo: createEsportivoData(nivelCompetitivo),
   observacoes: ''
 });
+
+// Ordem visual: a base energética (dados, TMB e fator), o registro semanal
+// com MET, os resultados, a comparação com as avaliações anteriores e as
+// observações. "Comparação longitudinal" é título novo, o mesmo de BIA e
+// Dobras; os outros já existiam.
+const GET_INDICE = [
+  { id: 'get-base', titulo: 'Base energética' },
+  { id: 'get-semana', titulo: 'Registro de atividades da semana' },
+  { id: 'get-resultados', titulo: 'Resultados calculados' },
+  { id: 'get-comparacao', titulo: 'Comparação longitudinal' },
+  { id: 'get-observacoes', titulo: 'Observações' }
+];
+
+// Confiabilidade da demanda (ok, warn, risk) no tipo do aviso. O que ela
+// quer dizer já vem escrito no título; o tipo só acompanha.
+const TIPO_AVISO_DEMANDA = { ok: 'sucesso', warn: 'atencao', risk: 'perigo' };
 
 const GastoEnergeticoTotalForm = ({
   pacienteId,
@@ -88,10 +107,7 @@ const GastoEnergeticoTotalForm = ({
   allEvaluationHistory = [],
   currentSessionId
 }) => {
-  const defaultNivelCompetitivo = useMemo(
-    () => resolveNivelCompetitivoPadrao(allEvaluationHistory),
-    [allEvaluationHistory]
-  );
+  const defaultNivelCompetitivo = normalizeNivelCompetitivoApi(onboardingContext?.nivelCompetitivo);
   const onboardingEsportivo = useMemo(() => ({
     modalidadePrincipal: toTextInput(onboardingContext?.modalidadePrincipal),
     frequenciaSemanal: parseNumeric(onboardingContext?.frequenciaSemanal),
@@ -116,7 +132,6 @@ const GastoEnergeticoTotalForm = ({
   const [metOptions, setMetOptions] = useState([]);
   const [metLoading, setMetLoading] = useState(false);
   const [metError, setMetError] = useState('');
-  const [cargaTreinoHint, setCargaTreinoHint] = useState(null);
   const loadedSnapshotIdRef = useRef(null);
   const autoSaveRef = useRef(null);
   const saveStatusResetRef = useRef(null);
@@ -210,12 +225,6 @@ const GastoEnergeticoTotalForm = ({
           defaultNivelCompetitivo
         )) || defaultNivelCompetitivo,
         registroAtividadesSemana: mergeSemanaRows(buildSemanaPadrao(), registroRaw),
-        cargaTreinoIntegracao: asRecord(firstDefined(
-          esportivoRaw?.cargaTreinoIntegracao,
-          esportivoRaw?.carga_treino_integracao,
-          source?.cargaTreinoIntegracao,
-          source?.carga_treino_integracao
-        ))
       },
       observacoes: toTextInput(firstDefined(
         dadosBrutos?.observacoes,
@@ -223,69 +232,8 @@ const GastoEnergeticoTotalForm = ({
       ))
     }));
 
-    const cargaTreinoSnapshotHint = resolveCargaTreinoHintFromPayload(firstDefined(
-      esportivoRaw?.cargaTreinoIntegracao,
-      esportivoRaw?.carga_treino_integracao,
-      source?.cargaTreinoIntegracao,
-      source?.carga_treino_integracao
-    ));
-    if (cargaTreinoSnapshotHint) {
-      setCargaTreinoHint(cargaTreinoSnapshotHint);
-    }
-
     loadedSnapshotIdRef.current = snapshotId;
   }, [defaultNivelCompetitivo, moduleSnapshot]);
-
-  const latestCargaTreinoContext = useMemo(
-    () => resolveLatestCargaTreinoContext({ allEvaluationHistory, currentSessionId }),
-    [allEvaluationHistory, currentSessionId]
-  );
-
-  useEffect(() => {
-    if (!latestCargaTreinoContext) return;
-    const suggestion = buildChoPeriodizedSuggestion(latestCargaTreinoContext);
-    if (!suggestion) return;
-    setCargaTreinoHint(suggestion);
-    setDados((prev) => ({
-      ...prev,
-      esportivo: {
-        ...(prev?.esportivo || createEsportivoData(defaultNivelCompetitivo)),
-        cargaTreinoIntegracao: {
-          faseAtual: suggestion.faseAtual,
-          acwr: suggestion.acwr,
-          estrategiaTreinamento: suggestion.estrategiaTreinamento,
-          choRange: suggestion.choRange,
-          source: 'carga_treino',
-          updatedAt: new Date().toISOString()
-        }
-      }
-    }));
-  }, [defaultNivelCompetitivo, latestCargaTreinoContext]);
-
-  useEffect(() => {
-    const handleCargaTreinoUpdated = (event) => {
-      const suggestion = buildChoPeriodizedSuggestion(event?.detail);
-      if (!suggestion) return;
-      setCargaTreinoHint(suggestion);
-      setDados((prev) => ({
-        ...prev,
-        esportivo: {
-          ...(prev?.esportivo || createEsportivoData(defaultNivelCompetitivo)),
-          cargaTreinoIntegracao: {
-            faseAtual: suggestion.faseAtual,
-            acwr: suggestion.acwr,
-            estrategiaTreinamento: suggestion.estrategiaTreinamento,
-            choRange: suggestion.choRange,
-            source: 'carga_treino',
-            updatedAt: new Date().toISOString()
-          }
-        }
-      }));
-    };
-
-    window.addEventListener('cargaTreinoAtualizada', handleCargaTreinoUpdated);
-    return () => window.removeEventListener('cargaTreinoAtualizada', handleCargaTreinoUpdated);
-  }, [defaultNivelCompetitivo]);
 
   const sex = useMemo(
     () => normalizeSexToken(baselineAnthropometry?.sexo),
@@ -309,32 +257,40 @@ const GastoEnergeticoTotalForm = ({
   );
 
   const baseEvaluation = useMemo(() => calculateGetEvaluation({
-    allHistory: allEvaluationHistory,
-    currentSessionId,
     sex,
+    weightKg: pesoReferenciaKg,
+    heightCm: baselineAnthropometry?.estaturaCm,
+    ageYears: baselineAnthropometry?.idade,
     activityLevel: dados.activityLevel,
     customActivityFactor: null,
     manualTmbKcal
   }), [
-    allEvaluationHistory,
-    currentSessionId,
+    baselineAnthropometry?.estaturaCm,
+    baselineAnthropometry?.idade,
     dados.activityLevel,
     manualTmbKcal,
+    pesoReferenciaKg,
     sex
   ]);
 
+  // Semana sem atividade com duração: total e PAL real nulos, e vale o fator do
+  // nível de atividade (WI-013, decisão 4).
   const totalGastoSemanalKcal = useMemo(
-    () => sumGastoSemanal(dados?.esportivo?.registroAtividadesSemana),
+    () => sumWeeklyActivityExpenditure(normalizeObjectArray(dados?.esportivo?.registroAtividadesSemana)),
     [dados?.esportivo?.registroAtividadesSemana]
   );
 
   const palRealCalculado = useMemo(() => {
-    const tmbBase = toNumber(baseEvaluation?.base?.tmbUsedKcal);
-    if (!Number.isFinite(tmbBase) || (tmbBase) <= 0) return null;
-    if (!Number.isFinite(totalGastoSemanalKcal)) return null;
-    const pal = 1 + ((totalGastoSemanalKcal) / ((tmbBase) * 7));
-    return Number.isFinite(pal) ? Number(pal.toFixed(3)) : null;
-  }, [baseEvaluation?.base?.tmbUsedKcal, totalGastoSemanalKcal]);
+    const savedTmb = parseNumeric(firstDefined(
+      moduleSnapshot?.dados?.resultados_calculados?.tmbBaseKcal,
+      moduleSnapshot?.resultados?.tmb_kcal,
+      moduleSnapshot?.resultados?.calculated?.tmbKcal
+    ));
+    const tmbBase = readOnly && moduleSnapshot?.id && Number.isFinite(savedTmb)
+      ? savedTmb
+      : toNumber(baseEvaluation?.base?.tmbUsedKcal);
+    return calculateWeeklyPal({ weeklyActivityKcal: totalGastoSemanalKcal, tmbKcal: tmbBase });
+  }, [baseEvaluation?.base?.tmbUsedKcal, moduleSnapshot, readOnly, totalGastoSemanalKcal]);
 
   const palSubjetivoLegado = useMemo(
     () => parseNumeric(dados?.esportivo?.palSubjetivoLegado),
@@ -349,25 +305,33 @@ const GastoEnergeticoTotalForm = ({
     return null;
   }, [palRealCalculado, palSubjetivoLegado]);
 
-  const getEvaluation = useMemo(() => calculateGetEvaluation({
-    allHistory: allEvaluationHistory,
-    currentSessionId,
+  const calculatedGetEvaluation = useMemo(() => calculateGetEvaluation({
     sex,
+    weightKg: pesoReferenciaKg,
+    heightCm: baselineAnthropometry?.estaturaCm,
+    ageYears: baselineAnthropometry?.idade,
     activityLevel: dados.activityLevel,
     customActivityFactor: fatorAtividadeFinal,
     manualTmbKcal
   }), [
-    allEvaluationHistory,
-    currentSessionId,
+    baselineAnthropometry?.estaturaCm,
+    baselineAnthropometry?.idade,
     dados.activityLevel,
     fatorAtividadeFinal,
     manualTmbKcal,
+    pesoReferenciaKg,
     sex
   ]);
 
+  const getEvaluation = useMemo(() => (
+    readOnly && moduleSnapshot?.id
+      ? restoreSavedGetForDisplay(moduleSnapshot, calculatedGetEvaluation)
+      : calculatedGetEvaluation
+  ), [calculatedGetEvaluation, moduleSnapshot, readOnly]);
+
   const normalizedHistory = useMemo(
-    () => normalizeGetHistory(moduleHistory),
-    [moduleHistory]
+    () => normalizeGetHistory(moduleHistory.filter((record) => record?.id !== moduleSnapshot?.id)),
+    [moduleHistory, moduleSnapshot?.id]
   );
   const previous = normalizedHistory[0] || null;
   const first = normalizedHistory.length ? normalizedHistory[normalizedHistory.length - 1] : null;
@@ -434,6 +398,7 @@ const GastoEnergeticoTotalForm = ({
     if (dados.manualTmbKcal === '') return { status: 'empty', message: '' };
     const numeric = parseNumeric(dados.manualTmbKcal);
     if (!Number.isFinite(numeric)) return { status: 'error', message: 'Informe um numero valido.' };
+    if (numeric <= 0) return { status: 'error', message: 'A TMB deve ser maior que zero.' };
     if (numeric < 500 || numeric > 6000) {
       return { status: 'warning', message: 'TMB fora da faixa esperada. Verifique o valor.' };
     }
@@ -491,8 +456,7 @@ const GastoEnergeticoTotalForm = ({
     const esportivoPayload = buildGetEsportivoPayload({
       esportivo: dados.esportivo,
       totalGastoSemanalKcal,
-      palRealCalculado,
-      cargaTreinoHint
+      palRealCalculado
     });
 
     return {
@@ -587,8 +551,7 @@ const GastoEnergeticoTotalForm = ({
     palRealCalculado,
     previous,
     totalGastoSemanalKcal,
-    sex,
-    cargaTreinoHint
+    sex
   ]);
 
   const payloadResults = useMemo(() => ({
@@ -811,7 +774,7 @@ const GastoEnergeticoTotalForm = ({
     }
 
     if (hasRequiredMissing) {
-      setError('TMB indisponivel. Salve a composicao integrada ou informe uma TMB manual.');
+      setError('TMB indisponível. Confira peso, estatura, idade e sexo ou informe a TMB neste instrumento.');
       return;
     }
 
@@ -892,20 +855,15 @@ const GastoEnergeticoTotalForm = ({
   }, [executeSave, hasFieldErrors, hasRequiredMissing, hasUserInput, hasValues, isAnyRowLoading, onAutoSave, readOnly]);
 
   return (
-    <div className={`eval-card get-form get-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <Flame size={20} />
-        </div>
-        <div>
-          <h3 className="eval-title">Gasto energético total (GET)</h3>
-          <p className="eval-subtitle">
-            TMB integrada da sessão + registro semanal com MET para estimar manutenção, emagrecimento e hipertrofia.
-          </p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card get-form get-form--modern${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Gasto energético total (GET)"
+      descricao="TMB estimada com perfil e medidas disponíveis aqui, mais registro semanal com MET para estimar o gasto."
+      icone={<Flame size={22} />}
+    >
+      <AvaliacaoIndice itens={GET_INDICE} />
 
-      <div className="eval-note get-context-note">
+      <AvisoAvaliacao tipo="info">
         <strong>Contexto esportivo de referencia:</strong>
         {' '}
         {onboardingEsportivo.modalidadePrincipal || 'modalidade não informada'}
@@ -914,24 +872,27 @@ const GastoEnergeticoTotalForm = ({
         {' | '}
         Duração: {Number.isFinite(onboardingEsportivo.duracaoSessao) ? `${onboardingEsportivo.duracaoSessao} min` : 'não informada'}
         {onboardingEsportivo.genero ? ` | Gênero: ${onboardingEsportivo.genero}` : ''}
-      </div>
+      </AvisoAvaliacao>
 
-      <div className={`get-demand-status get-demand-status--${demandaStatus.tone}`}>
-        <strong>{demandaStatus.title}</strong>
+      <AvisoAvaliacao
+        tipo={TIPO_AVISO_DEMANDA[demandaStatus.tone] || 'info'}
+        titulo={demandaStatus.title}
+        className={`get-demand-status get-demand-status--${demandaStatus.tone}`}
+      >
         <p>{demandaStatus.message}</p>
         <small>
           Registro semanal: {atividadeSemanaCoverage.label} ({atividadeSemanaCoverage.count}/7 dias)
           {' | '}
           {palCoherence.message}
-          {cargaTreinoHint ? ` | Carga integrada: fase ${cargaTreinoHint.faseLabel}` : ' | Carga integrada: pendente'}
         </small>
-      </div>
+      </AvisoAvaliacao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Base energética</h4>
-        <div className="get-grid">
-          <div className="eval-field">
-            <label className="eval-label">Data da avaliação</label>
+      {/* Os campos primeiro; o que o formulário calcula (TMB estimada, peso de
+          referência e fator aplicado) fica logo abaixo, como resultado. O
+          .eval-field de cada valor calculado continua, no mesmo número. */}
+      <AvaliacaoSecao id="get-base" titulo="Base energética" className="eval-section">
+        <div className="av-grade">
+          <Campo rotulo="Data da avaliação" className="eval-field">
             <input
               type="date"
               className="eval-input"
@@ -939,9 +900,8 @@ const GastoEnergeticoTotalForm = ({
               onChange={(event) => updateField(setDados, setHasUserInput, 'dataAvaliacao', event.target.value)}
               disabled={readOnly}
             />
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Nível de atividade</label>
+          </Campo>
+          <Campo rotulo="Nível de atividade" className="eval-field">
             <select
               className="eval-select"
               value={dados.activityLevel}
@@ -952,9 +912,16 @@ const GastoEnergeticoTotalForm = ({
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">TMB manual (override) <span className="get-optional">Opcional</span></label>
+          </Campo>
+          {/* Mesma mensagem de antes, depois de tentar salvar: o erro no
+              lugar do erro; o aviso de faixa como ajuda, no tom de atenção. */}
+          <Campo
+            rotulo={<>TMB informada neste instrumento <span className="get-optional-badge">Opcional</span></>}
+            className="eval-field"
+            erro={submitAttempted && manualTmbValidation.status === 'error' ? manualTmbValidation.message : null}
+            ajuda={submitAttempted && manualTmbValidation.status === 'warning' ? manualTmbValidation.message : null}
+            tom={submitAttempted && manualTmbValidation.status === 'warning' ? 'atencao' : undefined}
+          >
             <input
               type="text"
               inputMode="decimal"
@@ -964,29 +931,14 @@ const GastoEnergeticoTotalForm = ({
               disabled={readOnly}
               placeholder="Ex.: 1640"
             />
-            {submitAttempted && manualTmbValidation.message ? (
-              <small className={`get-field-message ${manualTmbValidation.status === 'error' ? 'is-error' : 'is-warning'}`}>
-                {manualTmbValidation.message}
-              </small>
-            ) : null}
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">TMB da composicao (auto)</label>
-            <div className="get-readonly">
-              {formatMetric(getEvaluation?.base?.tmbFromIntegratedKcal, 'kcal', 'kcal')}
-            </div>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Peso referencia para MET</label>
-            <div className="get-readonly">
-              {formatMetric(pesoReferenciaKg, 'kg', 'peso')}
-            </div>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">
-              PAL subjetivo (legado)
-              <span className="get-optional">Opcional</span>
-            </label>
+          </Campo>
+          <Campo
+            rotulo={<>PAL subjetivo (legado) <span className="get-optional-badge">Opcional</span></>}
+            className="eval-field"
+            erro={submitAttempted && palLegadoValidation.status === 'error' ? palLegadoValidation.message : null}
+            ajuda={submitAttempted && palLegadoValidation.status === 'warning' ? palLegadoValidation.message : null}
+            tom={submitAttempted && palLegadoValidation.status === 'warning' ? 'atencao' : undefined}
+          >
             <input
               type="text"
               inputMode="decimal"
@@ -996,24 +948,38 @@ const GastoEnergeticoTotalForm = ({
               disabled={readOnly}
               placeholder="Opcional (legado)"
             />
-            {submitAttempted && palLegadoValidation.message ? (
-              <small className={`get-field-message ${palLegadoValidation.status === 'error' ? 'is-error' : 'is-warning'}`}>
-                {palLegadoValidation.message}
-              </small>
-            ) : null}
+          </Campo>
+        </div>
+
+        {/* formatMetric com as mesmas chaves de antes (casas iguais); a unidade
+            sai do número e vai para a caixa da unidade. Sem valor, "—". */}
+        <div className="av-resultados">
+          <div className="eval-field">
+            <ResultadoCalculado
+              rotulo="TMB estimada pelo perfil"
+              valor={Number.isFinite(getEvaluation?.base?.tmbEstimatedKcal) ? formatMetric(getEvaluation.base.tmbEstimatedKcal, '', 'kcal') : null}
+              unidade="kcal"
+            />
           </div>
           <div className="eval-field">
-            <label className="eval-label">Fator aplicado</label>
-            <div className="get-readonly">{formatMetric(getEvaluation?.activity?.factorApplied, '', 'factor')}</div>
+            <ResultadoCalculado
+              rotulo="Peso referencia para MET"
+              valor={Number.isFinite(pesoReferenciaKg) ? formatMetric(pesoReferenciaKg, '', 'peso') : null}
+              unidade="kg"
+            />
+          </div>
+          <div className="eval-field">
+            <ResultadoCalculado
+              rotulo="Fator aplicado"
+              valor={Number.isFinite(getEvaluation?.activity?.factorApplied) ? formatMetric(getEvaluation.activity.factorApplied, '', 'factor') : null}
+            />
           </div>
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Registro de atividades da semana</h4>
-        <div className="get-grid get-week-controls">
-          <div className="eval-field">
-            <label className="eval-label">Nível competitivo</label>
+      <AvaliacaoSecao id="get-semana" titulo="Registro de atividades da semana" className="eval-section">
+        <div className="av-grade get-week-controls">
+          <Campo rotulo="Nível competitivo" className="eval-field">
             <select
               className="eval-select"
               value={dados?.esportivo?.nivelCompetitivo || defaultNivelCompetitivo}
@@ -1024,12 +990,13 @@ const GastoEnergeticoTotalForm = ({
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
-          </div>
+          </Campo>
           <div className="eval-field">
-            <label className="eval-label">Catálogo MET</label>
-            <div className="get-readonly">
-              {metLoading ? 'Carregando...' : `${metOptions.length} atividades`}
-            </div>
+            <ResultadoCalculado
+              rotulo="Catálogo MET"
+              valor={metLoading ? 'Carregando...' : `${metOptions.length} atividades`}
+              valorEmTexto
+            />
           </div>
           <div className="eval-field get-week-action-cell">
             <Button type="button" variant="secondary" disabled={readOnly || isAnyRowLoading} onClick={recalculateCurrentSemana}>
@@ -1038,17 +1005,26 @@ const GastoEnergeticoTotalForm = ({
           </div>
         </div>
 
-        {metError ? <div className="eval-note get-error-note">{metError}</div> : null}
+        {metError ? <AvisoAvaliacao tipo="perigo" className="get-error-note">{metError}</AvisoAvaliacao> : null}
 
-        <div className="get-table-wrap get-week-table-wrap">
-          <table className="get-table get-week-table">
+        {/* Tabela semântica: o dia é cabeçalho de linha, e cada controle tem
+            rótulo oculto "dia, coluna" com os textos da própria tabela. Em
+            tela estreita a tabela rola no invólucro, que recebe foco pelo
+            teclado e o nome da seção. */}
+        <div
+          className="get-table-wrap get-week-table-wrap"
+          role="region"
+          aria-labelledby={idTituloSecao('get-semana')}
+          tabIndex={0}
+        >
+          <table className="get-table get-week-table" aria-labelledby={idTituloSecao('get-semana')}>
             <thead>
               <tr>
-                <th>Dia</th>
-                <th>Atividade</th>
-                <th>MET</th>
-                <th>Duração (h)</th>
-                <th>Gasto sessao (kcal)</th>
+                <th scope="col">Dia</th>
+                <th scope="col">Atividade</th>
+                <th scope="col">MET</th>
+                <th scope="col">Duração (h)</th>
+                <th scope="col">Gasto sessao (kcal)</th>
               </tr>
             </thead>
             <tbody>
@@ -1056,32 +1032,36 @@ const GastoEnergeticoTotalForm = ({
                 const row = semanaRows.find((item) => String(item?.dia) === dia.key) || createSemanaRow(dia.key);
                 return (
                   <tr key={dia.key}>
-                    <td>{dia.label}</td>
+                    <th scope="row">{dia.label}</th>
                     <td>
-                      <select
-                        className="eval-select"
-                        value={row.metId || ''}
-                        onChange={(event) => handleSemanaActivityChange(dia.key, event.target.value)}
-                        disabled={readOnly || metLoading}
-                      >
-                        <option value="">{metLoading ? 'Carregando METs...' : 'Selecione'}</option>
-                        {metOptions.map((option) => (
-                          <option key={option.id} value={option.id}>{formatMetOptionLabel(option)}</option>
-                        ))}
-                      </select>
+                      <Campo rotulo={`${dia.label}, Atividade`} rotuloOculto>
+                        <select
+                          className="eval-select"
+                          value={row.metId || ''}
+                          onChange={(event) => handleSemanaActivityChange(dia.key, event.target.value)}
+                          disabled={readOnly || metLoading}
+                        >
+                          <option value="">{metLoading ? 'Carregando METs...' : 'Selecione'}</option>
+                          {metOptions.map((option) => (
+                            <option key={option.id} value={option.id}>{formatMetOptionLabel(option)}</option>
+                          ))}
+                        </select>
+                      </Campo>
                     </td>
                     <td>{formatMetric(parseNumeric(row.metValue), '', 'factor')}</td>
                     <td>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        className="eval-input"
-                        value={row.duracaoHoras || ''}
-                        onChange={(event) => handleSemanaDurationChange(dia.key, event.target.value)}
-                        onBlur={recalculateCurrentSemana}
-                        disabled={readOnly}
-                        placeholder="0.0"
-                      />
+                      <Campo rotulo={`${dia.label}, Duração (h)`} rotuloOculto>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className="eval-input"
+                          value={row.duracaoHoras || ''}
+                          onChange={(event) => handleSemanaDurationChange(dia.key, event.target.value)}
+                          onBlur={recalculateCurrentSemana}
+                          disabled={readOnly}
+                          placeholder="0.0"
+                        />
+                      </Campo>
                     </td>
                     <td>
                       {row.loadingCalculo ? 'Calculando...' : formatMetric(toNumber(row.gastoKcal), 'kcal', 'kcal')}
@@ -1094,14 +1074,27 @@ const GastoEnergeticoTotalForm = ({
           </table>
         </div>
 
-        <div className="get-week-summary">
-          <p><strong>Total semanal:</strong> {formatMetric(totalGastoSemanalKcal, 'kcal', 'kcal')}</p>
-          <p><strong>PAL real calculado:</strong> {formatMetric(palRealCalculado, '', 'factor')}</p>
+        {/* O total e o PAL real vêm do cálculo, com as mesmas casas. Sem
+            atividade com duração, os dois ficam "—" (nulos também no dado
+            salvo) e o fator aplicado é o do nível de atividade. */}
+        <div className="av-resultados">
+          <ResultadoCalculado
+            rotulo="Total semanal"
+            valor={Number.isFinite(totalGastoSemanalKcal) ? formatMetric(totalGastoSemanalKcal, '', 'kcal') : null}
+            unidade="kcal"
+          />
+          <ResultadoCalculado
+            rotulo="PAL real calculado"
+            valor={Number.isFinite(palRealCalculado) ? formatMetric(palRealCalculado, '', 'factor') : null}
+          />
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-results-section">
-        <div className="get-cards">
+      {/* O título vinha do ::after de .eval-results-section em avaliacoes.css;
+          agora é o título da seção. O alerta de segurança subiu para logo
+          depois dos cartões, perto do "Emagrecimento intenso". */}
+      <AvaliacaoSecao id="get-resultados" titulo="Resultados calculados">
+        <div className="av-resultados">
           <ResultCard
             label="TMB utilizada"
             value={getEvaluation?.base?.tmbUsedKcal}
@@ -1150,49 +1143,44 @@ const GastoEnergeticoTotalForm = ({
           />
         </div>
 
+        {/* O texto já começa com "Alerta de segurança:"; o prefixo lido
+            repetiria a palavra. */}
+        {getEvaluation?.safety?.hasIntenseLowIntakeRisk && (
+          <AvisoAvaliacao tipo="perigo" rotuloTipo="">
+            Alerta de segurança: ingestão de emagrecimento intenso abaixo de {Math.round(getEvaluation?.safety?.intenseMinThreshold || 0)} kcal/dia.
+          </AvisoAvaliacao>
+        )}
+
         <div className="get-meta-box">
           <p><strong>Formula usada:</strong> {getEvaluation?.base?.formulaLabel || '--'}</p>
           <p><strong>formulaId:</strong> {getEvaluation?.base?.formulaId || '--'} | <strong>versao:</strong> {getEvaluation?.base?.formulaVersion || '--'}</p>
-          {getEvaluation?.base?.sourceLabel ? <p><strong>Fonte oficial:</strong> {getEvaluation.base.sourceLabel}</p> : null}
+          {getEvaluation?.base?.sourceLabel ? <p><strong>Base do cálculo:</strong> {getEvaluation.base.sourceLabel}</p> : null}
         </div>
+      </AvaliacaoSecao>
 
-        {cargaTreinoHint && (
-          <div className="get-cho-suggestion">
-            <p><strong>CHO periodizado sugerido:</strong> {cargaTreinoHint.choRange}</p>
-            <p>
-              <strong>Base:</strong> fase {cargaTreinoHint.faseLabel}
-              {Number.isFinite(cargaTreinoHint.acwr) ? ` | ACWR ${formatNumber(cargaTreinoHint.acwr, 2)}` : ''}
-              {cargaTreinoHint.estrategiaTreinamento ? ` | estrategia ${cargaTreinoHint.estrategiaTreinamento}` : ''}
-            </p>
-            <small>{cargaTreinoHint.note}</small>
-          </div>
-        )}
-
-        {getEvaluation?.safety?.hasIntenseLowIntakeRisk && (
-          <div className="get-warning">
-            <AlertTriangle size={16} />
-            <span>
-              Alerta de segurança: ingestão de emagrecimento intenso abaixo de {Math.round(getEvaluation?.safety?.intenseMinThreshold || 0)} kcal/dia.
-            </span>
-          </div>
-        )}
-
-        <div className="get-table-wrap">
-          <table className="get-table">
+      {/* Tabela e tendência estavam no pé dos resultados, sem título. */}
+      <AvaliacaoSecao id="get-comparacao" titulo="Comparação longitudinal">
+        <div
+          className="get-table-wrap"
+          role="region"
+          aria-labelledby={idTituloSecao('get-comparacao')}
+          tabIndex={0}
+        >
+          <table className="get-table" aria-labelledby={idTituloSecao('get-comparacao')}>
             <thead>
               <tr>
-                <th>Indicador</th>
-                <th>Atual</th>
-                <th>Anterior</th>
-                <th>Primeira</th>
-                <th>Delta abs.</th>
-                <th>Delta %</th>
+                <th scope="col">Indicador</th>
+                <th scope="col">Atual</th>
+                <th scope="col">Anterior</th>
+                <th scope="col">Primeira</th>
+                <th scope="col">Delta abs.</th>
+                <th scope="col">Delta %</th>
               </tr>
             </thead>
             <tbody>
               {comparisonRows.map((row) => (
                 <tr key={row.key}>
-                  <td>{row.label}</td>
+                  <th scope="row">{row.label}</th>
                   <td>{formatMetric(row.current, row.unit, row.key)}</td>
                   <td>{formatMetric(row.previous, row.unit, row.key)}</td>
                   <td>{formatMetric(row.first, row.unit, row.key)}</td>
@@ -1204,58 +1192,76 @@ const GastoEnergeticoTotalForm = ({
           </table>
         </div>
 
-        <div className="get-sparkline">
-          <p>GET (últimos 6)</p>
-          <MiniSparkline values={sparklineGet} width={250} height={80} />
-        </div>
-      </div>
-
-      <div className="eval-section">
-        <h4 className="eval-section-title">Observações</h4>
-        <textarea
-          className="eval-textarea"
-          value={dados.observacoes}
-          onChange={(event) => updateField(setDados, setHasUserInput, 'observacoes', event.target.value)}
-          disabled={readOnly}
-          placeholder="Contexto clinico, adesao e ajustes sugeridos."
+        <Tendencia
+          rotulo="GET (últimos 6)"
+          valores={sparklineGet}
+          largura={250}
+          altura={80}
+          unidade="kcal"
+          casas={0}
         />
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <AvaliacaoSecao id="get-observacoes" titulo="Observações" className="eval-section">
+        {/* O rótulo é o próprio título da seção, que já dizia "Observações". */}
+        <Campo rotulo="Observações" rotuloOculto>
+          <textarea
+            className="eval-textarea"
+            value={dados.observacoes}
+            onChange={(event) => updateField(setDados, setHasUserInput, 'observacoes', event.target.value)}
+            disabled={readOnly}
+            placeholder="Contexto clinico, adesao e ajustes sugeridos."
+          />
+        </Campo>
+      </AvaliacaoSecao>
+
+      {/* "Salvando...", "Salvo" e "Erro ao salvar" são os textos padrão da barra. */}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" disabled={readOnly || isAnyRowLoading} onClick={handleSubmit} loading={saveStatus === 'saving'}>
           Salvar GET
         </Button>
-      </div>
+      </BarraAcoesAvaliacao>
 
-      {error && <div className="eval-note get-error-note">{error}</div>}
-    </div>
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="get-error-note">{error}</AvisoAvaliacao>}
+    </AvaliacaoModulo>
   );
 };
 
 export default GastoEnergeticoTotalForm;
 
-const ResultCard = ({ label, value, unit, badge, tone = 'neutral', delta = null }) => (
-  <article className="get-card">
-    <span>{label}</span>
-    <strong>{formatMetric(value, unit, label)}</strong>
-    <small className={`get-badge get-tone-${tone}`}>{badge}</small>
-    {delta && Number.isFinite(delta.deltaAbs) ? (
-      <p className={resolveDeltaClass(delta.deltaAbs)}>{formatSigned(delta.deltaAbs, unit, label)}</p>
-    ) : null}
-  </article>
-);
+// Mesma assinatura de antes; por dentro, ResultadoCalculado. O valor usa
+// formatMetric com a mesma chave (o rótulo), então as casas não mudam, e a
+// unidade vai para a caixa da unidade. Sem valor, "—" no lugar de "--".
+// O selo antigo (fórmula, "GET - 500"...) diz como o valor foi obtido e vai
+// como texto de método. Só "Abaixo do minimo" é classificação: um limite de
+// segurança, escrito e no tom de perigo. As outras cores eram enfeite.
+// A variação vem escrita com o sinal, como antes; um GET maior não é melhor
+// nem pior por si, então ela fica neutra.
+const ResultCard = ({ label, value, unit, badge, tone = 'neutral', delta = null }) => {
+  const alerta = tone === 'danger';
+  return (
+    <ResultadoCalculado
+      rotulo={label}
+      valor={Number.isFinite(value) ? formatMetric(value, '', label) : null}
+      unidade={unit || undefined}
+      classificacao={alerta ? badge : null}
+      tom={alerta ? 'perigo' : undefined}
+      metodo={alerta ? null : badge}
+      variacao={delta && Number.isFinite(delta.deltaAbs) ? formatSigned(delta.deltaAbs, unit, label) : undefined}
+    />
+  );
+};
 
+// A faixa leva a unidade uma vez só, na caixa da unidade.
 const RangeCard = ({ label, minValue, maxValue, unit, badge }) => (
-  <article className="get-card">
-    <span>{label}</span>
-    <strong>
-      {Number.isFinite(minValue) && Number.isFinite(maxValue)
-        ? `${formatMetric(minValue, unit, 'range')} a ${formatMetric(maxValue, unit, 'range')}`
-        : '--'}
-    </strong>
-    <small className="get-badge get-tone-info">{badge}</small>
-  </article>
+  <ResultadoCalculado
+    rotulo={label}
+    valor={Number.isFinite(minValue) && Number.isFinite(maxValue)
+      ? `${formatMetric(minValue, '', 'range')} a ${formatMetric(maxValue, '', 'range')}`
+      : null}
+    unidade={unit || undefined}
+    metodo={badge}
+  />
 );
 
 function updateField(setDados, setHasUserInput, key, value) {
@@ -1296,13 +1302,6 @@ function toInputValue(value, digits = null) {
 function toTextInput(value) {
   if (value === null || value === undefined) return '';
   return String(value).trim();
-}
-
-function normalizeType(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/-/g, '_');
 }
 
 function normalizeObjectArray(value) {
@@ -1465,25 +1464,6 @@ function normalizeNivelCompetitivoApi(value) {
   return token;
 }
 
-function resolveNivelCompetitivoPadrao(history = []) {
-  if (!Array.isArray(history)) return 'amador';
-  const ordered = [...history].sort((a, b) => {
-    const timeA = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
-    const timeB = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
-    return timeB - timeA;
-  });
-  for (const item of ordered) {
-    const tipo = toTextInput(item?.tipo).toLowerCase();
-    if (tipo !== 'anamnese_inicial') continue;
-    const dados = asRecord(item?.dados);
-    const dadosBrutos = asRecord(firstDefined(dados?.dados_brutos, dados?.input));
-    const esportivo = asRecord(firstDefined(dadosBrutos?.esportivo, dados?.esportivo));
-    const nivel = toTextInput(firstDefined(esportivo?.nivel, esportivo?.nivelCompetitivo));
-    if (nivel) return nivel;
-  }
-  return 'amador';
-}
-
 function resolvePesoReferenciaKg({ baselineAnthropometry, allEvaluationHistory }) {
   const baseline = parseNumeric(baselineAnthropometry?.pesoKg);
   if (Number.isFinite(baseline)) return Number((baseline).toFixed(2));
@@ -1511,88 +1491,6 @@ function resolvePesoReferenciaKg({ baselineAnthropometry, allEvaluationHistory }
   }
 
   return null;
-}
-
-function normalizeFasePeriodizacao(value) {
-  const token = toTextInput(value)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[\s-]+/g, '_');
-  if (!token) return '';
-  if (token.includes('preparacao_geral')) return 'preparacao_geral';
-  if (token.includes('preparacao_especifica')) return 'preparacao_especifica';
-  if (token.includes('pre_competicao') || token.includes('precompeticao')) return 'pre_competicao';
-  if (token.includes('competicao')) return 'competicao';
-  if (token.includes('transicao')) return 'transicao';
-  if (token.includes('taper')) return 'taper';
-  return token;
-}
-
-function buildChoPeriodizedSuggestion(source) {
-  if (!source || typeof source !== 'object') return null;
-  const faseAtual = normalizeFasePeriodizacao(source.faseAtual || source.fase_atual);
-  if (!faseAtual || !Object.prototype.hasOwnProperty.call(CHO_PERIODIZADO_BY_FASE, faseAtual)) return null;
-  const base = CHO_PERIODIZADO_BY_FASE[faseAtual];
-  const acwr = parseNumeric(source.acwr);
-  const estrategiaTreinamento = toTextInput(source.estrategiaTreinamento || source.estrategia_treinamento || source.estrategia);
-
-  let note = 'Sugestao automatica baseada na fase da periodizacao.';
-  if (Number.isFinite(acwr) && acwr > 1.5) {
-    note = 'ACWR elevado: priorizar distribuicao de CHO intra e pos-treino para recuperacao.';
-  } else if (Number.isFinite(acwr) && acwr < 0.8) {
-    note = 'ACWR em subcarga: ajustar CHO conforme retomada progressiva da carga.';
-  }
-
-  return {
-    faseAtual,
-    faseLabel: base.label,
-    choRange: base.choRange,
-    acwr: Number.isFinite(acwr) ? acwr : null,
-    estrategiaTreinamento,
-    note
-  };
-}
-
-function resolveLatestCargaTreinoContext({ allEvaluationHistory, currentSessionId }) {
-  if (!Array.isArray(allEvaluationHistory)) return null;
-  const normalizedSession = toTextInput(currentSessionId);
-  const ordered = [...allEvaluationHistory].sort((a, b) => {
-    const timeA = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
-    const timeB = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
-    return timeB - timeA;
-  });
-
-  const inSession = ordered.find((item) => (
-    normalizeType(item?.tipo) === 'carga_treino'
-    && normalizedSession
-    && toTextInput(item?.sessaoId) === normalizedSession
-  ));
-  const fallback = ordered.find((item) => normalizeType(item?.tipo) === 'carga_treino');
-  const selected = inSession || fallback;
-  if (!selected) return null;
-
-  return {
-    faseAtual: firstDefined(
-      selected?.dados?.faseAtual,
-      selected?.dados?.fase_atual
-    ),
-    acwr: firstDefined(
-      selected?.resultados?.acwr,
-      selected?.resultados?.calculated?.acwr,
-      selected?.dados?.acwr
-    ),
-    estrategiaTreinamento: firstDefined(
-      selected?.dados?.estrategiaTreinamento,
-      selected?.dados?.estrategia_treinamento,
-      selected?.dados?.estrategia
-    )
-  };
-}
-
-function resolveCargaTreinoHintFromPayload(payload) {
-  if (!payload || typeof payload !== 'object') return null;
-  return buildChoPeriodizedSuggestion(payload);
 }
 
 function normalizeDayKey(value) {
@@ -1634,14 +1532,6 @@ function mergeSemanaRows(defaultRows, snapshotRows) {
   return defaultRows.map((row) => byDia.get(row.dia) || row);
 }
 
-function sumGastoSemanal(rows) {
-  const total = normalizeObjectArray(rows).reduce((acc, row) => {
-    const gasto = toNumber(row?.gastoKcal);
-    return Number.isFinite(gasto) ? acc + (gasto) : acc;
-  }, 0);
-  return Number.isFinite(total) ? Number(total.toFixed(2)) : null;
-}
-
 function formatMetOptionLabel(option) {
   return `${capitalize(option.modalidade)} | ${capitalize(option.categoria)} | ${capitalize(option.intensidade)} | MET ${formatNumber(option.metValue, 1)}`;
 }
@@ -1652,7 +1542,7 @@ function capitalize(value) {
   return token.charAt(0).toUpperCase() + token.slice(1);
 }
 
-function buildGetEsportivoPayload({ esportivo, totalGastoSemanalKcal, palRealCalculado, cargaTreinoHint }) {
+function buildGetEsportivoPayload({ esportivo, totalGastoSemanalKcal, palRealCalculado }) {
   const source = asRecord(esportivo);
   const rows = normalizeObjectArray(source.registroAtividadesSemana).map((row) => ({
     dia: normalizeDayKey(row.dia || row.day),
@@ -1682,15 +1572,7 @@ function buildGetEsportivoPayload({ esportivo, totalGastoSemanalKcal, palRealCal
       : null,
     palRealCalculado: Number.isFinite(palRealCalculado)
       ? Number((palRealCalculado).toFixed(3))
-      : null,
-    cargaTreinoIntegracao: cargaTreinoHint ? {
-      faseAtual: cargaTreinoHint.faseAtual,
-      acwr: Number.isFinite(cargaTreinoHint.acwr)
-        ? Number((cargaTreinoHint.acwr).toFixed(4))
-        : null,
-      estrategiaTreinamento: cargaTreinoHint.estrategiaTreinamento || null,
-      choRange: cargaTreinoHint.choRange || null
-    } : asRecord(source.cargaTreinoIntegracao)
+      : null
   };
 }
 

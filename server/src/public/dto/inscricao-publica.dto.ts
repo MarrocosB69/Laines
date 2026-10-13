@@ -2,22 +2,69 @@ import {
   IsArray,
   IsBoolean,
   IsEmail,
+  IsIn,
   IsInt,
   IsNumber,
   IsObject,
   IsOptional,
   IsString,
+  ArrayMaxSize,
+  ArrayMinSize,
   Max,
+  MaxLength,
   Min,
-  MinLength
+  MinLength,
+  ValidateNested
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 const toNumber = ({ value }: { value: unknown }) => {
   if (value === '' || value == null) return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? n : value;
 };
+
+const TEMPOS_PRATICA = [
+  'Menos de 6 meses', '6 meses a 1 ano', '1 a 2 anos',
+  '2 a 5 anos', 'Mais de 5 anos'
+] as const;
+
+export class EsporteInscricaoDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  modalidade!: string;
+
+  @IsIn(TEMPOS_PRATICA)
+  tempoPratica!: string;
+
+  @Transform(toNumber)
+  @IsInt()
+  @Min(1)
+  @Max(480)
+  duracaoSessao!: number;
+
+  @IsOptional()
+  @Transform(toNumber)
+  @IsInt()
+  @Min(1)
+  @Max(14)
+  frequenciaSemanal?: number;
+}
+
+export class RelatoNegativoInscricaoDto {
+  @IsOptional()
+  @IsBoolean()
+  comorbidades?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  sinais?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  exames?: boolean;
+}
 
 export class InscricaoPublicaDto {
   @IsString()
@@ -91,6 +138,14 @@ export class InscricaoPublicaDto {
   modalidadePrincipal?: string;
 
   @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(5)
+  @ValidateNested({ each: true })
+  @Type(() => EsporteInscricaoDto)
+  esportes?: EsporteInscricaoDto[];
+
+  @IsOptional()
   @IsString()
   tempoPratica?: string;
 
@@ -141,8 +196,22 @@ export class InscricaoPublicaDto {
   sinaisClinicos?: string[];
 
   @IsOptional()
+  @IsBoolean()
+  lesaoAtual?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  lesaoUltimos3Meses?: boolean;
+
+  @IsOptional()
+  @IsIn(['normal', 'adaptada', 'interrompida'])
+  impactoLesao?: 'normal' | 'adaptada' | 'interrompida';
+
+  @IsOptional()
   @IsObject()
-  relatoNegativo?: Record<string, unknown>;
+  @ValidateNested()
+  @Type(() => RelatoNegativoInscricaoDto)
+  relatoNegativo?: RelatoNegativoInscricaoDto;
 
   @IsOptional()
   @IsString()

@@ -1,323 +1,411 @@
-.athlete-onboarding-overlay {
+/* Confirmação inicial do atleta (AthleteOnboardingModal.jsx), onda B de
+   docs/implementacao/telas-v2/change-intent.md.
+
+   Casca: o padrão novo dos modais do atleta (ver AthleteEbiaModal.css),
+   com a classe própria ao lado de cada peça app-modal-* de modalSystem.css
+   (onda A, portal no `body`). Miolo: campos de 48 px com rótulo em Sofia
+   700, opções marcáveis de 44 px, etapas com o estado escrito ("✓", "2/12")
+   e botões de 44 px, primário no degradê de largada e secundário em
+   contorno.
+
+   Armadilhas globais redeclaradas dentro do modal: h2 em Poppins e com cor,
+   `label` a 13 px com margem, `p` com entrelinha 1,6, `button { white-space:
+   nowrap }` e `input:not([type=checkbox]):not([type=radio])` (0,2,1) de
+   theme.css, vencido aqui com (0,4,0).
+
+   As classes md:col-span-2 do JSX são do Tailwind (camada utilities): a
+   grade abaixo passa a duas colunas no mesmo ponto, 48rem, e não declara
+   grid-column em quem as usa. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* ── Casca ───────────────────────────────────────────────────────────── */
+.athlete-onboarding-overlay.app-modal-overlay {
   z-index: 2500;
   align-items: flex-start;
   padding-top: clamp(0.9rem, 4vh, 2.1rem);
+  background: rgba(11, 42, 94, 0.55); /* --lt-color-stadium a 55% */
 }
 
-.athlete-onboarding-modal {
+.athlete-onboarding-modal.app-modal-shell {
   --app-modal-width: 1024px;
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 30px 72px -38px rgba(10, 36, 68, 0.56);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.athlete-onboarding-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  padding: 0.95rem var(--app-modal-padding-x) 1.15rem;
-}
-
-.athlete-onboarding-header {
+.athlete-onboarding-modal .app-modal-header {
+  position: relative;
   align-items: flex-start;
-  gap: 0.9rem;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  padding: var(--lt-space-5) var(--lt-space-5) calc(var(--lt-space-4) + 3px);
+  border-bottom: 0;
+  background: var(--lt-color-surface);
 }
 
-.athlete-onboarding-progress {
-  border: 1px solid #dbe3ef;
-  border-radius: 0.9rem;
-  background: #f8fbff;
-  padding: 0.68rem 0.8rem;
+.athlete-onboarding-modal .app-modal-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
 }
 
-.athlete-onboarding-progress-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.82rem;
-  color: #38506b;
-  margin-bottom: 0.45rem;
+.athlete-onboarding-modal .app-modal-heading { flex: 1 1 auto; gap: var(--lt-space-1); min-width: 0; }
+
+.athlete-onboarding-modal .app-modal-title {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
-.athlete-onboarding-progress-label strong {
-  font-size: 0.82rem;
-  color: #0f2745;
+.athlete-onboarding-modal .app-modal-subtitle {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
 }
 
-.athlete-onboarding-progress-track {
-  width: 100%;
-  height: 7px;
-  border-radius: 999px;
-  background: #e6edf7;
-  overflow: hidden;
-}
-
-.athlete-onboarding-stepper {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
-  margin-bottom: 0.55rem;
-}
-
-.athlete-onboarding-step {
-  display: flex;
-  align-items: center;
-  gap: 0.42rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.7rem;
-  background: #ffffff;
-  padding: 0.32rem 0.42rem;
-}
-
-.athlete-onboarding-step.is-active {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(24, 102, 179, 0.12);
-}
-
-.athlete-onboarding-step.is-done {
-  border-color: var(--color-success);
-  background: #f0fdf4;
-}
-
-.athlete-onboarding-step-index {
-  min-width: 20px;
-  height: 20px;
-  border-radius: 999px;
+.athlete-onboarding-modal .app-modal-close {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 800;
-  background: #e2e8f0;
-  color: #1e293b;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, color 160ms;
 }
 
-.athlete-onboarding-step.is-active .athlete-onboarding-step-index {
-  background: var(--color-primary);
-  color: #ffffff;
+@media (hover: hover) {
+  .athlete-onboarding-modal .app-modal-close:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
 }
 
-.athlete-onboarding-step.is-done .athlete-onboarding-step-index {
-  background: var(--color-success);
-  color: #ffffff;
-}
+.athlete-onboarding-modal .app-modal-close:focus-visible { outline: none; border-color: var(--lt-color-brand-blue); box-shadow: var(--lt-focus-ring); }
 
-.athlete-onboarding-step-content {
-  display: grid;
-  line-height: 1.2;
-}
-
-.athlete-onboarding-step-content strong {
-  font-size: 0.68rem;
-  color: var(--color-text-primary);
-}
-
-.athlete-onboarding-step-content small {
-  font-size: 0.64rem;
-  color: var(--color-text-muted);
-}
-
-.athlete-onboarding-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #1e5fa4 0%, #2b7cc7 100%);
-  border-radius: inherit;
-  transition: width 180ms ease;
-}
-
-.athlete-onboarding-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 0.9rem;
-}
-
-.athlete-onboarding-section-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #5a6f88;
-  margin-top: 0.2rem;
-}
-
-.athlete-onboarding-field {
+.athlete-onboarding-modal .athlete-onboarding-form {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: var(--lt-space-5);
+  padding: var(--lt-space-5);
+  background: var(--lt-color-surface);
 }
 
-.athlete-onboarding-field > span {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: #475569;
-}
+.athlete-onboarding-modal :where(p) { margin: 0; line-height: var(--lt-leading-normal); }
 
-.athlete-onboarding-input,
-.athlete-onboarding-textarea {
-  width: 100%;
-  border: 1px solid #d5e0ed;
-  border-radius: 0.9rem;
-  padding: 0.56rem 0.72rem;
-  font-size: 0.82rem;
-  color: #12253a;
-  background: #ffffff;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.athlete-onboarding-textarea {
-  min-height: 86px;
-  resize: vertical;
-}
-
-.athlete-onboarding-input:focus,
-.athlete-onboarding-textarea:focus {
-  outline: none;
-  border-color: #7da8d8;
-  box-shadow: 0 0 0 3px rgba(125, 168, 216, 0.22);
-}
-
-.athlete-onboarding-toggle {
-  border: 1px solid #d5e0ed;
-  border-radius: 0.9rem;
-  background: #f9fbff;
-  padding: 0.6rem 0.72rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.32rem;
-}
-
-.athlete-onboarding-toggle p {
+.athlete-onboarding-modal label {
   margin: 0;
-  font-size: 0.76rem;
-  color: #60748e;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
-.athlete-onboarding-checkbox {
+/* ── Progresso: etapa, campos respondidos e as três etapas ───────────── */
+.athlete-onboarding-modal .athlete-onboarding-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.athlete-onboarding-modal .athlete-onboarding-progress-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-onboarding-modal .athlete-onboarding-progress-label strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.athlete-onboarding-modal .athlete-onboarding-stepper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-2);
+  margin: 0;
+}
+
+.athlete-onboarding-modal .athlete-onboarding-step {
   display: flex;
   align-items: center;
-  gap: 0.58rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #1f3853;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
 }
 
-.athlete-onboarding-checkbox input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: #1e5fa4;
+.athlete-onboarding-modal .athlete-onboarding-step.is-active { border-color: var(--lt-color-brand-blue); }
+.athlete-onboarding-modal .athlete-onboarding-step.is-done { border-color: transparent; background: var(--lt-color-success-bg); }
+
+/* Número da etapa: branco sobre o azul (6,33:1) na ativa e sobre o verde
+   de texto (5,37:1) na concluída, que mostra "✓" escrito. */
+.athlete-onboarding-modal .athlete-onboarding-step-index {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: 1;
 }
 
-.athlete-onboarding-check-grid {
+.athlete-onboarding-modal .athlete-onboarding-step.is-active .athlete-onboarding-step-index { background: var(--lt-color-brand-blue); color: var(--lt-color-text-inverse); }
+.athlete-onboarding-modal .athlete-onboarding-step.is-done .athlete-onboarding-step-index { background: var(--lt-color-brand-green-text); color: var(--lt-color-text-inverse); }
+
+.athlete-onboarding-modal .athlete-onboarding-step-content { display: grid; min-width: 0; line-height: var(--lt-leading-snug); }
+.athlete-onboarding-modal .athlete-onboarding-step-content strong { color: var(--lt-color-text); font-size: var(--lt-text-sm); font-weight: 700; overflow-wrap: anywhere; }
+.athlete-onboarding-modal .athlete-onboarding-step-content small { color: var(--lt-color-text-muted); font-size: var(--lt-text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Barra: só gráfico; a largura vem do JSX, sem transição. */
+.athlete-onboarding-modal .athlete-onboarding-progress-track {
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+}
+
+.athlete-onboarding-modal .athlete-onboarding-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+  transition: none;
+}
+
+/* ── Grade de campos ─────────────────────────────────────────────────── */
+.athlete-onboarding-modal .athlete-onboarding-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.46rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-4) var(--lt-space-5);
+  min-width: 0;
 }
 
-.athlete-onboarding-check-item {
-  display: inline-flex;
+@media (min-width: 48rem) {
+  .athlete-onboarding-modal .athlete-onboarding-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.athlete-onboarding-modal .athlete-onboarding-section-label {
+  margin: var(--lt-space-2) 0 0;
+  padding: 0 0 var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.athlete-onboarding-modal .athlete-onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Rótulo do campo ou título do grupo: o .ip-label da inscrição. */
+.athlete-onboarding-modal .athlete-onboarding-field > span {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.athlete-onboarding-modal .athlete-onboarding-input:not([type="checkbox"]):not([type="radio"]),
+.athlete-onboarding-modal .athlete-onboarding-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.athlete-onboarding-modal .athlete-onboarding-textarea { min-height: 7.5rem; padding: 0.75rem 0.875rem; resize: vertical; }
+
+.athlete-onboarding-modal :is(.athlete-onboarding-input, .athlete-onboarding-textarea)::placeholder { color: var(--lt-color-text-subtle); opacity: 1; }
+
+.athlete-onboarding-modal .athlete-onboarding-input:not([type="checkbox"]):not([type="radio"]):focus,
+.athlete-onboarding-modal .athlete-onboarding-textarea:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Sim/não e opções marcáveis: alvos de 44 px ──────────────────────── */
+.athlete-onboarding-modal .athlete-onboarding-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
+  padding: var(--lt-space-2) var(--lt-space-4) var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.athlete-onboarding-modal .athlete-onboarding-toggle p { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+
+.athlete-onboarding-modal .athlete-onboarding-checkbox,
+.athlete-onboarding-modal .athlete-onboarding-check-item {
+  display: flex;
   align-items: center;
-  gap: 0.44rem;
-  border: 1px solid #dbe5f2;
-  border-radius: 0.72rem;
-  padding: 0.34rem 0.48rem;
-  background: #f8fbff;
-  font-size: 0.76rem;
-  color: #27415d;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  cursor: pointer;
 }
 
-.athlete-onboarding-check-item input[type='checkbox'] {
-  width: 15px;
-  height: 15px;
-  accent-color: #1e5fa4;
+.athlete-onboarding-modal .athlete-onboarding-checkbox { font-weight: 700; }
+
+.athlete-onboarding-modal :is(.athlete-onboarding-checkbox, .athlete-onboarding-check-item) input[type="checkbox"] {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: pointer;
 }
 
-.athlete-onboarding-error {
-  border: 1px solid #f6c3c0;
-  border-radius: 0.9rem;
-  background: #fff3f2;
-  color: #9f2d2d;
-  font-size: 0.76rem;
-  padding: 0.66rem 0.76rem;
+.athlete-onboarding-modal .athlete-onboarding-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
-@media (min-width: 768px) {
-  .athlete-onboarding-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+/* Marcado: a caixa marcada é o estado; o fundo e a borda só reforçam. */
+.athlete-onboarding-modal .athlete-onboarding-check-item {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-@media (max-width: 640px) {
-  .athlete-onboarding-overlay {
-    padding-top: 0.5rem;
-  }
+.athlete-onboarding-modal .athlete-onboarding-check-item:has(input:checked) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
 
-  .athlete-onboarding-form {
-    padding-left: 0.86rem;
-    padding-right: 0.86rem;
-  }
-
-  .athlete-onboarding-check-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .athlete-onboarding-stepper {
-    grid-template-columns: 1fr;
-  }
+@media (hover: hover) {
+  .athlete-onboarding-modal .athlete-onboarding-check-item:hover { border-color: var(--lt-color-brand-blue); }
 }
 
-/* Parte 3 — harmonização visual (Onboarding atleta) */
-.athlete-onboarding-progress {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: #f8fafc;
+.athlete-onboarding-modal :is(.athlete-onboarding-checkbox, .athlete-onboarding-check-item):has(input:focus-visible) { border-radius: var(--lt-radius-control); box-shadow: var(--lt-focus-ring); }
+.athlete-onboarding-modal :is(.athlete-onboarding-checkbox, .athlete-onboarding-check-item) input:focus-visible { outline: none; }
+
+.athlete-onboarding-modal .athlete-onboarding-error {
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
 }
 
-.athlete-onboarding-progress-label {
-  color: var(--color-text-muted);
+/* ── Rodapé: Depois (contorno) e Salvar cadastro (degradê de largada) ── */
+.athlete-onboarding-modal .app-modal-footer {
+  margin: 0;
+  padding: var(--lt-space-4) 0 0;
+  border-top: 1px solid var(--lt-color-border);
+  background: none;
 }
 
-.athlete-onboarding-progress-label strong {
-  color: var(--color-navy);
+.athlete-onboarding-modal .app-modal-actions { flex-wrap: wrap; gap: var(--lt-space-2); }
+
+.athlete-onboarding-modal .app-modal-btn {
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-5);
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  white-space: normal;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
 }
 
-.athlete-onboarding-progress-fill {
-  background: linear-gradient(90deg, var(--color-navy) 0%, var(--color-green) 100%);
+.athlete-onboarding-modal .app-modal-btn--secondary { border: 1.5px solid var(--lt-color-border-field); background: var(--lt-color-surface); box-shadow: none; color: var(--lt-color-brand-blue); }
+
+/* Branco sobre o degradê: 4,82:1 no topo e 6,20:1 na base. */
+.athlete-onboarding-modal .app-modal-btn--primary {
+  border: 0;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
 }
 
-.athlete-onboarding-section-label {
-  color: var(--color-text-muted);
+@media (hover: hover) {
+  .athlete-onboarding-modal .app-modal-btn--secondary:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+  .athlete-onboarding-modal .app-modal-btn--primary:hover:not(:disabled) { border: 0; background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom)); box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
 }
 
-.athlete-onboarding-field > span {
-  color: var(--color-text-muted);
-}
+.athlete-onboarding-modal .app-modal-btn:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+.athlete-onboarding-modal .app-modal-btn:disabled { box-shadow: none; opacity: 0.6; cursor: not-allowed; }
 
-.athlete-onboarding-input,
-.athlete-onboarding-textarea {
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-}
-
-.athlete-onboarding-input:focus,
-.athlete-onboarding-textarea:focus {
-  border-color: var(--color-green);
-  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.15);
-}
-
-.athlete-onboarding-toggle,
-.athlete-onboarding-check-item {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: #f8fafc;
-}
-
-.athlete-onboarding-checkbox {
-  color: var(--color-navy);
-}
-
-.athlete-onboarding-checkbox input[type='checkbox'],
-.athlete-onboarding-check-item input[type='checkbox'] {
-  accent-color: var(--color-green);
-}
-
-.athlete-onboarding-error {
-  border-radius: var(--radius-md);
+@media (max-width: 47.5rem) {
+  .athlete-onboarding-overlay.app-modal-overlay { padding-top: 0.5rem; }
+  .athlete-onboarding-modal .app-modal-header { padding-inline: var(--lt-space-4); }
+  .athlete-onboarding-modal .athlete-onboarding-form { padding: var(--lt-space-4); }
 }

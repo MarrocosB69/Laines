@@ -1,3 +1,590 @@
+/* Portal da equipe técnica e do profissional (TeamPortal.jsx): a área
+   "Meus Atletas", na direção "Energia e velocidade" da landing (onda B de
+   docs/implementacao/telas-v2/change-intent.md). A Visão geral
+   (TeamVisaoGeral.jsx) usa as peças de src/components/painel/painel.css, e
+   as áreas da Liga (Pesquisa, Ensino, Extensão, Comunicação) já têm folhas
+   próprias; esta cobre só a lista de atletas e o detalhe, no mesmo desenho:
+   cartões brancos com --lt-radius-card, títulos em Sofia 700, número na
+   voz de campanha, campo de 48 px, alvos de 44 px, foco com
+   --lt-focus-ring e estado escrito, nunca só cor.
+
+   Escopo: `.team-view .team-body` (e o selo `.team-header-count` do
+   cabeçalho). O cabeçalho usa AdminHeader.css, da onda A. Nada aqui alcança
+   a Visão geral nem as áreas da Liga, que moram na mesma raiz `.team-view`.
+
+   Armadilhas globais redeclaradas: h1…h6 em Poppins e com cor, `p` com
+   entrelinha 1,6, `button { white-space: nowrap }`, `*:focus-visible` verde e
+   `input:not([type=checkbox]):not([type=radio])` (0,2,1) de theme.css.
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs. Nenhum tom
+   novo: tokens --lt-* e os pares de "atenção" e "positivo" já medidos em
+   painel.css. As fontes vêm aqui pelo mesmo motivo de painel.css. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* ── Selo de contagem ao lado do título "Meus Atletas" ───────────────────
+   Azul sobre --lt-color-track-tint: 5,57:1. */
+.team-view .team-header-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Corpo: lista e detalhe ──────────────────────────────────────────── */
+.team-view .team-body {
+  --tp-sombra: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  --tp-atencao-texto: #9a3412;  /* 7,31:1 sobre branco · 6,84:1 sobre --lt-color-surface-field */
+  --tp-atencao-fundo: #fff7ed;
+  --tp-atencao-traco: #c2410c;  /* gráfico, não texto: 5,18:1 sobre branco */
+  --tp-positivo-fundo: #ecf6e8; /* --lt-color-brand-green-text sobre ele: 4,84:1 */
+  --tp-esqueleto: #e7ecf3;
+  --tp-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--lt-space-4);
+  align-items: start;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+/* Até 60rem o detalhe vem antes da lista, como antes. */
+.team-view .team-detail { order: -1; }
+
+@media (min-width: 60rem) {
+  .team-view .team-body { grid-template-columns: minmax(16rem, 18rem) minmax(0, 1fr); }
+  .team-view .team-detail { order: 0; }
+}
+
+.team-view .team-body :where(h2, h3) {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.team-view .team-body :where(p) { margin: 0; line-height: var(--lt-leading-normal); }
+.team-view .team-body :is(button):focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+/* ── Lista de atletas ────────────────────────────────────────────────── */
+.team-view .team-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--tp-sombra);
+}
+
+@media (min-width: 60rem) {
+  .team-view .team-list { position: sticky; top: 72px; max-height: calc(100vh - 96px); overflow-y: auto; }
+}
+
+.team-view .team-list-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  margin-bottom: var(--lt-space-2);
+  padding-bottom: var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+}
+
+.team-view .team-list-title {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-snug);
+}
+
+.team-view .team-list-title svg { flex: none; width: 1.125rem; height: 1.125rem; color: var(--lt-color-brand-blue); }
+
+.team-view .team-list-count {
+  margin-left: auto;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Busca: campo de 48 px; o rótulo é o aria-label "Buscar atleta". */
+.team-view .team-search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.team-view .team-search-box:focus-within { border-color: var(--lt-color-brand-blue); box-shadow: var(--lt-focus-ring); }
+.team-view .team-search-box svg { flex: none; color: var(--lt-color-text-muted); }
+
+.team-view .team-search-box input:not([type="checkbox"]):not([type="radio"]) {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+}
+
+.team-view .team-search-box input::placeholder { color: var(--lt-color-text-subtle); opacity: 1; }
+
+/* Item: linha clicável de 44 px ou mais. O atleta aberto tem fundo azul
+   claro, borda azul e aria-current, não só a cor. */
+.team-view .team-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  white-space: normal;
+  transform: none;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+@media (hover: hover) {
+  .team-view .team-list-item:hover { background: var(--lt-color-track-tint); }
+}
+
+.team-view .team-list-item.active { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); transform: none; }
+
+.team-view .team-list-item-avatar,
+.team-view .team-detail-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* Branco sobre o azul: 6,33:1. */
+.team-view .team-list-item.active .team-list-item-avatar { background: var(--lt-color-brand-blue); box-shadow: none; color: var(--lt-color-text-inverse); }
+
+.team-view .team-list-item-info { display: flex; flex: 1 1 auto; flex-direction: column; align-items: flex-start; gap: 0.125rem; min-width: 0; }
+
+.team-view .team-list-item-info strong {
+  display: block;
+  max-width: 100%;
+  color: var(--lt-color-text);
+  font-weight: 700;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.team-view .team-list-item-info > span { max-width: 100%; color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); overflow-wrap: anywhere; }
+
+/* Modalidade: verde de texto sobre o fundo positivo (4,84:1). */
+.team-view .team-list-item-info .team-sport-badge {
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--tp-positivo-fundo);
+  color: var(--lt-color-brand-green-text);
+  font-weight: 700;
+  white-space: normal;
+}
+
+/* Ponto de situação: gráfico; o rótulo vem no aria-label e no detalhe. */
+.team-view .team-status-dot { flex: none; width: 0.5rem; height: 0.5rem; border-radius: 50%; }
+.team-view .team-status-dot.ok { background: var(--lt-color-brand-green); }
+.team-view .team-status-dot.neutral { background: var(--lt-color-border-field); }
+
+/* ── Detalhe do atleta ───────────────────────────────────────────────── */
+.team-view .team-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-5);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--tp-respiro);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--tp-sombra);
+}
+
+.team-view .team-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  padding-bottom: var(--lt-space-4);
+  border-bottom: 1px solid var(--lt-color-border);
+}
+
+.team-view .team-detail-avatar { width: 3.5rem; height: 3.5rem; font-size: 1.5rem; }
+
+.team-view .team-detail-identity { flex: 1 1 14rem; min-width: 0; }
+
+/* O nome na voz de campanha, abaixo do h1 do cabeçalho. */
+.team-view .team-detail-identity h2 {
+  margin: 0;
+  padding-right: 0.1em;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-lg);
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+}
+
+.team-view .team-detail-meta { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); margin-top: var(--lt-space-2); }
+
+.team-view .team-meta-chip,
+.team-view .team-status-chip,
+.team-view .team-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.team-view .team-meta-chip svg { flex: none; }
+.team-view .team-meta-chip--sport { background: var(--tp-positivo-fundo); color: var(--lt-color-brand-green-text); }
+.team-view .team-meta-chip--project { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+
+/* Situação do atendimento: o texto vem do cadastro; o tom acompanha. */
+.team-view .team-status-chip { align-self: flex-start; min-height: 2rem; color: var(--lt-color-text); }
+.team-view .team-status-chip.ok,
+.team-view .team-pill.ok { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+.team-view .team-pill.pending { background: var(--tp-atencao-fundo); color: var(--tp-atencao-texto); }
+
+/* ── Números do atleta: avaliações, pendentes e próxima consulta ────────
+   O número na voz de campanha; o rótulo escrito diz o que ele conta e a
+   marca inclinada no topo só repete o tom. */
+.team-view .team-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.team-view .team-kpi-item {
+  --tp-tom: var(--lt-color-brand-blue);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.team-view .team-kpi-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-4);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--tp-tom);
+  transform: skewX(-20deg);
+}
+
+.team-view .team-kpi--green { --tp-tom: var(--lt-color-brand-green); }
+.team-view .team-kpi--amber { --tp-tom: var(--tp-atencao-traco); }
+.team-view .team-kpi--blue { --tp-tom: var(--lt-color-brand-blue); }
+
+.team-view .team-kpi__value {
+  display: block;
+  min-height: 1em;
+  padding-right: 0.1em;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: clamp(1.875rem, 2.6vw, 2.375rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.team-view .team-kpi--amber .team-kpi__value { color: var(--tp-atencao-texto); }
+.team-view .team-kpi--blue .team-kpi__value { color: var(--lt-color-text); }
+.team-view .team-kpi__value--date { font-size: var(--lt-text-lg); }
+
+.team-view .team-kpi__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.team-view .team-kpi__label svg { flex: none; }
+
+/* Carregando: bloco parado; pulsa três vezes com movimento permitido. */
+.team-view .team-kpi__skeleton {
+  display: inline-block;
+  width: 3rem;
+  height: 1.75rem;
+  border-radius: var(--lt-radius-control);
+  background: var(--tp-esqueleto);
+  animation: none;
+}
+
+/* ── Perfil de treino, saúde e avaliações recentes ───────────────────── */
+.team-view .team-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.team-view .team-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  overflow: visible;
+}
+
+.team-view .team-card::before { content: none; }
+
+.team-view .team-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+}
+
+.team-view .team-card-header svg { flex: none; color: var(--lt-color-brand-blue); }
+.team-view .team-card-title { font-size: var(--lt-text-md); line-height: var(--lt-leading-snug); }
+.team-view .team-eval-count { margin-left: auto; color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-weight: 600; }
+
+.team-view .team-training-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lt-space-2); }
+
+.team-view .team-training-stat,
+.team-view .team-eval-item {
+  box-sizing: border-box;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+}
+
+.team-view .team-training-stat { display: flex; flex-direction: column; gap: 0.125rem; padding: var(--lt-space-3); }
+.team-view .team-training-stat--full { grid-column: 1 / -1; }
+
+/* Rótulos em caixa alta pequena (--lt-text-xs); apoio a 6,59:1 no branco. */
+.team-view .team-training-stat__label,
+.team-view .team-health-item__label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-view .team-training-stat__value { color: var(--lt-color-text); font-size: var(--lt-text-base); font-weight: 700; line-height: var(--lt-leading-snug); overflow-wrap: anywhere; }
+
+.team-view .team-health-list { display: flex; flex-direction: column; gap: var(--lt-space-3); }
+.team-view .team-health-item { display: flex; flex-direction: column; gap: var(--lt-space-1); min-width: 0; }
+.team-view .team-health-item__value { color: var(--lt-color-text); font-size: var(--lt-text-base); overflow-wrap: anywhere; }
+.team-view .team-text { color: var(--lt-color-text-muted); font-size: var(--lt-text-base); }
+
+/* Avaliações: linhas brancas, sem hover (não são clicáveis). A situação vem
+   escrita na pílula; o ponto é gráfico e tem aria-label. */
+.team-view .team-list-evals { display: flex; flex-direction: column; gap: var(--lt-space-2); }
+
+.team-view .team-eval-item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-2) var(--lt-space-3);
+  transition: none;
+}
+
+.team-view .team-eval-dot { flex: none; width: 0.625rem; height: 0.625rem; border-radius: 50%; }
+.team-view .team-eval-dot.ok { background: var(--lt-color-brand-green); }
+.team-view .team-eval-dot.pending { background: var(--tp-atencao-traco); }
+
+.team-view .team-eval-info { flex: 1 1 auto; min-width: 0; }
+
+.team-view .team-eval-item strong {
+  display: block;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.team-view .team-eval-info > span { color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); font-variant-numeric: tabular-nums; }
+.team-view .team-eval-item .team-pill { flex: none; }
+
+/* ── Carregando e vazio (FeedbackState de components/ui) ─────────────── */
+.team-view .team-body .ui-feedback-state:not(.ui-feedback-state--loading) {
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+}
+
+.team-view .team-body .ui-feedback-state__icon {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  opacity: 1;
+}
+
+.team-view .team-body .ui-feedback-state__title { margin: 0; color: var(--lt-color-text); font-size: var(--lt-text-base); font-weight: 700; line-height: var(--lt-leading-snug); }
+.team-view .team-body .ui-feedback-state__description { max-width: 36rem; margin: 0; color: var(--lt-color-text-muted); font-size: var(--lt-text-sm); }
+.team-view .team-body .ui-skeleton-group { display: grid; gap: var(--lt-space-3); }
+.team-view .team-body .ui-skeleton { border-radius: var(--lt-radius-control); background: var(--tp-esqueleto); animation: none; }
+.team-view .team-body .ui-skeleton-line { height: 1rem; }
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só opacity, sem laço (três pulsos) e só com movimento permitido. O
+   shimmer anterior animava background-position em laço infinito. */
+@media (prefers-reduced-motion: no-preference) {
+  .team-view .team-kpi__skeleton,
+  .team-view .team-body .ui-skeleton { animation: tp-pulsar 1.6s ease-in-out 3; }
+
+  @keyframes tp-pulsar { 50% { opacity: 0.5; } }
+}
+
+/* ══ LEGADO SEM CONSUMIDOR: início ═════════════════════════════════════
+   Regras copiadas sem mudança de tmp/telas-v1/src/views/Team/
+   TeamPortal.css. Nenhuma classe daqui aparece em src/ (busca por token
+   exato em 28/09/2026); o bloco display:none já se dizia "Legacy / unused".
+   Remover código morto depende de aprovação (telas-v2/change-intent.md,
+   "Não objetivos"), então o bloco fica isolado para sair de uma vez, entre
+   esta marca e a de "fim". As variáveis --tp-* em :root abaixo só servem a
+   este bloco. */
+:root {
+  --tp-green:       #2d7a1a;
+  --tp-teal:        #34b89e;
+  --tp-navy:        var(--pn-navy, #1D3350);
+  --tp-blue-deep:   #1e3a8a;
+
+  --tp-surface:     var(--pn-surface, #ffffff);
+  --tp-surface-2:   var(--pn-surface-2, #f8fafc);
+  --tp-surface-3:   var(--pn-surface-3, #f1f5f9);
+  --tp-surface-4:   #f0f4f8;
+  --tp-surface-5:   #f9fbff;
+  --tp-border:      #e2e8f0;
+
+  --tp-text-1:      var(--pn-text-1, #1D3350);
+  --tp-text-2:      var(--pn-text-2, #3d5a72);
+  --tp-text-3:      var(--pn-text-3, #607b8d);
+  /* Fallback alinhado ao valor real de --pn-text-4 (UX-08: ~4,99:1 sobre
+     fundos claros; o antigo #94a3b8 media ~2,56:1). */
+  --tp-text-4:      var(--pn-text-4, #5f7188);
+
+  --tp-ok:          #22c55e;
+  --tp-ok-deep:     #166534;
+  --tp-ok-bg:       #dcfce7;
+  --tp-warn:        var(--color-amber, #F59E0B);
+  --tp-warn-deep:   #92400e;
+  --tp-danger:      var(--pn-danger, #dc2626);
+}
+
 .team-portal {
   min-height: 100vh;
   width: min(100%, var(--layout-content-width));
@@ -6,519 +593,15 @@
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
-  color: #0f172a;
+  color: var(--tp-text-1);
 }
 
-.team-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  flex-wrap: wrap;
-  border-radius: 1.3rem;
-  border: 1px solid rgba(20, 53, 84, 0.12);
-  background: linear-gradient(135deg, #ffffff 0%, #f6f9fd 100%);
-  padding: clamp(1rem, 2vw, 1.45rem);
-  box-shadow: 0 16px 36px -28px rgba(20, 53, 84, 0.28);
-}
-
-.team-header h1 {
-  margin: 0 0 0.34rem;
-  font-size: clamp(1.5rem, 2.3vw, 1.95rem);
-  font-weight: 800;
-  color: #1d3350;
-  letter-spacing: -0.01em;
-}
-
-.team-header p {
-  margin: 0;
-  color: #5f7389;
-  font-size: 0.92rem;
-}
-
-.team-badges {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.team-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.team-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.34rem;
-  padding: 0.36rem 0.72rem;
-  border: 1px solid rgba(29, 51, 80, 0.16);
-  border-radius: 999px;
-  background: #ffffff;
-  color: #1d3350;
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
-.team-logout-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.38rem;
-  border-radius: 999px;
-  border: 1px solid rgba(220, 38, 38, 0.24);
-  background: #fff5f5;
-  color: #b91c1c;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 0.38rem 0.74rem;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-}
-
-.team-logout-btn:hover {
-  background: #fee2e2;
-  border-color: rgba(185, 28, 28, 0.42);
-  transform: translateY(-1px);
-}
-
-.team-logout-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16);
-}
-
-.team-body {
-  display: grid;
-  grid-template-columns: minmax(240px, 285px) 1fr;
-  gap: 1rem;
-}
-
-.team-list,
-.team-detail {
-  border-radius: 1.2rem;
-  border: 1px solid rgba(20, 53, 84, 0.12);
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 16px 34px -30px rgba(20, 53, 84, 0.28);
-}
-
-.team-list {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.team-list-header {
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #5c728a;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.team-list-item {
-  border: 1px solid rgba(20, 53, 84, 0.13);
-  background: #ffffff;
-  border-radius: 0.86rem;
-  padding: 0.72rem;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.team-list-item strong {
-  font-size: 0.92rem;
-  color: #1d3350;
-}
-
-.team-list-item span {
-  font-size: 0.79rem;
-  color: #64748b;
-}
-
-.team-list-item:hover {
-  border-color: rgba(47, 111, 166, 0.36);
-  box-shadow: 0 12px 24px -18px rgba(47, 111, 166, 0.34);
-}
-
-.team-list-item:focus-visible {
-  outline: none;
-  border-color: rgba(47, 111, 166, 0.44);
-  box-shadow: 0 0 0 3px rgba(47, 111, 166, 0.16);
-}
-
-.team-list-item.active {
-  border-color: rgba(29, 51, 80, 0.34);
-  background: rgba(239, 246, 255, 0.78);
-  transform: translateY(-1px);
-}
-
-.team-detail {
-  padding: 1.15rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.team-detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.team-detail-header h2 {
-  margin: 0 0 0.2rem;
-  font-size: clamp(1.35rem, 2vw, 1.7rem);
-  font-weight: 800;
-  color: #1d3350;
-}
-
-.team-detail-header p {
-  margin: 0;
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.team-status {
-  padding: 0.34rem 0.74rem;
-  border-radius: 999px;
-  border: 1px solid rgba(86, 173, 219, 0.22);
-  background: rgba(219, 234, 254, 0.72);
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #1e3a8a;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.team-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.85rem;
-}
-
-.team-card {
-  border: 1px solid rgba(20, 53, 84, 0.1);
-  border-radius: 1rem;
-  padding: 0.95rem;
-  background: #f9fbff;
-  display: flex;
-  flex-direction: column;
-  gap: 0.48rem;
-}
-
-.team-card.full {
-  background: #ffffff;
-}
-
-.team-card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-weight: 700;
-  color: #334155;
-  font-size: 0.88rem;
-}
-
-.team-text {
-  margin: 0;
-  color: #475569;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.team-subtext {
-  color: #64748b;
-  font-size: 0.82rem;
-}
-
-.team-metric strong {
-  font-size: 1.18rem;
-  display: block;
-  color: #1d3350;
-}
-
-.team-metric span {
-  color: #64748b;
-  font-size: 0.82rem;
-}
-
-.team-list-evals {
-  display: flex;
-  flex-direction: column;
-  gap: 0.58rem;
-}
-
-.team-eval-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid rgba(20, 53, 84, 0.11);
-  border-radius: 0.82rem;
-  padding: 0.68rem;
-  background: #ffffff;
-}
-
-.team-eval-item strong {
-  display: block;
-  font-size: 0.88rem;
-  color: #1d3350;
-}
-
-.team-eval-item span {
-  font-size: 0.77rem;
-  color: #64748b;
-}
-
-.team-pill {
-  padding: 0.2rem 0.62rem;
-  border-radius: 999px;
-  font-size: 0.67rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.team-pill.ok {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.team-pill.pending {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.team-empty {
-  border-radius: 0.9rem;
-  border: 1px dashed rgba(100, 116, 139, 0.28);
-  background: rgba(248, 250, 252, 0.94);
-  padding: 2rem 1.5rem;
-  color: #64748b;
-  text-align: center;
-  font-size: 0.84rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.team-empty::before {
-  content: '👥';
-  font-size: 1.8rem;
-  opacity: 0.35;
-  display: block;
-  line-height: 1;
-}
-
-.team-empty strong {
-  display: block;
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #1d3350;
-}
-
-.team-empty span {
-  font-size: 0.78rem;
-  color: #64748b;
-  line-height: 1.5;
-  max-width: 220px;
-}
-
-@media (max-width: 960px) {
-  .team-body {
-    grid-template-columns: 1fr;
-  }
-
-  .team-detail {
-    order: -1;
-  }
-}
-
-@media (max-width: 640px) {
-  .team-portal {
-    padding: 0.8rem;
-  }
-
-  .team-header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .team-detail,
-  .team-list {
-    padding: 0.86rem;
-  }
-}
-
-/* Team list header with search */
-.team-list-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding-bottom: 0.55rem;
-  border-bottom: 1px solid rgba(20, 53, 84, 0.09);
-}
-
-.team-list-title {
-  display: flex;
-  align-items: center;
-  gap: 0.42rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #5c728a;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.team-list-count {
-  margin-left: auto;
-  background: rgba(29, 51, 80, 0.09);
-  color: #1d3350;
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 0.1rem 0.46rem;
-  border-radius: 999px;
-}
-
-.team-search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.48rem;
-  padding: 0.44rem 0.64rem;
-  background: #f1f5f9;
-  border-radius: 0.7rem;
-  border: 1px solid #e2e8f0;
-}
-
-.team-search-box svg {
-  flex-shrink: 0;
-  color: #94a3b8;
-}
-
-.team-search-box input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 0.82rem;
-  color: #1e293b;
-  outline: none;
-}
-
-.team-search-box input::placeholder {
-  color: #94a3b8;
-}
-
-/* Updated list item layout */
-.team-list-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-direction: row !important;
-}
-
-.team-list-item-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(140deg, #1D3350, #2f6fa6);
-  color: #ffffff;
-  font-size: 0.88rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.team-list-item-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.team-list-item-info strong {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.team-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.team-status-dot.ok {
-  background: #22c55e;
-}
-
-.team-status-dot.neutral {
-  background: #94a3b8;
-}
-
-/* Updated detail header */
-.team-detail-header {
-  align-items: center;
-}
-
-.team-detail-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(140deg, #1D3350, #2f6fa6);
-  color: #ffffff;
-  font-size: 1.2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.team-detail-identity {
-  flex: 1;
-}
-
-.team-project-badge {
-  display: inline-block;
-  margin-top: 0.2rem;
-  padding: 0.14rem 0.52rem;
-  background: rgba(86, 173, 219, 0.12);
-  color: #1e3a8a;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-.team-status-chip {
-  padding: 0.3rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+.team-subtext { color: var(--tp-text-3); font-size: 0.82rem; }
 
-.team-status-chip.ok {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-}
+.team-metric strong { font-size: 1.18rem; display: block; color: var(--tp-navy); }
 
-.team-status-chip.neutral {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-}
+.team-metric span { color: var(--tp-text-3); font-size: 0.82rem; }
 
-/* Metric ok state */
 .team-metric-ok {
   display: flex;
   align-items: center;
@@ -528,133 +611,13 @@
   font-weight: 600;
 }
 
-/* Eval item updated */
-.team-eval-item {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.team-eval-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.team-eval-dot.ok {
-  background: #22c55e;
-}
-
-.team-eval-dot.pending {
-  background: #f59e0b;
-}
-
-.team-eval-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.team-eval-count {
-  margin-left: auto;
-  font-size: 0.72rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-/* Empty panel (no patient selected) */
-.team-empty-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  color: #94a3b8;
-  min-height: 320px;
-}
-
-.team-empty-panel svg {
-  opacity: 0.4;
-}
-
-.team-empty-panel p {
-  font-size: 0.9rem;
-}
-
-/* Remove pseudo emoji from team-empty inside portal */
-.team-body .team-empty::before {
-  display: none;
-}
-
-/* Parte 3 — harmonização visual (Equipe) */
-.team-portal {
-  color: var(--color-text-primary);
-}
-
-.team-header {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  box-shadow: var(--shadow-sm);
-}
-
-.team-header h1,
-.team-detail-header h2,
-.team-metric strong,
-.team-list-item strong {
-  color: var(--color-navy);
-}
-
-.team-header p,
-.team-subtext,
-.team-text,
-.team-list-item span,
-.team-metric span {
-  color: var(--color-text-muted);
-}
-
-.team-badge {
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  color: var(--color-navy);
-}
-
-.team-logout-btn {
-  border-radius: var(--radius-md);
-}
-
-.team-list,
-.team-detail,
-.team-card {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  box-shadow: var(--shadow-sm);
-}
-
-.team-list-item {
-  border-radius: var(--radius-md);
-  border: 1px solid #e2e8f0;
-}
-
-.team-list-item:hover {
-  border-color: rgba(16, 51, 85, 0.26);
-  box-shadow: var(--shadow-sm);
-}
-
-.team-list-item.active {
-  border-color: rgba(16, 51, 85, 0.34);
-  background: rgba(16, 51, 85, 0.08);
-}
-
-.team-status {
-  border: 1px solid rgba(16, 51, 85, 0.2);
-  background: rgba(16, 51, 85, 0.08);
-  color: var(--color-navy);
-}
-
-.team-eval-item,
-.team-empty {
-  border-radius: var(--radius-md);
-}
+.team-header,
+.team-badges,
+.team-header-actions,
+.team-badge,
+.team-logout-btn,
+.team-status,
+.team-project-badge,
+.team-empty,
+.team-empty-panel { display: none; }
+/* ══ LEGADO SEM CONSUMIDOR: fim ═════════════════════════════════════ */

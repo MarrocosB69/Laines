@@ -102,6 +102,19 @@ export class TacoFood {
   @Column({ name: 'vitamina_e', type: 'numeric', precision: 8, scale: 2, nullable: true })
   vitaminaE!: string | null;
 
+  // Origem do alimento: a TACO e a TBCA convivem no mesmo catalogo porque
+  // divergem entre si e planos ja prescritos referenciam linhas das duas.
+  @Column({ type: 'varchar', length: 12, default: 'TACO' })
+  fonte!: string;
+
+  // O codigo da TBCA e alfanumerico (C0209A); `codigo` continua inteiro por
+  // compatibilidade com a TACO.
+  @Column({ name: 'codigo_texto', type: 'varchar', length: 24, nullable: true })
+  codigoTexto!: string | null;
+
+  @Column({ name: 'tipo_alimento', type: 'varchar', length: 60, nullable: true })
+  tipoAlimento!: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
   createdAt!: Date;
 

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import NotificationTaskCenter from '../../components/shared/NotificationTaskCenter';
+import { getAcademicTabLabel } from '../../constants/academicNavigation';
 
 import '../admin/AdminView/AdminHeader.css';
 
@@ -19,12 +20,14 @@ const ProfessorHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => 
   }, [user]);
 
   const labels = {
-    dashboard: 'Visao geral',
+    dashboard: 'Visão Geral',
     patients: 'Alunos e atletas',
     agenda: 'Agenda',
-    research: 'Projetos vinculados'
+    research: 'Pesquisa',
+    ensino: 'Ensino',
+    extensao: 'Extensão'
   };
-  const currentLabel = labels[activeTab] || activeTab;
+  const currentLabel = getAcademicTabLabel(activeTab) || labels[activeTab] || activeTab;
 
   return (
     <header className="admin-header">

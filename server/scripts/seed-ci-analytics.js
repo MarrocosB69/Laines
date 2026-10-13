@@ -96,6 +96,7 @@ const seedPatients = async (client, refs) => {
     `
     INSERT INTO pacientes (
       id,
+      prontuario,
       nome,
       cpf,
       status,
@@ -114,9 +115,10 @@ const seedPatients = async (client, refs) => {
     ) VALUES
       (
         $1,
+        'PRT-CI-001',
         'Paciente CI Vinculado',
         '11111111111',
-        'Ativo',
+        'ativo',
         $4,
         'Projeto CI Analytics',
         $2,
@@ -132,9 +134,10 @@ const seedPatients = async (client, refs) => {
       ),
       (
         $9,
+        'PRT-CI-002',
         'Paciente CI Espera',
         '22222222222',
-        'Lista de Espera',
+        'espera',
         NULL,
         NULL,
         NULL,
@@ -150,9 +153,10 @@ const seedPatients = async (client, refs) => {
       ),
       (
         $10,
+        'PRT-CI-003',
         'Paciente CI Supervisionado',
         '33333333333',
-        'Ativo',
+        'ativo',
         $4,
         'Projeto CI Analytics',
         NULL,
@@ -169,6 +173,7 @@ const seedPatients = async (client, refs) => {
     ON CONFLICT (id)
     DO UPDATE SET
       nome = EXCLUDED.nome,
+      prontuario = EXCLUDED.prontuario,
       cpf = EXCLUDED.cpf,
       status = EXCLUDED.status,
       projeto_id = EXCLUDED.projeto_id,
@@ -219,7 +224,7 @@ const seedEvaluations = async (client) => {
         $4,
         $6,
         'Projeto CI Analytics',
-        'concluida',
+        'finalizada',
         CURRENT_DATE,
         $7::jsonb,
         NOW() - INTERVAL '1 hour',
@@ -231,7 +236,7 @@ const seedEvaluations = async (client) => {
         $4,
         $6,
         'Projeto CI Analytics',
-        'concluida',
+        'finalizada',
         CURRENT_DATE,
         $8::jsonb,
         NOW() - INTERVAL '2 hours',
@@ -243,7 +248,7 @@ const seedEvaluations = async (client) => {
         $5,
         $6,
         'Projeto CI Analytics',
-        'concluida',
+        'finalizada',
         CURRENT_DATE,
         $9::jsonb,
         NOW() - INTERVAL '3 hours',

@@ -1,107 +1,156 @@
 /* ─── Shared sidebar design tokens ─────────────────────────────────────────
    Import this file in every sidebar. Never duplicate these values.
+
+   Direcao "Energia e velocidade" (docs/implementacao/sidebars-v2/change-intent.md):
+   os tokens abaixo apontam para --lt-* (src/views/landing/landing-tokens.css,
+   importado aqui) onde ha equivalente; sem par documentado, o valor fica
+   literal e o comentario ao lado registra o contraste calculado a mao (a
+   formula WCAG 2.2, a mesma de scripts/test-landing-tokens.cjs), porque
+   nenhum navegador mediu estes tons nesta rodada.
    ────────────────────────────────────────────────────────────────────────── */
 
-.laines-sidebar {
-  /* Structure */
-  --sidebar-bg:            #0f1117;
-  --sidebar-border:        rgba(255,255,255,0.08);
-  --sidebar-header-border: rgba(255,255,255,0.06);
-  --sidebar-divider:       rgba(255,255,255,0.05);
+@import '../landing/landing-tokens.css';
 
-  /* Brand */
-  --brand-name-color:      #f0f0f0;
-  --brand-name-weight:     700;
-  --brand-name-spacing:    0.1em;
-  --brand-sub-color:       rgba(255,255,255,0.28);
+.laines-sidebar {
+  /* Structure: o fundo eh --lt-color-stadium, o mesmo azul-estadio da cena
+     da landing e da faixa do formulario de inscricao. O eco da pista (linha
+     verde do horizonte) entra como `background` composto mais abaixo, nao
+     como token — decorativo, sem texto sobre a parte mais clara dele. */
+  --sidebar-bg:            var(--lt-color-stadium);
+  --sidebar-border:        rgba(255, 255, 255, 0.12);
+  --sidebar-header-border: rgba(255, 255, 255, 0.12);
+  --sidebar-divider:       rgba(255, 255, 255, 0.09);
+
+  /* Brand: voz de campanha, como .lp-marca da landing. */
+  --brand-name-color:      var(--lt-color-text-inverse);
+  --brand-name-weight:     900;
+  --brand-name-spacing:    0.02em;
+  --brand-sub-color:       var(--lt-color-mist); /* 10,73:1 sobre --sidebar-bg, provado em test-landing-tokens.cjs */
   --brand-sub-size:        9px;
   --brand-sub-spacing:     0.02em;
   --brand-sub-line-height: 1.4;
-  --logo-radius:           10px;
-  --logo-shadow:           0 0 0 1px rgba(255,255,255,0.1);
+  --logo-radius:           50%;
+  --logo-shadow:           0 12px 28px rgba(0, 0, 0, 0.32);
 
-  /* Navigation */
-  --section-label-color:   rgba(255,255,255,0.22);
+  /* Navigation. --item-text: branco a 62% sobre --sidebar-bg = 6,23:1
+     (calculado a mao, formula WCAG 2.2: luminancia relativa de rgb(162,174,194)
+     — a mistura sRGB de branco a 62% sobre #0b2a5e — contra a luminancia de
+     #0b2a5e). --section-label-color usa --lt-color-mist puro (nao translucido)
+     porque o titulo de secao pede 4,5:1 explicitamente no briefing, e mist ja
+     esta provado; um branco translucido exigiria a mesma conta de novo para
+     um uso menos critico. */
+  --section-label-color:   var(--lt-color-mist);
   --section-label-size:    10px;
   --section-label-spacing: 0.12em;
-  --item-text:             rgba(255,255,255,0.5);
+  --item-text:             rgba(255, 255, 255, 0.62); /* 6,23:1 sobre --sidebar-bg */
   --item-radius:           8px;
   --item-padding:          8px 12px;
   --item-margin:           1px 8px;
-  --item-active-bg:        rgba(59,130,246,0.1);
-  --item-active-text:      #93c5fd;
-  --item-active-bar:       #3b82f6;
+  --item-active-bg:        rgba(255, 255, 255, 0.1);
+  --item-active-text:      var(--lt-color-text-inverse); /* 13,93:1 sobre --sidebar-bg */
+  --item-active-bar:       var(--lt-color-brand-green); /* so grafico (a marca de largada), nunca atras de texto */
 
   /* Footer */
-  --avatar-border:         1.5px solid rgba(59,130,246,0.3);
-  --status-online-color:   #4ade80;
-  --logout-opacity:        0.3;
+  --avatar-border:         1.5px solid var(--lt-color-border-brand);
+  --status-online-color:   var(--lt-color-brand-green);
+  --logout-opacity:        0.62;
 
   /* Profile switcher */
-  --switcher-bg:           rgba(255,255,255,0.03);
-  --switcher-border:       rgba(255,255,255,0.06);
-  --switcher-icon-bg:      #1e3a5f;
+  --switcher-bg:           rgba(255, 255, 255, 0.06);
+  --switcher-border:       rgba(255, 255, 255, 0.14);
+  --switcher-icon-bg:      rgba(255, 255, 255, 0.12);
 }
 
-/* ─── Blue accent — Presidência ──────────────────────────────────────────── */
+/* ─── Identidade por portal ───────────────────────────────────────────────
+   Antes, cada portal tinha um par de tons proprio (azuis e verdes fora do
+   vocabulario --lt-*: #60a5fa, #93c5fd, #34d399, #6ee7b7...). Agora so
+   --lt-color-brand-blue/--lt-color-brand-green diferenciam, e so como
+   grafico (o ponto do selo, o icone) — o texto do selo usa --lt-color-mist
+   nos dois casos, mesmo principio da landing ("o verde da marca so como
+   grafico, nunca atras de texto", landing-tokens.css). Isso tambem elimina
+   a conta de contraste que duas cores de texto novas exigiriam. */
 .laines-sidebar--accent-blue {
-  --accent-logo-from:    #1e3a5f;
-  --accent-logo-to:      #2d5a8e;
-  --accent-icon-stroke:  #60a5fa;
-  --accent-badge-bg:     rgba(59,130,246,0.12);
-  --accent-badge-border: rgba(59,130,246,0.2);
-  --accent-badge-text:   #93c5fd;
-  --accent-dot:          #60a5fa;
-  --accent-profile-name: #bfdbfe;
+  /* Sem consumidor hoje — mantidos pelo mesmo motivo dos outros nomes sem
+     uso corrente nesta rodada (ver .laines-sidebar__role-card). */
+  --accent-logo-from:    #0e3a72;
+  --accent-logo-to:      var(--lt-color-brand-blue);
+  --accent-icon-stroke:  var(--lt-color-brand-blue);
+  --accent-badge-bg:     rgba(37, 96, 168, 0.18);
+  --accent-badge-border: rgba(37, 96, 168, 0.32);
+  --accent-badge-text:   var(--lt-color-mist);
+  --accent-dot:          var(--lt-color-brand-blue);
+  --accent-profile-name: var(--lt-color-text-inverse);
+  --accent-icon-bg:      rgba(37, 96, 168, 0.16);
+  --accent-icon-border:  rgba(37, 96, 168, 0.3);
 }
 
-/* ─── Green accent — Área do Aluno ───────────────────────────────────────── */
 .laines-sidebar--accent-green {
-  --accent-logo-from:    #1a4731;
-  --accent-logo-to:      #2d6a4f;
-  --accent-icon-stroke:  #34d399;
-  --accent-badge-bg:     rgba(16,185,129,0.12);
-  --accent-badge-border: rgba(16,185,129,0.2);
-  --accent-badge-text:   #6ee7b7;
-  --accent-dot:          #34d399;
-  --accent-profile-name: #d1fae5;
+  --accent-logo-from:    #1f5c22;
+  --accent-logo-to:      var(--lt-color-brand-green);
+  --accent-icon-stroke:  var(--lt-color-brand-green);
+  --accent-badge-bg:     rgba(61, 140, 42, 0.18);
+  --accent-badge-border: var(--lt-color-border-brand);
+  --accent-badge-text:   var(--lt-color-mist);
+  --accent-dot:          var(--lt-color-brand-green);
+  --accent-profile-name: var(--lt-color-text-inverse);
+  --accent-icon-bg:      rgba(61, 140, 42, 0.16);
+  --accent-icon-border:  var(--lt-color-border-brand);
 }
 
-/* ─── SidebarHeader ──────────────────────────────────────────────────────── */
+/* ─── SidebarHeader: marca em voz de campanha ────────────────────────────── */
 .sb-header__brand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
+  min-width: 0;
 }
 
 .sb-header__logo-box {
-  width: 36px;
-  height: 36px;
+  position: relative;
+  width: 44px;
+  height: 44px;
   border-radius: var(--logo-radius);
-  background: linear-gradient(135deg, var(--accent-logo-from, #1e3a5f), var(--accent-logo-to, #2d5a8e));
+  background: var(--lt-color-surface);
   box-shadow: var(--logo-shadow);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  border: 0;
+}
+
+.sb-header__logo-box::after { display: none; }
+
+.sb-header__logo-img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .sb-header__brand-text {
   min-width: 0;
+  max-width: 136px;
 }
 
 .sb-header__name {
   display: block;
+  font-family: var(--lt-font-display);
+  font-style: italic;
   color: var(--brand-name-color);
   font-weight: var(--brand-name-weight);
   letter-spacing: var(--brand-name-spacing);
-  font-size: 14px;
-  line-height: 1.2;
+  font-size: 17px;
+  line-height: 1;
 }
 
 .sb-header__sub {
   display: block;
+  font-family: var(--lt-font-family);
   font-size: var(--brand-sub-size);
+  font-weight: 400;
   color: var(--brand-sub-color);
   letter-spacing: var(--brand-sub-spacing);
   line-height: var(--brand-sub-line-height);
@@ -112,21 +161,22 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-top: 10px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--accent-badge-border, rgba(59,130,246,0.2));
-  background: var(--accent-badge-bg, rgba(59,130,246,0.12));
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--accent-badge-text, #93c5fd);
+  margin-top: 8px;
+  margin-left: 55px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--lt-font-family);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-badge-text, var(--lt-color-mist));
 }
 
 .sb-header__badge-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--accent-dot, #60a5fa);
+  background: var(--accent-dot, var(--lt-color-brand-blue));
   flex-shrink: 0;
 }
 
@@ -149,12 +199,13 @@
 }
 
 .sb-footer__avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: #1d4ed8;
-  color: #bfdbfe;
-  font-size: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--lt-color-text-inverse);
+  font-family: var(--lt-font-family);
+  font-size: 11px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -163,20 +214,21 @@
   border: var(--avatar-border);
 }
 
-.sb-footer__info {
-  min-width: 0;
-  flex: 1;
-}
+.sb-footer__info { min-width: 0; flex: 1; }
 
 .sb-footer__name {
   margin: 0;
+  font-family: var(--lt-font-family);
   font-size: 12px;
-  color: rgba(255,255,255,0.85);
-  font-weight: 500;
+  color: var(--lt-color-text-inverse);
+  font-weight: 600;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
+  /* O nome ja chega encurtado por palavra inteira (nomeExibicao). O limite
+     aqui e rede de seguranca para nome unico muito longo. */
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 100%;
 }
 
 .sb-footer__status {
@@ -184,8 +236,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  font-family: var(--lt-font-family);
   font-size: 10px;
-  color: rgba(255,255,255,0.3);
+  line-height: 1.3;
+  color: var(--lt-color-mist);
 }
 
 .sb-footer__status-dot {
@@ -198,35 +252,36 @@
 
 .sb-footer__logout {
   margin-left: auto;
-  width: 28px;
-  height: 28px;
+  /* 44px de alvo (invariante 4); o ícone não muda de tamanho. */
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
-  color: rgba(255,255,255,0.7);
+  color: var(--lt-color-text-inverse);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   opacity: var(--logout-opacity);
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease;
   flex-shrink: 0;
 }
 
-.sb-footer__logout:hover {
-  opacity: 1;
-}
+.sb-footer__logout:hover { opacity: 1; background: rgba(255, 255, 255, 0.1); }
+.sb-footer__logout:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); opacity: 1; }
 
-.sb-footer--collapsed .sb-footer__logout {
-  margin-left: 0;
-}
+.sb-footer--collapsed .sb-footer__logout { margin-left: 0; }
 
 /* ─── ProfileSwitcher ────────────────────────────────────────────────────── */
 .sb-switcher {
-  width: calc(100% - 16px);
-  margin: 2px 8px;
+  width: calc(100% - 18px);
+  margin: 2px 9px 4px;
   border-radius: var(--item-radius);
-  padding: var(--item-padding);
+  padding: 9px 10px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -234,16 +289,15 @@
   border: 1px solid var(--switcher-border);
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.sb-switcher:hover {
-  background: rgba(255,255,255,0.06);
-}
+.sb-switcher:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.22); }
+.sb-switcher:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
 
 .sb-switcher__icon-box {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   background: var(--switcher-icon-bg);
   display: flex;
@@ -253,21 +307,18 @@
 }
 
 .sb-switcher__label {
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
+  font-family: var(--lt-font-family);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lt-color-text-inverse);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sb-switcher__chevron {
-  margin-left: auto;
-  opacity: 0.3;
-  flex-shrink: 0;
-  color: rgba(255,255,255,0.7);
-}
+.sb-switcher__chevron { margin-left: auto; opacity: 0.65; flex-shrink: 0; color: var(--lt-color-mist); }
 
-/* ─── Student sidebar identity block ─────────────────────────────────────── */
+/* ─── Student sidebar identity block ("PROFESSOR — Supervisão ativa") ────── */
 .sb-identity {
   display: flex;
   align-items: center;
@@ -280,8 +331,8 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: rgba(16,185,129,0.12);
-  border: 1px solid rgba(16,185,129,0.2);
+  background: var(--accent-icon-bg, rgba(255, 255, 255, 0.1));
+  border: 1px solid var(--accent-icon-border, rgba(255, 255, 255, 0.18));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -290,17 +341,22 @@
 
 .sb-identity__role {
   margin: 0;
+  font-family: var(--lt-font-family);
   font-size: 9px;
+  font-weight: 700;
+  line-height: 1.3;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.3);
+  color: var(--lt-color-mist);
   letter-spacing: 0.1em;
 }
 
 .sb-identity__profile-name {
   margin: 2px 0 0;
+  font-family: var(--lt-font-family);
   font-size: 12px;
-  font-weight: 600;
-  color: var(--accent-profile-name, #d1fae5);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--accent-profile-name, var(--lt-color-text-inverse));
 }
 
 /* ─── Student header layout ──────────────────────────────────────────────── */
@@ -319,7 +375,11 @@
 
 /* ─── Student bottom tag ─────────────────────────────────────────────────── */
 .sb-bottom-tag {
-  font-size: 10px;
-  color: rgba(255,255,255,0.15);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-2xs);
+  line-height: 1.3;
+  /* Névoa a 72%: o branco a 32% anterior dava 2,42:1 (medido sobre o
+     estádio); este dá ~6,4:1. 11px em vez de 10px pelo mesmo motivo. */
+  color: rgba(214, 227, 245, 0.72);
   padding: 4px 16px 10px;
 }

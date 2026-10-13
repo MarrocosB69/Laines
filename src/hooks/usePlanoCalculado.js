@@ -66,6 +66,22 @@ export function usePlanoCalculado(plano, {
     }));
   }, [todosItens, grupos, catalogo, restricoes, abertos]);
 
+  // Itens que colidem com restrição confirmada (UPD-11). O motor não remove o
+  // item — a decisão é do profissional — mas a linha precisa dizer que ali há
+  // conflito e se ele já foi justificado.
+  const restritosPorItem = useMemo(() => {
+    if (Array.isArray(restricoes) || !restricoes || restricoes.pendenteRevisao || restricoes.semRestricao) return {};
+    const alimentoIds = new Set(restricoes.alimentoIds || []);
+    const gruposRestritos = new Set(restricoes.grupos || []);
+    const justificativas = restricoes.justificativas || {};
+    return Object.fromEntries(todosItens.flatMap((item) => {
+      const motivo = alimentoIds.has(String(item.alimentoId)) ? 'alimento' : gruposRestritos.has(item.grupo) ? 'grupo' : null;
+      if (!motivo) return [];
+      const justificativa = String(justificativas[item.id] || '').trim();
+      return [[item.id, { motivo, justificada: justificativa.length >= 5 }]];
+    }));
+  }, [todosItens, restricoes]);
+
   // Valores exibidos em cada linha de alimento. Ficavam na própria linha, que
   // por isso chamava o núcleo; aqui descem prontos e o componente só formata.
   const valoresPorItem = useMemo(
@@ -93,6 +109,7 @@ export function usePlanoCalculado(plano, {
     opcoesPorItem,
     sugestoesPorItem,
     valoresPorItem,
+    restritosPorItem,
     macros,
     micros,
     distribuicao

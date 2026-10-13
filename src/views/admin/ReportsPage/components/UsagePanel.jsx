@@ -1,11 +1,15 @@
 import React from 'react';
 import { TrendingUp } from 'lucide-react';
 import ProgressBar from './ProgressBar';
+import { periodOptions } from '../config/reportsConfig';
 
+// O seletor é o mesmo período da página (filtro "Período de análise"), com
+// os mesmos rótulos: antes oferecia só três opções e outros nomes.
 const UsagePanel = ({
   dateRange,
   onDateRangeChange,
   generatedAt,
+  periodText,
   visibleUsageData
 }) => (
   <div className="usage-panel">
@@ -17,13 +21,20 @@ const UsagePanel = ({
           </div>
           <h3 className="usage-title">Uso por categoria</h3>
         </div>
-        <p className="usage-subtitle">Distribuição das atividades no recorte atual.</p>
+        <p className="usage-subtitle">
+          Avaliações registradas no período, por tipo{periodText ? ` (${periodText})` : ''}.
+        </p>
       </div>
       <div className="usage-controls">
-        <select className="usage-select" value={dateRange} onChange={(event) => onDateRangeChange(event.target.value)}>
-          <option value="month">Mensal</option>
-          <option value="quarter">Trimestral</option>
-          <option value="year">Anual</option>
+        <select
+          className="usage-select"
+          value={dateRange}
+          onChange={(event) => onDateRangeChange(event.target.value)}
+          aria-label="Período do uso por categoria"
+        >
+          {periodOptions.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
       </div>
     </div>

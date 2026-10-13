@@ -1,263 +1,204 @@
-.anamnese-form.anamnese-form--modern {
-  border-radius: 20px;
-  border: 1px solid rgba(86, 173, 219, 0.2);
-}
+/* Anamnese inicial: só o que é deste formulário. Raiz, seções, campos,
+   opções, resultados, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .anamnese-form, por isso os seletores usam
+   `.av-modulo.anamnese-form`. */
 
-.anamnese-form .anamnese-progress {
-  margin-bottom: 0.85rem;
-}
-
-.anamnese-form .anamnese-progress__header {
+/* ── Abas e progresso: o mesmo passo a passo de antes, num cartão ─────── */
+.av-modulo.anamnese-form .anamnese-navegacao {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 0.35rem;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--av-respiro);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: var(--av-sombra);
 }
 
-.anamnese-form .anamnese-progress__label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--color-primary, #0c4a6e);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.av-modulo.anamnese-form .anamnese-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
 }
 
-.anamnese-form .anamnese-progress__tab-name {
-  font-size: 0.72rem;
-  color: #64748b;
-}
-
-.anamnese-form .anamnese-progress__bar {
-  height: 4px;
-  background: rgba(148, 163, 184, 0.22);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.anamnese-form .anamnese-progress__fill {
-  height: 100%;
-  background: var(--color-primary, #0c4a6e);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
-
-.anamnese-form .anamnese-tabs {
+.av-modulo.anamnese-form .anamnese-progress__header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 0.7rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-3);
 }
 
-.anamnese-form .anamnese-tab {
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  border-radius: 999px;
-  background: #ffffff;
-  color: #334155;
-  font-size: 0.7rem;
+/* Verde de texto sobre branco: 5,37:1. */
+.av-modulo.anamnese-form .anamnese-progress__label {
+  color: var(--lt-color-brand-green-text);
+  font-size: var(--lt-text-xs);
   font-weight: 800;
-  padding: 0.38rem 0.7rem;
-  cursor: pointer;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* O nome da aba ativa escrito: o estado não depende da cor da aba. */
+.av-modulo.anamnese-form .anamnese-progress__tab-name {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.av-modulo.anamnese-form .anamnese-progress__bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+}
+
+/* Gráfico, não texto: azul da marca sobre --lt-color-track-tint, 5,57:1. */
+.av-modulo.anamnese-form .anamnese-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.av-modulo.anamnese-form .anamnese-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+}
+
+.av-modulo.anamnese-form .anamnese-tab {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  cursor: pointer;
+  transition: border-color 160ms, background-color 160ms;
 }
 
-.anamnese-form .anamnese-tab.is-active {
-  background: rgba(14, 165, 233, 0.14);
-  border-color: rgba(86, 173, 219, 0.38);
-  color: #0c4a6e;
+@media (hover: hover) {
+  .av-modulo.anamnese-form .anamnese-tab:hover { border-color: var(--lt-color-brand-blue); }
 }
 
-.anamnese-form .anamnese-tab.is-done {
-  background: rgba(14, 165, 233, 0.05);
-  border-color: rgba(86, 173, 219, 0.18);
-  color: #64748b;
+.av-modulo.anamnese-form .anamnese-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
-.anamnese-form .anamnese-tab__check {
-  color: #0ea5e9;
-  font-size: 0.65rem;
+/* Aba ativa: azul sobre --lt-color-track-tint, 5,57:1. */
+.av-modulo.anamnese-form .anamnese-tab.is-active {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+}
+
+/* Aba já vista: apoio sobre branco, 6,59:1, com o "✓" escrito. */
+.av-modulo.anamnese-form .anamnese-tab.is-done { color: var(--lt-color-text-muted); }
+
+.av-modulo.anamnese-form .anamnese-tab__check {
+  color: var(--lt-color-brand-green-text);
   font-weight: 900;
   line-height: 1;
 }
 
-.anamnese-form .anamnese-grid {
+/* ── Caixas de seleção em grade (objetivos, patologias, família) ─────── */
+.av-modulo.anamnese-form .anamnese-opcoes .av-grupo__opcoes,
+.av-modulo.anamnese-form .anamnese-opcoes-grade {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
 }
 
-.anamnese-form .anamnese-required {
-  color: #b91c1c;
-  margin-left: 0.18rem;
-}
-
-.anamnese-form .anamnese-checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
-.anamnese-form .anamnese-checkbox {
+/* ── Listas repetidas (medicamentos, suplementos, lesões, competições) ─ */
+.av-modulo.anamnese-form .anamnese-med-list {
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 38px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.35rem 0.5rem;
+  flex-direction: column;
+  gap: var(--lt-space-2);
 }
 
-.anamnese-form .anamnese-checkbox span {
-  font-size: 0.72rem;
-  color: #334155;
-  font-weight: 700;
+.av-modulo.anamnese-form .anamnese-med-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
 }
 
-.anamnese-form .anamnese-med-list {
-  display: grid;
-  gap: 0.45rem;
+/* O rótulo destes campos é só para leitor de tela: sem o espaço dele. */
+.av-modulo.anamnese-form .anamnese-med-row > .av-campo {
+  flex: 1 1 10rem;
+  gap: 0;
 }
 
-.anamnese-form .anamnese-med-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-  gap: 0.42rem;
-}
-
-.anamnese-form .anamnese-icon-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  background: #ffffff;
-  color: #334155;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/* Botão de remover linha: 44 px de largura, na altura do campo. */
+.av-modulo.anamnese-form .anamnese-icon-btn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--av-controle-altura);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
   cursor: pointer;
+  transition: border-color 160ms, color 160ms;
 }
 
-.anamnese-form .anamnese-add-btn {
-  margin-top: 0.4rem;
+@media (hover: hover) {
+  .av-modulo.anamnese-form .anamnese-icon-btn:not(:disabled):hover {
+    border-color: var(--lt-color-danger-text);
+    color: var(--lt-color-danger-text);
+  }
 }
 
-.anamnese-form .anamnese-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
+.av-modulo.anamnese-form .anamnese-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
-.anamnese-form .anamnese-summary-card {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 0.6rem;
-  display: grid;
-  gap: 0.25rem;
+.av-modulo.anamnese-form .anamnese-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.anamnese-form .anamnese-summary-card span {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 800;
-}
+.av-modulo.anamnese-form .anamnese-add-btn { margin-top: var(--lt-space-3); }
 
-.anamnese-form .anamnese-summary-card strong {
-  color: #0f172a;
-  font-size: 0.98rem;
-}
+/* ── Resumo de risco ─────────────────────────────────────────────────── */
+/* O valor é texto ("Alta", "Sem encaminhamento") ou o score: um degrau
+   abaixo do número grande da base. */
+.av-modulo.anamnese-form .anamnese-summary-card .av-resultado__numero { font-size: var(--lt-text-title); }
 
-.anamnese-form .anamnese-summary-card small {
-  color: #475569;
-  font-size: 0.68rem;
-  font-weight: 700;
-}
+/* O tom de antes (tone-*) pinta só a raia, ao lado da prioridade escrita. */
+.av-modulo.anamnese-form .anamnese-summary-card.tone-success { --av-tom: var(--lt-color-brand-green); }
+.av-modulo.anamnese-form .anamnese-summary-card.tone-warning { --av-tom: var(--av-atencao-traco); }
+.av-modulo.anamnese-form .anamnese-summary-card.tone-danger { --av-tom: var(--lt-color-danger-text); }
 
-.anamnese-form .anamnese-summary-card.tone-success {
-  border-color: rgba(34, 197, 94, 0.35);
-}
-
-.anamnese-form .anamnese-summary-card.tone-warning {
-  border-color: rgba(234, 179, 8, 0.4);
-}
-
-.anamnese-form .anamnese-summary-card.tone-danger {
-  border-color: rgba(239, 68, 68, 0.38);
-}
-
-.anamnese-form .anamnese-summary-card.tone-info {
-  border-color: rgba(14, 165, 233, 0.38);
-}
-
-.anamnese-form .anamnese-flag-list {
-  margin-top: 0.65rem;
-  display: grid;
-  gap: 0.42rem;
-}
-
-.anamnese-form .anamnese-flag-item {
-  border-radius: 10px;
-  padding: 0.45rem 0.55rem;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: #ffffff;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.anamnese-form .anamnese-flag-item.severity-warning {
-  border-color: rgba(234, 179, 8, 0.4);
-  background: rgba(254, 249, 195, 0.5);
-}
-
-.anamnese-form .anamnese-flag-item.severity-danger {
-  border-color: rgba(239, 68, 68, 0.35);
-  background: rgba(254, 226, 226, 0.6);
-}
-
-.anamnese-form .anamnese-flag-title {
+.av-modulo.anamnese-form .anamnese-flag-list {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  flex-direction: column;
+  gap: var(--lt-space-2);
 }
 
-.anamnese-form .anamnese-flag-title strong {
-  font-size: 0.73rem;
-  color: #1e293b;
+.av-modulo.anamnese-form .anamnese-flag-item small {
+  display: block;
+  margin-top: 0.125rem;
+  color: inherit;
+  font-size: var(--lt-text-xs);
+  font-weight: 500;
 }
-
-.anamnese-form .anamnese-flag-item small {
-  color: #475569;
-  font-size: 0.68rem;
-  font-weight: 600;
-}
-
-.anamnese-form .anamnese-error-note {
-  border-color: rgba(220, 38, 38, 0.3);
-  background: rgba(254, 226, 226, 0.8);
-  color: #991b1b;
-}
-
-@media (max-width: 1024px) {
-  .anamnese-form .anamnese-summary-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .anamnese-form .anamnese-grid,
-  .anamnese-form .anamnese-checkbox-grid,
-  .anamnese-form .anamnese-med-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .anamnese-form {
-    padding: 0.75rem 0.5rem !important;
-  }
-}
-

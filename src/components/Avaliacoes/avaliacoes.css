@@ -3,6 +3,73 @@
    Afeta todos os formulários de avaliação
 ════════════════════════════════════════════════ */
 
+/* Tokens locais da camada de avaliações.
+   Os --eval-* vêm de theme.css (:root) e são sobrescritos por
+   AvaliacaoCompleta.css quando o formulário roda dentro dela.
+   Os --evx-* abaixo nomeiam as decisões que antes eram hex repetido
+   linha a linha: superfícies tingidas dos gradientes e as cores de
+   estado. Onde o sistema já tem o valor, herdam dele. */
+:root {
+  --evx-surface:        var(--pn-surface, #ffffff);
+  --evx-surface-2:      var(--pn-surface-2, #f8fafc);
+  --evx-surface-3:      var(--pn-surface-3, #f1f5f9);
+
+  /* Tinturas de gradiente: verde para conclusão, azul para informação. */
+  --evx-tint-green-a:   #f0f8f0;
+  --evx-tint-green-b:   #e2f0da;
+  --evx-tint-green-sub: #f0f7ee;
+  --evx-tint-blue-sub:  #f2f9fc;
+  --evx-tint-blue-2:    #f2f6f9;
+  --evx-tint-blue-3:    #f3f7fa;
+
+  --evx-text-strong:    var(--pn-text-1, #1D3350);
+  --evx-text:           var(--pn-text-2, #3d5a72);
+  --evx-text-soft:      var(--pn-text-3, #607b8d);
+  --evx-text-faint:     var(--pn-text-4, #94a3b8);
+
+  --evx-ok:             var(--pn-ok, #16a34a);
+  --evx-warn:           var(--pn-warn, #d97706);
+  --evx-danger:         var(--pn-danger, #dc2626);
+  --evx-on-warn:        #78350f;
+  --evx-on-danger:      #7f1d1d;
+
+  /* Escala de texto e estados consumida pelos formulários.
+     Antes cada formulário escrevia a paleta slate do Tailwind à mão
+     (#0f172a, #334155, #475569, #64748b), que não é a paleta do LAINES —
+     era a origem da sensação de "telas de produtos diferentes". */
+  --evx-text-1:         var(--pn-text-1, #1D3350);
+  --evx-text-2:         var(--pn-text-2, #3d5a72);
+  --evx-text-3:         var(--pn-text-3, #607b8d);
+  --evx-accent:         var(--pn-accent, #56ADDB);
+  --evx-accent-deep:    #0f5a73;
+
+  --evx-ok-deep:        #166534;
+  --evx-ok-mid:         #047857;
+  --evx-warn-deep:      #b45309;
+  --evx-warn-darkest:   #854d0e;
+  --evx-danger-mid:     #b91c1c;
+  --evx-danger-deep:    #991b1b;
+  --evx-warn-bg:        #fef9c3;
+  --evx-danger-bg:      #fee2e2;
+
+  /* Segunda passada: tons de superfície e estado que apareciam apenas em
+     um ou dois formulários. Nomeados para não voltarem como número solto. */
+  --evx-surface-tint:   #fafcff;
+  --evx-surface-4:      #f4f7fc;
+  --evx-border-soft:    #eef1f6;
+  --evx-border:         #e5e9f1;
+  --evx-border-mid:     #d6dce7;
+  --evx-text-4:         #5a6479;
+  --evx-text-5:         #7a8499;
+  --evx-navy:           #1d3a66;
+  --evx-blue:           #1d4ed8;
+  --evx-blue-deep:      #1e40af;
+  --evx-ok-strong:      #15803d;
+  --evx-ok-darkest:     #065f46;
+  --evx-ok-bg:          #ecfdf5;
+  --evx-warn-amber:     #a16207;
+}
+
 .eval-card {
   background: linear-gradient(160deg, var(--eval-surface, #ffffff), var(--eval-surface-alt, #f4f9fc));
   border: 1px solid var(--eval-border, rgba(15, 52, 74, 0.14));
@@ -50,10 +117,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(86, 173, 219, 0.28);
-  background: linear-gradient(165deg, #f0f8ff, #dff0fb);
+  border: 1px solid rgba(116, 168, 101, 0.28);
+  background: linear-gradient(165deg, var(--evx-tint-green-a), var(--evx-tint-green-b));
   color: var(--eval-accent-strong, #1D3350);
-  box-shadow: 0 8px 16px rgba(86, 173, 219, 0.15);
+  box-shadow: 0 8px 16px rgba(116, 168, 101, 0.15);
   flex-shrink: 0;
 }
 
@@ -80,16 +147,16 @@
   font-weight: 700;
   padding: 0.28rem 0.65rem;
   border-radius: 20px;
-  background: rgba(86, 173, 219, 0.1);
+  background: rgba(116, 168, 101, 0.10);
   color: var(--eval-accent-strong, #1D3350);
-  border: 1px solid rgba(86, 173, 219, 0.25);
+  border: 1px solid rgba(116, 168, 101, 0.28);
   white-space: nowrap;
 }
 
 /* ─── Grid de campos ─────────────────────────── */
 .eval-grid {
   display: grid;
-  gap: 0.8rem;
+  gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
@@ -126,7 +193,7 @@
   padding: 0.58rem 0.78rem;
   border: 1px solid var(--eval-border, rgba(15, 52, 74, 0.16));
   border-radius: 11px;
-  background: #ffffff;
+  background: var(--evx-surface);
   font-size: 0.84rem;
   color: var(--eval-title, #123146);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -138,16 +205,16 @@
 .eval-textarea:disabled {
   cursor: not-allowed;
   opacity: 0.78;
-  background: #f2f6f9;
+  background: var(--evx-tint-blue-2);
 }
 
 .eval-input:focus,
 .eval-select:focus,
 .eval-textarea:focus {
   outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-light);
-  background: #ffffff;
+  border-color: var(--eval-accent, var(--color-accent));
+  box-shadow: 0 0 0 3px var(--eval-accent-soft, var(--color-accent-light));
+  background: var(--evx-surface);
 }
 
 .eval-textarea {
@@ -181,18 +248,18 @@
 }
 
 .eval-btn-primary {
-  background: linear-gradient(145deg, var(--eval-accent-strong, #1D3350), var(--color-navy-light, #2a4a6e));
-  color: #ffffff;
-  box-shadow: 0 10px 20px rgba(29, 51, 80, 0.22);
+  background: linear-gradient(145deg, var(--color-green-dark, #5a8a4e), var(--eval-accent, #74A865));
+  color: var(--evx-surface);
+  box-shadow: 0 10px 20px rgba(116, 168, 101, 0.28);
 }
 
 .eval-btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(29, 51, 80, 0.30);
+  box-shadow: 0 12px 24px rgba(116, 168, 101, 0.38);
 }
 
 .eval-btn-secondary {
-  background: linear-gradient(165deg, #ffffff, #f2f9fc);
+  background: linear-gradient(165deg, var(--evx-surface), var(--evx-tint-blue-sub));
   color: var(--eval-title, #123146);
   border-color: rgba(15, 52, 74, 0.22);
 }
@@ -213,9 +280,9 @@
   margin-top: 1rem;
   padding: 0.75rem 0.9rem;
   border-radius: 12px;
-  background: rgba(86, 173, 219, 0.08);
-  border: 1px solid rgba(86, 173, 219, 0.22);
-  border-left: 4px solid rgba(86, 173, 219, 0.5);
+  background: rgba(116, 168, 101, 0.08);
+  border: 1px solid rgba(116, 168, 101, 0.22);
+  border-left: 4px solid rgba(116, 168, 101, 0.55);
   font-size: 0.74rem;
   color: var(--color-navy, #1D3350);
   font-weight: 700;
@@ -226,14 +293,14 @@
   background: rgba(245, 158, 11, 0.09);
   border-color: rgba(245, 158, 11, 0.28);
   border-left-color: rgba(245, 158, 11, 0.7);
-  color: #78350f;
+  color: var(--evx-on-warn);
 }
 
 .eval-note--danger {
   background: rgba(185, 28, 28, 0.07);
   border-color: rgba(185, 28, 28, 0.22);
   border-left-color: rgba(185, 28, 28, 0.65);
-  color: #7f1d1d;
+  color: var(--evx-on-danger);
 }
 
 .eval-note--success {
@@ -246,7 +313,7 @@
 .eval-readiness {
   border: 1px solid rgba(15, 52, 74, 0.12);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--evx-surface);
   padding: 0.82rem;
   display: grid;
   gap: 0.72rem;
@@ -273,7 +340,7 @@
 .eval-readiness__item {
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--evx-surface-2);
   padding: 0.58rem 0.64rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -286,21 +353,21 @@
   width: 0.58rem;
   height: 0.58rem;
   border-radius: 999px;
-  background: #94a3b8;
+  background: var(--evx-text-faint);
   box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.14);
 }
 
 .eval-readiness__label {
   display: block;
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--evx-text-soft);
   line-height: 1.25;
 }
 
 .eval-readiness__item strong {
   display: block;
   margin-top: 0.12rem;
-  color: #0f172a;
+  color: var(--evx-text-strong);
   font-size: 0.84rem;
   line-height: 1.25;
 }
@@ -311,7 +378,7 @@
 }
 
 .eval-readiness__item--ok .eval-readiness__dot {
-  background: #16a34a;
+  background: var(--evx-ok);
   box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
 }
 
@@ -321,7 +388,7 @@
 }
 
 .eval-readiness__item--warning .eval-readiness__dot {
-  background: #d97706;
+  background: var(--evx-warn);
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
 }
 
@@ -331,7 +398,7 @@
 }
 
 .eval-readiness__item--danger .eval-readiness__dot {
-  background: #dc2626;
+  background: var(--evx-danger);
   box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
 }
 
@@ -343,10 +410,10 @@
 .eval-section {
   margin-top: 0.9rem;
   border: 1px solid rgba(15, 52, 74, 0.14);
-  border-left: 3px solid rgba(86, 173, 219, 0.45);
+  border-left: 3px solid rgba(116, 168, 101, 0.48);
   border-radius: 14px;
-  background: linear-gradient(165deg, #ffffff, #f2f8fb);
-  padding: 0.78rem;
+  background: linear-gradient(165deg, var(--evx-surface), var(--evx-tint-green-sub));
+  padding: 1rem;
 }
 
 .eval-fieldset {
@@ -355,17 +422,43 @@
 
 .eval-legend {
   display: table;
-  margin-bottom: 0.2rem;
-  padding: 0;
-}
-
-.eval-section-title {
-  margin: 0 0 0.2rem;
-  color: var(--eval-title, #123146);
+  margin-bottom: 0.5rem;
+  padding: 0 0.35rem 0 0;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--eval-title, #123146);
+}
+
+.eval-section-title {
+  margin: 0 0 0.62rem;
+  color: var(--color-green-dark, #5a8a4e);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.eval-section-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--color-green, #74A865);
+  flex-shrink: 0;
+}
+
+.eval-section--primary {
+  border-left-color: var(--eval-accent, #74A865);
+  background: linear-gradient(165deg, var(--evx-surface), rgba(116, 168, 101, 0.07));
+}
+.eval-section--primary .eval-section-title,
+.eval-section--primary .eval-legend {
+  color: var(--color-green-dark, #5a8a4e);
 }
 
 .eval-hint {
@@ -393,7 +486,7 @@
 .eval-summary-item {
   border: 1px solid rgba(15, 52, 74, 0.15);
   border-radius: 11px;
-  background: #ffffff;
+  background: var(--evx-surface);
   padding: 0.65rem 0.75rem;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
@@ -510,8 +603,8 @@
   background: linear-gradient(
     90deg,
     transparent,
-    var(--eval-accent, #56ADDB) 20%,
-    var(--eval-accent, #56ADDB) 80%,
+    var(--eval-accent, #74A865) 20%,
+    var(--eval-accent, #74A865) 80%,
     transparent
   );
   opacity: 0.35;
@@ -529,13 +622,13 @@
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--eval-accent, #56ADDB);
+  color: var(--eval-accent, #74A865);
   white-space: nowrap;
 }
 
 /* ── Estado read-only ── */
 .eval-card--readonly {
-  background: linear-gradient(160deg, #f8fafc, #f1f5f8);
+  background: linear-gradient(160deg, var(--evx-surface-2), var(--evx-surface-3));
   border-color: rgba(15, 52, 74, 0.09);
 }
 
@@ -557,14 +650,14 @@
 .eval-card--readonly .eval-input,
 .eval-card--readonly select,
 .eval-card--readonly textarea {
-  background: #f3f7fa;
-  color: #4a6275;
+  background: var(--evx-tint-blue-3);
+  color: var(--evx-text);
   cursor: default;
   border-color: rgba(15, 52, 74, 0.10);
 }
 
 .eval-card--readonly .eval-label {
-  color: #7a96a8;
+  color: var(--evx-text-soft);
 }
 
 /* ── Agrupamento funcional de campos ── */
@@ -594,7 +687,7 @@
   width: 3px;
   height: 14px;
   border-radius: 2px;
-  background: var(--eval-accent, #56ADDB);
+  background: var(--eval-accent, #74A865);
   flex-shrink: 0;
 }
 
@@ -612,12 +705,395 @@
 
 .eval-field--critical .eval-input {
   border-width: 1.5px;
-  background: linear-gradient(165deg, #ffffff, #f0fafd);
+  background: linear-gradient(165deg, var(--evx-surface), var(--evx-tint-green-sub));
   font-weight: 700;
   font-size: 0.86rem;
 }
 
 .eval-field--critical .eval-input:focus {
-  border-color: var(--eval-accent, #56ADDB);
-  box-shadow: 0 0 0 3px var(--color-accent-light, rgba(86, 173, 219, 0.12));
+  border-color: var(--eval-accent, #74A865);
+  box-shadow: 0 0 0 3px rgba(116, 168, 101, 0.12);
 }
+
+/* ─── Indicadores de campo obrigatório ── */
+.clinica-required-dot {
+  display: none;
+}
+
+.eval-field:has(.eval-input[required]) .eval-label,
+.eval-field:has(.eval-select[required]) .eval-label,
+.eval-field:has(.eval-textarea[required]) .eval-label {
+  color: var(--eval-title, #123146);
+  font-weight: 900;
+}
+
+.eval-field:has(.eval-input[required]) .eval-label::after,
+.eval-field:has(.eval-select[required]) .eval-label::after,
+.eval-field:has(.eval-textarea[required]) .eval-label::after {
+  content: ' *';
+  color: var(--evx-danger);
+  font-weight: 900;
+  font-size: 0.9em;
+}
+
+/* ── Valor anterior junto do campo ───────────────────────────────────────
+   O contexto longitudinal vivia numa faixa no topo da tela, a ~900px do
+   campo. Aqui ele fica na propria linha do rotulo, onde responde "esse
+   numero faz sentido?" no instante em que a pessoa digita. */
+.valor-anterior {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin-left: auto;
+  padding-left: 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--eval-text-3, #607b8d);
+}
+
+.valor-anterior__base { opacity: 0.85; }
+
+.valor-anterior__delta {
+  font-weight: 600;
+  padding: 0.02rem 0.3rem;
+  border-radius: 999px;
+  background: rgba(29, 51, 80, 0.07);
+}
+
+/* O tom so aparece quando o modulo declara qual direcao e desejavel; sem
+   isso, colorir seria adivinhar o sentido clinico da mudanca. */
+.valor-anterior.tom-bom .valor-anterior__delta {
+  color: var(--eval-success, #16a34a);
+  background: rgba(22, 163, 74, 0.11);
+}
+
+.valor-anterior.tom-atencao .valor-anterior__delta {
+  color: var(--eval-warning, #d97706);
+  background: rgba(217, 119, 6, 0.12);
+}
+
+.valor-anterior__quando { opacity: 0.6; }
+
+/* O rotulo passa a ter dois lados: nome a esquerda, historico a direita. */
+.eval-field .eval-label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Sem quebra de linha, rotulos longos com etiquetas (Perimetros tem tres por
+   campo) transbordavam por cima da coluna vizinha. */
+.eval-field .eval-label > * { flex-shrink: 0; }
+
+@media (max-width: 640px) {
+  .valor-anterior__quando { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FORMULARIO CLINICO — mesma disciplina aplicada ao prontuario
+   ───────────────────────────────────────────────────────────────────────
+   O prontuario foi limpo e o formulario que mora dentro dele nao — e o
+   contraste ficou obvio quando os dois passaram a dividir a tela.
+   Estas classes .eval-* sao compartilhadas pelos 17 modulos, entao a
+   passada vale para todos de uma vez.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --evf-rule:  rgba(29, 51, 80, 0.11);
+  --evf-ink:   #1D3350;
+  --evf-mid:   #46617a;
+  --evf-soft:  #77909f;
+  --evf-field: rgba(29, 51, 80, 0.028);
+}
+
+/* ── Cartao do modulo: area, nao caixa flutuante ─────────────────────── */
+.eval-card {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  animation: none;
+}
+
+/* A hachura diagonal cobria a superficie inteira para dizer "somente
+   leitura". Lia como sujeira. O recado passa a ser dito, nao texturizado. */
+.eval-card--readonly::before { display: none; }
+
+.eval-card--readonly .eval-input,
+.eval-card--readonly .eval-select,
+.eval-card--readonly select,
+.eval-card--readonly textarea {
+  background: none;
+  color: var(--evf-mid);
+}
+
+/* ── Secoes: fio e respiro no lugar de moldura ───────────────────────── */
+.eval-fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 2.25rem;
+}
+
+.eval-legend {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  margin: 0 0 1.15rem;
+  padding: 0 0 0.55rem;
+  border-bottom: 1px solid var(--evf-rule);
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--evf-ink);
+}
+
+/* ── Campos: linha, nao pastilha ─────────────────────────────────────
+   Oito caixas arredondadas empilhadas lem como uma parede de pastilhas.
+   O sublinhado devolve a leitura de formulario e deixa o valor em
+   evidencia — que e o que a pessoa confere durante o atendimento. */
+.eval-input,
+.eval-select,
+.eval-textarea,
+.eval-field select,
+.eval-field input[type="text"],
+.eval-field input[type="number"],
+.eval-field input[type="date"] {
+  min-height: 38px;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  border-bottom: 1.5px solid var(--evf-rule);
+  border-radius: 4px 4px 0 0;
+  background: var(--evf-field);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--evf-ink);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.eval-input:hover,
+.eval-select:hover,
+.eval-textarea:hover {
+  border-bottom-color: rgba(29, 51, 80, 0.28);
+}
+
+.eval-input:focus,
+.eval-select:focus,
+.eval-textarea:focus,
+.eval-field select:focus,
+.eval-field input:focus {
+  outline: none;
+  border-bottom-color: var(--eval-accent, #74A865);
+  border-bottom-width: 2px;
+  background: rgba(116, 168, 101, 0.06);
+}
+
+/* ── Rotulos: peso 800 em caixa alta e grito, nao hierarquia ─────────── */
+.eval-label {
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--evf-soft);
+  padding-left: 0;
+  margin-bottom: 0.3rem;
+}
+
+/* ── Unidade: informacao, nao etiqueta ───────────────────────────────── */
+.bioimpedancia-form .bia-unit-badge,
+.eval-unit-badge {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--evf-soft);
+  font-weight: 500;
+  font-size: 0.63rem;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+/* ── Espaco entre campos: respiro constante ──────────────────────────── */
+.eval-grid { gap: 1.15rem 1.5rem; }
+.eval-field { display: flex; flex-direction: column; }
+
+@media (prefers-reduced-motion: reduce) {
+  .eval-input, .eval-select, .eval-textarea { transition: none; }
+}
+
+/* ── Secao do modulo: fio a esquerda, nao painel verde ────────────────
+   Cada secao era um retangulo com gradiente verde, borda e raio de 14px.
+   Dentro de um cartao que ja tinha os mesmos atributos, virava caixa
+   dentro de caixa — a mesma pilha que o prontuario tinha. */
+.eval-section {
+  margin: 0 0 2rem;
+  padding: 0 0 0 1rem;
+  border: 0;
+  border-left: 2px solid rgba(116, 168, 101, 0.45);
+  border-radius: 0;
+  background: none;
+}
+
+.eval-section-title {
+  font-family: var(--font-poppins, "Poppins", sans-serif);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.07em;
+  color: var(--evf-ink);
+  margin: 0 0 0.9rem;
+}
+
+/* ── Checklist: quatro caixotes para quatro caixinhas ────────────────── */
+.bia-checklist-grid { gap: 0.15rem 1.5rem; }
+
+.bia-check-item {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--evf-rule);
+}
+
+.bia-check-item:hover { background: rgba(116, 168, 101, 0.045); }
+
+/* ── Faixas de contexto: apoio, nao destaque ─────────────────────────────
+   .eval-note aparece em todos os modulos ("contexto do onboarding", "status
+   de comparabilidade") como painel verde preenchido, com borda, raio de 12px,
+   barra de 4px e peso 700. Sao informacoes de apoio que se leem uma vez —
+   estavam gritando mais alto que os campos. */
+.eval-note,
+.eval-hint {
+  margin: 0 0 0.75rem;
+  padding: 0 0 0 0.85rem;
+  border: 0;
+  border-left: 2px solid rgba(116, 168, 101, 0.4);
+  border-radius: 0;
+  background: none;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--evf-mid, #46617a);
+}
+
+.eval-note strong,
+.eval-hint strong {
+  font-weight: 600;
+  color: var(--evf-ink, #1D3350);
+}
+
+/* O icone do modulo era um circulo preenchido do tamanho de um botao. */
+.eval-icon {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: var(--eval-accent, #74A865);
+}
+
+/* ── Unidades e "opcional" em todos os modulos ───────────────────────────
+   Cada modulo criou a propria etiqueta (bia-, clinica-, dobras-, perimetros-)
+   e todas viraram pilulas coloridas com borda e peso 800. Numa grade de
+   quatro colunas, tres pilulas por campo ruidam mais que informam.
+   A unidade e apoio; "opcional" e ainda mais — o que precisa saltar e o
+   campo obrigatorio, que ja tem asterisco. */
+.eval-field .bia-unit-badge,
+.eval-field .clinica-unit-badge,
+.eval-field .dobras-unit-badge,
+.eval-field .perimetros-unit-badge,
+.eval-field .eval-unit-badge,
+.eval-label .bia-unit-badge,
+.eval-label .clinica-unit-badge,
+.eval-label .dobras-unit-badge,
+.eval-label .perimetros-unit-badge,
+.eval-label .eval-unit-badge {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--evf-soft, #77909f);
+  font-weight: 500;
+  font-size: 0.62rem;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
+}
+
+.eval-field .clinica-optional-badge,
+.eval-field .dobras-optional-badge,
+.eval-field .perimetros-optional-badge,
+.eval-label .clinica-optional-badge,
+.eval-label .dobras-optional-badge,
+.eval-label .perimetros-optional-badge {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--evf-soft, #77909f);
+  font-weight: 500;
+  font-size: 0.62rem;
+  text-transform: lowercase;
+  opacity: 0.45;
+}
+
+/* ── Modo essencial ──────────────────────────────────────────────────────
+   Bioimpedancia mostra 28 campos e exige 3 para finalizar; Perimetros mostra
+   36 e exige 2. Durante a consulta a pessoa tem o resultado do aparelho na
+   mao e precisa lancar poucos numeros — o formulario servia ao modelo de
+   dados, nao ao atendimento.
+
+   O seletor usa :has() para reconhecer campo essencial pelas marcacoes que
+   cada modulo ja usa, em vez de exigir que os 17 formularios sejam reescritos.
+   A trava esta no JS: o modo so e oferecido quando ha campo essencial
+   marcado e sobra o suficiente para esconder. */
+.avaliacao-form.modo-essencial .eval-field:not(.eval-field--critical):not(
+  :has(.anamnese-required, .dobras-required-dot, .perimetros-required-dot,
+       .pm-field__required, .clinica-required-dot, [required])
+) {
+  display: none;
+}
+
+/* Secao que ficou sem nenhum campo visivel some junto com o titulo dela. */
+.avaliacao-form.modo-essencial .eval-section:not(:has(.eval-field--critical)):not(
+  :has(.anamnese-required, .dobras-required-dot, .perimetros-required-dot,
+       .pm-field__required, .clinica-required-dot, [required])
+) {
+  display: none;
+}
+
+/* Subgrupo sem nenhum campo visivel deixa o titulo orfao ("Tronco",
+   "Membros superiores") flutuando sobre o vazio. */
+.avaliacao-form.modo-essencial .eval-field-group:not(:has(.eval-field--critical)):not(
+  :has(.anamnese-required, .dobras-required-dot, .perimetros-required-dot,
+       .pm-field__required, .clinica-required-dot, [required])
+) {
+  display: none;
+}
+
+.avaliacao-mais-campos {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--evf-rule, rgba(29, 51, 80, 0.11));
+}
+
+.avaliacao-mais-campos button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--eval-accent, #74A865);
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.avaliacao-mais-campos button:hover { text-decoration: underline; }

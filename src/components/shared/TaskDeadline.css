@@ -1,0 +1,32 @@
+.task-deadline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  min-width: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs, 0.75rem);
+  line-height: 1.4;
+}
+
+.task-deadline span,
+.task-deadline strong {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+}
+
+.task-deadline strong {
+  font-weight: 700;
+}
+
+.task-deadline-today,
+.task-deadline-overdue {
+  color: var(--lt-color-danger-text);
+}
+
+.task-deadline-done {
+  color: var(--lt-color-success-text);
+}

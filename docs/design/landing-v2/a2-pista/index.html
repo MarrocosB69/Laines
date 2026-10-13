@@ -1,0 +1,260 @@
+<!doctype html>
+<!--
+  LAINES, landing v2, direção A2: "Pista em movimento".
+  Mockup de direção de arte (docs/design/landing-v2/a2-pista/plano.md).
+  Não é código de produção. O login não envia nada: o JS só simula os estados.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAINES: entrar</title>
+<meta name="description" content="Liga Acadêmica Interprofissional de Nutrição Esportiva, FACISA, UFRN.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Sofia Sans 400–700 (39,4 KB) + Extra Condensed 800 (15,4 KB), subconjunto latino. -->
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+<link rel="stylesheet" href="formulario.css">
+<!-- Síncrono de propósito: marca a página para animar antes da primeira pintura,
+     só se a pessoa não pediu movimento reduzido. Sem JS, nasce no estado final. -->
+<script src="animacao.js"></script>
+</head>
+<body>
+<div class="pagina">
+
+  <div class="estadio" aria-hidden="true"></div>
+
+  <header class="titulo">
+    <h1>
+      <span>Liga Acadêmica</span>
+      <span>Interprofissional de</span>
+      <span>Nutrição Esportiva</span>
+    </h1>
+    <p class="titulo__instituicao">FACISA, Universidade Federal do Rio Grande do Norte</p>
+    <p class="titulo__frase">Reúne estudantes e profissionais de várias áreas da saúde em torno da nutrição de atletas.</p>
+  </header>
+
+  <!-- A curva, vista de cima. Coordenadas: centro da curva em (500, 284), meio-fio
+       com raio 140, oito raias de 15. As linhas seguem o sentido da corrida
+       (anti-horário): entram por baixo, contornam a curva e saem pela reta à esquerda. -->
+  <div class="curva" aria-hidden="true">
+    <svg class="pista" viewBox="0 0 820 384" preserveAspectRatio="xMaxYMax slice" focusable="false">
+      <defs>
+        <pattern id="listras" width="68" height="68" patternUnits="userSpaceOnUse">
+          <rect width="68" height="68" fill="#3d8c2a"/>
+          <rect width="34" height="68" fill="#367f25"/>
+        </pattern>
+        <radialGradient id="refletor" cx="640" cy="150" r="440" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#ffffff" stop-opacity=".16"/>
+          <stop offset=".55" stop-color="#ffffff" stop-opacity=".04"/>
+          <stop offset="1" stop-color="#0b1030" stop-opacity=".28"/>
+        </radialGradient>
+        <linearGradient id="breu" x1="-24" y1="0" x2="376" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#1c2150" stop-opacity="1"/>
+          <stop offset=".4" stop-color="#1c2150" stop-opacity=".62"/>
+          <stop offset="1" stop-color="#1c2150" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="brilho" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="5"/>
+        </filter>
+        <filter id="clarao" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="14"/>
+        </filter>
+        <filter id="sombra" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0b1030" flood-opacity=".5"/>
+        </filter>
+        <clipPath id="recorte-emblema">
+          <circle cx="500" cy="284" r="82"/>
+        </clipPath>
+      </defs>
+
+      <!-- As luzes acendem: superfície da pista e gramado. -->
+      <g class="chao">
+        <path class="chao__pista" fill-rule="evenodd" d="M-24 24H500A260 260 0 0 1 500 544H-24Z M-24 144H500A140 140 0 0 1 500 424H-24Z"/>
+        <path class="chao__gramado" d="M-24 144H500A140 140 0 0 1 500 424H-24Z" fill="url(#listras)"/>
+        <!-- A luz do refletor só cai sobre a pista e o gramado, não sobre a noite em volta. -->
+        <path class="chao__refletor" d="M-24 24H500A260 260 0 0 1 500 544H-24Z" fill="url(#refletor)"/>
+      </g>
+
+      <!-- As raias se desenham. -->
+      <g class="raias">
+        <path class="raia-linha raia-linha--meio-fio" style="--i:0" pathLength="100" d="M500 424A140 140 0 0 0 500 144H-24"/>
+        <path class="raia-linha" style="--i:1" pathLength="100" d="M500 439A155 155 0 0 0 500 129H-24"/>
+        <path class="raia-linha" style="--i:2" pathLength="100" d="M500 454A170 170 0 0 0 500 114H-24"/>
+        <path class="raia-linha" style="--i:3" pathLength="100" d="M500 469A185 185 0 0 0 500 99H-24"/>
+        <path class="raia-linha" style="--i:4" pathLength="100" d="M500 484A200 200 0 0 0 500 84H-24"/>
+        <path class="raia-linha" style="--i:5" pathLength="100" d="M500 499A215 215 0 0 0 500 69H-24"/>
+        <path class="raia-linha" style="--i:6" pathLength="100" d="M500 514A230 230 0 0 0 500 54H-24"/>
+        <path class="raia-linha" style="--i:7" pathLength="100" d="M500 529A245 245 0 0 0 500 39H-24"/>
+        <path class="raia-linha" style="--i:8" pathLength="100" d="M500 544A260 260 0 0 0 500 24H-24"/>
+      </g>
+
+      <!-- Às suas marcas: largada escalonada dos 200 m, número pintado atrás de cada linha,
+           virado para quem corre. -->
+      <g class="marcas">
+        <line class="marca" style="--i:1" x1="621.7" y1="357.1" x2="631.1" y2="362.8"/>
+        <line class="marca" style="--i:2" x1="644.5" y1="345.3" x2="654.6" y2="349.6"/>
+        <line class="marca" style="--i:3" x1="666.1" y1="328.5" x2="676.8" y2="331.4"/>
+        <line class="marca" style="--i:4" x1="685.6" y1="306.8" x2="696.5" y2="308.1"/>
+        <line class="marca" style="--i:5" x1="702" y1="280.5" x2="713" y2="280.3"/>
+        <line class="marca" style="--i:6" x1="714.3" y1="250.1" x2="725.2" y2="248.3"/>
+        <line class="marca" style="--i:7" x1="721.9" y1="216.2" x2="732.4" y2="213"/>
+        <line class="marca" style="--i:8" x1="723.9" y1="179.6" x2="733.8" y2="175"/>
+        <text class="numero-raia" style="--i:1" x="619.3" y="370.7" transform="rotate(36 619.3 370.7)">1</text>
+        <text class="numero-raia" style="--i:2" x="643.5" y="360.3" transform="rotate(28 643.5 360.3)">2</text>
+        <text class="numero-raia" style="--i:3" x="666.8" y="344.7" transform="rotate(20 666.8 344.7)">3</text>
+        <text class="numero-raia" style="--i:4" x="688.3" y="324" transform="rotate(12 688.3 324)">4</text>
+        <text class="numero-raia" style="--i:5" x="707" y="298.5" transform="rotate(4 707 298.5)">5</text>
+        <text class="numero-raia" style="--i:6" x="722" y="268.5" transform="rotate(-4 722 268.5)">6</text>
+        <text class="numero-raia" style="--i:7" x="732.3" y="234.6" transform="rotate(-12 732.3 234.6)">7</text>
+        <text class="numero-raia" style="--i:8" x="737.3" y="197.6" transform="rotate(-20 737.3 197.6)">8</text>
+      </g>
+
+      <!-- A volta: a luz de ritmo corre no meio-fio, no sentido da corrida, só no
+           trecho visível (da borda de baixo ao meio da reta). Quatro traços com a
+           mesma ponta: o clarão que ilumina a raia, o rastro, o halo e o núcleo. -->
+      <g class="luz">
+        <path class="luz__traco luz__traco--clarao" pathLength="1000" filter="url(#clarao)" d="M603.6 384A144 144 0 0 0 500 140H110"/>
+        <path class="luz__traco luz__traco--rastro" pathLength="1000" d="M603.6 384A144 144 0 0 0 500 140H110"/>
+        <path class="luz__traco luz__traco--halo" pathLength="1000" filter="url(#brilho)" d="M603.6 384A144 144 0 0 0 500 140H110"/>
+        <path class="luz__traco luz__traco--nucleo" pathLength="1000" d="M603.6 384A144 144 0 0 0 500 140H110"/>
+      </g>
+
+      <!-- A reta some no escuro à esquerda: todo corte acontece fora de vista. -->
+      <rect x="-24" y="0" width="400" height="384" fill="url(#breu)"/>
+
+      <!-- Chegada: o emblema assenta no centro da curva. O arquivo é opaco com
+           fundo branco, então vira um medalhão branco recortado em círculo. -->
+      <circle class="anel" cx="500" cy="284" r="90"/>
+      <g class="emblema">
+        <circle cx="500" cy="284" r="88" fill="#ffffff" filter="url(#sombra)"/>
+        <image href="../../../../src/assets/LogoLaines.webp" x="415.5" y="199.5" width="169" height="169" clip-path="url(#recorte-emblema)"/>
+      </g>
+    </svg>
+  </div>
+
+  <main class="acesso" aria-labelledby="titulo-entrar">
+    <h2 id="titulo-entrar">Entrar</h2>
+    <p class="acesso__dica" id="dica-login">Use seu CPF, só os números, ou seu <span class="inteiro">e-mail</span>.</p>
+
+    <form id="form-login" class="formulario" novalidate>
+      <div class="campo" data-campo="login">
+        <label for="login-id">CPF ou <span class="inteiro">e-mail</span></label>
+        <div class="campo__caixa">
+          <input id="login-id" name="login" type="text" inputmode="text" autocomplete="username" spellcheck="false" autocapitalize="none" required aria-describedby="dica-login erro-login-id">
+          <span class="campo__tipo" id="tipo-login" aria-hidden="true"></span>
+        </div>
+        <p class="campo__erro" id="erro-login-id" hidden>Informe seu CPF ou <span class="inteiro">e-mail</span>.</p>
+      </div>
+
+      <div class="campo" data-campo="senha">
+        <div class="campo__topo">
+          <label for="login-senha">Senha</label>
+          <button type="button" class="link" id="esqueci">Esqueci minha senha</button>
+        </div>
+        <div class="campo__caixa">
+          <input id="login-senha" name="senha" type="password" autocomplete="current-password" required aria-describedby="erro-login-senha aviso-caps">
+          <button type="button" class="campo__mostrar" aria-controls="login-senha" aria-pressed="false" aria-label="Mostrar senha">
+            <svg class="olho olho--aberto" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="olho olho--fechado" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+          </button>
+        </div>
+        <p class="campo__aviso" id="aviso-caps" aria-live="polite" hidden>Caps Lock ativado.</p>
+        <p class="campo__erro" id="erro-login-senha" hidden>Informe sua senha.</p>
+      </div>
+
+      <button type="submit" class="botao-entrar">
+        <span class="botao-entrar__rotulo">Entrar</span>
+      </button>
+
+      <div class="erro" id="erro-login" role="alert" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.4v.1"/></svg>
+        <span>CPF, <span class="inteiro">e-mail</span> ou senha incorretos. Confira e tente de novo.</span>
+      </div>
+    </form>
+
+    <div class="portas">
+      <a class="porta" href="/inscricao">
+        <span class="porta__pergunta">É atleta e quer ser atendido pela liga?</span>
+        <span class="porta__acao">Entrar na lista de espera</span>
+      </a>
+      <button type="button" class="porta" id="abrir-solicitacao" aria-haspopup="dialog">
+        <span class="porta__pergunta">Professor ou profissional de saúde sem conta?</span>
+        <span class="porta__acao">Solicitar acesso</span>
+      </button>
+    </div>
+  </main>
+
+  <section class="areas" aria-labelledby="titulo-areas">
+    <h2 id="titulo-areas" class="areas__titulo">As quatro áreas da liga</h2>
+    <ul class="raias-lista">
+      <li class="raia" style="--i:1">
+        <span class="raia__numero" aria-hidden="true">1</span>
+        <div class="raia__texto">
+          <h3 class="raia__nome">Ensino</h3>
+          <p class="raia__linha">Reuniões científicas, rodas de conversa e materiais de apoio.</p>
+        </div>
+      </li>
+      <li class="raia" style="--i:2">
+        <span class="raia__numero" aria-hidden="true">2</span>
+        <div class="raia__texto">
+          <h3 class="raia__nome">Pesquisa</h3>
+          <p class="raia__linha">Projetos, ideias abertas a estudantes e produções científicas.</p>
+        </div>
+      </li>
+      <li class="raia" style="--i:3">
+        <span class="raia__numero" aria-hidden="true">3</span>
+        <div class="raia__texto">
+          <h3 class="raia__nome">Extensão</h3>
+          <p class="raia__linha">Inscrições de atletas, capacitações, guias e protocolos.</p>
+        </div>
+      </li>
+      <li class="raia" style="--i:4">
+        <span class="raia__numero" aria-hidden="true">4</span>
+        <div class="raia__texto">
+          <h3 class="raia__nome">Comunicação</h3>
+          <p class="raia__linha">Avisos, campanhas e divulgações da liga.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <footer class="rodape">
+    <p>© 2026 LAINES, Universidade Federal do Rio Grande do Norte</p>
+  </footer>
+
+</div>
+
+<!-- Representa o modal existente (src/views/landing/AccessRequestModal.jsx): mesmo
+     título, subtítulo, primeira seção e ações. O conteúdo não muda nesta proposta;
+     só herda os tokens. -->
+<dialog class="modal" id="modal-solicitacao" aria-labelledby="titulo-solicitacao">
+  <div class="modal__cabeca">
+    <div>
+      <h2 id="titulo-solicitacao">Solicitar acesso</h2>
+      <p>Solicitação sujeita à aprovação da coordenação, com retorno por <span class="inteiro">e-mail</span>.</p>
+    </div>
+    <button type="button" class="modal__fechar" data-fechar aria-label="Fechar">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <form class="modal__corpo" method="dialog">
+    <h3 class="modal__secao">Identificação</h3>
+    <div class="campo">
+      <label for="sol-nome">Nome completo</label>
+      <div class="campo__caixa"><input id="sol-nome" type="text" autocomplete="name"></div>
+    </div>
+    <div class="campo">
+      <label for="sol-cpf">CPF</label>
+      <div class="campo__caixa"><input id="sol-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00"></div>
+    </div>
+    <p class="modal__nota">As seções seguintes (contato e instituição, acesso solicitado) continuam como no modal atual.</p>
+    <div class="modal__acoes">
+      <button type="button" class="botao-secundario" data-fechar>Cancelar</button>
+      <button type="button" class="botao-entrar botao-entrar--compacto" data-fechar><span class="botao-entrar__rotulo">Enviar solicitação</span></button>
+    </div>
+  </form>
+</dialog>
+</body>
+</html>

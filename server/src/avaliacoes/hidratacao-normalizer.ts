@@ -52,6 +52,26 @@ const round = (value: number | null, digits = 2): number | null => (
   Number.isFinite(value) ? Number((value as number).toFixed(digits)) : null
 );
 
+const positiveOrNull = (value: number | null): number | null => (
+  Number.isFinite(value) && (value as number) > 0 ? value : null
+);
+
+const nonNegativeOrNull = (value: number | null): number | null => (
+  Number.isFinite(value) && (value as number) >= 0 ? value : null
+);
+
+// Saídas derivadas da perda de suor que o cliente também envia: zero ou
+// negativo vira nulo, mas só nas chaves que já vieram no registro.
+const sanitizePositiveKeys = (record: JsonRecord, keys: string[]): JsonRecord => {
+  const output: JsonRecord = { ...record };
+  keys.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(output, key)) {
+      output[key] = positiveOrNull(toNumber(output[key]));
+    }
+  });
+  return output;
+};
+
 const classifyHydration = (lossPercent: number | null) => {
   if (!Number.isFinite(lossPercent)) {
     return { label: 'Sem classificacao', alertLevel: 'neutral' };
@@ -96,27 +116,40 @@ export const normalizeHidratacaoPayload = <T extends PayloadShape>(payload: T): 
   const temperaturaAmbiente = toNumber(pick(valueSources, ['temperaturaAmbiente', 'ambientTemperatureC']));
   const observacoes = toText(pick(valueSources, ['observacoes', 'notes']));
 
-  let perdaPesoAbsolutaKg = toNumber(pick(valueSources, ['perdaPesoAbsolutaKg']));
-  if (!Number.isFinite(perdaPesoAbsolutaKg) && Number.isFinite(pesoAntesExercicio) && Number.isFinite(pesoAposExercicio)) {
-    perdaPesoAbsolutaKg = (pesoAntesExercicio as number) - (pesoAposExercicio as number);
-  }
+  // WI-013, decisão 5. A variação de peso (antes - após) com sinal só serve de
+  // base: negativa é ganho, não "perda negativa". Perda de suor igual ou menor
+  // que zero é registro inconsistente. Nenhum valor negativo é gravado, nem
+  // quando vem pronto do cliente.
+  const variacaoPesoKg = Number.isFinite(pesoAntesExercicio) && Number.isFinite(pesoAposExercicio)
+    ? (pesoAntesExercicio as number) - (pesoAposExercicio as number)
+    : null;
 
-  let perdaPesoPercentual = toNumber(pick(valueSources, ['perdaPesoPercentual']));
-  if (!Number.isFinite(perdaPesoPercentual) && Number.isFinite(perdaPesoAbsolutaKg) && Number.isFinite(pesoAntesExercicio) && (pesoAntesExercicio as number) > 0) {
-    perdaPesoPercentual = ((perdaPesoAbsolutaKg as number) / (pesoAntesExercicio as number)) * 100;
+  let variacaoPesoAssinadaKg = toNumber(pick(valueSources, ['perdaPesoAbsolutaKg']));
+  if (!Number.isFinite(variacaoPesoAssinadaKg)) variacaoPesoAssinadaKg = variacaoPesoKg;
+
+  let perdaPesoPercentualAssinada = toNumber(pick(valueSources, ['perdaPesoPercentual']));
+  if (!Number.isFinite(perdaPesoPercentualAssinada) && Number.isFinite(variacaoPesoAssinadaKg) && Number.isFinite(pesoAntesExercicio) && (pesoAntesExercicio as number) > 0) {
+    perdaPesoPercentualAssinada = ((variacaoPesoAssinadaKg as number) / (pesoAntesExercicio as number)) * 100;
   }
 
   let perdaHidricaLiquidaMl = toNumber(pick(valueSources, ['perdaHidricaLiquidaMl']));
-  if (!Number.isFinite(perdaHidricaLiquidaMl) && Number.isFinite(perdaPesoAbsolutaKg)) {
-    perdaHidricaLiquidaMl = ((perdaPesoAbsolutaKg as number) * 1000) + volumeIngeridoMl - volumeUrinarioMl;
+  if (!Number.isFinite(perdaHidricaLiquidaMl) && Number.isFinite(variacaoPesoAssinadaKg)) {
+    perdaHidricaLiquidaMl = ((variacaoPesoAssinadaKg as number) * 1000) + volumeIngeridoMl - volumeUrinarioMl;
   }
+  perdaHidricaLiquidaMl = positiveOrNull(perdaHidricaLiquidaMl);
 
   let taxaSudoreseLh = toNumber(pick(valueSources, ['taxaSudoreseLh']));
   if (!Number.isFinite(taxaSudoreseLh) && Number.isFinite(perdaHidricaLiquidaMl) && Number.isFinite(duracaoExercicioMin) && (duracaoExercicioMin as number) > 0) {
     taxaSudoreseLh = (((perdaHidricaLiquidaMl as number) / (duracaoExercicioMin as number)) * 60) / 1000;
   }
+  taxaSudoreseLh = Number.isFinite(perdaHidricaLiquidaMl) ? positiveOrNull(taxaSudoreseLh) : null;
 
-  const classificacao = classifyHydration(perdaPesoPercentual);
+  const perdaPesoAbsolutaKg = nonNegativeOrNull(variacaoPesoAssinadaKg);
+  const perdaPesoPercentual = nonNegativeOrNull(perdaPesoPercentualAssinada);
+
+  // A faixa segue lida sobre a variação com sinal: ganho fica "Sem perda
+  // relevante", como no cliente.
+  const classificacao = classifyHydration(perdaPesoPercentualAssinada);
   const classificacaoHidrica = toText(
     pick([dados, resultadosOutput, payloadRecord], ['classificacaoHidrica', 'classificacao'])
   ) || classificacao.label;
@@ -126,7 +159,7 @@ export const normalizeHidratacaoPayload = <T extends PayloadShape>(payload: T): 
     .filter(Boolean);
 
   const normalizedDados = compact({
-    ...dados,
+    ...sanitizePositiveKeys(dados, ['perdaSuor', 'taxaSudorese']),
     pesoAntesExercicio: round(pesoAntesExercicio, 3),
     pesoAposExercicio: round(pesoAposExercicio, 3),
     duracaoExercicioMin: round(duracaoExercicioMin, 2),
@@ -158,20 +191,20 @@ export const normalizeHidratacaoPayload = <T extends PayloadShape>(payload: T): 
   });
 
   const normalizedResultados = compact({
-    ...resultados,
+    ...sanitizePositiveKeys(resultados, ['metaReposicaoMl']),
     perdaPesoAbsolutaKg: round(perdaPesoAbsolutaKg, 3),
     perdaPesoPercentual: round(perdaPesoPercentual, 2),
     perdaHidricaLiquidaMl: round(perdaHidricaLiquidaMl, 0),
     taxaSudoreseLh: round(taxaSudoreseLh, 2),
     calculated: compact({
-      ...resultadosCalculated,
+      ...sanitizePositiveKeys(resultadosCalculated, ['metaReposicaoMl']),
       perdaPesoAbsolutaKg: round(perdaPesoAbsolutaKg, 3),
       perdaPesoPercentual: round(perdaPesoPercentual, 2),
       perdaHidricaLiquidaMl: round(perdaHidricaLiquidaMl, 0),
       taxaSudoreseLh: round(taxaSudoreseLh, 2)
     }),
     output: compact({
-      ...resultadosOutput,
+      ...sanitizePositiveKeys(resultadosOutput, ['metaReposicaoMl']),
       classificacaoHidrica,
       alertLevel,
       warnings

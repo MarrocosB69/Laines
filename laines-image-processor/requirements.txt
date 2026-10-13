@@ -1,0 +1,16 @@
+# Dependências do servidor FastAPI (sem display/GUI).
+# Para captura local (capture.py), use requirements-capture.txt.
+fastapi==0.138.0
+uvicorn[standard]==0.49.0
+mediapipe==0.10.35
+opencv-contrib-python-headless==4.13.0.92
+numpy==2.4.6
+requests==2.34.2
+
+# Fase 2 — SMPL-X 3D estimation (dependências opcionais)
+# Instalar separadamente pois o torch varia por plataforma/CUDA:
+#   CPU:  pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   GPU:  pip install torch --index-url https://download.pytorch.org/whl/cu121
+# Depois: pip install smplx[all] scipy
+smplx[all]
+scipy

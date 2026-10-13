@@ -4,8 +4,15 @@ import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import { useSaveStatus } from '../hooks/useSaveStatus';
 import { useModuleSnapshot } from '../hooks/useModuleSnapshot';
-import EvaluationHeader from '../components/EvaluationHeader';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../base';
 import './AvaliacaoFisioterapia.css';
 
 const FORMULA_ID = 'fisioterapia_clinica_v2';
@@ -23,6 +30,26 @@ const Y_ROWS = [
   { key: 'pl', label: 'PL' },
   { key: 'ar', label: 'AR' },
   { key: 'ac', label: 'AC' }
+];
+
+// Rótulo (só leitor de tela) dos campos da tabela de amplitude: o texto do
+// cabeçalho da coluna, somado ao movimento da linha.
+const AMPLITUDE_COLUNAS = {
+  movimento: 'Movimento',
+  ativaD: 'Ativa D',
+  ativaE: 'Ativa E',
+  passivaD: 'Passiva D',
+  passivaE: 'Passiva E'
+};
+
+const FISIO_INDICE = [
+  { id: 'fisio-escritos', titulo: 'Escritos' },
+  { id: 'fisio-sessoes', titulo: 'Sessões de medição' },
+  { id: 'fisio-inspecao', titulo: 'Inspeção' },
+  { id: 'fisio-palpacao', titulo: 'Dor à Palpação' },
+  { id: 'fisio-perimetria', titulo: 'Perimetria' },
+  { id: 'fisio-testes', titulo: 'Testes Especiais' },
+  { id: 'fisio-intervencoes', titulo: 'Intervenções' }
 ];
 
 const nanoid = (size = 8) => {
@@ -334,9 +361,11 @@ const AvaliacaoFisioterapia = ({
   const objetivosCurto = normalizeGoals(formData.objetivosCurtoPrazo);
   const objetivosMedioLongo = normalizeGoals(formData.objetivosMedioLongoPrazo);
 
+  // h6 por exceção (contrato, seção 2): a lista fica dentro da subseção
+  // "Objetivos" (h5) de "Intervenções" (h4).
   const renderChecklist = (field, title, items) => (
     <div className="fisio-checklist-block">
-      <h5 className="fisio-subtitle">{title}</h5>
+      <h6 className="fisio-subtitle">{title}</h6>
       <div className="fisio-checklist" role="list">
         {items.length === 0 ? (
           <p className="fisio-empty">Nenhum objetivo registrado.</p>
@@ -353,14 +382,16 @@ const AvaliacaoFisioterapia = ({
               disabled={readOnly}
               aria-label={`Concluir objetivo: ${item.texto || title}`}
             />
-            <input
-              type="text"
-              className="eval-input"
-              value={item.texto}
-              onChange={(event) => updateGoal(field, item.id, { texto: event.target.value })}
-              placeholder="Texto do objetivo"
-              disabled={readOnly}
-            />
+            <Campo rotulo={`Texto do objetivo, ${title}`} rotuloOculto>
+              <input
+                type="text"
+                className="eval-input"
+                value={item.texto}
+                onChange={(event) => updateGoal(field, item.id, { texto: event.target.value })}
+                placeholder="Texto do objetivo"
+                disabled={readOnly}
+              />
+            </Campo>
             <button
               type="button"
               className="fisio-icon-btn"
@@ -385,18 +416,19 @@ const AvaliacaoFisioterapia = ({
   );
 
   return (
-    <div className={`eval-card avaliacao-fisioterapia${readOnly ? ' eval-card--readonly' : ''}`}>
-      <EvaluationHeader
-        icon={<Activity size={22} />}
-        title="Avaliação de fisioterapia"
-        subtitle="Registro clínico funcional com sessões de medição e plano de intervenção"
-      />
+    <AvaliacaoModulo
+      className={`eval-card avaliacao-fisioterapia${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Avaliação de fisioterapia"
+      descricao="Registro clínico funcional com sessões de medição e plano de intervenção"
+      icone={<Activity size={22} />}
+    >
+      <AvaliacaoIndice itens={FISIO_INDICE} />
 
-      <section className="eval-section">
-        <h4 className="eval-section-title">Escritos</h4>
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
+
+      <AvaliacaoSecao id="fisio-escritos" titulo="Escritos" className="eval-section">
         <div className="eval-grid">
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Diagnóstico Clínico</label>
+          <Campo rotulo="Diagnóstico Clínico" className="eval-field eval-field-full">
             <textarea
               className="eval-textarea"
               rows={4}
@@ -404,9 +436,8 @@ const AvaliacaoFisioterapia = ({
               onChange={(event) => updateRootField('diagnosticoClinico', event.target.value)}
               disabled={readOnly}
             />
-          </div>
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Diagnóstico Cineticofuncional</label>
+          </Campo>
+          <Campo rotulo="Diagnóstico Cineticofuncional" className="eval-field eval-field-full">
             <textarea
               className="eval-textarea"
               rows={4}
@@ -414,9 +445,8 @@ const AvaliacaoFisioterapia = ({
               onChange={(event) => updateRootField('diagnosticoCineticofuncional', event.target.value)}
               disabled={readOnly}
             />
-          </div>
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Exames Complementares</label>
+          </Campo>
+          <Campo rotulo="Exames Complementares" className="eval-field eval-field-full">
             <textarea
               className="eval-textarea"
               rows={4}
@@ -424,174 +454,122 @@ const AvaliacaoFisioterapia = ({
               onChange={(event) => updateRootField('examesComplementares', event.target.value)}
               disabled={readOnly}
             />
-          </div>
+          </Campo>
         </div>
-      </section>
+      </AvaliacaoSecao>
 
-      <section className="eval-section">
-        <h4 className="eval-section-title">Sessões de medição</h4>
-        <div className="fisio-session-nav" aria-label="Sessões de medição">
-          <button
-            type="button"
-            className="fisio-session-add"
-            onClick={handleAddSession}
-            disabled={readOnly}
-          >
-            <Plus size={14} /> Nova sessão
-          </button>
-          {sessionsOrdered.map((session) => (
+      {/* Tudo o que muda com a sessão escolhida fica numa faixa só, abaixo
+          das abas: data, inspeção, palpação, perimetria e testes. Escritos e
+          intervenções valem para a avaliação inteira e ficam fora dela. */}
+      <div className="fisio-sessao-grupo">
+        <AvaliacaoSecao id="fisio-sessoes" titulo="Sessões de medição" className="eval-section">
+          <div className="fisio-session-nav" role="group" aria-label="Sessões de medição">
             <button
-              key={session.id}
               type="button"
-              className={`fisio-session-tab${session.id === activeSession.id ? ' fisio-session-tab--active' : ''}`}
-              onClick={() => setActiveSessionId(session.id)}
-              aria-pressed={session.id === activeSession.id}
+              className="fisio-session-add"
+              onClick={handleAddSession}
+              disabled={readOnly}
             >
-              {formatDateLabel(session.data)}
-              {session.id === activeSession.id ? <span aria-hidden="true">●</span> : null}
+              <Plus size={14} /> Nova sessão
             </button>
-          ))}
-        </div>
-        <div className="eval-grid eval-grid-compact">
-          <div className="eval-field">
-            <label className="eval-label">Data da sessão</label>
-            <input
-              type="date"
-              className="eval-input"
-              value={normalizeDateValue(activeSession.data)}
-              onChange={(event) => updateSessionDate(event.target.value)}
+            {sessionsOrdered.map((session) => (
+              <button
+                key={session.id}
+                type="button"
+                className={`fisio-session-tab${session.id === activeSession.id ? ' fisio-session-tab--active' : ''}`}
+                onClick={() => setActiveSessionId(session.id)}
+                aria-pressed={session.id === activeSession.id}
+              >
+                {formatDateLabel(session.data)}
+                {session.id === activeSession.id ? <span aria-hidden="true">●</span> : null}
+              </button>
+            ))}
+          </div>
+          <div className="eval-grid eval-grid-compact">
+            <Campo rotulo="Data da sessão" className="eval-field">
+              <input
+                type="date"
+                className="eval-input"
+                value={normalizeDateValue(activeSession.data)}
+                onChange={(event) => updateSessionDate(event.target.value)}
+                disabled={readOnly}
+              />
+            </Campo>
+          </div>
+        </AvaliacaoSecao>
+
+        {/* Inspeção e Dor à Palpação: o rótulo do campo é o título da seção. */}
+        <AvaliacaoSecao id="fisio-inspecao" titulo="Inspeção" className="eval-section">
+          <Campo rotulo="Inspeção" rotuloOculto className="eval-field eval-field-full">
+            <textarea
+              className="eval-textarea"
+              rows={4}
+              value={activeSession.inspecao || ''}
+              onChange={(event) => updateActiveSession({ inspecao: event.target.value })}
               disabled={readOnly}
             />
-          </div>
-        </div>
-      </section>
+          </Campo>
+        </AvaliacaoSecao>
 
-      <section className="eval-section">
-        <h4 className="eval-section-title">Inspeção</h4>
-        <div className="eval-field eval-field-full">
-          <textarea
-            className="eval-textarea"
-            rows={4}
-            value={activeSession.inspecao || ''}
-            onChange={(event) => updateActiveSession({ inspecao: event.target.value })}
-            disabled={readOnly}
-          />
-        </div>
-      </section>
+        <AvaliacaoSecao id="fisio-palpacao" titulo="Dor à Palpação" className="eval-section">
+          <Campo rotulo="Dor à Palpação" rotuloOculto className="eval-field eval-field-full">
+            <textarea
+              className="eval-textarea"
+              rows={3}
+              value={activeSession.dorPalpacao || ''}
+              onChange={(event) => updateActiveSession({ dorPalpacao: event.target.value })}
+              disabled={readOnly}
+            />
+          </Campo>
+        </AvaliacaoSecao>
 
-      <section className="eval-section">
-        <h4 className="eval-section-title">Dor à Palpação</h4>
-        <div className="eval-field eval-field-full">
-          <textarea
-            className="eval-textarea"
-            rows={3}
-            value={activeSession.dorPalpacao || ''}
-            onChange={(event) => updateActiveSession({ dorPalpacao: event.target.value })}
-            disabled={readOnly}
-          />
-        </div>
-      </section>
-
-      <section className="eval-section">
-        <h4 className="eval-section-title">Perimetria</h4>
-        <div className="fisio-table-wrap">
-          <table className="fisio-table">
-            <thead>
-              <tr>
-                <th>Segmento</th>
-                <th>Valor (cm)</th>
-                <th aria-label="Ações" />
-              </tr>
-            </thead>
-            <tbody>
-              {perimetriaRows.length === 0 ? (
-                <tr>
-                  <td colSpan={3} className="fisio-table__empty">Nenhuma medida adicionada.</td>
-                </tr>
-              ) : perimetriaRows.map(([segmento, valor]) => (
-                <tr key={segmento}>
-                  <td>
-                    <input
-                      type="text"
-                      className="eval-input"
-                      value={segmento}
-                      onChange={(event) => updatePerimetriaSegment(segmento, event.target.value)}
-                      placeholder="Ex: Braço D"
-                      disabled={readOnly}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      className="eval-input"
-                      value={valor}
-                      onChange={(event) => updatePerimetriaValue(segmento, event.target.value)}
-                      disabled={readOnly}
-                    />
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="fisio-icon-btn"
-                      onClick={() => removePerimetriaRow(segmento)}
-                      disabled={readOnly}
-                      aria-label={`Remover medida ${segmento}`}
-                    >
-                      <X size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <button type="button" className="fisio-row-add" onClick={addPerimetriaRow} disabled={readOnly}>
-          <Plus size={14} /> Adicionar medida
-        </button>
-      </section>
-
-      <section className="eval-section">
-        <h4 className="eval-section-title">Testes Especiais</h4>
-
-        <div className="fisio-subsection">
-          <h5 className="fisio-subtitle">Amplitude de Movimento</h5>
+        <AvaliacaoSecao id="fisio-perimetria" titulo="Perimetria" className="eval-section">
           <div className="fisio-table-wrap">
             <table className="fisio-table">
               <thead>
                 <tr>
-                  <th>Movimento</th>
-                  <th>Ativa D</th>
-                  <th>Ativa E</th>
-                  <th>Passiva D</th>
-                  <th>Passiva E</th>
+                  <th>Segmento</th>
+                  <th>Valor (cm)</th>
                   <th aria-label="Ações" />
                 </tr>
               </thead>
               <tbody>
-                {amplitudeRows.length === 0 ? (
+                {perimetriaRows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="fisio-table__empty">Nenhum movimento adicionado.</td>
+                    <td colSpan={3} className="fisio-table__empty">Nenhuma medida adicionada.</td>
                   </tr>
-                ) : amplitudeRows.map((row, index) => (
-                  <tr key={`amplitude-${index}`}>
-                    {['movimento', 'ativaD', 'ativaE', 'passivaD', 'passivaE'].map((field) => (
-                      <td key={field}>
+                ) : perimetriaRows.map(([segmento, valor]) => (
+                  <tr key={segmento}>
+                    <td>
+                      <Campo rotulo="Segmento" rotuloOculto>
                         <input
-                          type={field === 'movimento' ? 'text' : 'text'}
+                          type="text"
                           className="eval-input"
-                          value={row[field]}
-                          onChange={(event) => updateAmplitudeRow(index, field, event.target.value)}
+                          value={segmento}
+                          onChange={(event) => updatePerimetriaSegment(segmento, event.target.value)}
+                          placeholder="Ex: Braço D"
                           disabled={readOnly}
                         />
-                      </td>
-                    ))}
+                      </Campo>
+                    </td>
+                    <td>
+                      <Campo rotulo={`${segmento || 'Segmento'}, Valor (cm)`} rotuloOculto>
+                        <input
+                          type="number"
+                          className="eval-input"
+                          value={valor}
+                          onChange={(event) => updatePerimetriaValue(segmento, event.target.value)}
+                          disabled={readOnly}
+                        />
+                      </Campo>
+                    </td>
                     <td>
                       <button
                         type="button"
                         className="fisio-icon-btn"
-                        onClick={() => removeAmplitudeRow(index)}
+                        onClick={() => removePerimetriaRow(segmento)}
                         disabled={readOnly}
-                        aria-label="Remover movimento"
+                        aria-label={`Remover medida ${segmento}`}
                       >
                         <X size={14} />
                       </button>
@@ -601,178 +579,234 @@ const AvaliacaoFisioterapia = ({
               </tbody>
             </table>
           </div>
-          <button type="button" className="fisio-row-add" onClick={addAmplitudeRow} disabled={readOnly}>
-            <Plus size={14} /> Adicionar movimento
+          <button type="button" className="fisio-row-add" onClick={addPerimetriaRow} disabled={readOnly}>
+            <Plus size={14} /> Adicionar medida
           </button>
-        </div>
+        </AvaliacaoSecao>
 
-        <div className="fisio-subsection">
-          <h5 className="fisio-subtitle">Função Muscular</h5>
-          <div className="fisio-two-col">
-            <div className="eval-field">
-              <label className="eval-label">Direito</label>
-              <textarea
-                className="eval-textarea"
-                rows={4}
-                value={funcaoMuscular.direito}
-                onChange={(event) => updateFuncaoMuscular('direito', event.target.value)}
-                disabled={readOnly}
-              />
-            </div>
-            <div className="eval-field">
-              <label className="eval-label">Esquerdo</label>
-              <textarea
-                className="eval-textarea"
-                rows={4}
-                value={funcaoMuscular.esquerdo}
-                onChange={(event) => updateFuncaoMuscular('esquerdo', event.target.value)}
-                disabled={readOnly}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="fisio-subsection">
-          <h5 className="fisio-subtitle">Y-Balance Test</h5>
-          <div className="eval-grid eval-grid-compact">
-            <div className="eval-field">
-              <label className="eval-label">Teste</label>
-              <select
-                className="eval-select"
-                value={activeYBalance.nomeTest}
-                onChange={(event) => updateYBalanceField('nomeTest', event.target.value)}
-                disabled={readOnly}
-              >
-                {Y_BALANCE_TESTS.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </div>
-            <div className="eval-field">
-              <label className="eval-label">Tamanho do MMII (cm)</label>
-              <input
-                type="number"
-                className="eval-input"
-                value={activeYBalance.tamanhoMMII}
-                onChange={(event) => updateYBalanceField('tamanhoMMII', event.target.value)}
-                disabled={readOnly}
-              />
-            </div>
-          </div>
-
-          <div className="fisio-table-wrap">
-            <table className="fisio-table">
-              <thead>
-                <tr>
-                  <th>Linha</th>
-                  <th>Direito</th>
-                  <th>Esquerdo</th>
-                  <th>Assimetria (cm)</th>
-                  <th>Assimetria (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Y_ROWS.map(({ key, label }) => {
-                  const row = yBalanceComputed.rows[key];
-                  const isComputed = key === 'ac' || (key === 'ar' && yBalanceComputed.arAuto);
-                  const isManualAr = key === 'ar' && !yBalanceComputed.arAuto;
-                  return (
-                    <tr key={key}>
-                      <th>{label}</th>
-                      <td className={isComputed ? 'fisio-table__computed' : ''}>
-                        {key === 'ac' ? (
-                          row.d || '-'
-                        ) : isComputed ? (
-                          row.d || '-'
-                        ) : (
-                          <input
-                            type="number"
-                            className="eval-input"
-                            value={isManualAr ? activeYBalance.ar.d : activeYBalance[key].d}
-                            onChange={(event) => updateYBalanceSide(key, 'd', event.target.value)}
-                            disabled={readOnly}
-                          />
-                        )}
-                      </td>
-                      <td className={isComputed ? 'fisio-table__computed' : ''}>
-                        {key === 'ac' ? (
-                          row.e || '-'
-                        ) : isComputed ? (
-                          row.e || '-'
-                        ) : (
-                          <input
-                            type="number"
-                            className="eval-input"
-                            value={isManualAr ? activeYBalance.ar.e : activeYBalance[key].e}
-                            onChange={(event) => updateYBalanceSide(key, 'e', event.target.value)}
-                            disabled={readOnly}
-                          />
-                        )}
-                      </td>
-                      <td className="fisio-table__computed">{row.assimetriaCm || '-'}</td>
-                      <td className="fisio-table__computed">{row.assimetriaPct || '-'}</td>
+        <AvaliacaoSecao id="fisio-testes" titulo="Testes Especiais" className="eval-section">
+          <AvaliacaoSecao titulo="Amplitude de Movimento" className="fisio-subsection">
+            <div className="fisio-table-wrap">
+              <table className="fisio-table">
+                <thead>
+                  <tr>
+                    <th>Movimento</th>
+                    <th>Ativa D</th>
+                    <th>Ativa E</th>
+                    <th>Passiva D</th>
+                    <th>Passiva E</th>
+                    <th aria-label="Ações" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {amplitudeRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="fisio-table__empty">Nenhum movimento adicionado.</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ) : amplitudeRows.map((row, index) => (
+                    <tr key={`amplitude-${index}`}>
+                      {['movimento', 'ativaD', 'ativaE', 'passivaD', 'passivaE'].map((field) => (
+                        <td key={field}>
+                          <Campo
+                            rotulo={field === 'movimento'
+                              ? AMPLITUDE_COLUNAS.movimento
+                              : `${row.movimento || AMPLITUDE_COLUNAS.movimento}, ${AMPLITUDE_COLUNAS[field]}`}
+                            rotuloOculto
+                          >
+                            <input
+                              type={field === 'movimento' ? 'text' : 'text'}
+                              className="eval-input"
+                              value={row[field]}
+                              onChange={(event) => updateAmplitudeRow(index, field, event.target.value)}
+                              disabled={readOnly}
+                            />
+                          </Campo>
+                        </td>
+                      ))}
+                      <td>
+                        <button
+                          type="button"
+                          className="fisio-icon-btn"
+                          onClick={() => removeAmplitudeRow(index)}
+                          disabled={readOnly}
+                          aria-label="Remover movimento"
+                        >
+                          <X size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button type="button" className="fisio-row-add" onClick={addAmplitudeRow} disabled={readOnly}>
+              <Plus size={14} /> Adicionar movimento
+            </button>
+          </AvaliacaoSecao>
+
+          <AvaliacaoSecao titulo="Função Muscular" className="fisio-subsection">
+            <div className="fisio-two-col">
+              <Campo rotulo="Direito" className="eval-field">
+                <textarea
+                  className="eval-textarea"
+                  rows={4}
+                  value={funcaoMuscular.direito}
+                  onChange={(event) => updateFuncaoMuscular('direito', event.target.value)}
+                  disabled={readOnly}
+                />
+              </Campo>
+              <Campo rotulo="Esquerdo" className="eval-field">
+                <textarea
+                  className="eval-textarea"
+                  rows={4}
+                  value={funcaoMuscular.esquerdo}
+                  onChange={(event) => updateFuncaoMuscular('esquerdo', event.target.value)}
+                  disabled={readOnly}
+                />
+              </Campo>
+            </div>
+          </AvaliacaoSecao>
+
+          <AvaliacaoSecao titulo="Y-Balance Test" className="fisio-subsection">
+            <div className="eval-grid eval-grid-compact">
+              <Campo rotulo="Teste" className="eval-field">
+                <select
+                  className="eval-select"
+                  value={activeYBalance.nomeTest}
+                  onChange={(event) => updateYBalanceField('nomeTest', event.target.value)}
+                  disabled={readOnly}
+                >
+                  {Y_BALANCE_TESTS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </Campo>
+              <Campo rotulo="Tamanho do MMII (cm)" className="eval-field">
+                <input
+                  type="number"
+                  className="eval-input"
+                  value={activeYBalance.tamanhoMMII}
+                  onChange={(event) => updateYBalanceField('tamanhoMMII', event.target.value)}
+                  disabled={readOnly}
+                />
+              </Campo>
+            </div>
+
+            {/* Os valores calculados continuam como antes: "-" quando falta
+                medida, e o cálculo fica em computeYBalance. */}
+            <div className="fisio-table-wrap">
+              <table className="fisio-table">
+                <thead>
+                  <tr>
+                    <th>Linha</th>
+                    <th>Direito</th>
+                    <th>Esquerdo</th>
+                    <th>Assimetria (cm)</th>
+                    <th>Assimetria (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Y_ROWS.map(({ key, label }) => {
+                    const row = yBalanceComputed.rows[key];
+                    const isComputed = key === 'ac' || (key === 'ar' && yBalanceComputed.arAuto);
+                    const isManualAr = key === 'ar' && !yBalanceComputed.arAuto;
+                    return (
+                      <tr key={key}>
+                        <th>{label}</th>
+                        <td className={isComputed ? 'fisio-table__computed' : ''}>
+                          {key === 'ac' ? (
+                            row.d || '-'
+                          ) : isComputed ? (
+                            row.d || '-'
+                          ) : (
+                            <Campo rotulo={`${label}, Direito`} rotuloOculto>
+                              <input
+                                type="number"
+                                className="eval-input"
+                                value={isManualAr ? activeYBalance.ar.d : activeYBalance[key].d}
+                                onChange={(event) => updateYBalanceSide(key, 'd', event.target.value)}
+                                disabled={readOnly}
+                              />
+                            </Campo>
+                          )}
+                        </td>
+                        <td className={isComputed ? 'fisio-table__computed' : ''}>
+                          {key === 'ac' ? (
+                            row.e || '-'
+                          ) : isComputed ? (
+                            row.e || '-'
+                          ) : (
+                            <Campo rotulo={`${label}, Esquerdo`} rotuloOculto>
+                              <input
+                                type="number"
+                                className="eval-input"
+                                value={isManualAr ? activeYBalance.ar.e : activeYBalance[key].e}
+                                onChange={(event) => updateYBalanceSide(key, 'e', event.target.value)}
+                                disabled={readOnly}
+                              />
+                            </Campo>
+                          )}
+                        </td>
+                        <td className="fisio-table__computed">{row.assimetriaCm || '-'}</td>
+                        <td className="fisio-table__computed">{row.assimetriaPct || '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </AvaliacaoSecao>
+
+          <AvaliacaoSecao titulo="Outros Testes" className="fisio-subsection">
+            <Campo rotulo="Outros Testes" rotuloOculto className="eval-field eval-field-full">
+              <textarea
+                className="eval-textarea"
+                rows={6}
+                value={activeSession.outrosTestes || ''}
+                onChange={(event) => updateActiveSession({ outrosTestes: event.target.value })}
+                disabled={readOnly}
+              />
+            </Campo>
+          </AvaliacaoSecao>
+        </AvaliacaoSecao>
+      </div>
+
+      {/* Os dois pares "Curto Prazo" / "Médio e Longo Prazo" eram só
+          rótulos soltos: as subseções dizem qual é objetivo e qual é conduta
+          (objetivosCurtoPrazo... e condutasCurtoPrazo... no dado salvo). */}
+      <AvaliacaoSecao id="fisio-intervencoes" titulo="Intervenções" className="eval-section">
+        <AvaliacaoSecao titulo="Objetivos">
+          <div className="fisio-two-col">
+            {renderChecklist('objetivosCurtoPrazo', 'Curto Prazo', objetivosCurto)}
+            {renderChecklist('objetivosMedioLongoPrazo', 'Médio e Longo Prazo', objetivosMedioLongo)}
           </div>
-        </div>
+        </AvaliacaoSecao>
 
-        <div className="fisio-subsection">
-          <h5 className="fisio-subtitle">Outros Testes</h5>
-          <div className="eval-field eval-field-full">
-            <textarea
-              className="eval-textarea"
-              rows={6}
-              value={activeSession.outrosTestes || ''}
-              onChange={(event) => updateActiveSession({ outrosTestes: event.target.value })}
-              disabled={readOnly}
-            />
+        <AvaliacaoSecao titulo="Condutas">
+          <div className="fisio-two-col fisio-condutas">
+            <Campo rotulo="Curto Prazo" className="eval-field">
+              <textarea
+                className="eval-textarea"
+                rows={5}
+                value={formData.condutasCurtoPrazo}
+                onChange={(event) => updateRootField('condutasCurtoPrazo', event.target.value)}
+                disabled={readOnly}
+              />
+            </Campo>
+            <Campo rotulo="Médio e Longo Prazo" className="eval-field">
+              <textarea
+                className="eval-textarea"
+                rows={5}
+                value={formData.condutasMedioLongoPrazo}
+                onChange={(event) => updateRootField('condutasMedioLongoPrazo', event.target.value)}
+                disabled={readOnly}
+              />
+            </Campo>
           </div>
-        </div>
-      </section>
+        </AvaliacaoSecao>
+      </AvaliacaoSecao>
 
-      <section className="eval-section">
-        <h4 className="eval-section-title">Intervenções</h4>
-        <div className="fisio-two-col">
-          {renderChecklist('objetivosCurtoPrazo', 'Curto Prazo', objetivosCurto)}
-          {renderChecklist('objetivosMedioLongoPrazo', 'Médio e Longo Prazo', objetivosMedioLongo)}
-        </div>
-
-        <div className="fisio-two-col fisio-condutas">
-          <div className="eval-field">
-            <label className="eval-label">Curto Prazo</label>
-            <textarea
-              className="eval-textarea"
-              rows={5}
-              value={formData.condutasCurtoPrazo}
-              onChange={(event) => updateRootField('condutasCurtoPrazo', event.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Médio e Longo Prazo</label>
-            <textarea
-              className="eval-textarea"
-              rows={5}
-              value={formData.condutasMedioLongoPrazo}
-              onChange={(event) => updateRootField('condutasMedioLongoPrazo', event.target.value)}
-              disabled={readOnly}
-            />
-          </div>
-        </div>
-      </section>
-
-      {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
-      {error && <div className="form-error-message">{error}</div>}
-
-      <div className="eval-actions">
-        {saveStatus ? (
-          <span className={`save-indicator ${saveStatus}`}>
-            {saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}
-          </span>
-        ) : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button
           type="button"
           variant="primary"
@@ -782,8 +816,9 @@ const AvaliacaoFisioterapia = ({
         >
           <Save size={18} /> Salvar avaliação
         </Button>
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="form-error-message">{error}</AvisoAvaliacao>}
+    </AvaliacaoModulo>
   );
 };
 

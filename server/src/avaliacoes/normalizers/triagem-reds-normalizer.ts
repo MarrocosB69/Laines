@@ -95,6 +95,14 @@ const classifyDisponibilidadeEnergetica = (de: number | null): string => {
   return 'reds_estabelecido';
 };
 
+// Só exibição (WI-013): o código da faixa continua o mesmo em `classificacao`
+// e `classificacaoDE`; o rótulo escrito usa o nome do glossário.
+export const ROTULO_CLASSIFICACAO_DE: Record<string, string> = {
+  otima: 'Disponibilidade energética adequada',
+  risco_relativo: 'Disponibilidade energética reduzida',
+  reds_estabelecido: 'Baixa disponibilidade energética'
+};
+
 type PayloadShape = {
   tipo?: string;
   dados?: JsonRecord;
@@ -238,9 +246,9 @@ export const normalizeTriagemRedsPayload = <T extends PayloadShape>(payload: T):
       : (Number.isFinite(massaMagraManual) ? (massaMagraManual as number) : null));
 
   const precisaDadosExtras = [
-    !Number.isFinite(ingestaoAuto) ? 'alimentar' : null,
-    !(Number.isFinite(gastoAutoDiario) || Number.isFinite(gastoAutoSemanal)) ? 'gasto_energetico_total' : null,
-    !Number.isFinite(massaMagraAuto) ? 'composicao_corporal_integrada' : null
+    !Number.isFinite(ingestaoKcalResolvida) ? 'ingestaoKcalR24h' : null,
+    !Number.isFinite(gastoExercicioResolvido) ? 'gastoExercicioKcal' : null,
+    !Number.isFinite(massaMagraResolvida) || (massaMagraResolvida as number) <= 0 ? 'massaMagraKg' : null
   ].filter((item): item is string => Boolean(item));
 
   const energiaDisponivel = (
@@ -355,7 +363,7 @@ export const normalizeTriagemRedsPayload = <T extends PayloadShape>(payload: T):
   const formulaId = toText(payload.formulaId) || 'DE';
   const formulaVersion = toText(payload.formulaVersion) || '1.0.0';
   const classificacaoLabel = classificacaoDE
-    ? `Triagem RED-S: ${classificacaoDE}`
+    ? ROTULO_CLASSIFICACAO_DE[classificacaoDE] || `Triagem de Disponibilidade Energetica: ${classificacaoDE}`
     : toText(payload.classificacaoLabel);
 
   return {

@@ -38,3 +38,16 @@ e2e-artifacts/*
 *.njsproj
 *.sln
 *.sw?
+
+# Rascunho local (ensaios de release, copias de banco, capturas). Fora do git e
+# da varredura de classes do Tailwind v4, que respeita este arquivo: com ~500 MB
+# aqui, o primeiro carregamento do Vite levava minutos.
+tmp/
+
+# Locais, fora do repositorio (preparo do envio a VM, 13/10/2026)
+server/certs/
+*.tar.gz
+laines-image-processor.zip
+server-log.txt
+login-analysis.png
+public/screenshots/

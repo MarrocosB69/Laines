@@ -4,6 +4,8 @@ import { Sun, Moon } from 'lucide-react';
 import '../../admin/AdminView/AdminHeader.css';
 import { useAuth } from '../../../contexts/AuthContext';
 import NotificationTaskCenter from '../../../components/shared/NotificationTaskCenter';
+import { getAcademicTabLabel } from '../../../constants/academicNavigation';
+import { ROTULOS_DE_GESTAO } from '../../../navigation/sidebarModel';
 
 const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   const { user } = useAuth();
@@ -18,11 +20,17 @@ const StudentHeader = ({ activeTab, activeIcon, darkMode, onToggleTheme }) => {
   }, [user]);
 
   const labels = {
-    dashboard: 'Visão geral',
+    dashboard: 'Visão Geral',
     patients: 'Atletas',
-    agenda: 'Agenda'
+    agenda: 'Agenda',
+    research: 'Pesquisa',
+    ensino: 'Ensino',
+    extensao: 'Extensão',
+    comunicacao: 'Comunicação',
+    // WI-015: telas de gestão de quem tem dois papéis, com o rótulo da barra.
+    ...ROTULOS_DE_GESTAO
   };
-  const currentLabel = labels[activeTab] || activeTab;
+  const currentLabel = getAcademicTabLabel(activeTab) || labels[activeTab] || activeTab;
 
   return (
     <header className="admin-header">

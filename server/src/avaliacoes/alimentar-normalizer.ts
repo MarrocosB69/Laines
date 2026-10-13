@@ -68,21 +68,36 @@ const normalizeNovaCategoryKey = (value: unknown): NovaCategoryKey | null => {
 
   if (!token) return null;
   if (token === 'in_natura' || token === 'innatura') return 'in_natura';
-  if (token === 'minimamente_processados' || token === 'minimamenteprocessados') return 'minimamente_processados';
-  if (token === 'processados') return 'processados';
-  if (token === 'ultraprocessados' || token === 'ultra_processados') return 'ultraprocessados';
+  if (token === 'minimamente_processados' || token === 'minimamenteprocessados' || token === 'minimamente_processado') return 'minimamente_processados';
+  if (token === 'processados' || token === 'processado') return 'processados';
+  if (token === 'ultraprocessados' || token === 'ultra_processados' || token === 'ultraprocessado') return 'ultraprocessados';
   return null;
 };
 
-const readCategoryEnergy = (source: JsonRecord, category: NovaCategoryKey): number | null => {
-  const direct = toNumber(source[category]);
-  if (Number.isFinite(direct)) return direct;
-  const nested = asRecord(source[category]);
-  return toNumber(nested.energiaTotal ?? nested.kcal ?? nested.value);
+// A tela do recordatório 24h (AvaliacaoAlimentar.jsx) envia `categorias` com as
+// chaves no singular; sem estes sinônimos, as kcal de processados e
+// ultraprocessados eram ignoradas e o padrão saía "saudável" (WI-013).
+const NOVA_CATEGORY_KEYS: Record<NovaCategoryKey, string[]> = {
+  in_natura: ['in_natura'],
+  minimamente_processados: ['minimamente_processados', 'minimamente_processado'],
+  processados: ['processados', 'processado'],
+  ultraprocessados: ['ultraprocessados', 'ultraprocessado']
 };
 
-const classifyNovaPattern = (percentuais: Record<string, number>): string => {
-  const ultra = Number(percentuais.ultraprocessados || 0);
+const readCategoryEnergy = (source: JsonRecord, category: NovaCategoryKey): number | null => {
+  for (const key of NOVA_CATEGORY_KEYS[category]) {
+    const direct = toNumber(source[key]);
+    if (Number.isFinite(direct)) return direct;
+    const nested = asRecord(source[key]);
+    const nestedEnergy = toNumber(nested.energiaTotal ?? nested.kcal ?? nested.value);
+    if (Number.isFinite(nestedEnergy)) return nestedEnergy;
+  }
+  return null;
+};
+
+const classifyNovaPattern = (percentuais: Record<string, number | null>): string | null => {
+  const ultra = percentuais.ultraprocessados;
+  if (ultra === null || ultra === undefined || !Number.isFinite(ultra)) return null;
   if (ultra < 10) return 'Padrao saudavel';
   if (ultra < 20) return 'Padrao moderado';
   if (ultra < 30) return 'Padrao de risco';
@@ -199,14 +214,23 @@ export const normalizeAvaliacaoAlimentarPayload = <T extends PayloadShape>(paylo
     ? Number(((kcalTotalInformado as number) - totalDiarioCalculado).toFixed(2))
     : null;
 
-  const percentuais = NOVA_CATEGORIES.reduce<Record<NovaCategoryKey, number>>((acc, key) => {
-    if (totalDiarioCalculado <= 0) {
-      acc[key] = 0;
+  // WI-013, decisão 6: total zero não tem distribuição. Percentuais e
+  // classificação ficam nulos, nunca 0% e "Padrao saudavel", mesmo que o
+  // cliente envie uma classificação.
+  const semTotalNova = !(totalDiarioCalculado > 0);
+  const percentuais = NOVA_CATEGORIES.reduce<Record<NovaCategoryKey, number | null>>((acc, key) => {
+    if (semTotalNova) {
+      acc[key] = null;
       return acc;
     }
     acc[key] = Number(((categorias[key] / totalDiarioCalculado) * 100).toFixed(2));
     return acc;
-  }, emptyCategories());
+  }, {
+    in_natura: null,
+    minimamente_processados: null,
+    processados: null,
+    ultraprocessados: null
+  });
 
   const percentuaisSobreTotalInformado = NOVA_CATEGORIES.reduce<Record<NovaCategoryKey, number | null>>((acc, key) => {
     if (!Number.isFinite(kcalTotalInformado) || (kcalTotalInformado as number) <= 0) {
@@ -222,10 +246,12 @@ export const normalizeAvaliacaoAlimentarPayload = <T extends PayloadShape>(paylo
     ultraprocessados: null
   });
 
-  const classificacao = toText(payload.classificacao)
-    || toText(dados.classificacao)
-    || toText(resultadosOutput.classificacao)
-    || classifyNovaPattern(percentuais);
+  const classificacao = semTotalNova
+    ? null
+    : toText(payload.classificacao)
+      || toText(dados.classificacao)
+      || toText(resultadosOutput.classificacao)
+      || classifyNovaPattern(percentuais);
 
   const warnings = asArray(
     pick([dados, resultadosOutput, payloadRecord], ['warnings'])
@@ -299,8 +325,10 @@ export const normalizeAvaliacaoAlimentarPayload = <T extends PayloadShape>(paylo
     registros: Array.isArray(payload.registros) ? payload.registros : [],
     totalDiario: fixed(totalResolved, 2) ?? payload.totalDiario,
     percentuais: percentuais as Record<string, unknown>,
+    // null (não undefined): numa edição, o serviço só mantém o valor antigo
+    // quando o campo vem undefined.
     classificacao,
-    classificacaoLabel: toText(payload.classificacaoLabel) || classificacao,
+    classificacaoLabel: semTotalNova ? null : (toText(payload.classificacaoLabel) || classificacao),
     formulaId,
     formulaVersion
   };

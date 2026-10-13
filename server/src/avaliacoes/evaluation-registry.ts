@@ -36,11 +36,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     requiredFields: ['nomePaciente', 'sexoBiologico', 'objetivos', 'scoreRisco', 'prioridade'],
     ordem: 1,
     supportsLongitudinalComparison: false,
-    analytics: { label: 'Anamnese Inicial', color: 'progress-gradient-cyan' }
+    analytics: { label: 'Anamnese inicial', color: 'progress-gradient-cyan' }
   },
   {
     tipo: 'avaliacao_clinica',
-    label: 'Avaliacao clinica',
+    label: 'Avaliação clínica',
     macroEtapaId: 'triagem',
     macroEtapaLabel: 'Triagem',
     dominio: 'clinica',
@@ -49,11 +49,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     requiredFields: ['pressaoSistolica', 'pressaoDiastolica', 'frequenciaCardiaca', 'prioridadeCuidado'],
     ordem: 2,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Avaliacao Clinica', color: 'progress-gradient-rose' }
+    analytics: { label: 'Avaliação clínica', color: 'progress-gradient-rose' }
   },
   {
     tipo: 'avaliacao_socioeconomica',
-    label: 'Socioeconomica (EBIA)',
+    label: 'Socioeconômica (EBIA)',
     macroEtapaId: 'triagem',
     macroEtapaLabel: 'Triagem',
     dominio: 'social',
@@ -63,11 +63,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 3,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Socioeconomica (EBIA)', color: 'progress-gradient-cyan' }
+    analytics: { label: 'Socioeconômica (EBIA)', color: 'progress-gradient-cyan' }
   },
   {
     tipo: 'perimetros',
-    label: 'Perimetros',
+    label: 'Perímetros',
     macroEtapaId: 'composicao_corporal',
     macroEtapaLabel: 'Composição corporal',
     dominio: 'antropometria',
@@ -77,11 +77,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 4,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Perimetros', color: 'progress-gradient-blue' }
+    analytics: { label: 'Perímetros', color: 'progress-gradient-blue' }
   },
   {
     tipo: 'dobras_cutaneas',
-    label: 'Dobras cutaneas',
+    label: 'Dobras cutâneas',
     macroEtapaId: 'composicao_corporal',
     macroEtapaLabel: 'Composição corporal',
     dominio: 'antropometria',
@@ -91,11 +91,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 5,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Dobras Cutaneas', color: 'progress-gradient-green' }
+    analytics: { label: 'Dobras cutâneas', color: 'progress-gradient-green' }
   },
   {
     tipo: 'bioimpedancia',
-    label: 'Bioimpedancia',
+    label: 'Bioimpedância',
     macroEtapaId: 'composicao_corporal',
     macroEtapaLabel: 'Composição corporal',
     dominio: 'antropometria',
@@ -105,13 +105,27 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 6,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Avaliacoes de Bioimpedancia', color: 'progress-gradient-emerald' }
+    analytics: { label: 'Bioimpedância', color: 'progress-gradient-emerald' }
+  },
+  {
+    tipo: 'composicao_corporal_imagem',
+    label: 'Composição corporal por imagem',
+    macroEtapaId: 'composicao_corporal',
+    macroEtapaLabel: 'Composição corporal',
+    dominio: 'antropometria',
+    schemaVersion: 1,
+    formulaIds: ['body3d_experimental_v1'],
+    requiredFields: [],
+    ordem: 6.5,
+    prontuario: true,
+    supportsLongitudinalComparison: true,
+    analytics: { label: 'Composição corporal por imagem', color: 'progress-gradient-cyan' }
   },
   {
     tipo: 'gasto_energetico_total',
-    label: 'Gasto energetico total',
+    label: 'Gasto energético total',
     macroEtapaId: 'demanda_performance',
-    macroEtapaLabel: 'Demanda e performance',
+    macroEtapaLabel: 'Demanda e desempenho',
     dominio: 'antropometria',
     schemaVersion: 1,
     formulaIds: ['mifflin_st_jeor_1990'],
@@ -119,13 +133,13 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 7,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Gasto Energetico Total', color: 'progress-gradient-amber' }
+    analytics: { label: 'Gasto energético total', color: 'progress-gradient-amber' }
   },
   {
     tipo: 'carga_treino',
-    label: 'Carga de Treino e Periodizacao',
+    label: 'Carga de treino e periodização',
     macroEtapaId: 'demanda_performance',
-    macroEtapaLabel: 'Demanda e performance',
+    macroEtapaLabel: 'Demanda e desempenho',
     dominio: 'esportivo',
     schemaVersion: 1,
     formulaIds: ['acwr_monotonia_strain_v1'],
@@ -133,11 +147,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 8,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Carga de Treino e Periodizacao', color: 'progress-gradient-cyan' }
+    analytics: { label: 'Carga de treino e periodização', color: 'progress-gradient-cyan' }
   },
   {
     tipo: 'alimentar',
-    label: 'Avaliacao alimentar',
+    label: 'Avaliação alimentar',
     macroEtapaId: 'rotina_alimentar',
     macroEtapaLabel: 'Rotina alimentar',
     dominio: 'nutricao',
@@ -147,11 +161,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 9,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Avaliacao Alimentar (NOVA)', color: 'progress-gradient-purple' }
+    analytics: { label: 'Avaliação alimentar (NOVA)', color: 'progress-gradient-purple' }
   },
   {
     tipo: 'hidratacao',
-    label: 'Hidratacao',
+    label: 'Hidratação',
     macroEtapaId: 'rotina_alimentar',
     macroEtapaLabel: 'Rotina alimentar',
     dominio: 'nutricao',
@@ -161,7 +175,7 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 10,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Hidratacao', color: 'progress-gradient-amber' }
+    analytics: { label: 'Hidratação', color: 'progress-gradient-amber' }
   },
   {
     tipo: 'psicologia',
@@ -193,7 +207,7 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
   },
   {
     tipo: 'triagem_reds',
-    label: 'Triagem RED-S',
+    label: 'Triagem de disponibilidade energética',
     macroEtapaId: 'conduta',
     macroEtapaLabel: 'Conduta',
     dominio: 'esportivo',
@@ -203,7 +217,7 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 13,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Triagem RED-S', color: 'progress-gradient-rose' }
+    analytics: { label: 'Triagem de disponibilidade energética', color: 'progress-gradient-rose' }
   },
   {
     tipo: 'exames_laboratoriais',
@@ -216,11 +230,11 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     requiredFields: ['painel', 'analitos'],
     ordem: 14,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Exames Laboratoriais', color: 'progress-gradient-cyan' }
+    analytics: { label: 'Exames laboratoriais', color: 'progress-gradient-cyan' }
   },
   {
     tipo: 'evolucao_retorno',
-    label: 'Evolucao/retorno',
+    label: 'Evolução/retorno',
     macroEtapaId: 'conduta',
     macroEtapaLabel: 'Conduta',
     dominio: 'anamnese',
@@ -230,7 +244,21 @@ export const AVALIACAO_REGISTRY: ReadonlyArray<AvaliacaoRegistryEntry> = [
     ordem: 15,
     prontuario: true,
     supportsLongitudinalComparison: true,
-    analytics: { label: 'Evolucao e Retorno', color: 'progress-gradient-amber' }
+    analytics: { label: 'Evolução e retorno', color: 'progress-gradient-amber' }
+  },
+  {
+    tipo: 'plano_metas',
+    label: 'Plano de metas',
+    macroEtapaId: 'conduta',
+    macroEtapaLabel: 'Conduta',
+    dominio: 'conduta',
+    schemaVersion: 1,
+    formulaIds: ['plano_metas_motivacional_v1'],
+    requiredFields: ['oQueQueroMudar', 'motivacao'],
+    ordem: 16,
+    prontuario: true,
+    supportsLongitudinalComparison: true,
+    analytics: { label: 'Plano de metas', color: 'progress-gradient-green' }
   }
 ];
 

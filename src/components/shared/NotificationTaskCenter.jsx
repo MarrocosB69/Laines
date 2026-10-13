@@ -5,6 +5,8 @@ import { useUiFeedback } from '../../contexts/UiFeedbackContext';
 import api, { getApiErrorMessage } from '../../services/api';
 import { subscribeRealtimeEvent } from '../../services/realtime';
 import { toDate } from '../../utils/dateUtils';
+import TaskCompletionEditor from './TaskCompletionEditor';
+import TaskDeadline from './TaskDeadline';
 
 const CLOSED_TASK_STATUSES = new Set(['concluida', 'concluido', 'resolvida', 'resolvido']);
 
@@ -17,7 +19,7 @@ const formatDate = (date) =>
 const formatNotificationTypeLabel = (type) => {
   const normalized = String(type || 'info').toLowerCase().trim();
   if (normalized === 'consulta') return 'Consulta';
-  if (normalized === 'avaliacao') return 'Avaliacao';
+  if (normalized === 'avaliacao') return 'Avaliação';
   if (normalized === 'sucesso') return 'Sucesso';
   if (normalized === 'alerta') return 'Alerta';
   if (normalized === 'acao') return 'Acao';
@@ -39,7 +41,7 @@ const formatAudienceLabel = (assignedRole) => {
 };
 
 const normalizeTask = (task) => {
-  const taskDate = toDate(task.updatedAt || task.createdAt || task.data || task.dueDate);
+  const taskDate = toDate(task.updatedAt || task.createdAt || task.data);
   return {
     ...task,
     dateObj: taskDate,
@@ -61,14 +63,18 @@ const NotificationTaskCenter = ({ showTasks = true, showNotifications = true }) 
   const { notify } = useUiFeedback();
   const [notifications, setNotifications] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [deadlineNow, setDeadlineNow] = useState(() => new Date());
   const [openPanel, setOpenPanel] = useState(null);
   const [resolvingNotifications, setResolvingNotifications] = useState(() => new Set());
   const [resolvingTasks, setResolvingTasks] = useState(() => new Set());
+  const [completionTaskId, setCompletionTaskId] = useState(null);
+  const [completionNote, setCompletionNote] = useState('');
 
   const notificationsButtonRef = useRef(null);
   const notificationsPanelRef = useRef(null);
   const tasksButtonRef = useRef(null);
   const tasksPanelRef = useRef(null);
+  const completionTriggerRef = useRef(null);
 
   const loadNotifications = useCallback(async () => {
     if (!user || !showNotifications) {
@@ -100,8 +106,12 @@ const NotificationTaskCenter = ({ showTasks = true, showNotifications = true }) 
       const normalized = (Array.isArray(data) ? data : [])
         .map(normalizeTask)
         .filter((task) => !CLOSED_TASK_STATUSES.has(task.status))
-        .sort((a, b) => (b.dateObj?.getTime?.() || 0) - (a.dateObj?.getTime?.() || 0))
-        .slice(0, 8);
+        .sort((a, b) => {
+          if (a.dueDate && b.dueDate) return String(a.dueDate).localeCompare(String(b.dueDate));
+          if (a.dueDate) return -1;
+          if (b.dueDate) return 1;
+          return (b.dateObj?.getTime?.() || 0) - (a.dateObj?.getTime?.() || 0);
+        });
       setTasks(normalized);
     } catch (error) {
       console.warn('NotificationTaskCenter: falha ao carregar tarefas', error);
@@ -109,6 +119,7 @@ const NotificationTaskCenter = ({ showTasks = true, showNotifications = true }) 
   }, [showTasks, user]);
 
   const refreshAll = useCallback(() => {
+    setDeadlineNow(new Date());
     loadNotifications();
     loadTasks();
   }, [loadNotifications, loadTasks]);
@@ -189,8 +200,12 @@ const NotificationTaskCenter = ({ showTasks = true, showNotifications = true }) 
     if (!task?.id || resolvingTasks.has(task.id)) return;
     setResolvingTasks((current) => new Set(current).add(task.id));
     try {
-      await api.patch(`/tarefas/${task.id}/resolver`);
+      await api.patch(`/tarefas/${task.id}/resolver`, { completionNote: completionNote.trim() });
       setTasks((current) => current.filter((item) => item.id !== task.id));
+      setCompletionTaskId(null);
+      setCompletionNote('');
+      tasksButtonRef.current?.focus();
+      notify({ type: 'success', title: 'Tarefa concluída', message: 'Entrega registrada para toda a equipe.' });
     } catch (error) {
       notify({
         type: 'error',
@@ -204,7 +219,19 @@ const NotificationTaskCenter = ({ showTasks = true, showNotifications = true }) 
         return next;
       });
     }
-  }, [notify, resolvingTasks]);
+  }, [completionNote, notify, resolvingTasks]);
+
+  const openTaskCompletion = (task, trigger) => {
+    completionTriggerRef.current = trigger;
+    setCompletionTaskId(task.id);
+    setCompletionNote('');
+  };
+
+  const closeTaskCompletion = () => {
+    setCompletionTaskId(null);
+    setCompletionNote('');
+    completionTriggerRef.current?.focus();
+  };
 
   const notificationCount = notifications.length;
   const taskCount = tasks.length;
@@ -252,20 +279,31 @@ const NotificationTaskCenter = ({ showTasks = true, showNotifications = true }) 
                       <div className="panel-content">
                         <p className="panel-title">{task.title || 'Tarefa sem titulo'}</p>
                         <span className="panel-meta">{formatAudienceLabel(task.assignedRole)}</span>
-                        <span className="panel-meta">
-                          {task.dateObj ? `${formatDate(task.dateObj)} ${formatTime(task.dateObj)}` : '--/-- --:--'}
-                        </span>
+                        <TaskDeadline task={task} now={deadlineNow} />
                       </div>
                       <button
                         type="button"
                         className="panel-resolve-btn"
-                        aria-label="Marcar tarefa como concluida"
-                        title="Marcar como concluida"
+                        aria-label={`Marcar tarefa ${task.title || ''} como feita`}
+                        aria-expanded={completionTaskId === task.id}
+                        title="Marcar como feita"
                         disabled={resolvingTasks.has(task.id)}
-                        onClick={() => handleResolveTask(task)}
+                        onClick={(event) => completionTaskId === task.id
+                          ? closeTaskCompletion()
+                          : openTaskCompletion(task, event.currentTarget)}
                       >
                         <Check size={14} />
                       </button>
+                      {completionTaskId === task.id && (
+                        <TaskCompletionEditor
+                          taskTitle={task.title}
+                          note={completionNote}
+                          onNoteChange={setCompletionNote}
+                          onSubmit={() => handleResolveTask(task)}
+                          onCancel={closeTaskCompletion}
+                          isSaving={resolvingTasks.has(task.id)}
+                        />
+                      )}
                     </div>
                   ))
                 )}

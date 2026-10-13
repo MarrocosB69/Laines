@@ -25,6 +25,7 @@ import { RefreshTokensService } from './refresh-tokens.service';
 import { SettingsService } from '../settings/settings.service';
 import { CredentialsService } from '../credentials/credentials.service';
 import { getEffectivePermissions } from '../common/domain/access.constants';
+import { buildCapabilities, Capabilities } from './authorization';
 
 type AuthenticatedIdentity = {
   id: string;
@@ -36,6 +37,12 @@ type AuthenticatedIdentity = {
   permissions?: string[];
   mustChangePassword?: boolean;
   sessionVersion?: number;
+  projetoId?: string | null;
+  supervisorId?: string | null;
+  coordAtendimento?: boolean;
+  crn?: string | null;
+  conselhoTipo?: string | null;
+  conselhoNumero?: string | null;
 };
 
 export type AuthFlowVersion = 'v1' | 'v2';
@@ -59,6 +66,7 @@ type AuthResult = {
     diretoria?: string | null;
     permissions: string[];
     mustChangePassword: boolean;
+    capabilities: Capabilities;
   };
   authFlow: AuthFlowVersion;
   refreshToken?: string;
@@ -394,7 +402,19 @@ export class AuthService {
           permissions: user.permissions,
           diretoria: user.diretoria
         }),
-        mustChangePassword: user.mustChangePassword ?? false
+        mustChangePassword: user.mustChangePassword ?? false,
+        capabilities: buildCapabilities({
+          id: user.id,
+          role: user.role,
+          diretoria: user.diretoria || null,
+          permissions: getEffectivePermissions({ role: user.role, permissions: user.permissions, diretoria: user.diretoria }),
+          coordAtendimento: Boolean(user.coordAtendimento),
+          projetoId: user.projetoId || null,
+          supervisorId: user.supervisorId || null,
+          crn: user.crn || null,
+          conselhoTipo: user.conselhoTipo || null,
+          conselhoNumero: user.conselhoNumero || null
+        })
       }
     };
 

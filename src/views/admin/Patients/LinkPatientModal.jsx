@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { 
   X, UserCheck, Search, GraduationCap, AlertCircle, 
   Link2, Loader2, Users, Shield, Clock, CheckCircle,
@@ -11,6 +11,8 @@ import { useModalFocusTrap } from '../../../hooks/useModalFocusTrap';
 import { getApiErrorMessage } from '../../../services/api';
 
 import './LinkPatientModal.css';
+
+const STUDENT_PATIENT_LIMIT = 3;
 
 const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
   const [selectedStudent, setSelectedStudent] = useState('');
@@ -134,7 +136,10 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
     ? students.find(s => s.id === selectedStudent)
     : null;
 
+  // reducedMotion="user": com movimento reduzido, a entrada perde escala e
+  // deslocamento e fica só no esmaecer.
   const modalContent = (
+    <MotionConfig reducedMotion="user">
     <AnimatePresence>
       {isOpen && (
         <div
@@ -222,6 +227,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
                   disabled={isLinking}
+                  aria-label="Buscar aluno por nome, e-mail ou matrícula"
                 />
                 {searchTerm && (
                   <button 
@@ -237,8 +243,9 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
 
               <div className="controls-right">
                 <div className="sort-options">
-                  <span className="sort-label">Ordenar por:</span>
+                  <label className="sort-label" htmlFor="link-patient-sort">Ordenar por:</label>
                   <select
+                    id="link-patient-sort"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="sort-select"
@@ -255,6 +262,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                     type="button"
                     onClick={() => setViewMode('list')}
                     className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                    aria-pressed={viewMode === 'list'}
                     disabled={isLinking}
                     aria-label="Exibir alunos em lista"
                     title="Exibir em lista"
@@ -265,6 +273,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                     type="button"
                     onClick={() => setViewMode('grid')}
                     className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                    aria-pressed={viewMode === 'grid'}
                     disabled={isLinking}
                     aria-label="Exibir alunos em grade"
                     title="Exibir em grade"
@@ -337,7 +346,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                           <div className="stat-item">
                             <div className="stat-label">Carga Atual</div>
                             <div className={`stat-value ${student.limiteAtingido ? 'limit-reached' : ''}`}>
-                              {student.pacientesAtuais || 0}/5
+                              {student.pacientesAtuais || 0}/{STUDENT_PATIENT_LIMIT}
                             </div>
                           </div>
                           <div className="stat-item">
@@ -466,7 +475,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                   <div className="preview-stats">
                     <div className="preview-stat">
                       <div className="stat-label">Carga Atual</div>
-                      <div className="stat-value">{selectedStudentData.pacientesAtuais || 0}/5</div>
+                      <div className="stat-value">{selectedStudentData.pacientesAtuais || 0}/{STUDENT_PATIENT_LIMIT}</div>
                     </div>
                     <div className="preview-stat">
                       <div className="stat-label">Disponível</div>
@@ -479,7 +488,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
 
             {/* Mensagens de Status */}
             {success && (
-              <div className="success-message">
+              <div className="success-message" role="status">
                 <CheckCircle size={20} />
                 <div>
                   <h5>Vinculação realizada!</h5>
@@ -489,7 +498,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
             )}
 
             {error && (
-              <div className="error-message">
+              <div className="error-message" id="link-patient-error" role="alert">
                 <AlertCircle size={20} />
                 <div>
                   <h5>Erro na vinculação</h5>
@@ -514,6 +523,7 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
                   onClick={handleLink}
                   disabled={isLinking || !selectedStudent || selectedStudentData?.limiteAtingido}
                   className="app-modal-btn app-modal-btn--primary"
+                  aria-describedby={error ? 'link-patient-error' : undefined}
                 >
                   {isLinking ? (
                     <>
@@ -533,13 +543,13 @@ const LinkPatientModal = ({ isOpen, onClose, onLink, patient, students }) => {
         </div>
       )}
     </AnimatePresence>
+    </MotionConfig>
   );
 
   return createPortal(modalContent, document.body);
 };
 
 export default LinkPatientModal;
-
 
 
 

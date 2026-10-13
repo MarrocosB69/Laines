@@ -1,0 +1,1145 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2FYuliangXiu%2FECON
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=YuliangXiu%2FECON
+            - button "Appearance settings" [ref=e58] [cursor=pointer]:
+              - img
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - link "YuliangXiu" [ref=e70] [cursor=pointer]:
+            - /url: /YuliangXiu
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "ECON" [ref=e73] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2FYuliangXiu%2FECON
+                - img [ref=e78]
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 115" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2FYuliangXiu%2FECON
+                - img [ref=e82]
+                - text: Fork
+                - generic "115" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2FYuliangXiu%2FECON
+                - img [ref=e88]
+                - text: Star
+                - generic "1204 users starred this repository" [ref=e90]: 1.2k
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON
+              - img [ref=e95]
+              - generic [ref=e97]: Code
+          - listitem [ref=e98]:
+            - link "Issues 41" [ref=e99] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/issues
+              - img [ref=e100]
+              - generic [ref=e103]: Issues
+              - generic "41" [ref=e104]
+          - listitem [ref=e105]:
+            - link "Pull requests" [ref=e106] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/pulls
+              - img [ref=e107]
+              - generic [ref=e109]: Pull requests
+          - listitem [ref=e110]:
+            - link "Actions" [ref=e111] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/actions
+              - img [ref=e112]
+              - generic [ref=e114]: Actions
+          - listitem [ref=e115]:
+            - link "Security and quality" [ref=e116] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/security
+              - img [ref=e117]
+              - generic [ref=e119]: Security and quality
+          - listitem [ref=e120]:
+            - link "Insights" [ref=e121] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/pulse
+              - img [ref=e122]
+              - generic [ref=e124]: Insights
+    - generic [ref=e137]:
+      - heading "YuliangXiu/ECON" [level=1] [ref=e139]
+      - generic [ref=e140]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - button "master branch" [ref=e147] [cursor=pointer]:
+                - generic [ref=e148]:
+                  - generic [ref=e150]:
+                    - img [ref=e152]
+                    - generic [ref=e155]: master
+                  - generic:
+                    - img
+              - generic [ref=e156]:
+                - link "Go to Branches page" [ref=e157] [cursor=pointer]:
+                  - /url: /YuliangXiu/ECON/branches
+                  - img [ref=e158]
+                - link "Go to Tags page" [ref=e160] [cursor=pointer]:
+                  - /url: /YuliangXiu/ECON/tags
+                  - img [ref=e161]
+            - button "Code" [ref=e164] [cursor=pointer]:
+              - generic [ref=e165]:
+                - generic:
+                  - img
+                - generic [ref=e166]: Code
+                - generic:
+                  - img
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - heading "Folders and files" [level=2] [ref=e169]
+              - table "Folders and files" [ref=e170]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message":
+                      - generic "Last commit message"
+                    - columnheader "Last commit date":
+                      - generic "Last commit date"
+                - rowgroup [ref=e171]:
+                  - row "Latest commit History 40 Commits" [ref=e172]:
+                    - cell "Latest commit History 40 Commits" [ref=e173]:
+                      - generic [ref=e174]:
+                        - heading "Latest commit" [level=2] [ref=e175]
+                        - generic [ref=e178]:
+                          - heading "History" [level=2] [ref=e179]
+                          - link "40 Commits" [ref=e180] [cursor=pointer]:
+                            - /url: /YuliangXiu/ECON/commits/master/
+                            - generic [ref=e181]:
+                              - generic:
+                                - img
+                              - generic [ref=e182]: 40 Commits
+                  - row "apps, (Directory)" [ref=e183]:
+                    - cell "apps, (Directory)" [ref=e184]:
+                      - generic [ref=e185]:
+                        - img [ref=e186]
+                        - link "apps, (Directory)" [ref=e191] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/tree/master/apps
+                          - text: apps
+                    - cell [ref=e192]
+                    - cell [ref=e194]
+                  - row "assets, (Directory)" [ref=e197]:
+                    - cell "assets, (Directory)" [ref=e198]:
+                      - generic [ref=e199]:
+                        - img [ref=e200]
+                        - link "assets, (Directory)" [ref=e205] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/tree/master/assets
+                          - text: assets
+                    - cell [ref=e206]
+                    - cell [ref=e208]
+                  - row "configs, (Directory)" [ref=e211]:
+                    - cell "configs, (Directory)" [ref=e212]:
+                      - generic [ref=e213]:
+                        - img [ref=e214]
+                        - link "configs, (Directory)" [ref=e219] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/tree/master/configs
+                          - text: configs
+                    - cell [ref=e220]
+                    - cell [ref=e222]
+                  - row "docs, (Directory)" [ref=e225]:
+                    - cell "docs, (Directory)" [ref=e226]:
+                      - generic [ref=e227]:
+                        - img [ref=e228]
+                        - link "docs, (Directory)" [ref=e233] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/tree/master/docs
+                          - text: docs
+                    - cell [ref=e234]
+                    - cell [ref=e236]
+                  - row "examples, (Directory)" [ref=e239]:
+                    - cell "examples, (Directory)" [ref=e240]:
+                      - generic [ref=e241]:
+                        - img [ref=e242]
+                        - link "examples, (Directory)" [ref=e247] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/tree/master/examples
+                          - text: examples
+                    - cell [ref=e248]
+                    - cell [ref=e250]
+                  - row "lib, (Directory)" [ref=e253]:
+                    - cell "lib, (Directory)" [ref=e254]:
+                      - generic [ref=e255]:
+                        - img [ref=e256]
+                        - link "lib, (Directory)" [ref=e261] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/tree/master/lib
+                          - text: lib
+                    - cell [ref=e262]
+                    - cell [ref=e264]
+                  - row ".gitignore, (File)" [ref=e267]:
+                    - cell ".gitignore, (File)" [ref=e268]:
+                      - generic [ref=e269]:
+                        - img [ref=e270]
+                        - link ".gitignore, (File)" [ref=e275] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/.gitignore
+                          - text: .gitignore
+                    - cell [ref=e276]
+                    - cell [ref=e278]
+                  - row "LICENSE, (File)" [ref=e281]:
+                    - cell "LICENSE, (File)" [ref=e282]:
+                      - generic [ref=e283]:
+                        - img [ref=e284]
+                        - link "LICENSE, (File)" [ref=e289] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/LICENSE
+                          - text: LICENSE
+                    - cell [ref=e290]
+                    - cell [ref=e292]
+                  - row "README.md, (File)" [ref=e295]:
+                    - cell "README.md, (File)" [ref=e296]:
+                      - generic [ref=e297]:
+                        - img [ref=e298]
+                        - link "README.md, (File)" [ref=e303] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/README.md
+                          - text: README.md
+                    - cell [ref=e304]
+                    - cell [ref=e306]
+                  - row "docker-compose.yaml, (File)" [ref=e309]:
+                    - cell "docker-compose.yaml, (File)" [ref=e310]:
+                      - generic [ref=e311]:
+                        - img [ref=e312]
+                        - link "docker-compose.yaml, (File)" [ref=e317] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/docker-compose.yaml
+                          - text: docker-compose.yaml
+                    - cell [ref=e318]
+                    - cell [ref=e320]
+                  - row "environment-windows.yaml, (File)" [ref=e323]:
+                    - cell "environment-windows.yaml, (File)" [ref=e324]:
+                      - generic [ref=e325]:
+                        - img [ref=e326]
+                        - link "environment-windows.yaml, (File)" [ref=e331] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/environment-windows.yaml
+                          - text: environment-windows.yaml
+                    - cell [ref=e332]
+                    - cell [ref=e334]
+                  - row "environment.yaml, (File)" [ref=e337]:
+                    - cell "environment.yaml, (File)" [ref=e338]:
+                      - generic [ref=e339]:
+                        - img [ref=e340]
+                        - link "environment.yaml, (File)" [ref=e345] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/environment.yaml
+                          - text: environment.yaml
+                    - cell [ref=e346]
+                    - cell [ref=e348]
+                  - row "fetch_data.sh, (File)" [ref=e351]:
+                    - cell "fetch_data.sh, (File)" [ref=e352]:
+                      - generic [ref=e353]:
+                        - img [ref=e354]
+                        - link "fetch_data.sh, (File)" [ref=e359] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/fetch_data.sh
+                          - text: fetch_data.sh
+                    - cell [ref=e360]
+                    - cell [ref=e362]
+                  - row "loose.txt, (File)" [ref=e365]:
+                    - cell "loose.txt, (File)" [ref=e366]:
+                      - generic [ref=e367]:
+                        - img [ref=e368]
+                        - link "loose.txt, (File)" [ref=e373] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/loose.txt
+                          - text: loose.txt
+                    - cell [ref=e374]
+                    - cell [ref=e376]
+                  - row "pose.txt, (File)" [ref=e379]:
+                    - cell "pose.txt, (File)" [ref=e380]:
+                      - generic [ref=e381]:
+                        - img [ref=e382]
+                        - link "pose.txt, (File)" [ref=e387] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/pose.txt
+                          - text: pose.txt
+                    - cell [ref=e388]
+                    - cell [ref=e390]
+                  - row "requirements.txt, (File)" [ref=e393]:
+                    - cell "requirements.txt, (File)" [ref=e394]:
+                      - generic [ref=e395]:
+                        - img [ref=e396]
+                        - link "requirements.txt, (File)" [ref=e401] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/requirements.txt
+                          - text: requirements.txt
+                    - cell [ref=e402]
+                    - cell [ref=e404]
+                  - row "setup.cfg, (File)" [ref=e407]:
+                    - cell "setup.cfg, (File)" [ref=e408]:
+                      - generic [ref=e409]:
+                        - img [ref=e410]
+                        - link "setup.cfg, (File)" [ref=e415] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/setup.cfg
+                          - text: setup.cfg
+                    - cell [ref=e416]
+                    - cell [ref=e418]
+            - generic [ref=e422]:
+              - generic [ref=e423]:
+                - heading "Repository files navigation" [level=2] [ref=e424]
+                - navigation "Repository files" [ref=e425]:
+                  - list [ref=e426]:
+                    - listitem [ref=e427]:
+                      - link "README" [ref=e428] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e430]
+                        - generic [ref=e432]: README
+                    - listitem [ref=e433]:
+                      - link "License" [ref=e434] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e436]
+                        - generic [ref=e438]: License
+                - button "Outline" [ref=e439] [cursor=pointer]:
+                  - img [ref=e440]
+              - article [ref=e443]:
+                - paragraph
+                - generic [ref=e444]:
+                  - 'heading "ECON: Explicit Clothed humans Optimized via Normal integration" [level=1] [ref=e445]'
+                  - 'link "Permalink: ECON: Explicit Clothed humans Optimized via Normal integration" [ref=e446] [cursor=pointer]':
+                    - /url: "#econ-explicit-clothed-humans-optimized-via-normal-integration"
+                    - img [ref=e447]
+                - paragraph [ref=e449]:
+                  - link "Yuliang Xiu" [ref=e450] [cursor=pointer]:
+                    - /url: http://xiuyuliang.cn/
+                    - strong [ref=e451]: Yuliang Xiu
+                  - text: ·
+                  - link "Jinlong Yang" [ref=e452] [cursor=pointer]:
+                    - /url: https://ps.is.tuebingen.mpg.de/person/jyang
+                    - strong [ref=e453]: Jinlong Yang
+                  - text: ·
+                  - link "Xu Cao" [ref=e454] [cursor=pointer]:
+                    - /url: https://hoshino042.github.io/homepage/
+                    - strong [ref=e455]: Xu Cao
+                  - text: ·
+                  - link "Dimitrios Tzionas" [ref=e456] [cursor=pointer]:
+                    - /url: https://ps.is.mpg.de/~dtzionas
+                    - strong [ref=e457]: Dimitrios Tzionas
+                  - text: ·
+                  - link "Michael J. Black" [ref=e458] [cursor=pointer]:
+                    - /url: https://ps.is.tuebingen.mpg.de/person/black
+                    - strong [ref=e459]: Michael J. Black
+                - generic [ref=e460]:
+                  - heading "CVPR 2023 (Highlight)" [level=2] [ref=e461]
+                  - 'link "Permalink: CVPR 2023 (Highlight)" [ref=e462] [cursor=pointer]':
+                    - /url: "#cvpr-2023-highlight"
+                    - img [ref=e463]
+                - link "Logo" [ref=e467] [cursor=pointer]:
+                  - /url: /YuliangXiu/ECON/blob/master/assets/teaser.gif
+                  - img "Logo" [ref=e468]
+                - paragraph [ref=e469]:
+                  - link "PyTorch" [ref=e470] [cursor=pointer]:
+                    - /url: https://pytorch.org/get-started/locally/
+                    - img "PyTorch" [ref=e471]
+                  - link "Lightning" [ref=e472] [cursor=pointer]:
+                    - /url: https://pytorchlightning.ai/
+                    - img "Lightning" [ref=e473]
+                  - link "cupy" [ref=e474] [cursor=pointer]:
+                    - /url: https://cupy.dev/
+                    - img "cupy" [ref=e475]
+                  - link "Twitter" [ref=e476] [cursor=pointer]:
+                    - /url: https://twitter.com/yuliangxiu
+                    - img "Twitter" [ref=e477]
+                  - link "discord invitation link" [ref=e478] [cursor=pointer]:
+                    - /url: https://discord.gg/Vqa7KBGRyk
+                    - img "discord invitation link" [ref=e479]
+                  - link "Paper PDF" [ref=e480] [cursor=pointer]:
+                    - /url: https://arxiv.org/abs/2212.07422
+                    - img "Paper PDF" [ref=e481]
+                  - link "Project Page" [ref=e482] [cursor=pointer]:
+                    - /url: https://xiuyuliang.cn/econ/
+                    - img "Project Page" [ref=e483]
+                  - link "youtube views" [ref=e484] [cursor=pointer]:
+                    - /url: https://youtu.be/5PEd_p90kS0
+                    - img "youtube views" [ref=e485]
+                - paragraph
+                - paragraph [ref=e486]:
+                  - text: ECON is designed for "Human digitization from a color image", which combines the best properties of implicit and explicit representations, to infer high-fidelity 3D clothed humans from in-the-wild images, even with
+                  - strong [ref=e487]: loose clothing
+                  - text: or in
+                  - strong [ref=e488]: challenging poses
+                  - text: . ECON also supports
+                  - strong [ref=e489]: multi-person reconstruction
+                  - text: and
+                  - strong [ref=e490]: SMPL-X based animation
+                  - text: .
+                - table [ref=e493]:
+                  - rowgroup [ref=e494]:
+                    - row "HuggingFace Demo Google Colab Blender Add-on Windows Docker" [ref=e495]:
+                      - columnheader "HuggingFace Demo" [ref=e496]:
+                        - strong [ref=e497]: HuggingFace Demo
+                      - columnheader "Google Colab" [ref=e498]:
+                        - strong [ref=e499]: Google Colab
+                      - columnheader "Blender Add-on" [ref=e500]:
+                        - strong [ref=e501]: Blender Add-on
+                      - columnheader "Windows" [ref=e502]:
+                        - strong [ref=e503]: Windows
+                      - columnheader "Docker" [ref=e504]:
+                        - strong [ref=e505]: Docker
+                  - rowgroup [ref=e506]:
+                    - row "Google Colab Blender youtube views Windows Docker" [ref=e507]:
+                      - cell [ref=e508]:
+                        - link [ref=e509] [cursor=pointer]:
+                          - /url: https://huggingface.co/spaces/Yuliang/ECON
+                          - img [ref=e510]
+                      - cell "Google Colab" [ref=e511]:
+                        - link "Google Colab" [ref=e512] [cursor=pointer]:
+                          - /url: https://colab.research.google.com/drive/1YRgwoRCZIrSB2e7auEWFyG10Xzjbrbno?usp=sharing
+                          - img "Google Colab" [ref=e513]
+                      - cell "Blender youtube views" [ref=e514]:
+                        - link "Blender" [ref=e515] [cursor=pointer]:
+                          - /url: https://carlosedubarreto.gumroad.com/l/CEB_ECON
+                          - img "Blender" [ref=e516]
+                        - link "youtube views" [ref=e517] [cursor=pointer]:
+                          - /url: https://youtu.be/sbWZbTf6ZYk
+                          - img "youtube views" [ref=e518]
+                      - cell "Windows" [ref=e519]:
+                        - link "Windows" [ref=e520] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/docs/installation-windows.md
+                          - img "Windows" [ref=e521]
+                      - cell "Docker" [ref=e522]:
+                        - link "Docker" [ref=e523] [cursor=pointer]:
+                          - /url: https://github.com/YuliangXiu/ECON/blob/master/docs/installation-docker.md
+                          - img "Docker" [ref=e524]
+                    - row "Google Colab Blender youtube views" [ref=e525]:
+                      - cell [ref=e526]
+                      - cell "Google Colab" [ref=e527]:
+                        - link "Google Colab" [ref=e528] [cursor=pointer]:
+                          - /url: https://github.com/camenduru/ECON-colab
+                          - img "Google Colab" [ref=e529]
+                      - cell "Blender youtube views" [ref=e530]:
+                        - link "Blender" [ref=e531] [cursor=pointer]:
+                          - /url: https://github.com/kwan3854/CEB_ECON
+                          - img "Blender" [ref=e532]
+                        - link "youtube views" [ref=e533] [cursor=pointer]:
+                          - /url: https://youtu.be/SDVfCeaI4AY
+                          - img "youtube views" [ref=e534]
+                      - cell [ref=e535]
+                      - cell [ref=e536]
+                - generic [ref=e537]:
+                  - heading "Applications" [level=2] [ref=e538]
+                  - 'link "Permalink: Applications" [ref=e539] [cursor=pointer]':
+                    - /url: "#applications"
+                    - img [ref=e540]
+                - table [ref=e543]:
+                  - rowgroup [ref=e544]:
+                    - row "SHHQ crowd" [ref=e545]:
+                      - columnheader "SHHQ" [ref=e546]:
+                        - link "SHHQ" [ref=e548] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/SHHQ.gif
+                          - img "SHHQ" [ref=e549]
+                      - columnheader "crowd" [ref=e550]:
+                        - link "crowd" [ref=e552] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/crowd.gif
+                          - img "crowd" [ref=e553]
+                  - rowgroup [ref=e554]:
+                    - row "\"3D guidance\" for SHHQ Dataset multi-person reconstruction w/ occlusion" [ref=e555]:
+                      - cell "\"3D guidance\" for SHHQ Dataset" [ref=e556]:
+                        - text: "\"3D guidance\" for"
+                        - link "SHHQ Dataset" [ref=e557] [cursor=pointer]:
+                          - /url: https://github.com/stylegan-human/StyleGAN-Human
+                      - cell "multi-person reconstruction w/ occlusion" [ref=e558]
+                    - row "Blender Animation" [ref=e559]:
+                      - cell "Blender" [ref=e560]:
+                        - link "Blender" [ref=e562] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/blender-demo.gif
+                          - img "Blender" [ref=e563]
+                      - cell "Animation" [ref=e564]:
+                        - link "Animation" [ref=e566] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/animation.gif
+                          - img "Animation" [ref=e567]
+                    - row "\"All-in-One\" Blender add-on SMPL-X based Animation (Instruction)" [ref=e568]:
+                      - cell "\"All-in-One\" Blender add-on" [ref=e569]:
+                        - text: "\"All-in-One\""
+                        - link "Blender add-on" [ref=e570] [cursor=pointer]:
+                          - /url: https://github.com/kwan3854/CEB_ECON
+                      - cell "SMPL-X based Animation (Instruction)" [ref=e571]:
+                        - text: SMPL-X based Animation (
+                        - link "Instruction" [ref=e572] [cursor=pointer]:
+                          - /url: https://github.com/YuliangXiu/ECON#animation-with-smpl-x-sequences-econ--hybrik-x
+                        - text: )
+                - generic [ref=e573]:
+                  - heading "News 🚩" [level=2] [ref=e574]
+                  - 'link "Permalink: News :triangular_flag_on_post:" [ref=e575] [cursor=pointer]':
+                    - /url: "#news-triangular_flag_on_post"
+                    - img [ref=e576]
+                - list [ref=e578]:
+                  - listitem [ref=e579]:
+                    - text: "[2024/09/16] 🌟 Bending leg issues ["
+                    - link "1" [ref=e580] [cursor=pointer]:
+                      - /url: https://github.com/YuliangXiu/ECON/issues/133
+                    - text: ","
+                    - link "2" [ref=e581] [cursor=pointer]:
+                      - /url: https://github.com/YuliangXiu/ECON/issues/5
+                    - text: ","
+                    - link "3" [ref=e582] [cursor=pointer]:
+                      - /url: https://github.com/YuliangXiu/ICON/issues/68
+                    - text: ","
+                    - link "4" [ref=e583] [cursor=pointer]:
+                      - /url: https://github.com/huangyangyi/TeCH/issues/14
+                    - text: "] get resolved with"
+                    - link "Sapiens" [ref=e584] [cursor=pointer]:
+                      - /url: https://rawalkhirodkar.github.io/sapiens/
+                    - text: ", details in"
+                    - link "Bending legs" [ref=e585] [cursor=pointer]:
+                      - /url: https://github.com/YuliangXiu/ECON/blob/master/docs/tricks.md#bending-legs
+                    - text: .
+                  - listitem [ref=e586]:
+                    - text: "[2023/08/19] We released"
+                    - link "TeCH" [ref=e587] [cursor=pointer]:
+                      - /url: https://huangyangyi.github.io/TeCH/
+                    - text: ", which extends ECON with full texture support."
+                  - listitem [ref=e588]:
+                    - text: "[2023/06/01]"
+                    - link "Lee Kwan Joong" [ref=e589] [cursor=pointer]:
+                      - /url: https://github.com/kwan3854
+                    - text: updates a Blender Addon (
+                    - link "Github" [ref=e590] [cursor=pointer]:
+                      - /url: https://github.com/kwan3854/CEB_ECON
+                    - text: ","
+                    - link "Tutorial" [ref=e591] [cursor=pointer]:
+                      - /url: https://youtu.be/SDVfCeaI4AY
+                    - text: ).
+                  - listitem [ref=e592]:
+                    - text: "[2023/04/16]"
+                    - link [ref=e593] [cursor=pointer]:
+                      - /url: https://huggingface.co/spaces/Yuliang/ECON
+                      - img [ref=e594]
+                    - text: is ready to use!
+                  - listitem [ref=e595]: "[2023/02/27] ECON got accepted by CVPR 2023 as Highlight (top 10%)!"
+                  - listitem [ref=e596]:
+                    - text: "[2023/01/12]"
+                    - link "Carlos Barreto" [ref=e597] [cursor=pointer]:
+                      - /url: https://twitter.com/carlosedubarret/status/1613252471035494403
+                    - text: creates a Blender Addon (
+                    - link "Download" [ref=e598] [cursor=pointer]:
+                      - /url: https://carlosedubarreto.gumroad.com/l/CEB_ECON
+                    - text: ","
+                    - link "Tutorial" [ref=e599] [cursor=pointer]:
+                      - /url: https://youtu.be/sbWZbTf6ZYk
+                    - text: ).
+                  - listitem [ref=e600]:
+                    - text: "[2023/01/08]"
+                    - link "Teddy Huang" [ref=e601] [cursor=pointer]:
+                      - /url: https://github.com/Teddy12155555
+                    - text: creates
+                    - link "install-with-docker" [ref=e602] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/installation-docker.md
+                    - text: for ECON .
+                  - listitem [ref=e603]:
+                    - text: "[2023/01/06]"
+                    - link "Justin John" [ref=e604] [cursor=pointer]:
+                      - /url: https://github.com/justinjohn0306
+                    - text: and
+                    - link "Carlos Barreto" [ref=e605] [cursor=pointer]:
+                      - /url: https://github.com/carlosedubarreto
+                    - text: creates
+                    - link "install-on-windows" [ref=e606] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/installation-windows.md
+                    - text: for ECON .
+                  - listitem [ref=e607]:
+                    - text: "[2022/12/22]"
+                    - link "Google Colab" [ref=e608] [cursor=pointer]:
+                      - /url: https://colab.research.google.com/drive/1YRgwoRCZIrSB2e7auEWFyG10Xzjbrbno?usp=sharing
+                      - img "Google Colab" [ref=e609]
+                    - text: is now available, created by
+                    - link "Aron Arzoomand" [ref=e610] [cursor=pointer]:
+                      - /url: https://github.com/AroArz
+                    - text: .
+                  - listitem [ref=e611]:
+                    - text: "[2022/12/15] Both"
+                    - link "demo" [ref=e612] [cursor=pointer]:
+                      - /url: "#demo"
+                    - text: and
+                    - link "arXiv" [ref=e613] [cursor=pointer]:
+                      - /url: https://arxiv.org/abs/2212.07422
+                    - text: are available.
+                - generic [ref=e614]:
+                  - 'heading "Key idea: d-BiNI" [level=2] [ref=e615]'
+                  - 'link "Permalink: Key idea: d-BiNI" [ref=e616] [cursor=pointer]':
+                    - /url: "#key-idea-d-bini"
+                    - img [ref=e617]
+                - paragraph [ref=e619]: "d-BiNI jointly optimizes front-back 2.5D surfaces such that: (1) high-frequency surface details agree with normal maps, (2) low-frequency surface variations, including discontinuities, align with SMPL-X surfaces, and (3) front-back 2.5D surface silhouettes are coherent with each other."
+                - table [ref=e621]:
+                  - rowgroup [ref=e622]:
+                    - row "Front-view Back-view Side-view" [ref=e623]:
+                      - columnheader "Front-view" [ref=e624]
+                      - columnheader "Back-view" [ref=e625]
+                      - columnheader "Side-view" [ref=e626]
+                  - rowgroup [ref=e627]:
+                    - row [ref=e628]:
+                      - cell [ref=e629]:
+                        - link [ref=e631] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/front-45.gif
+                      - cell [ref=e632]:
+                        - link [ref=e634] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/back-45.gif
+                      - cell [ref=e635]:
+                        - link [ref=e637] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/double-90.gif
+                - group [ref=e638]:
+                  - generic "Please consider cite BiNI if it also helps on your project" [ref=e639] [cursor=pointer]:
+                    - text: Please consider cite
+                    - strong [ref=e640]: BiNI
+                    - text: if it also helps on your project
+                - group [ref=e641]:
+                  - generic "Table of Contents" [ref=e642] [cursor=pointer]
+                  - list [ref=e643]:
+                    - listitem [ref=e644]:
+                      - link "Instructions" [ref=e645] [cursor=pointer]:
+                        - /url: "#instructions"
+                    - listitem [ref=e646]:
+                      - link "Demos" [ref=e647] [cursor=pointer]:
+                        - /url: "#demos"
+                    - listitem [ref=e648]:
+                      - link "Citation" [ref=e649] [cursor=pointer]:
+                        - /url: "#citation"
+                - generic [ref=e650]:
+                  - heading "Instructions" [level=2] [ref=e651]
+                  - 'link "Permalink: Instructions" [ref=e652] [cursor=pointer]':
+                    - /url: "#instructions"
+                    - img [ref=e653]
+                - list [ref=e655]:
+                  - listitem [ref=e656]:
+                    - text: See
+                    - link "installion doc for Docker" [ref=e657] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/installation-docker.md
+                    - text: to run a docker container with pre-built image for ECON demo
+                  - listitem [ref=e658]:
+                    - text: See
+                    - link "installion doc for Windows" [ref=e659] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/installation-windows.md
+                    - text: to install all the required packages and setup the models on
+                    - emphasis [ref=e660]: Windows
+                  - listitem [ref=e661]:
+                    - text: See
+                    - link "installion doc for Ubuntu" [ref=e662] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/installation-ubuntu.md
+                    - text: to install all the required packages and setup the models on
+                    - emphasis [ref=e663]: Ubuntu
+                  - listitem [ref=e664]:
+                    - text: See
+                    - link "magic tricks" [ref=e665] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/tricks.md
+                    - text: to know a few technical tricks to further improve and accelerate ECON
+                  - listitem [ref=e666]:
+                    - text: See
+                    - link "testing" [ref=e667] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/blob/master/docs/testing.md
+                    - text: to prepare the testing data and evaluate ECON
+                - generic [ref=e668]:
+                  - heading "Demos" [level=2] [ref=e669]
+                  - 'link "Permalink: Demos" [ref=e670] [cursor=pointer]':
+                    - /url: "#demos"
+                    - img [ref=e671]
+                - list [ref=e673]:
+                  - listitem [ref=e674]:
+                    - generic [ref=e675]:
+                      - heading "Quick Start" [level=3] [ref=e676]
+                      - 'link "Permalink: Quick Start" [ref=e677] [cursor=pointer]':
+                        - /url: "#quick-start"
+                        - img [ref=e678]
+                - generic [ref=e680]:
+                  - generic [ref=e681]:
+                    - generic [ref=e682]: "# For single-person image-based reconstruction (w/ l visualization steps, 1.8min)"
+                    - text: python -m apps.infer -cfg ./configs/econ.yaml -in_dir ./examples -out_dir ./results
+                    - generic [ref=e683]: "# For multi-person image-based reconstruction (see config/econ.yaml)"
+                    - text: python -m apps.infer -cfg ./configs/econ.yaml -in_dir ./examples -out_dir ./results -multi
+                    - generic [ref=e684]: "# To generate the demo video of reconstruction results"
+                    - text: python -m apps.multi_render -n <file_name>
+                  - button "Copy code to clipboard" [ref=e686] [cursor=pointer]:
+                    - img [ref=e687]
+                - list [ref=e690]:
+                  - listitem [ref=e691]:
+                    - generic [ref=e692]:
+                      - heading "Animation with SMPL-X sequences (ECON + HybrIK-X)" [level=3] [ref=e693]:
+                        - text: Animation with SMPL-X sequences (ECON +
+                        - link "HybrIK-X" [ref=e694] [cursor=pointer]:
+                          - /url: https://github.com/Jeff-sjtu/HybrIK#smpl-x
+                        - text: )
+                      - 'link "Permalink: Animation with SMPL-X sequences (ECON + HybrIK-X)" [ref=e695] [cursor=pointer]':
+                        - /url: "#animation-with-smpl-x-sequences-econ--hybrik-x"
+                        - img [ref=e696]
+                - generic [ref=e698]:
+                  - generic [ref=e699]:
+                    - generic [ref=e700]: "# 1. Use HybrIK-X to estimate SMPL-X pose sequences from input video"
+                    - generic [ref=e701]: "# 2. Rig ECON's reconstruction mesh, to be compatible with SMPL-X's parametrization (-dress for dress/skirts)."
+                    - generic [ref=e702]: "# 3. Animate with SMPL-X pose sequences obtained from HybrIK-X, getting <file_name>_motion.npz"
+                    - generic [ref=e703]: "# 4. Render the frames with Blender (rgb-partial texture, normal-normal colors), and combine them to get final video"
+                    - text: python -m apps.avatarizer -n <file_name> python -m apps.animation -n <file_name> -m <motion_name>
+                    - generic [ref=e704]: "# Note: to install missing python packages into Blender"
+                    - generic [ref=e705]: "# blender -b --python-expr \"__import__('pip._internal')._internal.main(['install', 'moviepy'])\""
+                    - text: wget https://download.is.tue.mpg.de/icon/econ_empty.blend blender -b --python apps.blender_dance.py -- normal <file_name> 10 > /tmp/NULL
+                  - button "Copy code to clipboard" [ref=e707] [cursor=pointer]:
+                    - img [ref=e708]
+                - group [ref=e711]:
+                  - generic "Please consider cite HybrIK-X if it also helps on your project" [ref=e712] [cursor=pointer]:
+                    - text: Please consider cite
+                    - strong [ref=e713]: HybrIK-X
+                    - text: if it also helps on your project
+                - list [ref=e714]:
+                  - listitem [ref=e715]:
+                    - generic [ref=e716]:
+                      - heading "Gradio Demo" [level=3] [ref=e717]
+                      - 'link "Permalink: Gradio Demo" [ref=e718] [cursor=pointer]':
+                        - /url: "#gradio-demo"
+                        - img [ref=e719]
+                - paragraph [ref=e721]: "We also provide a UI for testing our method that is built with gradio. This demo also supports pose&prompt guided human image generation! Running the following command in a terminal will launch the demo:"
+                - generic [ref=e722]:
+                  - generic [ref=e723]: git checkout main python app.py
+                  - button "Copy code to clipboard" [ref=e725] [cursor=pointer]:
+                    - img [ref=e726]
+                - paragraph [ref=e729]:
+                  - text: This demo is also hosted on HuggingFace Space
+                  - link [ref=e730] [cursor=pointer]:
+                    - /url: https://huggingface.co/spaces/Yuliang/ECON
+                    - img [ref=e731]
+                - list [ref=e732]:
+                  - listitem [ref=e733]:
+                    - generic [ref=e734]:
+                      - heading "Full Texture Generation" [level=3] [ref=e735]
+                      - 'link "Permalink: Full Texture Generation" [ref=e736] [cursor=pointer]':
+                        - /url: "#full-texture-generation"
+                        - img [ref=e737]
+                - generic [ref=e739]:
+                  - 'heading "Method 1: ECON+TEXTure" [level=4] [ref=e740]'
+                  - 'link "Permalink: Method 1: ECON+TEXTure" [ref=e741] [cursor=pointer]':
+                    - /url: "#method-1-econtexture"
+                    - img [ref=e742]
+                - paragraph [ref=e744]:
+                  - text: Please firstly follow the
+                  - link "TEXTure's installation" [ref=e745] [cursor=pointer]:
+                    - /url: https://github.com/YuliangXiu/TEXTure#installation-floppy_disk
+                  - text: to setup the env of TEXTure.
+                - generic [ref=e746]:
+                  - generic [ref=e747]:
+                    - generic [ref=e748]: "# generate required UV atlas"
+                    - text: python -m apps.avatarizer -n <file_name> -uv
+                    - generic [ref=e749]: "# generate new texture using TEXTure"
+                    - text: git clone https://github.com/YuliangXiu/TEXTure cd TEXTure ln -s ../ECON/results/econ/cache python -m scripts.run_texture --config_path=configs/text_guided/avatar.yaml
+                  - button "Copy code to clipboard" [ref=e751] [cursor=pointer]:
+                    - img [ref=e752]
+                - paragraph [ref=e755]:
+                  - text: Then check
+                  - code [ref=e756]: ./experiments/<file_name>/mesh
+                  - text: for the results.
+                - group [ref=e757]:
+                  - generic "Please consider cite TEXTure if it also helps on your project" [ref=e758] [cursor=pointer]:
+                    - text: Please consider cite
+                    - strong [ref=e759]: TEXTure
+                    - text: if it also helps on your project
+                - generic [ref=e760]:
+                  - 'heading "Method 2: TeCH" [level=4] [ref=e761]'
+                  - 'link "Permalink: Method 2: TeCH" [ref=e762] [cursor=pointer]':
+                    - /url: "#method-2-tech"
+                    - img [ref=e763]
+                - paragraph [ref=e765]:
+                  - text: Please check out our new paper,
+                  - emphasis [ref=e766]: "TeCH: Text-guided Reconstruction of Lifelike Clothed Humans"
+                  - text: (
+                  - link "Page" [ref=e767] [cursor=pointer]:
+                    - /url: https://huangyangyi.github.io/TeCH/
+                  - text: ","
+                  - link "Code" [ref=e768] [cursor=pointer]:
+                    - /url: https://github.com/huangyangyi/TeCH
+                  - text: )
+                - group [ref=e769]:
+                  - generic "Please consider cite TeCH if it also helps on your project" [ref=e770] [cursor=pointer]:
+                    - text: Please consider cite
+                    - strong [ref=e771]: TeCH
+                    - text: if it also helps on your project
+                - generic [ref=e772]:
+                  - heading "More Qualitative Results" [level=2] [ref=e773]
+                  - 'link "Permalink: More Qualitative Results" [ref=e774] [cursor=pointer]':
+                    - /url: "#more-qualitative-results"
+                    - img [ref=e775]
+                - table [ref=e778]:
+                  - rowgroup [ref=e779]:
+                    - row "OOD Poses" [ref=e780]:
+                      - columnheader "OOD Poses" [ref=e781]:
+                        - link "OOD Poses" [ref=e782] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/OOD-poses.jpg
+                          - img "OOD Poses" [ref=e783]
+                  - rowgroup [ref=e784]:
+                    - row "Challenging Poses" [ref=e785]:
+                      - cell "Challenging Poses" [ref=e786]:
+                        - emphasis [ref=e787]: Challenging Poses
+                    - row "OOD Clothes" [ref=e788]:
+                      - cell "OOD Clothes" [ref=e789]:
+                        - link "OOD Clothes" [ref=e790] [cursor=pointer]:
+                          - /url: /YuliangXiu/ECON/blob/master/assets/OOD-outfits.jpg
+                          - img "OOD Clothes" [ref=e791]
+                    - row "Loose Clothes" [ref=e792]:
+                      - cell "Loose Clothes" [ref=e793]:
+                        - emphasis [ref=e794]: Loose Clothes
+                - generic [ref=e795]:
+                  - heading "Citation" [level=2] [ref=e796]
+                  - 'link "Permalink: Citation" [ref=e797] [cursor=pointer]':
+                    - /url: "#citation"
+                    - img [ref=e798]
+                - generic [ref=e800]:
+                  - generic [ref=e801]:
+                    - text: "@inproceedings{xiu2023econ, title ="
+                    - generic [ref=e802]: "{{ECON: Explicit Clothed humans Optimized via Normal integration}}"
+                    - text: ", author ="
+                    - generic [ref=e803]: "{Xiu, Yuliang and Yang, Jinlong and Cao, Xu and Tzionas, Dimitrios and Black, Michael J.}"
+                    - text: ", booktitle ="
+                    - generic [ref=e804]: "{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}"
+                    - text: ", month ="
+                    - generic [ref=e805]: "{June}"
+                    - text: ", year ="
+                    - generic [ref=e806]: "{2023}"
+                    - text: ", }"
+                  - button "Copy code to clipboard" [ref=e808] [cursor=pointer]:
+                    - img [ref=e809]
+                - generic [ref=e812]:
+                  - heading "Acknowledgments" [level=2] [ref=e813]
+                  - 'link "Permalink: Acknowledgments" [ref=e814] [cursor=pointer]':
+                    - /url: "#acknowledgments"
+                    - img [ref=e815]
+                - paragraph [ref=e817]:
+                  - text: We thank
+                  - link "Lea Hering" [ref=e818] [cursor=pointer]:
+                    - /url: https://is.mpg.de/person/lhering
+                  - text: and
+                  - link "Radek Daněček" [ref=e819] [cursor=pointer]:
+                    - /url: https://is.mpg.de/person/rdanecek
+                  - text: for proof reading,
+                  - link "Yao Feng" [ref=e820] [cursor=pointer]:
+                    - /url: https://ps.is.mpg.de/person/yfeng
+                  - text: ","
+                  - link "Haven Feng" [ref=e821] [cursor=pointer]:
+                    - /url: https://is.mpg.de/person/hfeng
+                  - text: ", and"
+                  - link "Weiyang Liu" [ref=e822] [cursor=pointer]:
+                    - /url: https://wyliu.com/
+                  - text: for their feedback and discussions,
+                  - link "Tsvetelina Alexiadis" [ref=e823] [cursor=pointer]:
+                    - /url: https://ps.is.mpg.de/person/talexiadis
+                  - text: for her help with the AMT perceptual study.
+                - paragraph [ref=e824]: "Here are some great resources we benefit from:"
+                - list [ref=e825]:
+                  - listitem [ref=e826]:
+                    - link "ICON" [ref=e827] [cursor=pointer]:
+                      - /url: https://github.com/YuliangXiu/ICON
+                    - text: for SMPL-X Body Fitting
+                  - listitem [ref=e828]:
+                    - link "BiNI" [ref=e829] [cursor=pointer]:
+                      - /url: https://github.com/hoshino042/bilateral_normal_integration
+                    - text: for Bilateral Normal Integration
+                  - listitem [ref=e830]:
+                    - link "MonoPortDataset" [ref=e831] [cursor=pointer]:
+                      - /url: https://github.com/Project-Splinter/MonoPortDataset
+                    - text: for Data Processing,
+                    - link "MonoPort" [ref=e832] [cursor=pointer]:
+                      - /url: https://github.com/Project-Splinter/MonoPort
+                    - text: for fast implicit surface query
+                  - listitem [ref=e833]:
+                    - link "rembg" [ref=e834] [cursor=pointer]:
+                      - /url: https://github.com/danielgatis/rembg
+                    - text: for Human Segmentation
+                  - listitem [ref=e835]:
+                    - link "Sapiens" [ref=e836] [cursor=pointer]:
+                      - /url: https://rawalkhirodkar.github.io/sapiens/
+                    - text: for normal estimation
+                  - listitem [ref=e837]:
+                    - link "MediaPipe" [ref=e838] [cursor=pointer]:
+                      - /url: https://google.github.io/mediapipe/getting_started/python.html
+                    - text: for full-body landmark estimation
+                  - listitem [ref=e839]:
+                    - link "PyTorch-NICP" [ref=e840] [cursor=pointer]:
+                      - /url: https://github.com/wuhaozhe/pytorch-nicp
+                    - text: for non-rigid registration
+                  - listitem [ref=e841]:
+                    - link "smplx" [ref=e842] [cursor=pointer]:
+                      - /url: https://github.com/vchoutas/smplx
+                    - text: ","
+                    - link "PyMAF-X" [ref=e843] [cursor=pointer]:
+                      - /url: https://www.liuyebin.com/pymaf-x/
+                    - text: ","
+                    - link "PIXIE" [ref=e844] [cursor=pointer]:
+                      - /url: https://github.com/YadiraF/PIXIE
+                    - text: for Human Pose & Shape Estimation
+                  - listitem [ref=e845]:
+                    - link "CAPE" [ref=e846] [cursor=pointer]:
+                      - /url: https://github.com/qianlim/CAPE
+                    - text: and
+                    - link "THuman" [ref=e847] [cursor=pointer]:
+                      - /url: https://github.com/ZhengZerong/DeepHuman/tree/master/THUmanDataset
+                    - text: for Dataset
+                  - listitem [ref=e848]:
+                    - link "PyTorch3D" [ref=e849] [cursor=pointer]:
+                      - /url: https://github.com/facebookresearch/pytorch3d
+                    - text: for Differential Rendering
+                - paragraph [ref=e850]:
+                  - text: Some images used in the qualitative examples come from
+                  - link "pinterest.com" [ref=e851] [cursor=pointer]:
+                    - /url: https://www.pinterest.com/
+                  - text: .
+                - paragraph [ref=e852]:
+                  - text: This project has received funding from the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement No.860768 (
+                  - link "CLIPE Project" [ref=e853] [cursor=pointer]:
+                    - /url: https://www.clipe-itn.eu
+                  - text: ).
+                - generic [ref=e854]:
+                  - heading "Contributors" [level=2] [ref=e855]
+                  - 'link "Permalink: Contributors" [ref=e856] [cursor=pointer]':
+                    - /url: "#contributors"
+                    - img [ref=e857]
+                - paragraph [ref=e859]: Kudos to all of our amazing contributors! ECON thrives through open-source. In that spirit, we welcome all kinds of contributions from the community.
+                - link [ref=e860] [cursor=pointer]:
+                  - /url: https://github.com/yuliangxiu/ECON/graphs/contributors
+                  - img [ref=e861]
+                - paragraph [ref=e862]:
+                  - emphasis [ref=e863]: Contributor avatars are randomly shuffled.
+                - separator [ref=e864]
+                - generic [ref=e865]:
+                  - heading "License" [level=2] [ref=e866]
+                  - 'link "Permalink: License" [ref=e867] [cursor=pointer]':
+                    - /url: "#license"
+                    - img [ref=e868]
+                - paragraph [ref=e870]:
+                  - text: This code and model are available for non-commercial scientific research purposes as defined in the
+                  - link "LICENSE" [ref=e871] [cursor=pointer]:
+                    - /url: /YuliangXiu/ECON/blob/master/LICENSE
+                  - text: file. By downloading and using the code and model you agree to the terms in the
+                  - link "LICENSE" [ref=e872] [cursor=pointer]:
+                    - /url: /YuliangXiu/ECON/blob/master/LICENSE
+                  - text: .
+                - generic [ref=e873]:
+                  - heading "Disclosure" [level=2] [ref=e874]
+                  - 'link "Permalink: Disclosure" [ref=e875] [cursor=pointer]':
+                    - /url: "#disclosure"
+                    - img [ref=e876]
+                - paragraph [ref=e878]: MJB has received research gift funds from Adobe, Intel, Nvidia, Meta/Facebook, and Amazon. MJB has financial interests in Amazon, Datagen Technologies, and Meshcapade GmbH. While MJB is a part-time employee of Meshcapade, his research was performed solely at, and funded solely by, the Max Planck Society.
+                - generic [ref=e879]:
+                  - heading "Contact" [level=2] [ref=e880]
+                  - 'link "Permalink: Contact" [ref=e881] [cursor=pointer]':
+                    - /url: "#contact"
+                    - img [ref=e882]
+                - paragraph [ref=e884]:
+                  - text: For technical questions, please contact
+                  - link "yuliang.xiu@tue.mpg.de" [ref=e885] [cursor=pointer]:
+                    - /url: mailto:yuliang.xiu@tue.mpg.de
+                - paragraph [ref=e886]:
+                  - text: For commercial licensing, please contact
+                  - link "ps-licensing@tue.mpg.de" [ref=e887] [cursor=pointer]:
+                    - /url: mailto:ps-licensing@tue.mpg.de
+        - generic [ref=e891]:
+          - generic [ref=e894]:
+            - heading "About" [level=2] [ref=e895]
+            - paragraph [ref=e896]: "[CVPR'23, Highlight] ECON: Explicit Clothed humans Optimized via Normal integration"
+            - generic [ref=e897]:
+              - img [ref=e898]
+              - link "xiuyuliang.cn/econ" [ref=e901] [cursor=pointer]:
+                - /url: https://xiuyuliang.cn/econ
+            - heading "Topics" [level=3] [ref=e902]
+            - generic [ref=e904]:
+              - link "computer-vision" [ref=e905] [cursor=pointer]:
+                - /url: /topics/computer-vision
+              - link "computer-graphics" [ref=e906] [cursor=pointer]:
+                - /url: /topics/computer-graphics
+              - link "avatar-generator" [ref=e907] [cursor=pointer]:
+                - /url: /topics/avatar-generator
+              - link "metaverse" [ref=e908] [cursor=pointer]:
+                - /url: /topics/metaverse
+              - link "3d-reconstruction" [ref=e909] [cursor=pointer]:
+                - /url: /topics/3d-reconstruction
+              - link "virtual-humans" [ref=e910] [cursor=pointer]:
+                - /url: /topics/virtual-humans
+              - link "pifu" [ref=e911] [cursor=pointer]:
+                - /url: /topics/pifu
+              - link "digital-twins" [ref=e912] [cursor=pointer]:
+                - /url: /topics/digital-twins
+              - link "pifuhd" [ref=e913] [cursor=pointer]:
+                - /url: /topics/pifuhd
+              - link "smpl-body" [ref=e914] [cursor=pointer]:
+                - /url: /topics/smpl-body
+              - link "smplx" [ref=e915] [cursor=pointer]:
+                - /url: /topics/smplx
+              - link "normal-maps" [ref=e916] [cursor=pointer]:
+                - /url: /topics/normal-maps
+            - heading "Resources" [level=3] [ref=e917]
+            - link "Readme" [ref=e919] [cursor=pointer]:
+              - /url: "#readme-ov-file"
+              - img [ref=e920]
+              - text: Readme
+            - heading "License" [level=3] [ref=e922]
+            - link "View license" [ref=e924] [cursor=pointer]:
+              - /url: "#License-1-ov-file"
+              - img [ref=e925]
+              - text: View license
+            - link "Activity" [ref=e928] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/activity
+              - img [ref=e929]
+              - text: Activity
+            - heading "Stars" [level=3] [ref=e931]
+            - link "1.2k stars" [ref=e933] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/stargazers
+              - img [ref=e934]
+              - strong [ref=e936]: 1.2k
+              - text: stars
+            - heading "Watchers" [level=3] [ref=e937]
+            - link "25 watching" [ref=e939] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/watchers
+              - img [ref=e940]
+              - strong [ref=e942]: "25"
+              - text: watching
+            - heading "Forks" [level=3] [ref=e943]
+            - link "115 forks" [ref=e945] [cursor=pointer]:
+              - /url: /YuliangXiu/ECON/forks
+              - img [ref=e946]
+              - strong [ref=e948]: "115"
+              - text: forks
+            - link "Report repository" [ref=e950] [cursor=pointer]:
+              - /url: /contact/report-content?content_url=https%3A%2F%2Fgithub.com%2FYuliangXiu%2FECON&report=YuliangXiu+%28user%29
+          - generic [ref=e952]:
+            - heading "Releases" [level=2] [ref=e953]:
+              - link "Releases" [ref=e954] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/releases
+            - generic [ref=e955]: No releases published
+          - generic [ref=e957]:
+            - heading "Packages" [level=2] [ref=e958]:
+              - link "Packages" [ref=e959] [cursor=pointer]:
+                - /url: /users/YuliangXiu/packages?repo_name=ECON
+            - generic [ref=e960]: No packages published
+          - generic [ref=e962]:
+            - heading "Contributors 10" [level=2] [ref=e963]:
+              - link "Contributors 10" [ref=e964] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/graphs/contributors
+                - text: Contributors
+                - generic "10" [ref=e965]
+            - list [ref=e966]:
+              - listitem [ref=e967]:
+                - link "@YuliangXiu" [ref=e968] [cursor=pointer]:
+                  - /url: https://github.com/YuliangXiu
+                  - img "@YuliangXiu" [ref=e969]
+              - listitem [ref=e970]:
+                - link "@justinjohn0306" [ref=e971] [cursor=pointer]:
+                  - /url: https://github.com/justinjohn0306
+                  - img "@justinjohn0306" [ref=e972]
+              - listitem [ref=e973]:
+                - link "@kwan3854" [ref=e974] [cursor=pointer]:
+                  - /url: https://github.com/kwan3854
+                  - img "@kwan3854" [ref=e975]
+              - listitem [ref=e976]:
+                - link "@AroArz" [ref=e977] [cursor=pointer]:
+                  - /url: https://github.com/AroArz
+                  - img "@AroArz" [ref=e978]
+              - listitem [ref=e979]:
+                - link "@huangyangyi" [ref=e980] [cursor=pointer]:
+                  - /url: https://github.com/huangyangyi
+                  - img "@huangyangyi" [ref=e981]
+              - listitem [ref=e982]:
+                - link "@JinEui-Kim" [ref=e983] [cursor=pointer]:
+                  - /url: https://github.com/JinEui-Kim
+                  - img "@JinEui-Kim" [ref=e984]
+              - listitem [ref=e985]:
+                - link "@alexwang2013" [ref=e986] [cursor=pointer]:
+                  - /url: https://github.com/alexwang2013
+                  - img "@alexwang2013" [ref=e987]
+              - listitem [ref=e988]:
+                - link "@carlosedubarreto" [ref=e989] [cursor=pointer]:
+                  - /url: https://github.com/carlosedubarreto
+                  - img "@carlosedubarreto" [ref=e990]
+              - listitem [ref=e991]:
+                - link "@KernelA" [ref=e992] [cursor=pointer]:
+                  - /url: https://github.com/KernelA
+                  - img "@KernelA" [ref=e993]
+              - listitem [ref=e994]:
+                - link "@Teddy12155555" [ref=e995] [cursor=pointer]:
+                  - /url: https://github.com/Teddy12155555
+                  - img "@Teddy12155555" [ref=e996]
+          - generic [ref=e998]:
+            - heading "Languages" [level=2] [ref=e999]
+            - list [ref=e1005]:
+              - listitem [ref=e1006]:
+                - link "Python 96.1%" [ref=e1007] [cursor=pointer]:
+                  - /url: /YuliangXiu/ECON/search?l=python
+                  - img [ref=e1008]
+                  - generic [ref=e1010]: Python
+                  - generic [ref=e1011]: 96.1%
+              - listitem [ref=e1012]:
+                - link "Cuda 2.0%" [ref=e1013] [cursor=pointer]:
+                  - /url: /YuliangXiu/ECON/search?l=cuda
+                  - img [ref=e1014]
+                  - generic [ref=e1016]: Cuda
+                  - generic [ref=e1017]: 2.0%
+              - listitem [ref=e1018]:
+                - generic [ref=e1019]:
+                  - img [ref=e1020]
+                  - generic [ref=e1022]: Other
+                  - generic [ref=e1023]: 1.9%
+  - contentinfo [ref=e1025]:
+    - heading "Footer" [level=2] [ref=e1026]
+    - generic [ref=e1027]:
+      - generic [ref=e1028]:
+        - link "GitHub Homepage" [ref=e1029] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e1030]
+        - generic [ref=e1032]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e1033]:
+        - heading "Footer navigation" [level=3] [ref=e1034]
+        - list "Footer navigation" [ref=e1035]:
+          - listitem [ref=e1036]:
+            - link "Terms" [ref=e1037] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e1038]:
+            - link "Privacy" [ref=e1039] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e1040]:
+            - link "Security" [ref=e1041] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e1042]:
+            - link "Status" [ref=e1043] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e1044]:
+            - link "Community" [ref=e1045] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e1046]:
+            - link "Docs" [ref=e1047] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e1048]:
+            - link "Contact" [ref=e1049] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e1050]:
+            - button "Manage cookies" [ref=e1052] [cursor=pointer]
+          - listitem [ref=e1053]:
+            - button "Do not share my personal information" [ref=e1055] [cursor=pointer]

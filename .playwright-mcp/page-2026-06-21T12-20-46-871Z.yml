@@ -1,0 +1,460 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - link "Skip to content" [ref=e4] [cursor=pointer]:
+        - /url: "#start-of-content"
+      - banner [ref=e6]:
+        - heading "Navigation Menu" [level=2] [ref=e7]
+        - generic [ref=e8]:
+          - link "Homepage" [ref=e10] [cursor=pointer]:
+            - /url: /
+            - img [ref=e11]
+          - generic [ref=e13]:
+            - navigation "Global" [ref=e16]:
+              - list [ref=e17]:
+                - listitem [ref=e18]:
+                  - button "Platform" [ref=e20] [cursor=pointer]:
+                    - text: Platform
+                    - img [ref=e21]
+                - listitem [ref=e23]:
+                  - button "Solutions" [ref=e25] [cursor=pointer]:
+                    - text: Solutions
+                    - img [ref=e26]
+                - listitem [ref=e28]:
+                  - button "Resources" [ref=e30] [cursor=pointer]:
+                    - text: Resources
+                    - img [ref=e31]
+                - listitem [ref=e33]:
+                  - button "Open Source" [ref=e35] [cursor=pointer]:
+                    - text: Open Source
+                    - img [ref=e36]
+                - listitem [ref=e38]:
+                  - button "Enterprise" [ref=e40] [cursor=pointer]:
+                    - text: Enterprise
+                    - img [ref=e41]
+                - listitem [ref=e43]:
+                  - link "Pricing" [ref=e44] [cursor=pointer]:
+                    - /url: https://github.com/pricing
+                    - generic [ref=e45]: Pricing
+            - generic [ref=e46]:
+              - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+                - img [ref=e51]
+              - link "Sign in" [ref=e54] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2FYuliangXiu%2FECON%2Fblob%2Fmaster%2FLICENSE
+              - link "Sign up" [ref=e55] [cursor=pointer]:
+                - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fblob%2Fshow&source=header-repo&source_repo=YuliangXiu%2FECON
+              - button "Appearance settings" [ref=e58] [cursor=pointer]:
+                - img
+    - main [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e66]:
+            - img [ref=e67]
+            - link "YuliangXiu" [ref=e70] [cursor=pointer]:
+              - /url: /YuliangXiu
+            - generic [ref=e71]: /
+            - strong [ref=e72]:
+              - link "ECON" [ref=e73] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON
+            - generic [ref=e74]: Public
+          - generic [ref=e75]:
+            - list:
+              - listitem [ref=e76]:
+                - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                  - /url: /login?return_to=%2FYuliangXiu%2FECON
+                  - img [ref=e78]
+                  - text: Notifications
+              - listitem [ref=e80]:
+                - link "Fork 115" [ref=e81] [cursor=pointer]:
+                  - /url: /login?return_to=%2FYuliangXiu%2FECON
+                  - img [ref=e82]
+                  - text: Fork
+                  - generic "115" [ref=e84]
+              - listitem [ref=e85]:
+                - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                  - /url: /login?return_to=%2FYuliangXiu%2FECON
+                  - img [ref=e88]
+                  - text: Star
+                  - generic "1204 users starred this repository" [ref=e90]: 1.2k
+        - navigation "Repository" [ref=e91]:
+          - list [ref=e92]:
+            - listitem [ref=e93]:
+              - link "Code" [ref=e94] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON
+                - img [ref=e95]
+                - generic [ref=e97]: Code
+            - listitem [ref=e98]:
+              - link "Issues 41" [ref=e99] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/issues
+                - img [ref=e100]
+                - generic [ref=e103]: Issues
+                - generic "41" [ref=e104]
+            - listitem [ref=e105]:
+              - link "Pull requests" [ref=e106] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/pulls
+                - img [ref=e107]
+                - generic [ref=e109]: Pull requests
+            - listitem [ref=e110]:
+              - link "Actions" [ref=e111] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/actions
+                - img [ref=e112]
+                - generic [ref=e114]: Actions
+            - listitem [ref=e115]:
+              - link "Security and quality" [ref=e116] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/security
+                - img [ref=e117]
+                - generic [ref=e119]: Security and quality
+            - listitem [ref=e120]:
+              - link "Insights" [ref=e121] [cursor=pointer]:
+                - /url: /YuliangXiu/ECON/pulse
+                - img [ref=e122]
+                - generic [ref=e124]: Insights
+      - generic [ref=e132]:
+        - generic [ref=e485]:
+          - generic [ref=e488]:
+            - generic [ref=e489]:
+              - generic [ref=e490]:
+                - heading "Collapse file tree" [level=2] [ref=e491]:
+                  - button "Collapse file tree" [expanded] [ref=e492] [cursor=pointer]:
+                    - img [ref=e493]
+                - heading "Files" [level=2] [ref=e496]
+              - generic [ref=e497]:
+                - button "master branch" [ref=e499] [cursor=pointer]:
+                  - generic [ref=e500]:
+                    - generic [ref=e502]:
+                      - img [ref=e504]
+                      - generic [ref=e507]: master
+                    - generic:
+                      - img
+                - button "Search this repository (forward slash)" [ref=e509] [cursor=pointer]:
+                  - img [ref=e510]
+            - generic [ref=e513]:
+              - img [ref=e515]
+              - combobox "Go to file" [ref=e517]
+            - navigation "File Tree Navigation" [ref=e523]:
+              - tree "Files" [ref=e525]:
+                - treeitem "apps" [level=1] [ref=e526]:
+                  - generic [ref=e527] [cursor=pointer]:
+                    - img [ref=e529]
+                    - generic [ref=e531]:
+                      - img [ref=e535]
+                      - generic [ref=e537]: apps
+                - treeitem "assets" [level=1] [ref=e538]:
+                  - generic [ref=e539] [cursor=pointer]:
+                    - img [ref=e541]
+                    - generic [ref=e543]:
+                      - img [ref=e547]
+                      - generic [ref=e549]: assets
+                - treeitem "configs" [level=1] [ref=e550]:
+                  - generic [ref=e551] [cursor=pointer]:
+                    - img [ref=e553]
+                    - generic [ref=e555]:
+                      - img [ref=e559]
+                      - generic [ref=e561]: configs
+                - treeitem "docs" [level=1] [ref=e562]:
+                  - generic [ref=e563] [cursor=pointer]:
+                    - img [ref=e565]
+                    - generic [ref=e567]:
+                      - img [ref=e571]
+                      - generic [ref=e573]: docs
+                - treeitem "examples" [level=1] [ref=e574]:
+                  - generic [ref=e575] [cursor=pointer]:
+                    - img [ref=e577]
+                    - generic [ref=e579]:
+                      - img [ref=e583]
+                      - generic [ref=e585]: examples
+                - treeitem "lib" [level=1] [ref=e586]:
+                  - generic [ref=e587] [cursor=pointer]:
+                    - img [ref=e589]
+                    - generic [ref=e591]:
+                      - img [ref=e595]
+                      - generic [ref=e597]: lib
+                - treeitem ".gitignore" [level=1] [ref=e598]:
+                  - generic [ref=e600] [cursor=pointer]:
+                    - img [ref=e603]
+                    - generic [ref=e605]: .gitignore
+                - treeitem "LICENSE" [level=1] [ref=e606]:
+                  - generic [ref=e608] [cursor=pointer]:
+                    - img [ref=e611]
+                    - generic [ref=e613]: LICENSE
+                - treeitem "README.md" [level=1] [ref=e614]:
+                  - generic [ref=e616] [cursor=pointer]:
+                    - img [ref=e619]
+                    - generic [ref=e621]: README.md
+                - treeitem "docker-compose.yaml" [level=1] [ref=e622]:
+                  - generic [ref=e624] [cursor=pointer]:
+                    - img [ref=e627]
+                    - generic [ref=e629]: docker-compose.yaml
+                - treeitem "environment-windows.yaml" [level=1] [ref=e630]:
+                  - generic [ref=e632] [cursor=pointer]:
+                    - img [ref=e635]
+                    - generic [ref=e637]: environment-windows.yaml
+                - treeitem "environment.yaml" [level=1] [ref=e638]:
+                  - generic [ref=e640] [cursor=pointer]:
+                    - img [ref=e643]
+                    - generic [ref=e645]: environment.yaml
+                - treeitem "fetch_data.sh" [level=1] [ref=e646]:
+                  - generic [ref=e648] [cursor=pointer]:
+                    - img [ref=e651]
+                    - generic [ref=e653]: fetch_data.sh
+                - treeitem "loose.txt" [level=1] [ref=e654]:
+                  - generic [ref=e656] [cursor=pointer]:
+                    - img [ref=e659]
+                    - generic [ref=e661]: loose.txt
+                - treeitem "pose.txt" [level=1] [ref=e662]:
+                  - generic [ref=e664] [cursor=pointer]:
+                    - img [ref=e667]
+                    - generic [ref=e669]: pose.txt
+                - treeitem "requirements.txt" [level=1] [ref=e670]:
+                  - generic [ref=e672] [cursor=pointer]:
+                    - img [ref=e675]
+                    - generic [ref=e677]: requirements.txt
+                - treeitem "setup.cfg" [level=1] [ref=e678]:
+                  - generic [ref=e680] [cursor=pointer]:
+                    - img [ref=e683]
+                    - generic [ref=e685]: setup.cfg
+          - slider "Draggable pane splitter" [ref=e687]
+        - generic [ref=e135]:
+          - generic [ref=e139]:
+            - generic [ref=e688]:
+              - navigation "Breadcrumbs" [ref=e689]:
+                - heading "Breadcrumbs" [level=2] [ref=e690]
+                - list [ref=e691]:
+                  - listitem [ref=e692]:
+                    - link "ECON" [ref=e693] [cursor=pointer]:
+                      - /url: /YuliangXiu/ECON/tree/master
+              - generic [ref=e694]:
+                - text: /
+                - heading "LICENSE" [level=1] [ref=e695]
+              - button "Copy path" [ref=e696] [cursor=pointer]:
+                - img [ref=e697]
+            - button "More file actions" [ref=e703] [cursor=pointer]:
+              - img [ref=e704]
+          - generic [ref=e183]:
+            - generic [ref=e185]:
+              - heading "Latest commit" [level=2] [ref=e186]
+              - generic [ref=e706]:
+                - generic [ref=e708]:
+                  - link "YuliangXiu" [ref=e709] [cursor=pointer]:
+                    - /url: /YuliangXiu
+                    - img "YuliangXiu" [ref=e710]
+                  - link "commits by YuliangXiu" [ref=e711] [cursor=pointer]:
+                    - /url: /YuliangXiu/ECON/commits?author=YuliangXiu
+                    - text: YuliangXiu
+                - link "title update" [ref=e715] [cursor=pointer]:
+                  - /url: /YuliangXiu/ECON/commit/f93dcd94ff06abcc71a64379d9d26dd1642f495f
+              - generic [ref=e188]:
+                - generic [ref=e717]:
+                  - link "Commit f93dcd9" [ref=e718] [cursor=pointer]:
+                    - /url: /YuliangXiu/ECON/commit/f93dcd94ff06abcc71a64379d9d26dd1642f495f
+                    - text: f93dcd9
+                  - text: ·
+                  - generic "Mar 23, 2023, 13:28 GMT-3" [ref=e719]: Mar 23, 20233 years ago
+                - generic [ref=e189]:
+                  - heading "History" [level=2] [ref=e190]
+                  - link "History" [ref=e191] [cursor=pointer]:
+                    - /url: /YuliangXiu/ECON/commits/master/LICENSE
+                    - generic [ref=e192]:
+                      - generic:
+                        - img
+                      - generic [ref=e193]: History
+            - generic [ref=e195]:
+              - generic [ref=e197]:
+                - heading "File metadata and controls" [level=2] [ref=e198]
+                - list "File view" [ref=e200]:
+                  - listitem [ref=e201]:
+                    - button "Code" [ref=e202] [cursor=pointer]:
+                      - generic [ref=e204]: Code
+                  - listitem [ref=e205]:
+                    - button "Blame" [ref=e206] [cursor=pointer]:
+                      - generic [ref=e208]: Blame
+                - generic [ref=e209]:
+                  - generic [ref=e210]:
+                    - generic [ref=e211]:
+                      - link "Raw" [ref=e213] [cursor=pointer]:
+                        - /url: https://github.com/YuliangXiu/ECON/raw/refs/heads/master/LICENSE
+                        - generic [ref=e215]: Raw
+                      - button "Copy raw file" [ref=e217] [cursor=pointer]:
+                        - img [ref=e218]
+                      - button "Download raw file" [ref=e222] [cursor=pointer]:
+                        - img [ref=e223]
+                    - generic [ref=e720]:
+                      - button "You must be signed in to make or propose changes" [disabled] [ref=e722]:
+                        - img [ref=e723]
+                      - button "More edit options" [ref=e726] [cursor=pointer]:
+                        - img [ref=e727]
+                  - button "Open symbols panel" [ref=e226] [cursor=pointer]:
+                    - img [ref=e227]
+              - region "LICENSE" [ref=e729]:
+                - generic [ref=e234]:
+                  - textbox "file content" [ref=e734]: "License Software Copyright License for non-commercial scientific research purposes Please read carefully the following terms and conditions and any accompanying documentation before you download and/or use the ECON model, data and software, (the \"Data & Software\"), including 3D meshes, images, videos, textures, software, scripts, and animations. By downloading and/or using the Data & Software (including downloading, cloning, installing, and any other use of the corresponding github repository), you acknowledge that you have read these terms and conditions, understand them, and agree to be bound by them. If you do not agree with these terms and conditions, you must not download and/or use the Data & Software. Any infringement of the terms of this agreement will automatically terminate your rights under this License Ownership / Licensees The Software and the associated materials has been developed at the Max Planck Institute for Intelligent Systems (hereinafter \"MPI\"). Any copyright or patent right is owned by and proprietary material of the Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (hereinafter “MPG”; MPI and MPG hereinafter collectively “Max-Planck”) hereinafter the “Licensor”. License Grant Licensor grants you (Licensee) personally a single-user, non-exclusive, non-transferable, free of charge right: • To install the Model & Software on computers owned, leased or otherwise controlled by you and/or your organization; • To use the Model & Software for the sole purpose of performing peaceful non-commercial scientific research, non-commercial education, or non-commercial artistic projects; • To modify, adapt, translate or create derivative works based upon the Model & Software. Any other use, in particular any use for commercial, pornographic, military, or surveillance, purposes is prohibited. This includes, without limitation, incorporation in a commercial product, use in a commercial service, or production of other artifacts for commercial purposes. The Data & Software may not be used to create fake, libelous, misleading, or defamatory content of any kind excluding analyses in peer-reviewed scientific research. The Data & Software may not be reproduced, modified and/or made available in any form to any third party without Max-Planck’s prior written permission. The Data & Software may not be used for pornographic purposes or to generate pornographic material whether commercial or not. This license also prohibits the use of the Software to train methods/algorithms/neural networks/etc. for commercial, pornographic, military, surveillance, or defamatory use of any kind. By downloading the Data & Software, you agree not to reverse engineer it. No Distribution The Data & Software and the license herein granted shall not be copied, shared, distributed, re-sold, offered for re-sale, transferred or sub-licensed in whole or in part except that you may make one copy for archive purposes only. Disclaimer of Representations and Warranties You expressly acknowledge and agree that the Data & Software results from basic research, is provided “AS IS”, may contain errors, and that any use of the Data & Software is at your sole risk. LICENSOR MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND CONCERNING THE DATA & SOFTWARE, NEITHER EXPRESS NOR IMPLIED, AND THE ABSENCE OF ANY LEGAL OR ACTUAL DEFECTS, WHETHER DISCOVERABLE OR NOT. Specifically, and not to limit the foregoing, licensor makes no representations or warranties (i) regarding the merchantability or fitness for a particular purpose of the Data & Software, (ii) that the use of the Data & Software will not infringe any patents, copyrights or other intellectual property rights of a third party, and (iii) that the use of the Data & Software will not cause any damage of any kind to you or a third party. Limitation of Liability Because this Data & Software License Agreement qualifies as a donation, according to Section 521 of the German Civil Code (Bürgerliches Gesetzbuch – BGB) Licensor as a donor is liable for intent and gross negligence only. If the Licensor fraudulently conceals a legal or material defect, they are obliged to compensate the Licensee for the resulting damage. Licensor shall be liable for loss of data only up to the amount of typical recovery costs which would have arisen had proper and regular data backup measures been taken. For the avoidance of doubt Licensor shall be liable in accordance with the German Product Liability Act in the event of product liability. The foregoing applies also to Licensor’s legal representatives or assistants in performance. Any further liability shall be excluded. Patent claims generated through the usage of the Data & Software cannot be directed towards the copyright holders. The Data & Software is provided in the state of development the licensor defines. If modified or extended by Licensee, the Licensor makes no claims about the fitness of the Data & Software and is not responsible for any problems such modifications cause. No Maintenance Services You understand and agree that Licensor is under no obligation to provide either maintenance services, update services, notices of latent defects, or corrections of defects with regard to the Data & Software. Licensor nevertheless reserves the right to update, modify, or discontinue the Data & Software at any time. Defects of the Data & Software must be notified in writing to the Licensor with a comprehensible description of the error symptoms. The notification of the defect should enable the reproduction of the error. The Licensee is encouraged to communicate any use, results, modification or publication. Publications using the Model & Software You acknowledge that the Data & Software is a valuable scientific resource and agree to appropriately reference the following paper in any publication making use of the Data & Software. Citation: @inproceedings{xiu2023econ, title = {{ECON: Explicit Clothed humans Optimized via Normal integration}}, author = {Xiu, Yuliang and Yang, Jinlong and Cao, Xu and Tzionas, Dimitrios and Black, Michael J.}, booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, month = {June}, year = {2023}, } Commercial licensing opportunities For commercial uses of the Model & Software, please send email to ps-license@tue.mpg.de This Agreement shall be governed by the laws of the Federal Republic of Germany except for the UN Sales Convention."
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic [ref=e735]:
+                          - generic [ref=e736] [cursor=pointer]: "1"
+                          - generic [ref=e737] [cursor=pointer]: "2"
+                          - generic [ref=e738] [cursor=pointer]: "3"
+                          - generic [ref=e739] [cursor=pointer]: "4"
+                          - generic [ref=e740] [cursor=pointer]: "5"
+                          - generic [ref=e741] [cursor=pointer]: "6"
+                          - generic [ref=e742] [cursor=pointer]: "7"
+                          - generic [ref=e743] [cursor=pointer]: "8"
+                          - generic [ref=e744] [cursor=pointer]: "9"
+                          - generic [ref=e745] [cursor=pointer]: "10"
+                          - generic [ref=e746] [cursor=pointer]: "11"
+                          - generic [ref=e747] [cursor=pointer]: "12"
+                          - generic [ref=e748] [cursor=pointer]: "13"
+                          - generic [ref=e749] [cursor=pointer]: "14"
+                          - generic [ref=e750] [cursor=pointer]: "15"
+                          - generic [ref=e751] [cursor=pointer]: "16"
+                          - generic [ref=e752] [cursor=pointer]: "17"
+                          - generic [ref=e753] [cursor=pointer]: "18"
+                          - generic [ref=e754] [cursor=pointer]: "19"
+                          - generic [ref=e755] [cursor=pointer]: "20"
+                          - generic [ref=e756] [cursor=pointer]: "21"
+                          - generic [ref=e757] [cursor=pointer]: "22"
+                          - generic [ref=e758] [cursor=pointer]: "23"
+                          - generic [ref=e759] [cursor=pointer]: "24"
+                          - generic [ref=e760] [cursor=pointer]: "25"
+                          - generic [ref=e761] [cursor=pointer]: "26"
+                          - generic [ref=e762] [cursor=pointer]: "27"
+                          - generic [ref=e763] [cursor=pointer]: "28"
+                          - generic [ref=e764] [cursor=pointer]: "29"
+                          - generic [ref=e765] [cursor=pointer]: "30"
+                          - generic [ref=e766] [cursor=pointer]: "31"
+                          - generic [ref=e767] [cursor=pointer]: "32"
+                          - generic [ref=e768] [cursor=pointer]: "33"
+                          - generic [ref=e769] [cursor=pointer]: "34"
+                          - generic [ref=e770] [cursor=pointer]: "35"
+                          - generic [ref=e771] [cursor=pointer]: "36"
+                          - generic [ref=e772] [cursor=pointer]: "37"
+                          - generic [ref=e773] [cursor=pointer]: "38"
+                          - generic [ref=e774] [cursor=pointer]: "39"
+                          - generic [ref=e775] [cursor=pointer]: "40"
+                          - generic [ref=e776] [cursor=pointer]: "41"
+                          - generic [ref=e777] [cursor=pointer]: "42"
+                          - generic [ref=e778] [cursor=pointer]: "43"
+                          - generic [ref=e779] [cursor=pointer]: "44"
+                          - generic [ref=e780] [cursor=pointer]: "45"
+                          - generic [ref=e781] [cursor=pointer]: "46"
+                          - generic [ref=e782] [cursor=pointer]: "47"
+                          - generic [ref=e783] [cursor=pointer]: "48"
+                          - generic [ref=e784] [cursor=pointer]: "49"
+                          - generic [ref=e785] [cursor=pointer]: "50"
+                          - generic [ref=e786] [cursor=pointer]: "51"
+                          - generic [ref=e787] [cursor=pointer]: "52"
+                          - generic [ref=e788] [cursor=pointer]: "53"
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: License
+                          - generic:
+                            - generic:
+                              - generic: Software Copyright License for non-commercial scientific research purposes
+                          - generic:
+                            - generic:
+                              - generic: Please read carefully the following terms and conditions and any accompanying documentation before you download and/or use the ECON model, data and software, (the "Data & Software"), including 3D meshes, images, videos, textures, software, scripts, and animations. By downloading and/or using the Data & Software (including downloading, cloning, installing, and any other use of the corresponding github repository), you acknowledge that you have read these terms and conditions, understand them, and agree to be bound by them. If you do not agree with these terms and conditions, you must not download and/or use the Data & Software. Any infringement of the terms of this agreement will automatically terminate your rights under this License
+                          - generic:
+                            - generic:
+                              - generic: Ownership / Licensees
+                          - generic:
+                            - generic:
+                              - generic: The Software and the associated materials has been developed at the Max Planck Institute for Intelligent Systems (hereinafter "MPI"). Any copyright or patent right is owned by and proprietary material of the Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (hereinafter “MPG”; MPI and MPG hereinafter collectively “Max-Planck”) hereinafter the “Licensor”.
+                          - generic:
+                            - generic:
+                              - generic: License Grant
+                          - generic:
+                            - generic:
+                              - generic: "Licensor grants you (Licensee) personally a single-user, non-exclusive, non-transferable, free of charge right:"
+                          - generic:
+                            - generic:
+                              - generic: • To install the Model & Software on computers owned, leased or otherwise controlled by you and/or your organization;
+                          - generic:
+                            - generic:
+                              - generic: • To use the Model & Software for the sole purpose of performing peaceful non-commercial scientific research, non-commercial education, or non-commercial artistic projects;
+                          - generic:
+                            - generic:
+                              - generic: • To modify, adapt, translate or create derivative works based upon the Model & Software.
+                          - generic:
+                            - generic:
+                              - generic: Any other use, in particular any use for commercial, pornographic, military, or surveillance, purposes is prohibited. This includes, without limitation, incorporation in a commercial product, use in a commercial service, or production of other artifacts for commercial purposes. The Data & Software may not be used to create fake, libelous, misleading, or defamatory content of any kind excluding analyses in peer-reviewed scientific research. The Data & Software may not be reproduced, modified and/or made available in any form to any third party without Max-Planck’s prior written permission.
+                          - generic:
+                            - generic:
+                              - generic: The Data & Software may not be used for pornographic purposes or to generate pornographic material whether commercial or not. This license also prohibits the use of the Software to train methods/algorithms/neural networks/etc. for commercial, pornographic, military, surveillance, or defamatory use of any kind. By downloading the Data & Software, you agree not to reverse engineer it.
+                          - generic:
+                            - generic:
+                              - generic: No Distribution
+                          - generic:
+                            - generic:
+                              - generic: The Data & Software and the license herein granted shall not be copied, shared, distributed, re-sold, offered for re-sale, transferred or sub-licensed in whole or in part except that you may make one copy for archive purposes only.
+                          - generic:
+                            - generic:
+                              - generic: Disclaimer of Representations and Warranties
+                          - generic:
+                            - generic:
+                              - generic: You expressly acknowledge and agree that the Data & Software results from basic research, is provided “AS IS”, may contain errors, and that any use of the Data & Software is at your sole risk. LICENSOR MAKES NO REPRESENTATIONS OR WARRANTIES OF ANY KIND CONCERNING THE DATA & SOFTWARE, NEITHER EXPRESS NOR IMPLIED, AND THE ABSENCE OF ANY LEGAL OR ACTUAL DEFECTS, WHETHER DISCOVERABLE OR NOT. Specifically, and not to limit the foregoing, licensor makes no representations or warranties (i) regarding the merchantability or fitness for a particular purpose of the Data & Software, (ii) that the use of the Data & Software will not infringe any patents, copyrights or other intellectual property rights of a third party, and (iii) that the use of the Data & Software will not cause any damage of any kind to you or a third party.
+                          - generic:
+                            - generic:
+                              - generic: Limitation of Liability
+                          - generic:
+                            - generic:
+                              - generic: Because this Data & Software License Agreement qualifies as a donation, according to Section 521 of the German Civil Code (Bürgerliches Gesetzbuch – BGB) Licensor as a donor is liable for intent and gross negligence only. If the Licensor fraudulently conceals a legal or material defect, they are obliged to compensate the Licensee for the resulting damage.
+                          - generic:
+                            - generic:
+                              - generic: Licensor shall be liable for loss of data only up to the amount of typical recovery costs which would have arisen had proper and regular data backup measures been taken. For the avoidance of doubt Licensor shall be liable in accordance with the German Product Liability Act in the event of product liability. The foregoing applies also to Licensor’s legal representatives or assistants in performance. Any further liability shall be excluded.
+                          - generic:
+                            - generic:
+                              - generic: Patent claims generated through the usage of the Data & Software cannot be directed towards the copyright holders.
+                          - generic:
+                            - generic:
+                              - generic: The Data & Software is provided in the state of development the licensor defines. If modified or extended by Licensee, the Licensor makes no claims about the fitness of the Data & Software and is not responsible for any problems such modifications cause.
+                          - generic:
+                            - generic:
+                              - generic: No Maintenance Services
+                          - generic:
+                            - generic:
+                              - generic: You understand and agree that Licensor is under no obligation to provide either maintenance services, update services, notices of latent defects, or corrections of defects with regard to the Data & Software. Licensor nevertheless reserves the right to update, modify, or discontinue the Data & Software at any time.
+                          - generic:
+                            - generic:
+                              - generic: Defects of the Data & Software must be notified in writing to the Licensor with a comprehensible description of the error symptoms. The notification of the defect should enable the reproduction of the error. The Licensee is encouraged to communicate any use, results, modification or publication.
+                          - generic:
+                            - generic:
+                              - generic: Publications using the Model & Software
+                          - generic:
+                            - generic:
+                              - generic: You acknowledge that the Data & Software is a valuable scientific resource and agree to appropriately reference the following paper in any publication making use of the Data & Software.
+                          - generic:
+                            - generic:
+                              - generic: "Citation:"
+                          - generic:
+                            - generic:
+                              - generic: "@inproceedings{xiu2023econ,"
+                          - generic:
+                            - generic:
+                              - generic: "title = {{ECON: Explicit Clothed humans Optimized via Normal integration}},"
+                          - generic:
+                            - generic:
+                              - generic: "author = {Xiu, Yuliang and Yang, Jinlong and Cao, Xu and Tzionas, Dimitrios and Black, Michael J.},"
+                          - generic:
+                            - generic:
+                              - generic: "booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},"
+                          - generic:
+                            - generic:
+                              - generic: "month = {June},"
+                          - generic:
+                            - generic:
+                              - generic: "year = {2023},"
+                          - generic:
+                            - generic:
+                              - generic: "}"
+                          - generic:
+                            - generic:
+                              - generic: Commercial licensing opportunities
+                          - generic:
+                            - generic:
+                              - generic: For commercial uses of the Model & Software, please send email to ps-license@tue.mpg.de
+                          - generic:
+                            - generic:
+                              - generic: This Agreement shall be governed by the laws of the Federal Republic of Germany except for the UN Sales Convention.
+  - alert [ref=e791]

@@ -1,4 +1,5 @@
 import { UnprocessableEntityException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import { AvaliacoesService } from './avaliacoes.service';
 import { normalizeAvaliacaoClinicaPayload } from './avaliacao-clinica-normalizer';
 import { normalizeTriagemRedsPayload } from './normalizers/triagem-reds-normalizer';
@@ -12,15 +13,13 @@ type ClinicaOverrides = {
   temperatura?: number;
 };
 
-const createService = () => new AvaliacoesService(
-  {} as any,
-  {} as any,
-  {} as any,
-  {} as any,
-  { emit: () => undefined } as any,
-  undefined,
-  undefined
-);
+const emptyResultados = (): Record<string, unknown> => ({});
+
+const createService = async () => {
+  const module = await Test.createTestingModule({ providers: [AvaliacoesService] })
+    .useMocker(() => ({})).compile();
+  return module.get(AvaliacoesService);
+};
 
 const buildClinicaPayload = (overrides: ClinicaOverrides = {}) => ({
   tipo: 'avaliacao_clinica',
@@ -31,14 +30,14 @@ const buildClinicaPayload = (overrides: ClinicaOverrides = {}) => ({
     frequenciaRespiratoria: overrides.frequenciaRespiratoria ?? 16,
     temperatura: overrides.temperatura ?? 36.5
   },
-  resultados: {}
+  resultados: emptyResultados()
 });
 
 describe('Avaliacao clinica - validacao e classificacao PA', () => {
-  it('PA sistolica 0 retorna 422', () => {
-    const service = createService() as any;
+  it('PA sistolica 0 retorna 422', async () => {
+    const service = await createService();
     expect(() => {
-      service.assertFinalizationRequirements(
+      service['assertFinalizationRequirements'](
         'avaliacao_clinica',
         buildClinicaPayload({ pressaoSistolica: 0 }),
         { pacienteRole: 'atleta' }
@@ -46,10 +45,10 @@ describe('Avaliacao clinica - validacao e classificacao PA', () => {
     }).toThrow(UnprocessableEntityException);
   });
 
-  it('PA sistolica -1 retorna 422', () => {
-    const service = createService() as any;
+  it('PA sistolica -1 retorna 422', async () => {
+    const service = await createService();
     expect(() => {
-      service.assertFinalizationRequirements(
+      service['assertFinalizationRequirements'](
         'avaliacao_clinica',
         buildClinicaPayload({ pressaoSistolica: -1 }),
         { pacienteRole: 'atleta' }
@@ -60,7 +59,7 @@ describe('Avaliacao clinica - validacao e classificacao PA', () => {
   it('PA 180/110 classifica como HAS Estagio 3', () => {
     const normalized = normalizeAvaliacaoClinicaPayload(
       buildClinicaPayload({ pressaoSistolica: 180, pressaoDiastolica: 110 })
-    ) as any;
+    );
 
     expect(normalized?.resultados?.classificacaoPA).toBe('HAS Estagio 3');
   });
@@ -68,7 +67,7 @@ describe('Avaliacao clinica - validacao e classificacao PA', () => {
   it('PA 115/75 classifica como Normal', () => {
     const normalized = normalizeAvaliacaoClinicaPayload(
       buildClinicaPayload({ pressaoSistolica: 115, pressaoDiastolica: 75 })
-    ) as any;
+    );
 
     expect(normalized?.resultados?.classificacaoPA).toBe('Normal');
   });
@@ -84,15 +83,15 @@ describe('Triagem RED-S - normalizer', () => {
         massaMagraKg: 50,
         leafQRespostas: Array(12).fill(true)
       },
-      resultados: {}
-    } as any) as any;
+      resultados: emptyResultados()
+    });
 
     expect(normalized?.resultados?.DE).toBe(18);
     expect(normalized?.resultados?.classificacaoDE).toBe('reds_estabelecido');
     expect(normalized?.resultados?.scoreLeafQ).toBe(12);
   });
 
-  it('preenche precisaDadosExtras quando dependencias automaticas estao ausentes', () => {
+  it('aceita campos próprios sem exigir outras avaliações', () => {
     const normalized = normalizeTriagemRedsPayload({
       tipo: 'triagem_reds',
       dados: {
@@ -100,16 +99,41 @@ describe('Triagem RED-S - normalizer', () => {
         gastoExercicioKcalManual: 500,
         massaMagraKgManual: 52
       },
-      resultados: {}
-    } as any) as any;
+      resultados: emptyResultados()
+    });
 
-    expect(normalized?.resultados?.precisaDadosExtras).toEqual([
-      'alimentar',
-      'gasto_energetico_total',
-      'composicao_corporal_integrada'
-    ]);
+    expect(normalized?.resultados?.precisaDadosExtras).toEqual([]);
     expect(normalized?.resultados?.DE).toBeCloseTo(32.69, 2);
     expect(normalized?.resultados?.classificacaoDE).toBe('risco_relativo');
+  });
+
+  it('nomeia apenas os campos próprios ainda ausentes', () => {
+    const normalized = normalizeTriagemRedsPayload({
+      tipo: 'triagem_reds',
+      dados: { ingestaoKcalR24hManual: 2200, massaMagraKgManual: 0 },
+      resultados: emptyResultados()
+    });
+
+    expect(normalized?.resultados?.precisaDadosExtras).toEqual([
+      'gastoExercicioKcal',
+      'massaMagraKg'
+    ]);
+    expect(normalized?.resultados?.DE).toBeNull();
+  });
+
+  it('mantém legível snapshot legado que só continha fontes automáticas', () => {
+    const normalized = normalizeTriagemRedsPayload({
+      tipo: 'triagem_reds',
+      dados: {
+        ingestaoKcalR24hAuto: 1600,
+        gastoExercicioKcalAuto: 700,
+        massaMagraKgAuto: 50
+      },
+      resultados: emptyResultados()
+    });
+
+    expect(normalized?.resultados?.DE).toBe(18);
+    expect(normalized?.resultados?.precisaDadosExtras).toEqual([]);
   });
 });
 
@@ -129,8 +153,8 @@ describe('Carga treino - normalizer', () => {
         ],
         mediaCargaUltimas4Semanas: 1500
       },
-      resultados: {}
-    } as any) as any;
+      resultados: emptyResultados()
+    });
 
     expect(normalized?.resultados?.cargaSemanaAtual).toBe(1900);
     expect(normalized?.resultados?.acwr).toBeCloseTo(1.2667, 4);
@@ -149,8 +173,8 @@ describe('Carga treino - normalizer', () => {
         ],
         mediaCargaUltimas4Semanas: 800
       },
-      resultados: {}
-    } as any) as any;
+      resultados: emptyResultados()
+    });
 
     expect(normalized?.resultados?.acwr).toBeGreaterThan(1.5);
     expect(normalized?.resultados?.classificacaoAcwr).toBe('zona_risco');

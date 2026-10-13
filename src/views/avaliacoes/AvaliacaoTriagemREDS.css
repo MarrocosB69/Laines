@@ -1,238 +1,99 @@
-.triagem-reds {
-  display: grid;
-  gap: 1rem;
-}
+/* Triagem RED-S: só o que é deste formulário. Raiz, cabeçalho, índice,
+   seções, campos, opções, resultados, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .triagem-reds. */
 
-.triagem-reds__context-note,
-.triagem-reds__conduta-note {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.75rem;
-  padding: 0.62rem 0.74rem;
-  background: #f8fafc;
-  display: grid;
-  gap: 0.2rem;
-  color: #334155;
-}
-
-.triagem-reds__context-note strong,
-.triagem-reds__conduta-note strong {
-  font-size: 0.81rem;
-  color: #0f172a;
-}
-
-.triagem-reds__context-note p,
-.triagem-reds__conduta-note p,
-.triagem-reds__context-note small,
-.triagem-reds__conduta-note small {
-  margin: 0;
-  font-size: 0.73rem;
-  line-height: 1.4;
-}
-
-.triagem-reds__context-note--ok,
-.triagem-reds__conduta-note--ok {
-  border-color: rgba(34, 197, 94, 0.34);
-  background: rgba(240, 253, 244, 0.86);
-}
-
-.triagem-reds__context-note--warn,
-.triagem-reds__conduta-note--warn {
-  border-color: rgba(245, 158, 11, 0.34);
-  background: rgba(255, 251, 235, 0.86);
-}
-
-.triagem-reds__context-note--risk,
-.triagem-reds__conduta-note--risk {
-  border-color: rgba(239, 68, 68, 0.32);
-  background: rgba(254, 242, 242, 0.84);
-}
-
-.triagem-reds__date-row {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: minmax(220px, 280px) 1fr;
-  align-items: end;
-}
-
-.triagem-reds__date-field {
-  max-width: 280px;
-}
-
-.triagem-reds__sex-chip {
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  color: #334155;
-  font-size: 0.92rem;
-}
-
-.triagem-reds__auto-grid,
-.triagem-reds__result-grid {
-  margin-top: 0.8rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
-}
-
-.triagem-reds__auto-grid > div,
-.triagem-reds__result-grid > div {
-  background: rgba(15, 23, 42, 0.03);
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.75rem;
-  padding: 0.7rem 0.8rem;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.triagem-reds__auto-grid span,
-.triagem-reds__result-grid span {
-  font-size: 0.82rem;
-  color: #64748b;
-}
-
-.triagem-reds__auto-grid strong,
-.triagem-reds__result-grid strong {
-  color: #0f172a;
-}
-
-.triagem-reds__missing,
-.triagem-reds__leaf-alert {
-  margin-top: 0.85rem;
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-  background: rgba(251, 191, 36, 0.12);
-  border: 1px solid rgba(251, 191, 36, 0.35);
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.75rem;
-  color: #7c2d12;
-}
-
-.triagem-reds__manual-grid {
-  margin-top: 0.7rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 0.75rem;
-}
-
-.triagem-reds__badge {
-  width: fit-content;
-  border-radius: 999px;
-  padding: 0.22rem 0.58rem;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.triagem-reds__badge--otima {
-  background: rgba(16, 185, 129, 0.15);
-  color: #047857;
-}
-
-.triagem-reds__badge--risco_relativo {
-  background: rgba(251, 191, 36, 0.2);
-  color: #b45309;
-}
-
-.triagem-reds__badge--reds_estabelecido {
-  background: rgba(239, 68, 68, 0.18);
-  color: #b91c1c;
-}
-
-.triagem-reds__badge--na {
-  background: rgba(148, 163, 184, 0.24);
-  color: #334155;
-}
-
-.triagem-reds-questionnaire {
-  margin-top: 0.8rem;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.triagem-reds-question {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
-  align-items: center;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.65rem;
-  padding: 0.55rem 0.65rem;
-}
-
-.triagem-reds-question span {
-  font-size: 0.9rem;
-  color: #1e293b;
-}
-
-.triagem-reds-question-options {
-  display: inline-flex;
-  gap: 0.75rem;
-  white-space: nowrap;
-}
-
-.triagem-reds-question-options label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.86rem;
-  color: #334155;
-}
-
-.triagem-reds__score-line {
-  margin-top: 0.65rem;
-  font-size: 0.92rem;
-  color: #334155;
-}
-
-.triagem-reds__risk-grid {
-  margin-top: 0.75rem;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.triagem-reds__risk-grid label,
-.triagem-reds__symptoms label {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: #334155;
-  font-size: 0.9rem;
-}
-
-.triagem-reds__symptoms {
-  margin-top: 0.8rem;
+/* ── Data e sexo de referência ───────────────────────────────────────── */
+.av-modulo .triagem-reds__date-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.8rem;
+  align-items: flex-end;
+  gap: var(--lt-space-3) var(--lt-space-4);
 }
 
-.triagem-reds__error {
-  margin: 0;
-  color: #dc2626;
-  font-size: 0.92rem;
-}
+.av-modulo .triagem-reds__date-field { flex: 1 1 13rem; max-width: 20rem; }
 
-.triagem-reds__actions {
+.av-modulo .triagem-reds__sex-chip {
   display: flex;
+  flex: 1 1 16rem;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0 var(--lt-space-1);
+  box-sizing: border-box;
+  min-height: var(--av-controle-altura);
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
 }
 
-.triagem-reds__actions span {
-  font-size: 0.9rem;
-  color: #475569;
+.av-modulo .triagem-reds__sex-chip strong { color: var(--lt-color-text); }
+
+/* Parágrafos dentro dos avisos (dados que faltam, alerta LEAF-Q, conduta). */
+.av-modulo :is(.triagem-reds__missing, .triagem-reds__leaf-alert, .triagem-reds__conduta-note) p { margin: 0; }
+
+.av-modulo .triagem-reds__conduta-note p { margin-top: var(--lt-space-1); }
+
+.av-modulo .triagem-reds__conduta-note small {
+  display: block;
+  margin-top: var(--lt-space-1);
+  font-size: var(--lt-text-sm);
 }
 
-@media (max-width: 900px) {
-  .triagem-reds__date-row {
-    grid-template-columns: 1fr;
-  }
+/* ── Resultado DE ────────────────────────────────────────────────────── */
+/* A classificação por extenso é uma palavra, não um número. */
+.av-modulo .triagem-reds__resultado--texto .av-resultado__numero {
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-lead);
+  line-height: var(--lt-leading-snug);
+}
 
-  .triagem-reds-question {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+/* O fio do cartão "Classificacao" acompanha a faixa, que já está escrita
+   no próprio cartão e no selo da DE. */
+.av-modulo .triagem-reds__badge--otima { --av-tom: var(--lt-color-brand-green); }
+.av-modulo .triagem-reds__badge--risco_relativo { --av-tom: var(--av-atencao-traco); }
+.av-modulo .triagem-reds__badge--reds_estabelecido { --av-tom: var(--lt-color-danger-text); }
+
+/* ── Questionário: uma pergunta por grupo, separadas por fio ────────── */
+.av-modulo .triagem-reds-questionnaire {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+}
+
+.av-modulo .triagem-reds-question + .triagem-reds-question {
+  padding-top: var(--lt-space-3);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.av-modulo .triagem-reds__score-line {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+}
+
+.av-modulo .triagem-reds__score-line strong {
+  color: var(--lt-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.av-modulo .triagem-reds__questionnaire-empty {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+}
+
+/* ── Sinais adicionais de risco ──────────────────────────────────────── */
+.av-modulo .triagem-reds__risk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+}
+
+.av-modulo :is(.triagem-reds__risk-grid, .triagem-reds__symptoms) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--lt-space-2);
 }

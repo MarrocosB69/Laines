@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { getEffectivePermissions } from '../common/domain/access.constants';
+import { buildCapabilities } from './authorization';
 import { RefreshTokensService } from './refresh-tokens.service';
 
 @Injectable()
@@ -79,7 +80,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       nivelAcesso: user.nivelAcesso || null,
       coordAtendimento: Boolean(user.coordAtendimento),
       mustChangePassword: Boolean(user.mustChangePassword),
-      permissions: getEffectivePermissions(user)
+      permissions: getEffectivePermissions(user),
+      // Projecao do contrato de autorizacao (UPD-12): a interface consome, nao decide.
+      capabilities: buildCapabilities({
+        id: user.id,
+        role: user.role,
+        diretoria: user.diretoria || null,
+        permissions: getEffectivePermissions(user),
+        coordAtendimento: Boolean(user.coordAtendimento),
+        projetoId: user.projetoId || null,
+        supervisorId: user.supervisorId || null,
+        crn: user.crn || null,
+        conselhoTipo: user.conselhoTipo || null,
+        conselhoNumero: user.conselhoNumero || null
+      })
     };
   }
 }

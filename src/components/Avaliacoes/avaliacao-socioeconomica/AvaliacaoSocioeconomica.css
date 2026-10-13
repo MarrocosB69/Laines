@@ -1,151 +1,21 @@
-.avaliacao-socioeconomica .card-header {
-  background: #f8fafc;
-  font-weight: 700;
+/* EBIA: só o que é deste formulário. Raiz, seções, campos, opções,
+   resultado, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .avaliacao-socioeconomica, por isso os seletores usam
+   `.av-modulo.avaliacao-socioeconomica`. */
+
+/* O ícone do cabeçalho é a sigla escrita ("EBIA"), não um desenho: cabe no
+   círculo de 44 px a 12 px. Azul da marca sobre --lt-color-track-tint: 5,57:1. */
+.av-modulo.avaliacao-socioeconomica .av-modulo__icone {
+  font-size: var(--lt-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
 }
 
-.avaliacao-socioeconomica .ebia-intro {
-  margin-top: 1rem;
-  padding: 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: #f8fafc;
-}
-
-.avaliacao-socioeconomica .ebia-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-.avaliacao-socioeconomica .ebia-option {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.9rem;
-  color: #475569;
-}
-
-.avaliacao-socioeconomica .ebia-questions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.avaliacao-socioeconomica .ebia-question {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 0.9rem;
-  padding: 1rem;
-  background: #ffffff;
-}
-
-.avaliacao-socioeconomica .ebia-question-text {
-  display: block;
-  font-size: 0.92rem;
-  color: #0f172a;
-  font-weight: 600;
-}
-
-.avaliacao-socioeconomica .ebia-note {
-  padding: 0.9rem;
-  border-radius: 0.75rem;
-  border: 1px dashed #cbd5e1;
-  color: #64748b;
-  background: #f8fafc;
-}
-
-.avaliacao-socioeconomica .ebia-result {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.avaliacao-socioeconomica .ebia-score,
-.avaliacao-socioeconomica .ebia-status {
-  flex: 1 1 220px;
-  padding: 1rem;
-  border-radius: 0.9rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: #f8fafc;
-}
-
-.avaliacao-socioeconomica .ebia-score span {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.avaliacao-socioeconomica .ebia-score strong {
-  display: block;
-  font-size: 1.4rem;
-  margin-top: 0.4rem;
-}
-
-.avaliacao-socioeconomica .ebia-status span {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.avaliacao-socioeconomica .ebia-status strong {
-  display: block;
-  font-size: 1.1rem;
-  margin-top: 0.4rem;
-}
-
-.avaliacao-socioeconomica .status-sa {
-  background: #dcfce7;
-  border-color: rgba(34, 197, 94, 0.3);
-  color: #166534;
-}
-
-.avaliacao-socioeconomica .status-il {
-  background: #fef9c3;
-  border-color: rgba(250, 204, 21, 0.4);
-  color: #854d0e;
-}
-
-.avaliacao-socioeconomica .status-im {
-  background: #ffe4e6;
-  border-color: rgba(251, 113, 133, 0.4);
-  color: #9f1239;
-}
-
-.avaliacao-socioeconomica .status-ig {
-  background: #fee2e2;
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #991b1b;
-}
-
-@media (max-width: 768px) {
-  .avaliacao-socioeconomica .eval-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .avaliacao-socioeconomica .ebia-options {
-    flex-direction: column;
-  }
-
-  .avaliacao-socioeconomica .ebia-result {
-    flex-direction: column;
-  }
-}
-
-@media (max-width: 480px) {
-  .avaliacao-socioeconomica {
-    padding: 0.75rem 0.5rem !important;
-  }
-
-  .avaliacao-socioeconomica .ebia-intro,
-  .avaliacao-socioeconomica .ebia-question,
-  .avaliacao-socioeconomica .ebia-score,
-  .avaliacao-socioeconomica .ebia-status {
-    padding: 0.75rem !important;
-  }
+/* As perguntas ficam uma embaixo da outra, separadas por um fio: são até
+   14 grupos de Sim/Não na mesma seção. */
+.av-modulo.avaliacao-socioeconomica .ebia-question + .ebia-question {
+  padding-top: var(--lt-space-4);
+  border-top: 1px solid var(--lt-color-border);
 }

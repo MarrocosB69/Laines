@@ -9,7 +9,9 @@ const studentPassword = process.env.E2E_STUDENT_PASSWORD || '';
 const professorEmail = process.env.E2E_PROFESSOR_EMAIL || '';
 const professorPassword = process.env.E2E_PROFESSOR_PASSWORD || '';
 const analyticsProjectId = process.env.E2E_ANALYTICS_PROJECT_ID || '11111111-1111-4111-8111-111111111111';
+const analyticsPatientId = String(process.env.E2E_ANALYTICS_PATIENT_ID || '').trim();
 const isCi = /^(1|true)$/i.test(String(process.env.CI || ''));
+const strictCounts = !/^(0|false)$/i.test(String(process.env.E2E_ANALYTICS_STRICT_COUNTS || (isCi ? 'true' : 'false')));
 const reportPath = (() => {
   const explicitPath = String(process.env.E2E_ANALYTICS_REPORT_PATH || '').trim();
   if (explicitPath) return explicitPath;
@@ -93,6 +95,8 @@ const requestJson = async (path, options = {}) => {
   return { response, body };
 };
 
+const withForceRefresh = (path) => `${path}${path.includes('?') ? '&' : '?'}forceRefresh=true`;
+
 const assertSummaryMetrics = (payload, expected) => {
   const metrics = payload?.metrics || {};
   const appointments = payload?.appointments?.summary || {};
@@ -110,10 +114,17 @@ const assertSummaryMetrics = (payload, expected) => {
     ensure(actual === expectedValue, `Esperado ${label}=${expectedValue}, recebido ${actual}`);
   };
 
-  ensure(metrics.totalPatients === expected.totalPatients, `Esperado totalPatients=${expected.totalPatients}, recebido ${metrics.totalPatients}`);
-  ensure(metrics.professors === expected.professors, `Esperado professors=${expected.professors}, recebido ${metrics.professors}`);
-  ensure(metrics.activePatients === expected.activePatients, `Esperado activePatients=${expected.activePatients}, recebido ${metrics.activePatients}`);
-  ensure(metrics.waitingList === expected.waitingList, `Esperado waitingList=${expected.waitingList}, recebido ${metrics.waitingList}`);
+  if (strictCounts) {
+    ensure(metrics.totalPatients === expected.totalPatients, `Esperado totalPatients=${expected.totalPatients}, recebido ${metrics.totalPatients}`);
+    ensure(metrics.professors === expected.professors, `Esperado professors=${expected.professors}, recebido ${metrics.professors}`);
+    ensure(metrics.activePatients === expected.activePatients, `Esperado activePatients=${expected.activePatients}, recebido ${metrics.activePatients}`);
+    ensure(metrics.waitingList === expected.waitingList, `Esperado waitingList=${expected.waitingList}, recebido ${metrics.waitingList}`);
+  } else {
+    ensure(Number(metrics.totalPatients) >= expected.totalPatients, `Esperado totalPatients>=${expected.totalPatients}, recebido ${metrics.totalPatients}`);
+    ensure(Number(metrics.professors) >= expected.professors, `Esperado professors>=${expected.professors}, recebido ${metrics.professors}`);
+    ensure(Number(metrics.activePatients) >= expected.activePatients, `Esperado activePatients>=${expected.activePatients}, recebido ${metrics.activePatients}`);
+    ensure(Number(metrics.waitingList) >= expected.waitingList, `Esperado waitingList>=${expected.waitingList}, recebido ${metrics.waitingList}`);
+  }
 
   assertExpected(appointments.todayCount, expected.todayCount, 'todayCount');
   assertExpected(appointments.weekCount, expected.weekCount, 'weekCount');
@@ -134,15 +145,28 @@ const assertSummaryMetrics = (payload, expected) => {
 
 const assertOverviewMetrics = (payload, expected) => {
   const metrics = payload?.metrics || {};
-  ensure(metrics.totalAlunos === expected.totalAlunos, `Esperado totalAlunos=${expected.totalAlunos}, recebido ${metrics.totalAlunos}`);
-  ensure(metrics.professores === expected.professores, `Esperado professores=${expected.professores}, recebido ${metrics.professores}`);
-  ensure(metrics.totalPacientes === expected.totalPacientes, `Esperado totalPacientes=${expected.totalPacientes}, recebido ${metrics.totalPacientes}`);
-  ensure(metrics.avaliacoesPeriodo === expected.avaliacoesPeriodo, `Esperado avaliacoesPeriodo=${expected.avaliacoesPeriodo}, recebido ${metrics.avaliacoesPeriodo}`);
-  ensure(metrics.taxaVinculacao === expected.taxaVinculacao, `Esperado taxaVinculacao=${expected.taxaVinculacao}, recebido ${metrics.taxaVinculacao}`);
-  ensure(metrics.integridade === expected.integridade, `Esperado integridade=${expected.integridade}, recebido ${metrics.integridade}`);
-  ensure(metrics.completionRate === expected.completionRate, `Esperado completionRate=${expected.completionRate}, recebido ${metrics.completionRate}`);
-  ensure(metrics.retencao === expected.retencao, `Esperado retencao=${expected.retencao}, recebido ${metrics.retencao}`);
-  ensure(Number(metrics.satisfacao).toFixed(1) === Number(expected.satisfacao).toFixed(1), `Esperado satisfacao=${expected.satisfacao}, recebido ${metrics.satisfacao}`);
+  if (strictCounts) {
+    ensure(metrics.totalAlunos === expected.totalAlunos, `Esperado totalAlunos=${expected.totalAlunos}, recebido ${metrics.totalAlunos}`);
+    ensure(metrics.professores === expected.professores, `Esperado professores=${expected.professores}, recebido ${metrics.professores}`);
+    ensure(metrics.totalPacientes === expected.totalPacientes, `Esperado totalPacientes=${expected.totalPacientes}, recebido ${metrics.totalPacientes}`);
+    ensure(metrics.avaliacoesPeriodo === expected.avaliacoesPeriodo, `Esperado avaliacoesPeriodo=${expected.avaliacoesPeriodo}, recebido ${metrics.avaliacoesPeriodo}`);
+    ensure(metrics.taxaVinculacao === expected.taxaVinculacao, `Esperado taxaVinculacao=${expected.taxaVinculacao}, recebido ${metrics.taxaVinculacao}`);
+    ensure(metrics.integridade === expected.integridade, `Esperado integridade=${expected.integridade}, recebido ${metrics.integridade}`);
+    ensure(metrics.completionRate === expected.completionRate, `Esperado completionRate=${expected.completionRate}, recebido ${metrics.completionRate}`);
+    ensure(metrics.retencao === expected.retencao, `Esperado retencao=${expected.retencao}, recebido ${metrics.retencao}`);
+    ensure(Number(metrics.satisfacao).toFixed(1) === Number(expected.satisfacao).toFixed(1), `Esperado satisfacao=${expected.satisfacao}, recebido ${metrics.satisfacao}`);
+  } else {
+    ensure(Number(metrics.totalAlunos) >= expected.totalAlunos, `Esperado totalAlunos>=${expected.totalAlunos}, recebido ${metrics.totalAlunos}`);
+    ensure(Number(metrics.professores) >= expected.professores, `Esperado professores>=${expected.professores}, recebido ${metrics.professores}`);
+    ensure(Number(metrics.totalPacientes) >= expected.totalPacientes, `Esperado totalPacientes>=${expected.totalPacientes}, recebido ${metrics.totalPacientes}`);
+    ensure(Number(metrics.avaliacoesPeriodo) >= expected.avaliacoesPeriodo, `Esperado avaliacoesPeriodo>=${expected.avaliacoesPeriodo}, recebido ${metrics.avaliacoesPeriodo}`);
+    ['taxaVinculacao', 'integridade', 'completionRate', 'retencao'].forEach((key) => {
+      const value = Number(metrics[key]);
+      ensure(Number.isFinite(value) && value >= 0 && value <= 100, `${key} invalido: ${metrics[key]}`);
+    });
+    const satisfacao = Number(metrics.satisfacao);
+    ensure(Number.isFinite(satisfacao) && satisfacao >= 0 && satisfacao <= 5, `satisfacao invalida: ${metrics.satisfacao}`);
+  }
 };
 
 const assertUsageByType = (payload) => {
@@ -152,16 +176,26 @@ const assertUsageByType = (payload) => {
     return acc;
   }, {});
 
-  ensure(byKey.bioimpedancia?.count === 1, `Esperado bioimpedancia.count=1, recebido ${byKey.bioimpedancia?.count}`);
-  ensure(byKey.perimetros?.count === 2, `Esperado perimetros.count=2, recebido ${byKey.perimetros?.count}`);
-  ensure(byKey.perimetros?.percentage === 67, `Esperado perimetros.percentage=67, recebido ${byKey.perimetros?.percentage}`);
+  if (strictCounts) {
+    ensure(byKey.bioimpedancia?.count === 1, `Esperado bioimpedancia.count=1, recebido ${byKey.bioimpedancia?.count}`);
+    ensure(byKey.perimetros?.count === 2, `Esperado perimetros.count=2, recebido ${byKey.perimetros?.count}`);
+    ensure(byKey.perimetros?.percentage === 67, `Esperado perimetros.percentage=67, recebido ${byKey.perimetros?.percentage}`);
+    return;
+  }
+  ensure(Number(byKey.bioimpedancia?.count || 0) >= 1, `Esperado bioimpedancia.count>=1, recebido ${byKey.bioimpedancia?.count}`);
+  ensure(Number(byKey.perimetros?.count || 0) >= 2, `Esperado perimetros.count>=2, recebido ${byKey.perimetros?.count}`);
+  ensure(Number(byKey.perimetros?.percentage || 0) >= 0 && Number(byKey.perimetros?.percentage || 0) <= 100, `perimetros.percentage invalido: ${byKey.perimetros?.percentage}`);
 };
 
 const assertQuarterly = (payload) => {
   const quarterly = Array.isArray(payload?.quarterly) ? payload.quarterly : [];
   ensure(quarterly.length === 4, `Esperado quarterly com 4 trimestres, recebido ${quarterly.length}`);
   const totalEvaluations = quarterly.reduce((acc, item) => acc + Number(item?.avaliacoes || 0), 0);
-  ensure(totalEvaluations === 3, `Esperado soma trimestral de avaliacoes=3, recebido ${totalEvaluations}`);
+  if (strictCounts) {
+    ensure(totalEvaluations === 3, `Esperado soma trimestral de avaliacoes=3, recebido ${totalEvaluations}`);
+  } else {
+    ensure(totalEvaluations >= 3, `Esperado soma trimestral de avaliacoes>=3, recebido ${totalEvaluations}`);
+  }
 };
 
 const assertExportCsv = (raw) => {
@@ -170,7 +204,11 @@ const assertExportCsv = (raw) => {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
-  ensure(lines.length === 10, `Esperado 10 linhas no CSV (cabecalho + 9 registros), recebido ${lines.length}`);
+  if (strictCounts) {
+    ensure(lines.length === 10, `Esperado 10 linhas no CSV (cabecalho + 9 registros), recebido ${lines.length}`);
+  } else {
+    ensure(lines.length >= 10, `Esperado ao menos 10 linhas no CSV (cabecalho + fixture), recebido ${lines.length}`);
+  }
   ensure(
     lines[0] === 'tipo_registro,id,paciente_id,paciente_nome,paciente_anon_id,projeto_id,projeto_nome,status,responsavel_id,responsavel_nome,consulta_data,consulta_hora,consulta_tipo,avaliacao_tipo,avaliacao_completude,consentimento_pesquisa,criado_em,atualizado_em',
     'Cabecalho CSV inesperado.'
@@ -200,9 +238,17 @@ const assertExportJson = (raw) => {
   ensure(parsed && typeof parsed === 'object', 'Export json invalido.');
   ensure(typeof parsed.generatedAt === 'string', 'Export json sem generatedAt.');
   ensure(parsed.filters?.anonymize === true, 'Export json com anonimização inesperada.');
-  ensure(Array.isArray(parsed.pacientes) && parsed.pacientes.length === 2, 'Export json sem pacientes esperados.');
-  ensure(Array.isArray(parsed.avaliacoes) && parsed.avaliacoes.length === 3, 'Export json sem avaliacoes esperadas.');
-  ensure(Array.isArray(parsed.agendamentos) && parsed.agendamentos.length === 4, 'Export json sem agendamentos esperados.');
+  const assertLength = (items, expectedLength, label) => {
+    ensure(Array.isArray(items), `Export json sem ${label}.`);
+    if (strictCounts) {
+      ensure(items.length === expectedLength, `Export json com ${label} inesperados: ${items.length}.`);
+    } else {
+      ensure(items.length >= expectedLength, `Export json com menos ${label} que o fixture: ${items.length}.`);
+    }
+  };
+  assertLength(parsed.pacientes, 2, 'pacientes');
+  assertLength(parsed.avaliacoes, 3, 'avaliacoes');
+  assertLength(parsed.agendamentos, 4, 'agendamentos');
 };
 
 const loginUser = async (email, password, label) => {
@@ -253,9 +299,15 @@ const run = async () => {
   const token = await loginUser(adminEmail, adminPassword, 'admin');
   const authHeaders = { authorization: `Bearer ${token}` };
   console.log('[e2e-analytics] Login admin ok');
+  if (analyticsPatientId) {
+    const pendencias = await requestJson(`/avaliacoes/pendencias/${analyticsPatientId}`, { headers: authHeaders });
+    ensure(pendencias.response.ok, `Fixture clinica invalida: pendencias HTTP ${pendencias.response.status}`);
+    ensure(Array.isArray(pendencias.body), 'Fixture clinica invalida: pendencias nao e lista.');
+    addCheck('analytics.fixture-clinical-pendencias', 'passed', { httpStatus: pendencias.response.status });
+  }
   addCheck('auth.admin-login', 'passed');
 
-  const summary = await requestJson(`/analytics/dashboard/summary?projectId=${analyticsProjectId}`, {
+  const summary = await requestJson(withForceRefresh(`/analytics/dashboard/summary?projectId=${analyticsProjectId}`), {
     headers: authHeaders
   });
   ensure(summary.response.ok, `Falha em /analytics/dashboard/summary?projectId=<fixture>: HTTP ${summary.response.status}`);
@@ -277,7 +329,7 @@ const run = async () => {
     appointmentsSummary: summary.body?.appointments?.summary || null
   });
 
-  const correlations = await requestJson(`/analytics/correlations?projectId=${analyticsProjectId}`, {
+  const correlations = await requestJson(withForceRefresh(`/analytics/correlations?projectId=${analyticsProjectId}`), {
     headers: authHeaders
   });
   ensure(correlations.response.ok, `Falha em /analytics/correlations?projectId=<fixture>: HTTP ${correlations.response.status}`);
@@ -288,7 +340,7 @@ const run = async () => {
     drivers: Array.isArray(correlations.body?.drivers) ? correlations.body.drivers.length : 0
   });
 
-  const overviewProject = await requestJson(`/analytics/reports/overview?range=month&projectId=${analyticsProjectId}`, {
+  const overviewProject = await requestJson(withForceRefresh(`/analytics/reports/overview?range=month&projectId=${analyticsProjectId}`), {
     headers: authHeaders
   });
   ensure(overviewProject.response.ok, `Falha em /analytics/reports/overview?projectId=<fixture>: HTTP ${overviewProject.response.status}`);

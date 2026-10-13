@@ -1,156 +1,116 @@
-.avaliacao-exames-laboratoriais__section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+/* Exames laboratoriais: só o que é deste formulário. Raiz, seções, campos,
+   resultados, avisos e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .avaliacao-exames-laboratoriais, por isso os seletores
+   usam `.av-modulo.avaliacao-exames-laboratoriais`. */
+
+/* ── Avisos com mais de um bloco (pré-preenchimento e conduta) ───────── */
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__prefill-note p,
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__conduta-note p {
+  margin: 0.125rem 0 0;
 }
 
-.avaliacao-exames-laboratoriais__rows {
-  display: grid;
-  gap: 0.6rem;
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__prefill-note .ui-button {
+  margin-top: var(--lt-space-3);
 }
 
-.avaliacao-exames-laboratoriais__prefill-note {
-  border: 1px solid rgba(86, 173, 219, 0.34);
-  border-radius: 0.74rem;
-  background: rgba(224, 242, 254, 0.84);
-  margin: 0.66rem 0 0.78rem;
-  padding: 0.58rem 0.68rem;
-  display: grid;
-  gap: 0.45rem;
+/* Contexto do onboarding: texto de apoio sobre os quatro fundos de aviso
+   (5,79:1 no menor caso, --lt-color-track-tint). */
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__conduta-note small {
+  display: block;
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
 }
 
-.avaliacao-exames-laboratoriais__prefill-note p {
-  margin: 0;
-  font-size: 0.72rem;
-  color: #0c4a6e;
-  line-height: 1.45;
-}
-
-.avaliacao-exames-laboratoriais__conduta-note {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 0.74rem;
-  padding: 0.58rem 0.68rem;
-  background: #f8fafc;
-  margin: 0.66rem 0 0.78rem;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.avaliacao-exames-laboratoriais__conduta-note strong {
-  font-size: 0.8rem;
-  color: #0f172a;
-}
-
-.avaliacao-exames-laboratoriais__conduta-note p,
-.avaliacao-exames-laboratoriais__conduta-note small {
-  margin: 0;
-  font-size: 0.72rem;
-  color: #334155;
-  line-height: 1.4;
-}
-
-.avaliacao-exames-laboratoriais__conduta-note.tone-ok {
-  border-color: rgba(34, 197, 94, 0.34);
-  background: rgba(240, 253, 244, 0.84);
-}
-
-.avaliacao-exames-laboratoriais__conduta-note.tone-warn {
-  border-color: rgba(245, 158, 11, 0.34);
-  background: rgba(255, 251, 235, 0.86);
-}
-
-.avaliacao-exames-laboratoriais__conduta-note.tone-risk {
-  border-color: rgba(239, 68, 68, 0.34);
-  background: rgba(254, 242, 242, 0.85);
-}
-
-.avaliacao-exames-laboratoriais__templates {
+/* ── Modelos de painel: fichas de 44 px ──────────────────────────────── */
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__templates {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  gap: var(--lt-space-2);
 }
 
-.avaliacao-exames-laboratoriais__templates-label {
-  font-size: 0.75rem;
-  color: var(--color-text-muted, #64748b);
-  font-weight: 500;
-  white-space: nowrap;
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__templates-label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
 }
 
-.avaliacao-exames-laboratoriais__tpl-btn {
-  padding: 0.28rem 0.7rem;
-  font-size: 0.75rem;
-  border: 1px solid var(--color-border, #cbd5e1);
-  border-radius: 999px;
-  background: var(--color-bg-subtle, #f1f5f9);
-  color: var(--color-text-secondary, #334155);
-  cursor: pointer;
-  line-height: 1.4;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.avaliacao-exames-laboratoriais__tpl-btn:hover {
-  background: var(--color-primary-subtle, #e0f2fe);
-  border-color: var(--color-primary, #0284c7);
-  color: var(--color-primary-dark, #0369a1);
-}
-
-.avaliacao-exames-laboratoriais__row {
-  display: grid;
-  gap: 0.5rem;
-  grid-template-columns: 1.3fr 0.8fr 0.8fr 0.8fr 0.8fr auto;
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__tpl-btn {
+  display: inline-flex;
   align-items: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  cursor: pointer;
+  transition: border-color 160ms, background-color 160ms;
 }
 
-.avaliacao-exames-laboratoriais__row--header {
-  padding: 0 0 0.3rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-text-muted, #64748b);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--color-border, #e2e8f0);
-  margin-bottom: 0.25rem;
-}
-
-.avaliacao-exames-laboratoriais__row--header span:last-child {
-  visibility: hidden;
-}
-
-.avaliacao-exames-laboratoriais__row .eval-btn {
-  padding: 0.55rem;
-  min-width: 2.25rem;
-  justify-content: center;
-}
-
-@media (max-width: 1024px) {
-  .avaliacao-exames-laboratoriais__row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (hover: hover) {
+  .av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__tpl-btn:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
   }
 }
 
-
-@media (max-width: 768px) {
-  .avaliacao-exames-laboratoriais__row {
-    grid-template-columns: 1fr !important;
-  }
-
-  .avaliacao-exames-laboratoriais .eval-grid {
-    grid-template-columns: 1fr !important;
-  }
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__tpl-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
-@media (max-width: 480px) {
-  .avaliacao-exames-laboratoriais {
-    padding: 0.75rem 0.5rem !important;
-  }
+/* ── Linhas de analitos: seis colunas alinhadas ao cabeçalho ──────────
+   Em tela estreita o invólucro (*table-wrap) rola sozinho, como as tabelas
+   da base; a página não ganha rolagem lateral. O respiro deixa o anel de
+   foco inteiro dentro da área que rola. */
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  padding: var(--lt-space-1);
+}
 
-  .avaliacao-exames-laboratoriais .eval-card,
-  .avaliacao-exames-laboratoriais .eval-section {
-    padding: 0.75rem !important;
-  }
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+}
+
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) repeat(4, minmax(0, 0.8fr)) var(--lt-target-min);
+  gap: var(--lt-space-2);
+  align-items: center;
+  min-width: 40rem;
+}
+
+/* O rótulo destes campos é só para leitor de tela: sem o espaço dele. */
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__row > .av-campo { gap: 0; }
+
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__row--header {
+  padding-bottom: var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.av-modulo.avaliacao-exames-laboratoriais .avaliacao-exames-laboratoriais__remove-btn {
+  min-width: var(--lt-target-min);
+  padding: 0;
+}
+
+/* ── Resumo calculado: a classificação é texto, um degrau abaixo do número ── */
+.av-modulo.avaliacao-exames-laboratoriais .exames-resumo-card--texto .av-resultado__numero {
+  font-size: var(--lt-text-title);
 }

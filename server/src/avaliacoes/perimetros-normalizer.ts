@@ -63,6 +63,56 @@ const fixed = (value: number | null, digits: number): number | null => (
   Number.isFinite(value) ? Number((value as number).toFixed(digits)) : null
 );
 
+// % de gordura YMCA recalculado aqui a partir de cintura, peso e sexo, com a
+// mesma regra do cliente (calculationEngine.js; WI-013, decisão 1). A equação
+// original é em polegadas e libras. Fora de 2 a 70% o valor fica nulo; o valor
+// enviado pelo cliente não é mais gravado como veio.
+const YMCA_FAIXA_PLAUSIVEL = { min: 2, max: 70 };
+const YMCA_FORA_DA_FAIXA = 'Fora da faixa plausível (2 a 70%). Verifique cintura e peso.';
+
+const normalizeSexo = (value: unknown): 'male' | 'female' | null => {
+  const token = toText(value).toLowerCase();
+  if (!token) return null;
+  if (token.includes('fem') || token === 'f' || token === 'female') return 'female';
+  if (token.includes('masc') || token === 'm' || token === 'male') return 'male';
+  return null;
+};
+
+const calcularYmca = (
+  sexo: 'male' | 'female' | null,
+  cinturaCm: number | null,
+  pesoKg: number | null
+): { valor: number | null; foraDaFaixa: boolean } => {
+  if (!sexo || !Number.isFinite(cinturaCm) || (cinturaCm as number) <= 0
+    || !Number.isFinite(pesoKg) || (pesoKg as number) <= 0) {
+    return { valor: null, foraDaFaixa: false };
+  }
+  const cinturaPol = (cinturaCm as number) / 2.54;
+  const pesoLb = (pesoKg as number) * 2.20462;
+  const constante = sexo === 'male' ? -98.42 : -76.76;
+  const bruto = ((constante + (4.15 * cinturaPol) - (0.082 * pesoLb)) / pesoLb) * 100;
+  if (bruto < YMCA_FAIXA_PLAUSIVEL.min || bruto > YMCA_FAIXA_PLAUSIVEL.max) {
+    return { valor: null, foraDaFaixa: true };
+  }
+  return { valor: bruto, foraDaFaixa: false };
+};
+
+// Mesmos rótulos e cortes de ymcaBodyFatClassification no cliente.
+const classificarYmca = (
+  sexo: 'male' | 'female' | null,
+  valor: number | null,
+  foraDaFaixa: boolean
+): string => {
+  if (foraDaFaixa) return YMCA_FORA_DA_FAIXA;
+  if (!Number.isFinite(valor) || !sexo) return 'Sem classificacao YMCA';
+  const percentual = valor as number;
+  const [baixo, adequado, atencao] = sexo === 'male' ? [10, 20, 25] : [18, 30, 35];
+  if (percentual < baixo) return 'Baixo % gordura estimado';
+  if (percentual < adequado) return 'Adequado';
+  if (percentual < atencao) return 'Atencao';
+  return 'Elevado';
+};
+
 type PayloadShape = {
   tipo?: string;
   dados?: JsonRecord;
@@ -138,7 +188,10 @@ export const normalizePerimetrosPayload = <T extends PayloadShape>(payload: T): 
   const rcq = toNumber(pick(valueSources, ['rcq']));
   const indiceCinturaEstatura = toNumber(pick(valueSources, ['indice_cintura_estatura', 'indiceCinturaEstatura', 'ice']));
   const indiceConicidade = toNumber(pick(valueSources, ['indice_conicidade', 'indiceConicidade', 'conicity']));
-  const percentualGorduraYmca = toNumber(pick(valueSources, ['percentual_gordura_ymca', 'percentualGorduraYmca']));
+  const sexo = normalizeSexo(pick(valueSources, ['sexo', 'sex']));
+  const ymca = calcularYmca(sexo, cinturaCm, peso);
+  const percentualGorduraYmca = fixed(ymca.valor, 2);
+  const classificacaoYmca = classificarYmca(sexo, ymca.valor, ymca.foraDaFaixa);
   const areaSuperficieCorporal = toNumber(pick(valueSources, ['area_superficie_corporal', 'areaSuperficieCorporal']));
   const riscoCintura = toText(pick(valueSources, ['risco_cintura', 'riscoCintura', 'classificacaoCintura']));
   const tmbSelecionada = toNumber(pick(valueSources, ['tmbSelecionada', 'tmbSelecionadaKcal', 'tmb_kcal']));
@@ -182,7 +235,10 @@ export const normalizePerimetrosPayload = <T extends PayloadShape>(payload: T): 
     rcq: toText(pick([canonicalClassificacoes], ['rcq', 'classificacaoRcq'])) || undefined,
     ice: toText(pick([canonicalClassificacoes], ['ice', 'classificacaoIce'])) || undefined,
     conicidade: toText(pick([canonicalClassificacoes], ['conicidade', 'classificacaoConicidade'])) || undefined,
-    ymca: toText(pick([canonicalClassificacoes], ['ymca', 'classificacaoYmca'])) || undefined
+    ymca: classificacaoYmca,
+    classificacaoYmca: Object.prototype.hasOwnProperty.call(canonicalClassificacoes, 'classificacaoYmca')
+      ? classificacaoYmca
+      : undefined
   });
 
   const normalizedMetadadosFormula = compact({

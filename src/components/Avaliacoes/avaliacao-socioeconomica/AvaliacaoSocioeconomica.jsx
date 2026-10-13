@@ -3,7 +3,32 @@ import { Save } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../base';
 import './AvaliacaoSocioeconomica.css';
+
+// Índice "Neste formulário". "Progresso do questionário" é o título que já
+// existia; os outros três são títulos novos, só de agrupamento.
+const EBIA_INDICE = [
+  { id: 'ebia-coleta', titulo: 'Dados da coleta' },
+  { id: 'ebia-progresso', titulo: 'Progresso do questionário' },
+  { id: 'ebia-perguntas', titulo: 'Questionário' },
+  { id: 'ebia-resultado', titulo: 'Resultado' }
+];
+
+// Só o tom visual da classificação, que vai sempre escrita. Os mesmos grupos
+// de cor de antes (status-sa verde, status-il amarelo, status-im e status-ig
+// em tons de vermelho), no vocabulário da base.
+const EBIA_TOM = { SA: 'positivo', IL: 'atencao', IM: 'perigo', IG: 'perigo' };
 
 const EBIA_QUESTIONS = [
   { id: 'q1', text: 'Nos últimos três meses, houve preocupação de que os alimentos acabassem antes de poder comprar ou receber mais comida?' },
@@ -276,66 +301,64 @@ const AvaliacaoSocioeconomica = ({
   }, []);
 
   return (
-    <div className={`eval-card avaliacao-socioeconomica${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          EBIA
-        </div>
-        <div>
-          <h3 className="eval-title">EBIA</h3>
-          <p className="eval-subtitle">Escala Brasileira de Insegurança Alimentar</p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card avaliacao-socioeconomica${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="EBIA"
+      descricao="Escala Brasileira de Insegurança Alimentar"
+      icone="EBIA"
+    >
+      <AvaliacaoIndice itens={EBIA_INDICE} />
+
+      {readOnly && (
+        <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>
+      )}
 
       {onboardingSummary.length > 0 ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto do onboarding:</strong> {onboardingSummary.join(' · ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
 
-      <div className="ebia-intro">
-        <div className="eval-field" style={{ maxWidth: '280px' }}>
-          <label className="eval-label">Data da coleta</label>
-          <input
-            type="date"
-            className="eval-input"
-            name="dataAvaliacao"
-            value={dados.dataAvaliacao}
+      <AvaliacaoSecao id="ebia-coleta" titulo="Dados da coleta" className="ebia-intro">
+        <div className="av-grade">
+          <Campo rotulo="Data da coleta" className="eval-field">
+            <input
+              type="date"
+              className="eval-input"
+              name="dataAvaliacao"
+              value={dados.dataAvaliacao}
+              onChange={handleChange}
+              disabled={readOnly}
+            />
+          </Campo>
+        </div>
+
+        <GrupoOpcoes legenda="Há moradores menores de 18 anos no domicílio?" horizontal>
+          <Opcao
+            rotulo="Sim"
+            name="temMenores"
+            value="sim"
+            checked={dados.temMenores === 'sim'}
             onChange={handleChange}
             disabled={readOnly}
           />
-        </div>
+          <Opcao
+            rotulo="Não"
+            name="temMenores"
+            value="nao"
+            checked={dados.temMenores === 'nao'}
+            onChange={handleChange}
+            disabled={readOnly}
+          />
+        </GrupoOpcoes>
+      </AvaliacaoSecao>
 
-        <label className="eval-label" style={{ marginTop: '0.75rem' }}>Há moradores menores de 18 anos no domicílio?</label>
-        <div className="ebia-options">
-          <label className="ebia-option">
-            <input
-              type="radio"
-              name="temMenores"
-              value="sim"
-              checked={dados.temMenores === 'sim'}
-              onChange={handleChange}
-              disabled={readOnly}
-            />
-            <span>Sim</span>
-          </label>
-          <label className="ebia-option">
-            <input
-              type="radio"
-              name="temMenores"
-              value="nao"
-              checked={dados.temMenores === 'nao'}
-              onChange={handleChange}
-              disabled={readOnly}
-            />
-            <span>Não</span>
-          </label>
-        </div>
-      </div>
-
-      <div className="eval-section">
-        <h4 className="eval-section-title">Progresso do questionário</h4>
-        <p className="eval-section-subtitle">Acompanhe o preenchimento para evitar respostas incompletas.</p>
+      <AvaliacaoSecao
+        id="ebia-progresso"
+        titulo="Progresso do questionário"
+        descricao="Acompanhe o preenchimento para evitar respostas incompletas."
+        className="eval-section"
+      >
         <div className="eval-summary-grid">
           <div className="eval-summary-item">
             <span>Respostas preenchidas</span>
@@ -350,9 +373,9 @@ const AvaliacaoSocioeconomica = ({
             <strong>{score} ponto(s)</strong>
           </div>
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="ebia-questions">
+      <AvaliacaoSecao id="ebia-perguntas" titulo="Questionário" className="ebia-questions">
         {adultQuestions.map((item, index) => (
           <QuestionRow
             key={item.id}
@@ -376,65 +399,59 @@ const AvaliacaoSocioeconomica = ({
             />
           ))
         ) : (
-          <div className="ebia-note">As perguntas 9 a 14 só se aplicam quando há menores de 18 anos no domicílio.</div>
+          <AvisoAvaliacao tipo="info" className="ebia-note">
+            As perguntas 9 a 14 só se aplicam quando há menores de 18 anos no domicílio.
+          </AvisoAvaliacao>
         )}
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="ebia-result">
-        <div className="ebia-score">
-          <span>Pontuação</span>
-          <strong>{score} pontos</strong>
+      {/* Pontuação e classificação são as de antes (score, classification).
+          Sem nenhuma resposta, o cartão mostra "—" em vez de "0 pontos /
+          Segurança Alimentar": ausência não é resultado normal. */}
+      <AvaliacaoSecao id="ebia-resultado" titulo="Resultado" className="ebia-result">
+        <div className="av-resultados">
+          <ResultadoCalculado
+            className={`ebia-status status-${classification.code.toLowerCase()}`}
+            rotulo="Pontuação"
+            valor={answeredCount > 0 ? score : null}
+            unidade="pontos"
+            classificacao={answeredCount > 0 ? `${classification.label} (${classification.code})` : null}
+            tom={EBIA_TOM[classification.code]}
+          />
         </div>
-        <div className={`ebia-status status-${classification.code.toLowerCase()}`}>
-          <span>{classification.code}</span>
-          <strong>{classification.label}</strong>
-        </div>
-      </div>
+      </AvaliacaoSecao>
 
-      {error && <div className="form-error-message">{error}</div>}
-      {readOnly && (
-        <div className="eval-note">Somente leitura para o seu perfil.</div>
-      )}
+      {error && <AvisoAvaliacao tipo="perigo" anunciar>{error}</AvisoAvaliacao>}
 
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={() => dispatchSalvar(false)} disabled={readOnly} loading={saveStatus === 'saving'}>
           <Save size={18} /> Salvar EBIA
         </Button>
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+    </AvaliacaoModulo>
   );
 };
 
 function QuestionRow({ item, index, value, onChange, readOnly }) {
   return (
-    <div className="ebia-question">
-      <span className="ebia-question-text">{index}. {item.text}</span>
-      <div className="ebia-options">
-        <label className="ebia-option">
-          <input
-            type="radio"
-            name={item.id}
-            value="sim"
-            checked={value === 'sim'}
-            onChange={onChange}
-            disabled={readOnly}
-          />
-          <span>Sim</span>
-        </label>
-        <label className="ebia-option">
-          <input
-            type="radio"
-            name={item.id}
-            value="nao"
-            checked={value === 'nao'}
-            onChange={onChange}
-            disabled={readOnly}
-          />
-          <span>Não</span>
-        </label>
-      </div>
-    </div>
+    <GrupoOpcoes legenda={<>{index}. {item.text}</>} horizontal className="ebia-question">
+      <Opcao
+        rotulo="Sim"
+        name={item.id}
+        value="sim"
+        checked={value === 'sim'}
+        onChange={onChange}
+        disabled={readOnly}
+      />
+      <Opcao
+        rotulo="Não"
+        name={item.id}
+        value="nao"
+        checked={value === 'nao'}
+        onChange={onChange}
+        disabled={readOnly}
+      />
+    </GrupoOpcoes>
   );
 }
 

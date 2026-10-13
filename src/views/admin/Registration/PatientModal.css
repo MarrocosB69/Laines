@@ -1,103 +1,948 @@
-.patient-modal-container {
-  --app-modal-content-max-width: 920px;
-}
+/* Modal de cadastro e edição de atleta (PatientModal.jsx), na direção
+   "Energia e velocidade" da landing (docs/design/landing-guia-visual.md,
+   seção "Direção vigente"; docs/implementacao/telas-v2/change-intent.md,
+   onda D2). Abre na gestão de atletas e no painel do professor; vai para o
+   `body` por createPortal, então nenhum escopo de portal o alcança.
 
-.patient-modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.95rem;
-  padding: 0;
-}
+   O JSX continua com as classes `app-modal-*` de src/styles/modalSystem.css
+   (onda A, mudando em paralelo), mas nada aqui depende delas: casca,
+   cabeçalho, corpo, rodapé, campos e botões são redeclarados no escopo
+   `.patient-modal-overlay`/`.patient-modal-container`, com seletores que
+   vencem os globais em qualquer ordem de carga (o foco do campo de
+   modalSystem.css tem 0,4,0; o daqui, 0,4,1). O mesmo vale para as
+   armadilhas de src/index.css e src/styles/theme.css: `label` a 13 px,
+   `input:not(...)` com 0,2,1, `button { white-space: nowrap }` e as margens
+   das utilidades do Tailwind (`space-y-*`, `grid gap-3`) que o JSX usa.
 
-.patient-form-grid {
-  gap: 0.8rem 0.78rem;
-}
+   Seis seções com título (role=heading), barra de atalhos presa no topo,
+   campos de 48 px ligados ao rótulo (htmlFor gerado por useId), asterisco
+   de obrigatório em vermelho (o campo leva `required`), dicas ligadas por
+   aria-describedby, erro anunciado (role=alert) e ligado ao botão de
+   salvar, botões de 44 px com o primário no degradê de largada. Sem
+   transição de cor; só a seta da triagem gira, sob
+   `prefers-reduced-motion: no-preference`. */
 
-.patient-form-grid .col-span-full {
-  grid-column: 1 / -1;
-}
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../landing/landing-tokens.css';
 
-.patient-section-title {
-  margin-top: 0.16rem;
-}
-
-.patient-field-label {
-  margin: 0;
-  font-size: 0.79rem;
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.patient-modal-form .space-y-2 {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.patient-field-input,
-.patient-field-select,
-.patient-field-textarea {
-  border-radius: var(--radius-md);
-}
-
-.patient-field-textarea {
-  resize: none;
-}
-
-.patient-team-empty {
-  color: var(--color-text-muted);
-  font-size: 0.82rem;
-  font-style: italic;
-}
-
-.patient-modal-form .grid.grid-cols-1.sm\:grid-cols-2.gap-3 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.56rem;
-}
-
-.patient-team-option {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-white);
-  padding: 0.56rem 0.66rem;
+/* ── Véu e casca ─────────────────────────────────────────────────────── */
+.patient-modal-overlay.app-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2500;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: color-mix(in srgb, var(--lt-color-stadium) 62%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.patient-modal-overlay .patient-modal-container {
+  --pm-nav-altura: 4.25rem;
+  --pm-atencao-texto: #9a3412; /* o par de atenção de painel.css: 6,88:1 sobre o fundo abaixo */
+  --pm-atencao-fundo: #fff7ed;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(64rem, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 30px 72px -38px rgba(10, 36, 68, 0.6);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+.patient-modal-overlay .patient-modal-container:focus-visible { outline: none; }
+
+.patient-modal-container p { margin: 0; line-height: var(--lt-leading-normal); }
+
+/* ── Cabeçalho ───────────────────────────────────────────────────────── */
+.patient-modal-container .patient-modal-header.app-modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-3);
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-bottom: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface);
+}
+
+.patient-modal-container .patient-modal-header .app-modal-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.patient-modal-container .patient-modal-header .app-modal-title {
+  margin: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.patient-modal-container .patient-modal-header .app-modal-subtitle {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.patient-modal-container .patient-modal-header .app-modal-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: calc(-1 * var(--lt-space-2)) calc(-1 * var(--lt-space-2)) 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text-muted);
   cursor: pointer;
-  transition: var(--transition);
 }
 
-.patient-team-option:hover {
-  border-color: rgba(16, 51, 85, 0.3);
-  background: rgba(16, 51, 85, 0.03);
+@media (hover: hover) {
+  .patient-modal-container .patient-modal-header .app-modal-close:hover:not(:disabled) {
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
 }
 
-.patient-team-checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-navy);
+/* ── Corpo: o formulário rola; a barra de seções e o rodapé ficam presos ─ */
+.patient-modal-container .patient-modal-form.app-modal-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  box-sizing: border-box;
+  min-height: 0;
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-5) 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--lt-color-surface);
 }
 
-.patient-team-name {
-  font-size: 0.8rem;
+/* Anula `.app-modal-body > *` (largura máxima e margem automática). */
+.patient-modal-container .patient-modal-form > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* ── Resumo do cadastro: status, projeto e equipe ────────────────────── */
+.patient-modal-container .patient-form-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.patient-modal-container .patient-form-overview__item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.patient-modal-container .patient-form-overview__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+.patient-modal-container .patient-form-overview__item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+/* Apoio sobre o fundo de campo: 6,17:1. */
+.patient-modal-container .patient-form-overview__label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* O nome do projeto quebra linha em vez de ganhar reticências. */
+.patient-modal-container .patient-form-overview__item strong {
+  display: block;
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* ── Dados da inscrição (triagem): recolhível, informativo ───────────── */
+.patient-modal-container .triagem-section {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.patient-modal-container .triagem-section .triagem-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .patient-modal-container .triagem-section .triagem-section__toggle:hover { background: var(--lt-color-track-tint); }
+}
+
+.patient-modal-container .triagem-section .triagem-section__toggle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--lt-color-surface), inset 0 0 0 4px var(--lt-color-brand-blue);
+}
+
+.patient-modal-container .triagem-section__toggle > span { flex: 1 1 auto; min-width: 0; }
+.patient-modal-container .triagem-section__toggle svg { flex: none; }
+
+/* A seta vira quando aberta; o estado também vem em aria-expanded. */
+.patient-modal-container .triagem-chevron--open { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .patient-modal-container .triagem-chevron { transition: transform 160ms; }
+}
+
+.patient-modal-container .triagem-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  padding: 0 var(--lt-space-4) var(--lt-space-4);
+}
+
+.patient-modal-container .triagem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: var(--lt-space-3) var(--lt-space-4);
+}
+
+.patient-modal-container :is(.triagem-field, .triagem-row) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  min-width: 0;
+}
+
+.patient-modal-container .triagem-label {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.patient-modal-container :is(.triagem-value, .triagem-empty) {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.patient-modal-container .triagem-chips { display: flex; flex-wrap: wrap; gap: var(--lt-space-1); }
+
+/* Azul sobre pista (5,57:1); a avaliação pedida no par de sucesso (6,81:1). */
+.patient-modal-container .triagem-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.patient-modal-container .triagem-chip--accent { background: var(--lt-color-success-bg); color: var(--lt-color-success-text); }
+
+.patient-modal-container .triagem-ebia { display: flex; flex-direction: column; gap: var(--lt-space-2); }
+
+.patient-modal-container .triagem-ebia-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  font-size: var(--lt-text-base);
+}
+
+/* A resposta vem escrita ("Sim"/"Não"); "Sim" marca insegurança alimentar
+   no par de atenção (6,88:1), "Não" no neutro. */
+.patient-modal-container .triagem-ebia-resp {
+  flex: none;
+  min-width: 2.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+}
+
+.patient-modal-container .triagem-ebia-resp--yes { background: var(--pm-atencao-fundo); color: var(--pm-atencao-texto); }
+.patient-modal-container .triagem-ebia-resp--no { background: var(--lt-color-surface); color: var(--lt-color-text-muted); box-shadow: inset 0 0 0 1px var(--lt-color-border); }
+
+.patient-modal-container .triagem-ebia-q { color: var(--lt-color-text); line-height: var(--lt-leading-snug); }
+
+/* ── Atalhos das seções: presos no topo da área que rola ─────────────── */
+.patient-modal-container .patient-form-nav {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-3) 0;
+  border-bottom: 1px solid var(--lt-color-border);
+  /* Opaco de propósito: os campos rolam por baixo. */
+  background: var(--lt-color-surface);
+}
+
+.patient-modal-container .patient-form-nav .patient-form-nav__item {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
   font-weight: 600;
-  color: var(--color-text-primary);
+  line-height: var(--lt-leading-snug);
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.patient-modal-error {
-  margin-top: 0.2rem;
+@media (hover: hover) {
+  .patient-modal-container .patient-form-nav .patient-form-nav__item:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
 }
 
-.patient-modal-footer {
+/* A seção em que o leitor está: fundo do estádio, texto branco (13,93:1)
+   e peso maior, além do aria-current. */
+.patient-modal-container .patient-form-nav .patient-form-nav__item--ativo,
+.patient-modal-container .patient-form-nav .patient-form-nav__item--ativo:hover {
+  border-color: var(--lt-color-stadium);
+  background: var(--lt-color-stadium);
+  color: var(--lt-color-text-inverse);
+  font-weight: 700;
+}
+
+.patient-modal-container .patient-form-nav .patient-form-nav__item:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Grade de campos e títulos de seção ──────────────────────────────── */
+.patient-modal-container .patient-form-grid.app-modal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-4);
+  min-width: 0;
+}
+
+.patient-modal-container .patient-form-grid .col-span-full,
+.patient-modal-container .patient-form-grid .patient-section-title { grid-column: 1 / -1; }
+
+/* O título da seção é um marco (role=heading, nível 3): Sofia 700, ícone
+   azul e a marca verde de largada. A margem de rolagem reserva a altura
+   da barra de atalhos, que cobriria o título ao receber o foco. */
+.patient-modal-container .patient-form-grid .patient-section-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-4) 0 0;
+  padding: var(--lt-space-4) 0 0 0.875rem;
+  border: 0;
+  border-top: 1px solid var(--lt-color-border);
+  border-radius: 0;
+  background: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  scroll-margin-top: calc(var(--pm-nav-altura) + var(--lt-space-2));
+}
+
+.patient-modal-container .patient-form-grid > .patient-section-title:first-child {
   margin-top: 0;
   padding-top: 0;
-  border-top: none;
+  border-top: 0;
 }
 
-@media (max-width: 820px) {
-  .patient-modal-form .grid.grid-cols-1.sm\:grid-cols-2.gap-3 {
-    grid-template-columns: 1fr;
+.patient-modal-container .patient-form-grid .patient-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0.2em;
+  width: 3px;
+  height: 1.1em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #6cc04f, var(--lt-color-brand-green));
+  transform: skewX(-12deg);
+}
+
+.patient-modal-container .patient-form-grid .patient-section-title svg { flex: none; color: var(--lt-color-brand-blue); }
+
+/* Alvo de âncora: o foco por script não pisca contorno; pelo teclado, anel. */
+.patient-modal-container .patient-form-grid .patient-section-title:focus { outline: none; }
+.patient-modal-container .patient-form-grid .patient-section-title:focus-visible {
+  outline: 2px solid var(--lt-color-brand-blue);
+  outline-offset: 2px;
+}
+
+/* ── Campos ──────────────────────────────────────────────────────────────
+   O invólucro `.space-y-2` fica no JSX: a checagem de envio procura o
+   rótulo do campo inválido por ele. As margens da utilidade do Tailwind
+   são zeradas e o espaço vem do gap. */
+.patient-modal-container .patient-modal-form :is(.space-y-2, .space-y-3) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.patient-modal-container .patient-modal-form :is(.space-y-2, .space-y-3) > * { margin-block: 0; }
+
+/* 0,3,0: vence `label` (theme.css) e `.app-modal-field-label`. */
+.patient-modal-container .patient-modal-form .patient-field-label {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Asterisco de obrigatório: vermelho a 6,47:1 sobre branco. Leitores de
+   tela ouvem o `required` do campo, não o asterisco (aria-hidden). */
+.patient-modal-container .patient-field-label .patient-field-required {
+  margin-left: 0.125rem;
+  color: var(--lt-color-danger-text);
+  font-weight: 700;
+}
+
+/* 0,3,1: vence `.app-modal-input:not(...):not(...)` (0,3,0) e o
+   `input:not(...)` de theme.css (0,2,1). Campo de 48 px, borda de
+   componente (3,91:1) e texto a 16 px, que evita o zoom do iOS. */
+.patient-modal-container .patient-modal-form input.patient-field-input,
+.patient-modal-container .patient-modal-form select.patient-field-select,
+.patient-modal-container .patient-modal-form textarea.patient-field-textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  opacity: 1;
+}
+
+.patient-modal-container .patient-modal-form textarea.patient-field-textarea {
+  height: auto;
+  min-height: 6rem;
+  padding: 0.7rem 0.875rem;
+  resize: vertical;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o hex fica igual ao de inscricao-campos.css. */
+.patient-modal-container .patient-modal-form select.patient-field-select {
+  padding-right: 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.patient-modal-container .patient-modal-form input.patient-field-input:focus,
+.patient-modal-container .patient-modal-form select.patient-field-select:focus,
+.patient-modal-container .patient-modal-form textarea.patient-field-textarea:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* --lt-color-text-subtle (5,60:1), não o cinza claro padrão. */
+.patient-modal-container .patient-modal-form :is(input, textarea)::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
+}
+
+.patient-modal-container .patient-modal-form .field-hint {
+  display: block;
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Equipe técnica: caixas de marcação em alvos de 44 px ────────────── */
+.patient-modal-container .patient-modal-form .patient-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* O <label> em volta da caixa é o alvo inteiro; a marcada ganha anel azul
+   e fundo de pista, além do visto da própria caixa. */
+.patient-modal-container .patient-modal-form .patient-team-option {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  cursor: pointer;
+}
+
+.patient-modal-container .patient-modal-form .patient-team-option:has(input:checked) {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 1px var(--lt-color-brand-blue);
+}
+
+@media (hover: hover) {
+  .patient-modal-container .patient-modal-form .patient-team-option:hover { border-color: var(--lt-color-brand-blue); }
+}
+
+.patient-modal-container .patient-team-option input.patient-team-checkbox {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: inherit;
+}
+
+.patient-modal-container .patient-team-option input.patient-team-checkbox:focus-visible {
+  outline: 2px solid var(--lt-color-brand-blue);
+  outline-offset: 3px;
+}
+
+/* O nome quebra linha em vez de ser cortado. */
+.patient-modal-container .patient-team-name {
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.patient-modal-container .patient-team-empty {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Equipe multiprofissional: adicionar e lista de quem tem acesso ──── */
+.patient-modal-container .equipe-multi-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Adicionar: quadrado de 48 px, na altura dos selects (0,4,0 vence o
+   `:hover:not(:disabled)` de modalSystem.css). */
+.patient-modal-container .equipe-multi-add-row .equipe-multi-add-btn.app-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .patient-modal-container .equipe-multi-add-row .equipe-multi-add-btn.app-modal-btn:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
   }
+}
+
+.patient-modal-container .equipe-multi-add-row .equipe-multi-add-btn.app-modal-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.patient-modal-container .equipe-multi-add-row .equipe-multi-add-btn.app-modal-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* A consequência da lista (acesso ao prontuário) em nota informativa:
+   tinta sobre a pista, 12,39:1. */
+.patient-modal-container .equipe-multi-aviso {
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.patient-modal-container .equipe-multi-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patient-modal-container .equipe-multi-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-2) var(--lt-space-2) var(--lt-space-2) var(--lt-space-3);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+}
+
+/* Nome e curso: quem é e de que curso; quebram linha, não são cortados. */
+.patient-modal-container .equipe-multi-nome {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem var(--lt-space-2);
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.patient-modal-container .equipe-multi-curso {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+}
+
+.patient-modal-container .equipe-multi-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: var(--lt-radius-pill);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  white-space: nowrap;
+}
+
+/* O vínculo muda a leitura da linha e vem escrito ("Aluno responsável" ou
+   "Equipe"): azul sobre pista (5,57:1) ou tinta sobre campo (13,19:1). */
+.patient-modal-container .equipe-multi-vinculo { font-weight: 700; }
+.patient-modal-container .equipe-multi-vinculo--responsavel { background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+.patient-modal-container .equipe-multi-vinculo--equipe { background: var(--lt-color-surface-field); color: var(--lt-color-text); }
+.patient-modal-container :is(.equipe-multi-area, .equipe-multi-papel) {
+  border-color: var(--lt-color-border);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
+}
+
+/* Remover da equipe: destrutiva, contorno vermelho (6,47:1), 44 px. */
+.patient-modal-container .equipe-multi-item .equipe-multi-remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--lt-color-danger-text);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-danger-text);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .patient-modal-container .equipe-multi-item .equipe-multi-remove:hover { background: var(--lt-color-danger-bg); }
+}
+
+.patient-modal-container .equipe-multi-item .equipe-multi-remove:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* Vínculo definido fora do modal: o cadeado (com nome acessível) explica
+   por que não há botão de remover. */
+.patient-modal-container .equipe-multi-fixo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  color: var(--lt-color-text-subtle);
+}
+
+/* ── Erro do formulário: o par de perigo (5,91:1), anunciado ─────────── */
+.patient-modal-container .patient-modal-form .patient-modal-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 1px solid color-mix(in srgb, var(--lt-color-danger-text) 25%, transparent);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+}
+
+.patient-modal-container .patient-modal-error svg { flex: none; margin-top: 0.0625rem; }
+
+/* ── Rodapé: preso ao pé da área que rola ────────────────────────────── */
+.patient-modal-container .patient-modal-form .patient-modal-footer.app-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding: var(--lt-space-4) 0 var(--lt-space-5);
+  border: 0;
+  border-top: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface);
+}
+
+/* Direção declarada aqui: sem isso, abaixo de 760 px valeriam as de
+   modalSystem.css (coluna invertida e botões de largura total). */
+.patient-modal-container .patient-modal-footer .app-modal-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--lt-space-2);
+  width: 100%;
+}
+
+.patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  width: auto;
+  min-width: 10rem;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-5);
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+}
+
+/* Secundário: contorno de campo e texto azul (6,33:1). */
+.patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn.app-modal-btn--secondary {
+  border-color: var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+/* Primário: o degradê de largada (4,82:1 no topo e 6,20:1 na base). */
+.patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn.app-modal-btn--primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+@media (hover: hover) {
+  .patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn.app-modal-btn--secondary:hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+  }
+
+  .patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn.app-modal-btn--primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+  }
+}
+
+.patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn:disabled { opacity: 0.6; cursor: progress; }
+
+.patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn:focus-visible,
+.patient-modal-container .patient-modal-header .app-modal-close:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Faixas de largura ───────────────────────────────────────────────── */
+@media (max-width: 45rem) {
+  .patient-modal-container .patient-form-grid.app-modal-form-grid,
+  .patient-modal-container .patient-modal-form .patient-team-grid { grid-template-columns: minmax(0, 1fr); }
+
+  .patient-modal-container .equipe-multi-add-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .patient-modal-container .equipe-multi-add-row > select:first-child { grid-column: 1 / -1; }
+  .patient-modal-container .equipe-multi-add-row .equipe-multi-add-btn.app-modal-btn { grid-column: 1 / -1; width: 100%; }
+
+  /* Os seis atalhos numa linha só, que rola dentro da própria barra: em
+     várias linhas, a barra presa tomaria metade da tela. */
+  .patient-modal-container .patient-form-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+}
+
+@media (max-width: 30rem) {
+  .patient-modal-overlay .patient-modal-container { width: calc(100vw - 1rem); }
+  .patient-modal-container .patient-modal-header.app-modal-header { padding: var(--lt-space-4) var(--lt-space-4) var(--lt-space-3); }
+  .patient-modal-container .patient-modal-form.app-modal-body { padding: var(--lt-space-4) var(--lt-space-4) 0; }
+  .patient-modal-container .patient-modal-form .patient-modal-footer.app-modal-footer { padding-bottom: var(--lt-space-4); }
+  .patient-modal-container .equipe-multi-add-row { grid-template-columns: minmax(0, 1fr); }
+
+  /* Botões empilhados, o primário em cima. */
+  .patient-modal-container .patient-modal-footer .app-modal-actions { flex-direction: column-reverse; align-items: stretch; }
+  .patient-modal-container .patient-modal-footer .app-modal-actions .app-modal-btn { width: 100%; min-width: 0; }
 }

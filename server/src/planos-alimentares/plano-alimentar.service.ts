@@ -7,7 +7,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import {
   AuthenticatedUser,
   hasGlobalAccess,
@@ -15,12 +15,31 @@ import {
   isStudentMemberRole,
   normalizeRole
 } from '../auth/access-control';
+import {
+  assertClinicalLink,
+  auditManagementAccess,
+  clinicalScopeCondition,
+  resolveClinicalLink,
+  studentLookupFromRepository
+} from '../auth/authorization';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 import { Paciente } from '../pacientes/paciente.entity';
 import { PlanoAlimentar, PlanoAlimentarStatus } from './plano-alimentar.entity';
 import { User } from '../users/user.entity';
+import { NotificacoesService } from '../notificacoes/notificacoes.service';
 import { TacoFood } from '../taco/taco.entity';
-import { normalizePrescription, mealsForPrint, prescriptionTotals, validatePrescription } from './prescricao-contract';
+import { renderLainesPdf } from '../common/pdf/laines-pdf.renderer';
+import { planoAlimentarPdfReport } from './plano-alimentar.pdf';
+import { ancoraDoGrupoParaEntrega, assertSubstitutosAutomaticos, normalizePrescription, mealsForPrint, nomeAlimentoParaEntrega, prescriptionTotals, validatePrescription } from './prescricao-contract';
+import {
+  avaliacaoElegivel,
+  conflitosSemJustificativa,
+  contextoReferencias,
+  normalizarRestricoesPlano,
+  origemAvaliacao,
+  restricoesDaAnamnese
+} from './referencias-prescricao';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -127,13 +146,16 @@ type MetasGet = {
 
 type ValidacaoComparativoItem = {
   meta: number | null;
-  prescrito: number;
+  prescrito: number | null;
   diferenca: number | null;
   adequacao: number | null;
+  percentual: number | null;
+  cobertura: number;
+  situacao: string;
 };
 
 export type ValidacaoResult = {
-  scoreAdequacaoPercent: number;
+  scoreAdequacaoPercent: number | null;
   hasMetasGet: boolean;
   metasGet: MetasGet;
   totaisPrescritos: NutrientesTotais;
@@ -200,7 +222,13 @@ export class PlanoAlimentarService {
     @InjectRepository(Avaliacao)
     private readonly avaliacoesRepo: Repository<Avaliacao>,
     @Optional() @InjectRepository(User) private readonly usersRepo?: Repository<User>,
-    @Optional() @InjectRepository(TacoFood) private readonly foodsRepo?: Repository<TacoFood>
+    @Optional() @InjectRepository(TacoFood) private readonly foodsRepo?: Repository<TacoFood>,
+    @Optional() private readonly auditoria?: AuditoriaService,
+    // UPD-17: notificacao ao aluno na devolucao. So dispara se o modulo tiver
+    // NotificacoesModule nos imports; sem isso, fica opcional e sem efeito
+    // (ver relatorio de entrega — planos-alimentares.module.ts esta fora do
+    // escopo de arquivos autorizados para este item).
+    @Optional() private readonly notificacoes?: NotificacoesService
   ) {}
 
   private toText(value: unknown): string {
@@ -276,43 +304,24 @@ export class PlanoAlimentarService {
     return round(Math.max(0, Math.min(100, raw)), 2);
   }
 
+  // Contrato unico (UPD-12): mesma regra de pacientes/avaliacoes, incluindo a cadeia de supervisao.
   private async assertCanAccessPaciente(user: AuthenticatedUser, pacienteId: string) {
     const role = normalizeRole(user?.role);
-    if (hasGlobalAccess(role)) return;
+    if (hasGlobalAccess(role)) {
+      await auditManagementAccess(this.auditoria, user, 'pacientes', pacienteId, { acao: 'acesso_plano_alimentar' });
+      return;
+    }
 
     const paciente = await this.pacientesRepo.findOne({ where: { id: pacienteId } });
     if (!paciente) throw new NotFoundException('Paciente nao encontrado.');
 
-    const userId = this.toText(user?.id);
-    if (!userId) {
+    if (!this.toText(user?.id)) {
       throw new ForbiddenException('Usuario sem identificacao valida para acessar este paciente.');
     }
-
-    if (role === 'atleta') {
-      if (paciente.atletaUserId === userId) return;
-      throw new ForbiddenException('Acesso negado para este paciente.');
+    await assertClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+    if (role === 'coord_atendimento') {
+      await auditManagementAccess(this.auditoria, user, 'pacientes', pacienteId, { acao: 'acesso_plano_alimentar' });
     }
-
-    if (isStudentMemberRole(role)) {
-      const isResponsavel = paciente.alunoResponsavelId === userId;
-      const isEquipeTecnica = Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
-      const isEquipeMulti = Array.isArray(paciente.equipeMultiIds) && paciente.equipeMultiIds.includes(userId);
-      const isEquipe = isEquipeTecnica || isEquipeMulti;
-      if (isResponsavel || isEquipe) return;
-      throw new ForbiddenException('Acesso negado para este paciente.');
-    }
-
-    if (hasTeamScopedAccess(role)) {
-      const isSupervisor = paciente.professorSupervisorId === userId;
-      const isResponsavel = paciente.alunoResponsavelId === userId;
-      const isEquipeTecnica = Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
-      const isEquipeMulti = Array.isArray(paciente.equipeMultiIds) && paciente.equipeMultiIds.includes(userId);
-      const isEquipe = isEquipeTecnica || isEquipeMulti;
-      if (isSupervisor || isResponsavel || isEquipe) return;
-      throw new ForbiddenException('Acesso negado para este paciente.');
-    }
-
-    throw new ForbiddenException('Acesso negado para este paciente.');
   }
 
   private async getScopedPacienteIds(user: AuthenticatedUser): Promise<string[]> {
@@ -325,36 +334,58 @@ export class PlanoAlimentarService {
     if (!userId) return [];
 
     const qb = this.pacientesRepo.createQueryBuilder('paciente').select('paciente.id', 'id');
-    if (role === 'atleta') {
-      qb.where('paciente.atletaUserId = :userId', { userId });
-    } else if (isStudentMemberRole(role)) {
-      qb.where('paciente.alunoResponsavelId = :userId', { userId })
-        .orWhere(':userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[]))', { userId })
-        .orWhere(':userId = ANY(COALESCE(paciente.equipeMultiIds, ARRAY[]::uuid[]))', { userId });
-    } else if (hasTeamScopedAccess(role)) {
-      qb.where('paciente.professorSupervisorId = :userId', { userId })
-        .orWhere('paciente.alunoResponsavelId = :userId', { userId })
-        .orWhere(':userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[]))', { userId })
-        .orWhere(':userId = ANY(COALESCE(paciente.equipeMultiIds, ARRAY[]::uuid[]))', { userId });
-    } else {
-      return [];
-    }
+    const alunosSupervisionadosSubQuery = this.usersRepo
+      ?.createQueryBuilder('aluno_supervisionado')
+      .select('aluno_supervisionado.id')
+      .where('(aluno_supervisionado.supervisorId = :userId OR aluno_supervisionado.profissionalId = :userId)')
+      .andWhere('aluno_supervisionado.deletedAt IS NULL');
+    const scope = clinicalScopeCondition({
+      alias: 'paciente',
+      user,
+      supervisedStudentsSubquery: alunosSupervisionadosSubQuery?.getQuery()
+    });
+    if (scope === null || scope === '1 = 0') return [];
+    qb.where(scope, { userId });
+    if (alunosSupervisionadosSubQuery) qb.setParameters(alunosSupervisionadosSubQuery.getParameters());
 
     const rows = await qb.getRawMany<{ id: string }>();
     return rows.map((row) => row.id).filter(Boolean);
   }
 
+  /*
+   * UPD-11: uma restrição registrada na anamnese precisa ter sido conferida no
+   * plano antes da revisão, e todo item que colide com restrição confirmada
+   * precisa de justificativa clínica explícita.
+   */
+  private async assertRestricoesConferidas(pacienteId: string, dados: JsonRecord) {
+    const anamnese = await this.resolveUltimaAvaliacaoElegivel(this.toText(pacienteId), 'anamnese_inicial');
+    const contexto = restricoesDaAnamnese(anamnese ? { ...anamnese } : null);
+    const registro = this.asRecord(dados.restricoes);
+    if (contexto.pendenteRevisao && !registro.conferidoEm) {
+      throw new BadRequestException('Confira as restrições alimentares registradas na anamnese antes de enviar para revisão.');
+    }
+    const conflitos = conflitosSemJustificativa(dados);
+    if (conflitos.length) {
+      throw new BadRequestException(`Itens em conflito com restrição confirmada sem justificativa: ${conflitos.map((c) => c.nome).join(', ')}.`);
+    }
+  }
+
   private async resolveUltimaAvaliacaoGet(pacienteId: string) {
+    return this.resolveUltimaAvaliacaoElegivel(pacienteId, 'gasto_energetico_total');
+  }
+
+  private async resolveUltimaAvaliacaoElegivel(pacienteId: string, tipo: string) {
     const row = await this.avaliacoesRepo.createQueryBuilder('avaliacao')
       .where('avaliacao.pacienteId = :pacienteId', { pacienteId })
-      .andWhere('avaliacao.tipo = :tipo', { tipo: 'gasto_energetico_total' })
+      .andWhere('avaliacao.tipo = :tipo', { tipo })
+      .andWhere('avaliacao.status = :statusElegivel', { statusElegivel: 'finalizada' })
       .andWhere('avaliacao.deletedAt IS NULL')
       .orderBy('avaliacao.measuredAt', 'DESC', 'NULLS LAST')
       .addOrderBy('avaliacao.data', 'DESC', 'NULLS LAST')
       .addOrderBy('avaliacao.updatedAt', 'DESC')
       .getOne();
 
-    return row || null;
+    return row && avaliacaoElegivel({ ...row }) ? row : null;
   }
 
   private extractGetMetasFromAvaliacao(avaliacao: Avaliacao | null): MetasGet {
@@ -431,21 +462,29 @@ export class PlanoAlimentarService {
     return normalized;
   }
 
-  private computeComparativo(meta: number | null, prescrito: number): ValidacaoComparativoItem {
-    if (!Number.isFinite(meta) || (meta as number) <= 0) {
+  private computeComparativo(meta: number | null, prescrito: number | null, cobertura = 1): ValidacaoComparativoItem {
+    if (meta === null || meta <= 0 || prescrito === null || cobertura < 0.5) {
       return {
-        meta: null,
+        meta,
         prescrito,
         diferenca: null,
-        adequacao: null
+        adequacao: null,
+        percentual: null,
+        cobertura,
+        situacao: 'sem-dado'
       };
     }
-    const diferenca = round(prescrito - (meta as number), 2);
+    const diferenca = round(prescrito - meta, 2);
+    const percentual = prescrito / meta * 100;
     return {
-      meta: round(meta as number, 2),
+      meta: round(meta, 2),
       prescrito,
       diferenca,
-      adequacao: this.clampAdequacao(meta as number, prescrito)
+      adequacao: this.clampAdequacao(meta, prescrito),
+      percentual: round(percentual, 2),
+      cobertura,
+      situacao: percentual > 120 ? 'excedido' : percentual < 80 ? 'insuficiente'
+        : percentual < 90 || percentual > 110 ? 'atencao' : 'ok'
     };
   }
 
@@ -462,12 +501,34 @@ export class PlanoAlimentarService {
     const avaliacaoGet = await this.resolveUltimaAvaliacaoGet(this.toText(plano?.pacienteId));
     const metasGet = this.extractGetMetasFromAvaliacao(avaliacaoGet);
 
+    // Totais publicados mantêm seu contrato; adequação não transforma ausência em zero.
+    const itens = this.asArray<JsonRecord>(dados.refeicoes).flatMap((meal) => this.asArray<JsonRecord>(meal.itens));
+    const catalogo = this.asRecord(dados.catalogo);
+    const valores = (nutriente: string) => itens.map((item) => {
+      const alimento = this.asRecord(catalogo[this.toText(item.alimentoId)]);
+      const medida = this.asArray<JsonRecord>(alimento.medidas)[Number(item.medidaIdx || 0)];
+      const valor = this.toNumber(this.asRecord(alimento.comp)[nutriente]);
+      if (valor === null) return null;
+      const porcao = valor * Number(item.quantidade) * Number(medida?.gramas) / 100;
+      return Number.isFinite(porcao) ? porcao : null;
+    });
+    const energias = valores('kcal');
+    const totalEnergia = energias.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+    const comparar = (meta: number | null, nutriente: string) => {
+      const lista = valores(nutriente);
+      const conhecidos = lista.filter((value): value is number => Number.isFinite(value));
+      const cobertura = !lista.length ? 0 : totalEnergia > 0 && energias.every((value) => value !== null)
+        ? energias.reduce<number>((sum, value, i) => sum + (lista[i] === null ? 0 : value ?? 0), 0) / totalEnergia
+        : conhecidos.length / lista.length;
+      return this.computeComparativo(meta, conhecidos.length ? round(conhecidos.reduce((sum, value) => sum + value, 0), 2) : null, cobertura);
+    };
+
     const comparativo = {
-      calorias: this.computeComparativo(metasGet.calorias, totaisPrescritos.calorias),
-      cho: this.computeComparativo(metasGet.cho, totaisPrescritos.cho),
-      ptn: this.computeComparativo(metasGet.ptn, totaisPrescritos.ptn),
-      lip: this.computeComparativo(metasGet.lip, totaisPrescritos.lip),
-      fibras: this.computeComparativo(metasGet.fibras, totaisPrescritos.fibra)
+      calorias: comparar(metasGet.calorias, 'kcal'),
+      cho: comparar(metasGet.cho, 'cho'),
+      ptn: comparar(metasGet.ptn, 'ptn'),
+      lip: comparar(metasGet.lip, 'lip'),
+      fibras: comparar(metasGet.fibras, 'fibra')
     };
 
     const scores = [
@@ -480,9 +541,9 @@ export class PlanoAlimentarService {
 
     const scoreAdequacaoPercent = scores.length
       ? round(scores.reduce((sum, value) => sum + value, 0) / scores.length, 2)
-      : 0;
+      : null;
 
-    const hasMetasGet = Boolean(metasGet.avaliacaoId);
+    const hasMetasGet = Boolean(metasGet.avaliacaoId && metasGet.calorias !== null && metasGet.calorias > 0);
 
     return {
       scoreAdequacaoPercent,
@@ -773,7 +834,11 @@ export class PlanoAlimentarService {
         if (!source) throw new BadRequestException('Alimento não encontrado no catálogo de origem.');
         const fields = { kcal: 'energiaKcal', cho: 'carboidrato', ptn: 'proteina', lip: 'lipidios', fibra: 'fibra',
           ferro: 'ferro', calcio: 'calcio', zinco: 'zinco', magnesio: 'magnesio', vitaminaD: 'vitaminaD', potassio: 'potassio', sodio: 'sodio' };
-        catalogo[id] = { ...incoming, id, nome: source.descricao, fonte: source.fonte || 'TACO', grupo: source.grupo,
+        catalogo[id] = { ...incoming, id, nome: source.descricao,
+          nomeExibicao: nomeAlimentoParaEntrega({ nome: source.descricao, fonte: source.fonte || 'TACO' }),
+          codigoFonte: String(source.codigoTexto || source.codigo || ''),
+          fonte: source.fonte || 'TACO', grupo: source.grupo,
+          grupoEquivalencia: ancoraDoGrupoParaEntrega(source.grupo),
           origemComposicao: 'catalogo', validacaoComposicao: null,
           medidas: [{ descricao: null, gramas: 1 }],
           comp: Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, this.toNumber(source[field])])) };
@@ -814,7 +879,7 @@ export class PlanoAlimentarService {
     if (filtros?.pacienteId) {
       await this.assertCanAccessPaciente(user, filtros.pacienteId);
       qb.andWhere('plano.pacienteId = :pacienteId', { pacienteId: filtros.pacienteId });
-    } else if (!hasGlobalAccess(role)) {
+    } else if (!hasGlobalAccess(role) && role !== 'coord_atendimento') {
       const ids = await this.getScopedPacienteIds(user);
       if (!ids.length) return [];
       qb.andWhere('plano.pacienteId IN (:...ids)', { ids });
@@ -856,6 +921,9 @@ export class PlanoAlimentarService {
     await this.assertCanAccessPaciente(user, pacienteId);
     const ultimaAvaliacaoGet = await this.resolveUltimaAvaliacaoGet(pacienteId);
     const metasGet = this.extractGetMetasFromAvaliacao(ultimaAvaliacaoGet);
+    const anamnese = await this.resolveUltimaAvaliacaoElegivel(pacienteId, 'anamnese_inicial');
+    const paciente = await this.pacientesRepo.findOne({ where: { id: pacienteId } });
+    if (!paciente) throw new NotFoundException('Paciente nao encontrado.');
     const planoAtivo = await this.repo.findOne({
       where: {
         pacienteId,
@@ -870,6 +938,9 @@ export class PlanoAlimentarService {
     return {
       pacienteId,
       metasGet,
+      origemMetas: origemAvaliacao(ultimaAvaliacaoGet ? { ...ultimaAvaliacaoGet } : null),
+      referencias: contextoReferencias({ ...paciente }, anamnese ? { ...anamnese } : null),
+      restricoes: restricoesDaAnamnese(anamnese ? { ...anamnese } : null),
       ultimaAvaliacaoGetId: ultimaAvaliacaoGet?.id || null,
       planoAtivoId: planoAtivo?.id || null
     };
@@ -878,11 +949,18 @@ export class PlanoAlimentarService {
   async create(input: PlanoPatch, user: AuthenticatedUser) {
     await this.assertCanAccessPaciente(user, input.pacienteId);
     const prepared = await this.prepareComposition(input.dados);
+    // Restrições confirmadas (UPD-11): autoria e data fixadas no servidor.
+    prepared.restricoes = normalizarRestricoesPlano(this.asRecord(input.dados).restricoes, undefined, user);
+    if (prepared.restricoes === undefined) delete prepared.restricoes;
     const patch = await this.normalizePatch({ ...input, dados: prepared });
     patch.dados = { ...this.stampRevisaoFinal(patch.dados), version: 1, historicoRevisoes: [],
       criadoPorId: user.id, criadoEm: new Date().toISOString() };
     if (patch.status === PlanoAlimentarStatus.ATIVO) {
       throw new ForbiddenException('Salve, envie para revisão profissional e ative a versão revisada.');
+    }
+    if (patch.status === PlanoAlimentarStatus.EM_REVISAO) {
+      await this.assertRestricoesConferidas(input.pacienteId, this.asRecord(patch.dados));
+      assertSubstitutosAutomaticos(this.normalizeDados(patch.dados));
     }
 
     const enrichedPatch = await this.enrichPatchWithValidation(patch);
@@ -919,6 +997,11 @@ export class PlanoAlimentarService {
     }
     const dados = await this.prepareComposition(input.dados ?? current.dados, current);
     const prior = this.asRecord(current.dados);
+    // Restrições confirmadas (UPD-11): conferência inalterada preserva autoria; mudança recebe carimbo novo.
+    dados.restricoes = normalizarRestricoesPlano(
+      input.dados === undefined ? undefined : this.asRecord(input.dados).restricoes, prior.restricoes, user
+    );
+    if (dados.restricoes === undefined) delete dados.restricoes;
     const history = this.asArray(prior.historicoRevisoes);
     const review = this.asRecord(prior.revisaoFinal);
     dados.historicoRevisoes = review.confirmada
@@ -933,6 +1016,10 @@ export class PlanoAlimentarService {
     // Every write invalidates a review, including changes to dates, goals and supplements.
     patch.status = input.status || (current.status === PlanoAlimentarStatus.ATIVO
       ? PlanoAlimentarStatus.RASCUNHO : current.status);
+    if (patch.status === PlanoAlimentarStatus.EM_REVISAO) {
+      await this.assertRestricoesConferidas(current.pacienteId, dados);
+      assertSubstitutosAutomaticos(dados);
+    }
     const enriched = await this.enrichPatchWithValidation(patch);
     const { expectedVersion: _expected, ...persistent } = enriched;
     if ([PlanoAlimentarStatus.ATIVO, PlanoAlimentarStatus.ARQUIVADO, PlanoAlimentarStatus.ENCERRADO].includes(current.status)) {
@@ -963,6 +1050,8 @@ export class PlanoAlimentarService {
     }
     const dados = this.normalizeDados(current.dados);
     validatePrescription(dados);
+    await this.assertRestricoesConferidas(current.pacienteId, dados);
+    assertSubstitutosAutomaticos(dados);
     const pending = Object.values(this.asRecord(dados.catalogo)).map((food) => this.asRecord(food))
       .filter((food) => food.origemComposicao !== 'catalogo' && !food.validacaoComposicao);
     if (pending.length && !confirmarComposicaoManual) {
@@ -984,6 +1073,7 @@ export class PlanoAlimentarService {
     if (current.status !== PlanoAlimentarStatus.EM_REVISAO) {
       throw new BadRequestException('Somente um plano em revisão pode ser ativado.');
     }
+    assertSubstitutosAutomaticos(this.normalizeDados(current.dados));
     await this.assertCanActivatePlano(current);
     return this.repo.manager.transaction(async (manager) => {
       const patient = await manager.getRepository(Paciente).findOne({
@@ -1010,6 +1100,127 @@ export class PlanoAlimentarService {
     });
   }
 
+  // UPD-17: mesma regra de vinculo usada em devolver() de avaliacoes — supervisor,
+  // supervisao_aluno ou gestao. O aluno responsavel (link 'responsavel') e a
+  // equipe (link 'equipe') tem acesso de leitura mas nao devolvem.
+  private async assertCanDevolver(user: AuthenticatedUser, pacienteId: string): Promise<void> {
+    const paciente = await this.pacientesRepo.findOne({ where: { id: pacienteId } });
+    if (!paciente) throw new NotFoundException('Plano alimentar nao encontrado.');
+    const link = await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+    if (!link) throw new NotFoundException('Plano alimentar nao encontrado.');
+    if (link !== 'gestao' && link !== 'supervisor' && link !== 'supervisao_aluno') {
+      throw new ForbiddenException('Apenas supervisor, profissional vinculado ou gestao podem devolver este plano.');
+    }
+  }
+
+  async devolver(id: string, expectedVersion: number, observacao: string, user: AuthenticatedUser) {
+    const texto = this.toText(observacao);
+    if (texto.length < 5 || texto.length > 1000) {
+      throw new BadRequestException('Observacao deve ter entre 5 e 1000 caracteres.');
+    }
+
+    const current = await this.findById(id, user);
+    this.assertVersion(current, expectedVersion);
+    await this.assertCanDevolver(user, current.pacienteId);
+    if (current.status !== PlanoAlimentarStatus.EM_REVISAO) {
+      throw new BadRequestException('Somente um plano em revisão pode ser devolvido.');
+    }
+
+    const dados = this.normalizeDados(current.dados);
+    const now = new Date().toISOString();
+    // Autoria, data e versao fixadas pelo servidor (mesma disciplina de revisaoFinal).
+    dados.version = this.versionOf(current) + 1;
+
+    const priorReview = this.asRecord(dados.revisaoFinal);
+    if (priorReview.confirmada) {
+      // Uma revisao ja confirmada nesta versao fica invalida ao devolver; o
+      // historico preserva o registro em vez de apaga-lo.
+      dados.historicoRevisoes = [
+        ...this.asArray(dados.historicoRevisoes),
+        { ...priorReview, invalidadaEm: now, invalidadaPorId: user.id }
+      ];
+      dados.revisaoFinal = { confirmada: false };
+    }
+
+    const registro = {
+      porId: user.id,
+      porNome: user.name || user.email || null,
+      em: now,
+      observacao: texto,
+      version: dados.version
+    };
+    dados.devolucoes = [...this.asArray(dados.devolucoes), registro];
+
+    // A prescricao (refeicoes/catalogo) nao muda ao devolver, so resultados
+    // (validacao/ativacaoClinica) permanecem os ja calculados; nao ha motivo
+    // para reconsultar a ultima avaliacao de GET aqui.
+    const saved = await this.persistVersion(current, { status: PlanoAlimentarStatus.RASCUNHO, dados });
+
+    if (current.alunoId) {
+      try {
+        await this.notificacoes?.createForUsers([current.alunoId], {
+          titulo: 'Plano alimentar devolvido',
+          mensagem: 'Um plano alimentar foi devolvido com orientacao; abra o prontuario.',
+          tipo: 'alerta_clinico'
+        });
+      } catch {
+        // Best-effort — nao interrompe a devolucao.
+      }
+    }
+
+    return saved;
+  }
+
+  /*
+   * UPD-17: fila de revisao do responsavel. Nao ha SQL clinico novo: o
+   * candidato vem de uma coluna indexada (status 'em_revisao'), e o acesso
+   * de cada item e decidido chamando resolveClinicalLink() por paciente — o
+   * mesmo contrato usado em assertCanAccessPaciente/devolver, so que
+   * aplicado item a item em vez de como fragmento SQL. Papeis sem vinculo
+   * de supervisao recebem fila vazia, nunca um erro.
+   */
+  async findFilaRevisao(user: AuthenticatedUser, filtros: { limit?: number; offset?: number }) {
+    const role = normalizeRole(user?.role);
+    if (!hasGlobalAccess(role) && !hasTeamScopedAccess(role)) {
+      return [];
+    }
+
+    const limit = Math.max(1, Math.min(100, Math.floor(this.toNumber(filtros.limit) || 25)));
+    const offset = Math.max(0, Math.floor(this.toNumber(filtros.offset) || 0));
+
+    const candidatos = await this.repo.find({ where: { status: PlanoAlimentarStatus.EM_REVISAO, deletedAt: IsNull() } });
+
+    const elegiveis: Array<{ plano: PlanoAlimentar; paciente: Paciente }> = [];
+    for (const plano of candidatos) {
+      const paciente = await this.pacientesRepo.findOne({ where: { id: plano.pacienteId } });
+      if (!paciente) continue;
+      if (!hasGlobalAccess(role)) {
+        const link = await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+        if (!link) continue;
+      }
+      elegiveis.push({ plano, paciente });
+    }
+
+    const alunoIds = [...new Set(elegiveis.map((item) => item.plano.alunoId).filter((id): id is string => Boolean(id)))];
+    const alunos = alunoIds.length && this.usersRepo ? await this.usersRepo.find({ where: { id: In(alunoIds) } }) : [];
+    const alunoNomeById = new Map(alunos.map((aluno) => [aluno.id, aluno.name]));
+
+    const itens = elegiveis.map(({ plano, paciente }) => ({
+      tipo: 'plano' as const,
+      id: plano.id,
+      pacienteId: plano.pacienteId,
+      pacienteNome: paciente.nome || null,
+      tipoInstrumento: plano.tipoDieta || null,
+      enviadoPorId: plano.alunoId || null,
+      enviadoPorNome: (plano.alunoId && alunoNomeById.get(plano.alunoId)) || null,
+      enfileiradoEm: plano.updatedAt,
+      rota: `/prescricao-plano/${plano.pacienteId}`
+    }));
+
+    itens.sort((a, b) => new Date(a.enfileiradoEm).getTime() - new Date(b.enfileiradoEm).getTime());
+    return itens.slice(offset, offset + limit);
+  }
+
   async remove(id: string, user: AuthenticatedUser) {
     const current = await this.findById(id, user);
     if (![PlanoAlimentarStatus.RASCUNHO, PlanoAlimentarStatus.EM_REVISAO].includes(current.status)) {
@@ -1019,317 +1230,20 @@ export class PlanoAlimentarService {
     return { deleted: true };
   }
 
-  private formatDateForPdf(value: string | null | undefined): string {
-    const token = this.toText(value);
-    if (!token) return '-';
-    const parts = token.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return token;
-  }
-
-  private formatNumberForPdf(value: unknown, digits = 1): string {
-    const parsed = this.toNumber(value);
-    if (!Number.isFinite(parsed)) return '-';
-    return Number(parsed).toFixed(digits);
-  }
-
-  private mapPlanoStatusForPdf(status: unknown): string {
-    const token = this.toText(status).toLowerCase();
-    if (token === PlanoAlimentarStatus.EM_REVISAO) return 'Em revisao';
-    if (token === PlanoAlimentarStatus.ATIVO) return 'Ativo';
-    if (token === PlanoAlimentarStatus.ARQUIVADO || token === PlanoAlimentarStatus.ENCERRADO) return 'Arquivado';
-    return 'Rascunho';
-  }
-
-  private mapWadaStatusForPdf(status: unknown): string {
-    const token = this.toText(status).toLowerCase();
-    if (token === 'aprovado') return 'Aprovado';
-    if (token === 'proibido') return 'Proibido';
-    return 'Verificar';
-  }
-
-  private mapAdequacaoLabelForPdf(adequacao: number | null): string {
-    if (!Number.isFinite(adequacao)) return '-';
-    if ((adequacao as number) >= 90) return 'Adequado';
-    if ((adequacao as number) >= 80) return 'Ajuste';
-    return 'Critico';
-  }
-
   async gerarPDF(planoId: string, user?: AuthenticatedUser, expectedVersion?: number): Promise<Buffer> {
     const plano = user
       ? await this.findById(planoId, user)
       : await this.repo.findOne({ where: { id: planoId }, withDeleted: false });
-    if (!plano) throw new NotFoundException('Plano alimentar nao encontrado.');
+    if (!plano) throw new NotFoundException('Plano alimentar não encontrado.');
     if (expectedVersion !== undefined) this.assertVersion(plano, expectedVersion);
 
-    let PDFDocument: any;
-    try {
-      PDFDocument = require('pdfkit');
-    } catch {
-      throw new BadRequestException('Dependencia pdfkit nao instalada no servidor.');
-    }
-
-    const validacao = await this.validarAdequacao({
-      pacienteId: plano.pacienteId,
-      dados: (plano.dados || {}) as JsonRecord
-    });
     const dados = this.normalizeDados(plano.dados || {});
     dados.refeicoes = mealsForPrint(dados);
-    const ativacaoClinica = await this.validarAtivacaoClinica({
-      pacienteId: plano.pacienteId,
-      status: plano.status,
-      dataInicio: plano.dataInicio,
-      dataFim: plano.dataFim,
-      tipoDieta: plano.tipoDieta,
-      metaCalorica: plano.metaCalorica,
-      metaCHOg: plano.metaCHOg,
-      metaPTNg: plano.metaPTNg,
-      metaLIPg: plano.metaLIPg,
-      metaFibrasg: plano.metaFibrasg,
-      faseAtual: plano.faseAtual,
-      validadoAntidoping: plano.validadoAntidoping,
-      dados: (plano.dados || {}) as JsonRecord,
-      resultados: (plano.resultados || {}) as JsonRecord
-    });
-    const paciente = await this.pacientesRepo.findOne({
-      where: { id: plano.pacienteId }
-    });
-    const geradoEm = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    const metasGet = validacao.metasGet;
-
-    const tabelaMetas = [
-      {
-        item: 'Energia (kcal)',
-        meta: plano.metaCalorica ?? metasGet.calorias,
-        prescrito: validacao.totaisPrescritos.calorias,
-        adequacao: validacao.comparativo.calorias.adequacao
-      },
-      {
-        item: 'CHO (g)',
-        meta: plano.metaCHOg ?? metasGet.cho,
-        prescrito: validacao.totaisPrescritos.cho,
-        adequacao: validacao.comparativo.cho.adequacao
-      },
-      {
-        item: 'PTN (g)',
-        meta: plano.metaPTNg ?? metasGet.ptn,
-        prescrito: validacao.totaisPrescritos.ptn,
-        adequacao: validacao.comparativo.ptn.adequacao
-      },
-      {
-        item: 'LIP (g)',
-        meta: plano.metaLIPg ?? metasGet.lip,
-        prescrito: validacao.totaisPrescritos.lip,
-        adequacao: validacao.comparativo.lip.adequacao
-      },
-      {
-        item: 'Fibras (g)',
-        meta: plano.metaFibrasg ?? metasGet.fibras,
-        prescrito: validacao.totaisPrescritos.fibra,
-        adequacao: validacao.comparativo.fibras.adequacao
-      }
-    ];
-
-    return new Promise<Buffer>((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 36, size: 'A4' });
-      const chunks: Buffer[] = [];
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      const pageLeft = doc.page.margins.left;
-      const pageRight = doc.page.width - doc.page.margins.right;
-      const pageBottom = doc.page.height - doc.page.margins.bottom;
-      const contentWidth = pageRight - pageLeft;
-
-      const ensureSpace = (needed = 30) => {
-        if (doc.y + needed > pageBottom) {
-          doc.addPage();
-        }
-      };
-
-      const drawSectionTitle = (title: string) => {
-        ensureSpace(34);
-        doc.moveDown(0.35);
-        doc.font('Helvetica-Bold').fontSize(11).fillColor('#1565C0').text(title);
-        doc.moveDown(0.15);
-        const y = doc.y;
-        doc.moveTo(pageLeft, y).lineTo(pageRight, y).lineWidth(0.7).strokeColor('#d1d5db').stroke();
-        doc.moveDown(0.4);
-        doc.fillColor('#111827').font('Helvetica').fontSize(10);
-      };
-
-      const drawSimpleLine = (value: string) => {
-        ensureSpace(16);
-        doc.font('Helvetica').fontSize(10).fillColor('#111827').text(value, {
-          width: contentWidth
-        });
-      };
-
-      const drawMetaRow = (item: string, meta: string, prescrito: string, adequacao: string, shade = false) => {
-        ensureSpace(20);
-        const rowTop = doc.y;
-        const rowHeight = 18;
-        if (shade) {
-          doc.rect(pageLeft, rowTop, contentWidth, rowHeight).fill('#f8fafc');
-        }
-
-        doc.fillColor('#111827').font('Helvetica').fontSize(9);
-        doc.text(item, pageLeft + 6, rowTop + 5, { lineBreak: false });
-        doc.text(meta, pageLeft + 185, rowTop + 5, { lineBreak: false });
-        doc.text(prescrito, pageLeft + 285, rowTop + 5, { lineBreak: false });
-        doc.text(adequacao, pageLeft + 390, rowTop + 5);
-        doc.y = rowTop + rowHeight;
-      };
-
-      const headerTop = doc.y;
-      doc.rect(pageLeft, headerTop, contentWidth, 58).fill('#1565C0');
-      doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(15).text(
-        'LAINES | Prescricao de Plano Alimentar',
-        pageLeft + 12,
-        headerTop + 12,
-        { width: contentWidth - 24 }
-      );
-      doc.font('Helvetica').fontSize(9).text(
-        `Documento padrao de exportacao - Gerado em ${geradoEm}`,
-        pageLeft + 12,
-        headerTop + 34,
-        { width: contentWidth - 24 }
-      );
-      doc.fillColor('#111827');
-      doc.y = headerTop + 70;
-
-      drawSectionTitle('Identificacao');
-      drawSimpleLine(`Paciente: ${this.toText(paciente?.nome) || '-'}  |  Prontuario: ${this.toText(paciente?.prontuario) || '-'}`);
-      drawSimpleLine(`Plano: ${plano.id} | Versao: ${this.versionOf(plano)}`);
-
-      drawSectionTitle('Configuracao do plano');
-      drawSimpleLine(`Status: ${this.mapPlanoStatusForPdf(plano.status)}  |  Tipo de dieta: ${this.toText(plano.tipoDieta) || '-'}`);
-      drawSimpleLine(`Inicio: ${this.formatDateForPdf(plano.dataInicio)}  |  Fim: ${this.formatDateForPdf(plano.dataFim)}`);
-      drawSimpleLine(`Fase atual: ${this.toText(plano.faseAtual) || '-'}  |  Antidoping validado: ${plano.validadoAntidoping ? 'Sim' : 'Nao'}`);
-      drawSimpleLine(`Score geral de adequacao: ${this.formatNumberForPdf(validacao.scoreAdequacaoPercent, 2)}%`);
-
-      drawSectionTitle('Revisao clinica de ativacao');
-      drawSimpleLine(`Pronto para ativacao: ${ativacaoClinica.podeAtivar ? 'Sim' : 'Nao'}`);
-      ativacaoClinica.itens.forEach((item) => {
-        const marcador = item.ok ? 'OK' : item.severity === 'warning' ? 'Aviso' : 'Bloqueio';
-        drawSimpleLine(`${marcador} - ${item.label}: ${item.message}`);
-      });
-
-      drawSectionTitle('Metas nutricionais e adequacao');
-      ensureSpace(24);
-      const headY = doc.y;
-      doc.rect(pageLeft, headY, contentWidth, 18).fill('#e2e8f0');
-      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(9);
-      doc.text('Item', pageLeft + 6, headY + 5, { lineBreak: false });
-      doc.text('Meta', pageLeft + 185, headY + 5, { lineBreak: false });
-      doc.text('Prescrito', pageLeft + 285, headY + 5, { lineBreak: false });
-      doc.text('Adequacao', pageLeft + 390, headY + 5);
-      doc.y = headY + 18;
-
-      tabelaMetas.forEach((row, index) => {
-        drawMetaRow(
-          row.item,
-          row.meta === null || row.meta === undefined ? '-' : this.formatNumberForPdf(row.meta, 1),
-          this.formatNumberForPdf(row.prescrito, 1),
-          `${row.adequacao === null ? '-' : `${this.formatNumberForPdf(row.adequacao, 1)}%`} (${this.mapAdequacaoLabelForPdf(row.adequacao)})`,
-          index % 2 === 1
-        );
-      });
-
-      drawSectionTitle('Refeicoes prescritas');
-      const refeicoes = dados.refeicoes || [];
-      if (!refeicoes.length) {
-        drawSimpleLine('Nenhuma refeicao cadastrada no plano.');
-      } else {
-        refeicoes.forEach((refeicao, index) => {
-          const totais = this.asRecord(refeicao.totalRefeicao);
-          ensureSpace(44);
-          const cardY = doc.y;
-          doc.rect(pageLeft, cardY, contentWidth, 20).fill('#f1f5f9');
-          doc.fillColor('#0f172a').font('Helvetica-Bold').fontSize(10).text(
-            `${index + 1}. ${this.toText(refeicao.nome) || 'Refeicao'} (${this.toText(refeicao.horario) || '--:--'})`,
-            pageLeft + 8,
-            cardY + 6,
-            { width: contentWidth - 16 }
-          );
-          doc.y = cardY + 22;
-
-          doc.fillColor('#334155').font('Helvetica').fontSize(9).text(
-            `Totais da refeicao: ${this.formatNumberForPdf(totais.calorias, 1)} kcal | CHO ${this.formatNumberForPdf(totais.cho, 1)} g | PTN ${this.formatNumberForPdf(totais.ptn, 1)} g | LIP ${this.formatNumberForPdf(totais.lip, 1)} g | FIB ${this.formatNumberForPdf(totais.fibra, 1)} g`
-          );
-          doc.moveDown(0.2);
-
-          const alimentos = refeicao.alimentos || [];
-          if (!alimentos.length) {
-            doc.fillColor('#6b7280').font('Helvetica-Oblique').text('Sem alimentos cadastrados.');
-          } else {
-            alimentos.forEach((alimento) => {
-              ensureSpace(14);
-              doc.fillColor('#111827').font('Helvetica').fontSize(9).text(
-                `- ${this.toText(alimento.descricao) || 'Alimento'} | ${alimento.medidaCaseira ? `${alimento.quantidadeMedidas != null ? `${this.formatNumberForPdf(alimento.quantidadeMedidas, 1)} ` : ''}${alimento.medidaCaseira} | ` : ''}${this.formatNumberForPdf(alimento.quantidadeGramas, 1)} g | ${this.formatNumberForPdf(alimento.calorias, 1)} kcal`
-              );
-            });
-          }
-
-          const substitutos = refeicao.substitutos || [];
-          if (substitutos.length) {
-            ensureSpace(16);
-            doc.fillColor('#475569').font('Helvetica-Oblique').fontSize(9).text('Substitutos sugeridos:');
-            substitutos.forEach((item) => {
-              ensureSpace(14);
-              doc.fillColor('#475569').font('Helvetica-Oblique').fontSize(9).text(
-                `  - ${item.substitui ? `Em lugar de ${item.substitui}: ` : 'Alternativa sem vínculo: '}${this.toText(item.descricao) || 'Substituto'} | ${item.medidaCaseira ? `${item.quantidadeMedidas != null ? `${this.formatNumberForPdf(item.quantidadeMedidas, 1)} ` : ''}${item.medidaCaseira} | ` : ''}${this.formatNumberForPdf(item.quantidadeGramas, 1)} g`
-              );
-            });
-          }
-
-          if (this.toText(refeicao.orientacoes)) {
-            ensureSpace(18);
-            doc.fillColor('#334155').font('Helvetica').fontSize(9).text(
-              `Orientacoes: ${this.toText(refeicao.orientacoes)}`
-            );
-          }
-
-          doc.moveDown(0.5);
-        });
-      }
-
-      drawSectionTitle('Suplementacao');
-      const suplementos = dados.suplementos || [];
-      if (!suplementos.length) {
-        drawSimpleLine('Nenhum suplemento registrado.');
-      } else {
-        suplementos.forEach((item, index) => {
-          ensureSpace(15);
-          drawSimpleLine(
-            `${index + 1}. ${this.toText(item.nome) || 'Suplemento'} | Dose: ${this.toText(item.dose) || '-'} | Horario: ${this.toText(item.horario) || '--:--'} | Marca: ${this.toText(item.marca) || '-'} | WADA: ${this.mapWadaStatusForPdf(item.statusWADA)}`
-          );
-          if (this.toText(item.justificativaClinica)) {
-            drawSimpleLine(`   Justificativa clinica: ${this.toText(item.justificativaClinica)}`);
-          }
-        });
-      }
-
-      drawSectionTitle('Revisão e versão');
-      drawSimpleLine(`Versão ${dados.version || 0} | ${dados.revisaoFinal?.confirmada ? `Revisado por ${dados.revisaoFinal.confirmadoPorNome} · CRN ${dados.revisaoFinal.crn} · ${dados.revisaoFinal.confirmadoEm}` : 'Rascunho sem revisão profissional'}`);
-      drawSectionTitle('Orientacoes gerais e observacoes');
-      drawSimpleLine(this.toText(dados.orientacoesGerais) || 'Sem orientacoes gerais registradas.');
-      drawSimpleLine('Suplementos exigem avaliação profissional específica. O GlobalDRO informa sobre medicamentos e não certifica a segurança antidopagem de suplementos.');
-
-      ensureSpace(72);
-      doc.moveDown(1);
-      const assinaturaY = doc.y;
-      doc.strokeColor('#cbd5e1').lineWidth(0.8);
-      doc.moveTo(pageLeft, assinaturaY + 24).lineTo(pageLeft + 220, assinaturaY + 24).stroke();
-      doc.moveTo(pageRight - 220, assinaturaY + 24).lineTo(pageRight, assinaturaY + 24).stroke();
-      doc.fillColor('#475569').font('Helvetica').fontSize(8);
-      doc.text('Assinatura do profissional', pageLeft, assinaturaY + 28, { width: 220, align: 'center' });
-      doc.text('Assinatura do paciente', pageRight - 220, assinaturaY + 28, { width: 220, align: 'center' });
-
-      doc.end();
-    });
+    const paciente = await this.pacientesRepo.findOne({ where: { id: plano.pacienteId } });
+    const report = planoAlimentarPdfReport(plano, paciente, dados, this.hasCurrentReview(plano));
+    try { require.resolve('pdfkit'); } catch {
+      throw new BadRequestException('Dependencia pdfkit nao instalada no servidor.');
+    }
+    return renderLainesPdf(report);
   }
 }

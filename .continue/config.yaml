@@ -1,0 +1,19 @@
+models:
+  - title: DeepSeek Coder
+    provider: openai
+    model: deepseek-coder
+    apiKey: sk-7802a99bb0e540ccb23ff09dab9c892e
+    apiBase: https://api.deepseek.com/v1
+  
+  - title: DeepSeek Chat
+    provider: openai
+    model: deepseek-chat
+    apiKey: sk-7802a99bb0e540ccb23ff09dab9c892e
+    apiBase: https://api.deepseek.com/v1
+
+tabAutocompleteModel:
+  title: DeepSeek Autocomplete
+  provider: openai
+  model: deepseek-coder
+  apiKey: sk-7802a99bb0e540ccb23ff09dab9c892e
+  apiBase: https://api.deepseek.com/v1

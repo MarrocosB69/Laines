@@ -6,6 +6,7 @@ import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
   buildComparativeDeltas,
   calculateIntegratedBodyComposition,
+  restoreIntegratedCompositionSnapshot,
   validatePhysiologicalRange
 } from '../../../services/calculationEngine';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
@@ -24,8 +25,10 @@ const createInitialData = () => ({
   dataAvaliacao: toLocalDateInputValue(new Date()),
   activityLevel: 'sedentario',
   customActivityFactor: '',
-  selectedSourceId: '',
-  sourceOverrideReason: '',
+  percentFat: '',
+  fatMassKg: '',
+  leanMassKg: '',
+  bodyWaterL: '',
   selectedTmbFormulaId: '',
   tmbSelectionReason: '',
   observacoes: ''
@@ -40,7 +43,6 @@ const ComposicaoCorporalIntegradaForm = ({
   baselineAnthropometry,
   moduleSnapshot,
   moduleHistory = [],
-  allEvaluationHistory = [],
   currentSessionId
 }) => {
   const { confirm } = useUiFeedback();
@@ -49,7 +51,6 @@ const ComposicaoCorporalIntegradaForm = ({
   const [error, setError] = useState('');
   const [saveStatus, setSaveStatus] = useState(null);
   const [hasUserInput, setHasUserInput] = useState(false);
-  const [submitAttempted, setSubmitAttempted] = useState(false);
   const loadedSnapshotIdRef = useRef(null);
   const autoSaveRef = useRef(null);
   const saveStatusResetRef = useRef(null);
@@ -66,6 +67,7 @@ const ComposicaoCorporalIntegradaForm = ({
     const source = moduleSnapshot?.dados || {};
     const dadosBrutos = source?.dados_brutos || source?.input || source;
     const metadadosFormula = source?.metadados_formula || {};
+    const ownMeasurements = dadosBrutos?.ownMeasurements || {};
 
     setDados((prev) => ({
       ...prev,
@@ -86,22 +88,18 @@ const ComposicaoCorporalIntegradaForm = ({
         dadosBrutos?.fator_atividade_personalizado,
         source?.fator_atividade_personalizado
       ), 2),
-      selectedSourceId: toText(firstDefined(
-        dadosBrutos?.selectedSourceId,
-        source?.fonte_oficial
-      )),
-      sourceOverrideReason: toText(firstDefined(
-        dadosBrutos?.sourceOverrideReason,
-        source?.justificativa_override
-      )),
-      selectedTmbFormulaId: toText(firstDefined(
+      percentFat: toInput(firstDefined(ownMeasurements.percentFat, dadosBrutos?.percentFat), 2),
+      fatMassKg: toInput(firstDefined(ownMeasurements.fatMassKg, dadosBrutos?.fatMassKg), 2),
+      leanMassKg: toInput(firstDefined(ownMeasurements.leanMassKg, dadosBrutos?.leanMassKg), 2),
+      bodyWaterL: toInput(firstDefined(ownMeasurements.bodyWaterL, dadosBrutos?.bodyWaterL), 2),
+      selectedTmbFormulaId: dadosBrutos?.ownMeasurements ? toText(firstDefined(
         metadadosFormula?.formulaId,
         source?.formulaId
-      )),
-      tmbSelectionReason: toText(firstDefined(
+      )) : '',
+      tmbSelectionReason: dadosBrutos?.ownMeasurements ? toText(firstDefined(
         metadadosFormula?.justificativa,
         dadosBrutos?.tmbSelectionReason
-      )),
+      )) : '',
       observacoes: toText(firstDefined(dadosBrutos?.observacoes, source?.observacoes))
     }));
 
@@ -120,41 +118,49 @@ const ComposicaoCorporalIntegradaForm = ({
     [dados.customActivityFactor]
   );
 
-  const composition = useMemo(() => calculateIntegratedBodyComposition({
-    allHistory: allEvaluationHistory,
-    currentSessionId,
+  const calculatedComposition = useMemo(() => calculateIntegratedBodyComposition({
+    ownMeasurements: {
+      percentFat: toNumber(dados.percentFat),
+      fatMassKg: toNumber(dados.fatMassKg),
+      leanMassKg: toNumber(dados.leanMassKg),
+      bodyWaterL: toNumber(dados.bodyWaterL)
+    },
     sex: profile.sex,
     ageYears: profile.ageYears,
     weightKg: profile.weightKg,
     heightCm: profile.heightCm,
     activityLevel: dados.activityLevel,
     activityFactor: customActivityFactor,
-    selectedSourceId: dados.selectedSourceId,
     selectedFormulaId: dados.selectedTmbFormulaId
   }), [
-    allEvaluationHistory,
-    currentSessionId,
     customActivityFactor,
     dados.activityLevel,
-    dados.selectedSourceId,
+    dados.bodyWaterL,
+    dados.fatMassKg,
+    dados.leanMassKg,
+    dados.percentFat,
     dados.selectedTmbFormulaId,
     profile
   ]);
 
-  useEffect(() => {
-    if (!dados.selectedSourceId && composition?.selectedSourceId) {
-      setDados((prev) => ({ ...prev, selectedSourceId: composition.selectedSourceId }));
-    }
-  }, [composition?.selectedSourceId, dados.selectedSourceId]);
+  const savedComposition = useMemo(
+    () => readOnly ? restoreIntegratedCompositionSnapshot(moduleSnapshot) : null,
+    [moduleSnapshot, readOnly]
+  );
+  const composition = savedComposition || calculatedComposition;
 
   useEffect(() => {
-    const formulaId = composition?.selectedTmb?.formulaId || composition?.tmbComparative?.defaultFormulaId;
+    const formulaId = calculatedComposition?.selectedTmb?.formulaId || calculatedComposition?.tmbComparative?.defaultFormulaId;
     if (!dados.selectedTmbFormulaId && formulaId) {
-      setDados((prev) => ({ ...prev, selectedTmbFormulaId: formulaId }));
+      setDados((prev) => prev.selectedTmbFormulaId ? prev : ({ ...prev, selectedTmbFormulaId: formulaId }));
     }
-  }, [composition?.selectedTmb?.formulaId, composition?.tmbComparative?.defaultFormulaId, dados.selectedTmbFormulaId]);
+  }, [calculatedComposition?.selectedTmb?.formulaId, calculatedComposition?.tmbComparative?.defaultFormulaId, dados.selectedTmbFormulaId]);
 
-  const historyRows = useMemo(() => normalizeHistory(moduleHistory), [moduleHistory]);
+  const historyRows = useMemo(() => normalizeHistory(
+    moduleSnapshot?.id
+      ? moduleHistory.filter((record) => String(record?.id) !== String(moduleSnapshot.id))
+      : moduleHistory
+  ), [moduleHistory, moduleSnapshot]);
   const previous = historyRows[0] || null;
 
   const comparison = useMemo(() => ({
@@ -173,6 +179,52 @@ const ComposicaoCorporalIntegradaForm = ({
   );
 
   const hasOfficial = Boolean(composition?.official?.sourceId);
+  const measurementErrors = useMemo(() => {
+    const checks = [
+      ['% de gordura', dados.percentFat, 0, 100],
+      ['Massa gorda', dados.fatMassKg, 0, profile.weightKg],
+      ['Massa magra', dados.leanMassKg, 0, profile.weightKg],
+      ['Água corporal', dados.bodyWaterL, 0, null]
+    ];
+    const errors = checks.flatMap(([label, input, min, max]) => {
+      if (toText(input) === '') return [];
+      const value = toNumber(input);
+      if (!Number.isFinite(value)) return [`${label}: informe um número válido.`];
+      if (value < min || (Number.isFinite(max) && value > max)) {
+        return [`${label}: valor fora da faixa permitida.`];
+      }
+      return [];
+    });
+    const fatMass = toNumber(dados.fatMassKg);
+    const leanMass = toNumber(dados.leanMassKg);
+    const percentFat = toNumber(dados.percentFat);
+    if (Number.isFinite(profile.weightKg) && Number.isFinite(fatMass) && Number.isFinite(leanMass)
+      && Math.abs(fatMass + leanMass - profile.weightKg) > 1) {
+      errors.push('As massas gorda e magra devem corresponder ao peso compartilhado.');
+    }
+    if (Number.isFinite(profile.weightKg) && Number.isFinite(percentFat) && Number.isFinite(fatMass)
+      && Math.abs(fatMass - (percentFat / 100) * profile.weightKg) > 1) {
+      errors.push('Massa gorda e percentual de gordura precisam ser coerentes.');
+    }
+    if (Number.isFinite(profile.weightKg) && Number.isFinite(percentFat) && Number.isFinite(leanMass)
+      && Math.abs(leanMass - (1 - percentFat / 100) * profile.weightKg) > 1) {
+      errors.push('Massa magra e percentual de gordura precisam ser coerentes.');
+    }
+    if ((!Number.isFinite(profile.weightKg) || profile.weightKg <= 0) && Number.isFinite(percentFat)
+      && Number.isFinite(fatMass) && Number.isFinite(leanMass) && fatMass + leanMass > 0
+      && Math.abs(percentFat - 100 * fatMass / (fatMass + leanMass)) > 1) {
+      errors.push('Percentual de gordura e massas informadas precisam ser coerentes.');
+    }
+    return errors;
+  }, [dados.bodyWaterL, dados.fatMassKg, dados.leanMassKg, dados.percentFat, profile.weightKg]);
+  const missingForFinalization = useMemo(() => {
+    const missing = [];
+    if (!composition?.official?.sourceId) missing.push('medida de gordura ou massa neste instrumento');
+    if (!Number.isFinite(composition?.official?.percentFat)) missing.push('% de gordura (ou massas gorda e magra)');
+    if (!Number.isFinite(composition?.official?.leanMassKg)) missing.push('massa magra (ou peso para derivá-la)');
+    if (!Number.isFinite(composition?.selectedTmb?.tmbKcal)) missing.push('TMB (confira peso, idade e sexo do cadastro)');
+    return missing;
+  }, [composition?.official?.leanMassKg, composition?.official?.percentFat, composition?.official?.sourceId, composition?.selectedTmb?.tmbKcal]);
   const outlier = useMemo(() => {
     const status = validatePhysiologicalRange({
       metric: 'percentual_gordura',
@@ -194,7 +246,12 @@ const ComposicaoCorporalIntegradaForm = ({
       fonte_oficial: composition?.official?.sourceId || null,
       dados_brutos: {
         selectedSourceId: composition?.official?.sourceId || null,
-        sourceOverrideReason: toText(dados.sourceOverrideReason) || null,
+        ownMeasurements: {
+          percentFat: toNumber(dados.percentFat),
+          fatMassKg: toNumber(dados.fatMassKg),
+          leanMassKg: toNumber(dados.leanMassKg),
+          bodyWaterL: toNumber(dados.bodyWaterL)
+        },
         activityLevel: dados.activityLevel || 'sedentario',
         customActivityFactor: Number.isFinite(customActivityFactor) ? customActivityFactor : null,
         selectedTmbFormulaId: composition?.selectedTmb?.formulaId || null,
@@ -240,7 +297,7 @@ const ComposicaoCorporalIntegradaForm = ({
         spread_metodos_pp: num(composition?.methodSpreadPp, 2)
       },
       source: {
-        mode: 'integrado',
+        mode: 'medicao_propria',
         system: 'composicao_corporal_integrada'
       },
       observacoes: toText(dados.observacoes) || null
@@ -259,7 +316,7 @@ const ComposicaoCorporalIntegradaForm = ({
       schemaVersion: 1,
       formulaId: payload?.metadados_formula?.formulaId || 'mifflin_st_jeor_1990',
       formulaVersion: payload?.metadados_formula?.formulaVersion || '1.0.0',
-      sourceSystem: 'integrado',
+      sourceSystem: 'medicao_propria',
       measuredAt: normalizeDateValue(dados.dataAvaliacao),
       sessaoId: moduleSnapshot?.sessaoId || currentSessionId
     });
@@ -282,10 +339,13 @@ const ComposicaoCorporalIntegradaForm = ({
 
   const handleSubmit = useCallback(async () => {
     if (!onSalvar) return;
-    setSubmitAttempted(true);
     setError('');
-    if (!hasOfficial) {
-      setError('Nenhuma fonte valida disponivel para composicao integrada.');
+    if (measurementErrors.length > 0) {
+      setError(measurementErrors.join(' '));
+      return;
+    }
+    if (missingForFinalization.length > 0) {
+      setError(`Para concluir esta avaliação, informe: ${missingForFinalization.join('; ')}.`);
       return;
     }
     if (outlier) {
@@ -299,14 +359,14 @@ const ComposicaoCorporalIntegradaForm = ({
       if (!proceed) return;
     }
     await executeSave(false);
-  }, [confirm, executeSave, hasOfficial, onSalvar, outlier]);
+  }, [confirm, executeSave, measurementErrors, missingForFinalization, onSalvar, outlier]);
 
   useEffect(() => {
-    if (readOnly || !onAutoSave || !hasUserInput || !hasOfficial) return undefined;
+    if (readOnly || !onAutoSave || !hasUserInput || missingForFinalization.length > 0 || measurementErrors.length > 0) return undefined;
     clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(() => executeSave(true), 3500);
     return () => clearTimeout(autoSaveRef.current);
-  }, [executeSave, hasOfficial, hasUserInput, onAutoSave, readOnly]);
+  }, [executeSave, hasUserInput, measurementErrors, missingForFinalization, onAutoSave, readOnly]);
 
   const tmbRows = composition?.tmbComparative?.rows || [];
   const onboardingResumo = useMemo(() => {
@@ -318,18 +378,20 @@ const ComposicaoCorporalIntegradaForm = ({
     if (Number.isFinite(frequencia)) resumo.push(`Frequencia: ${frequencia}x/sem`);
     return resumo.slice(0, 2);
   }, [onboardingContext]);
+  const savedTmbSelectionReason = toText(firstDefined(
+    moduleSnapshot?.dados?.metadados_formula?.justificativa,
+    moduleSnapshot?.dados?.dados_brutos?.tmbSelectionReason
+  ));
+  const historicalOverrideReason = toText(firstDefined(
+    moduleSnapshot?.dados?.dados_brutos?.sourceOverrideReason,
+    moduleSnapshot?.dados?.justificativa_override
+  ));
   const integridadeIntegracao = useMemo(() => {
-    const sourceCount = Array.isArray(composition?.sources) ? composition.sources.length : 0;
-    const checklist = [
-      sourceCount > 0,
-      Boolean(composition?.official?.sourceId),
-      Boolean(composition?.selectedTmb?.formulaId)
-    ];
-    const score = checklist.filter(Boolean).length;
-    if (score === 3) return `Integracao alta (${sourceCount} fonte(s) mapeadas na sessao).`;
-    if (score === 2) return `Integracao moderada (${sourceCount} fonte(s) com ajustes pendentes).`;
-    return 'Integracao baixa: complete fontes de composicao e formula TMB.';
-  }, [composition]);
+    if (savedComposition?.historicalIntegration) return 'Resultado histórico da integração, preservado como foi salvo.';
+    if (savedComposition) return 'Medição registrada neste instrumento.';
+    if (hasOfficial) return 'Medidas próprias disponíveis para esta avaliação.';
+    return 'Informe uma medida de composição neste instrumento.';
+  }, [hasOfficial, savedComposition]);
 
   return (
     <div className={`eval-card composicao-integrada-form composicao-integrada-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
@@ -337,17 +399,21 @@ const ComposicaoCorporalIntegradaForm = ({
         <div className="eval-icon"><Layers size={20} /></div>
         <div>
           <h3 className="eval-title">Composicao corporal integrada</h3>
-          <p className="eval-subtitle">Fonte oficial por hierarquia clinica, comparativo de metodos e TMB/GET da sessao.</p>
+          <p className="eval-subtitle">
+            {savedComposition?.historicalIntegration
+              ? 'Resultados da integração histórica preservados no registro.'
+              : 'Composição medida nesta avaliação, com TMB e GET calculados pelo perfil.'}
+          </p>
         </div>
       </div>
 
-      {onboardingResumo.length > 0 ? (
+      {!savedComposition && onboardingResumo.length > 0 ? (
         <div className="eval-note">
           <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
         </div>
       ) : null}
       <div className="eval-note">
-        <strong>Status de integracao composicional:</strong> {integridadeIntegracao}
+        <strong>Origem da composição:</strong> {integridadeIntegracao}
       </div>
 
       <div className="eval-section">
@@ -357,11 +423,28 @@ const ComposicaoCorporalIntegradaForm = ({
           <FieldText label="Fator personalizado (opcional)" value={dados.customActivityFactor} disabled={readOnly} onChange={(v) => updateField(setDados, setHasUserInput, 'customActivityFactor', v)} placeholder="Ex.: 1.42" />
           <FieldText label="Fator aplicado" value={Number.isFinite(composition?.activityFactorResolved) ? Number(composition.activityFactorResolved).toFixed(2) : '--'} disabled onChange={() => {}} />
           <FieldText label="Data da avaliacao" value={dados.dataAvaliacao} type="date" disabled={readOnly} onChange={(v) => updateField(setDados, setHasUserInput, 'dataAvaliacao', v)} />
+          <FieldText label={savedComposition ? 'Peso registrado' : 'Peso compartilhado'} value={fmt(savedComposition ? composition?.official?.weightKg : profile.weightKg, 2, 'kg')} disabled onChange={() => {}} />
+          <FieldText label={savedComposition ? 'Estatura registrada' : 'Estatura compartilhada'} value={fmt(savedComposition ? composition?.official?.heightCm : profile.heightCm, 1, 'cm')} disabled onChange={() => {}} />
         </div>
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Fontes na sessao</h4>
+        <h4 className="eval-section-title">{savedComposition?.historicalIntegration ? 'Fontes históricas registradas' : 'Medidas desta avaliação'}</h4>
+        {!readOnly ? (
+          <div className="composicao-grid">
+            <FieldText label="Gordura corporal (%)" value={dados.percentFat} onChange={(v) => updateField(setDados, setHasUserInput, 'percentFat', v)} placeholder="Ex.: 21,5" />
+            <FieldText label="Massa gorda (kg)" value={dados.fatMassKg} onChange={(v) => updateField(setDados, setHasUserInput, 'fatMassKg', v)} placeholder="Opcional" />
+            <FieldText label="Massa magra (kg)" value={dados.leanMassKg} onChange={(v) => updateField(setDados, setHasUserInput, 'leanMassKg', v)} placeholder="Opcional" />
+            <FieldText label="Água corporal (L)" value={dados.bodyWaterL} onChange={(v) => updateField(setDados, setHasUserInput, 'bodyWaterL', v)} placeholder="Opcional" />
+          </div>
+        ) : null}
+        {!readOnly ? <div className="eval-note">Preencha % de gordura ou uma massa medida; peso e estatura vêm do contexto compartilhado.</div> : null}
+        {!readOnly && hasUserInput && missingForFinalization.length > 0 ? (
+          <div className="eval-note">Ainda faltam para finalizar: {missingForFinalization.join('; ')}.</div>
+        ) : null}
+        {!readOnly && hasUserInput && measurementErrors.length > 0 ? (
+          <div className="eval-note composicao-error-note">{measurementErrors.join(' ')}</div>
+        ) : null}
         {(composition?.sources || []).length ? (
           <div className="composicao-table-wrap">
             <table className="composicao-table">
@@ -373,16 +456,6 @@ const ComposicaoCorporalIntegradaForm = ({
                   <tr
                     key={source.sourceId}
                     className={source.sourceId === composition?.selectedSourceId ? 'is-selected' : ''}
-                    onClick={() => !readOnly && updateField(setDados, setHasUserInput, 'selectedSourceId', source.sourceId)}
-                    onKeyDown={(event) => {
-                      if (readOnly) return;
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        updateField(setDados, setHasUserInput, 'selectedSourceId', source.sourceId);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={readOnly ? -1 : 0}
                   >
                     <td><strong>{source.label}</strong></td>
                     <td>{fmt(source.percentFat, 2, '%')}</td>
@@ -399,7 +472,7 @@ const ComposicaoCorporalIntegradaForm = ({
               </tbody>
             </table>
           </div>
-        ) : <div className="eval-note">Sem fontes disponiveis nesta sessao.</div>}
+        ) : <div className="eval-note">{savedComposition ? 'As fontes não foram detalhadas neste registro.' : 'Nenhuma medida de composição informada.'}</div>}
 
         {composition?.hasRelevantMethodSpread ? (
           <div className="composicao-warning">
@@ -425,8 +498,14 @@ const ComposicaoCorporalIntegradaForm = ({
       </div>
 
       <div className="eval-section">
-        <h4 className="eval-section-title">Comparativo de TMB</h4>
-        <div className="composicao-table-wrap">
+        <h4 className="eval-section-title">{savedComposition ? 'Fórmula registrada' : 'Comparativo de TMB'}</h4>
+        {savedComposition ? (
+          <div className="eval-note">
+            {composition?.selectedTmb?.selected?.label || composition?.selectedTmb?.formulaId || 'Fórmula não registrada'}
+            {' · '}
+            {fmt(composition?.selectedTmb?.tmbKcal, 0, 'kcal/dia')}
+          </div>
+        ) : <div className="composicao-table-wrap">
           <table className="composicao-table">
             <thead><tr><th>Formula</th><th>Valor</th><th>Indicado para</th></tr></thead>
             <tbody>
@@ -452,13 +531,15 @@ const ComposicaoCorporalIntegradaForm = ({
               ))}
             </tbody>
           </table>
-        </div>
+        </div>}
       </div>
 
       <div className="eval-section">
         <h4 className="eval-section-title">Justificativas e observacoes</h4>
-        <FieldArea label="Justificativa de override (opcional)" value={dados.sourceOverrideReason} disabled={readOnly} onChange={(v) => updateField(setDados, setHasUserInput, 'sourceOverrideReason', v)} />
-        <FieldArea label="Justificativa da formula TMB (opcional)" value={dados.tmbSelectionReason} disabled={readOnly} onChange={(v) => updateField(setDados, setHasUserInput, 'tmbSelectionReason', v)} />
+        {savedComposition?.historicalIntegration && historicalOverrideReason ? (
+          <div className="eval-note"><strong>Justificativa histórica da fonte:</strong> {historicalOverrideReason}</div>
+        ) : null}
+        <FieldArea label="Justificativa da formula TMB (opcional)" value={savedComposition ? savedTmbSelectionReason : dados.tmbSelectionReason} disabled={readOnly} onChange={(v) => updateField(setDados, setHasUserInput, 'tmbSelectionReason', v)} />
         <FieldArea label="Observacoes" value={dados.observacoes} disabled={readOnly} onChange={(v) => updateField(setDados, setHasUserInput, 'observacoes', v)} />
       </div>
 
@@ -469,9 +550,6 @@ const ComposicaoCorporalIntegradaForm = ({
         </Button>
       </div>
 
-      {submitAttempted && composition?.hasOverride && !toText(dados.sourceOverrideReason) ? (
-        <div className="eval-note">Recomendado registrar justificativa para override da fonte oficial.</div>
-      ) : null}
       {error ? <div className="eval-note composicao-error-note">{error}</div> : null}
     </div>
   );

@@ -1,0 +1,19 @@
+# Dependências para captura local (capture.py + submit.py)
+# Instalar em laptops/desktops com câmera e display.
+#
+# ATENÇÃO: não instale junto com requirements.txt no mesmo ambiente —
+# opencv-contrib-python e opencv-contrib-python-headless conflitam.
+# Use ambientes virtuais separados:
+#   servidor  → pip install -r requirements.txt
+#   captura   → pip install -r requirements-capture.txt
+
+mediapipe==0.10.35
+opencv-contrib-python==4.13.0.92
+numpy==2.4.6
+requests==2.34.2
+pyttsx3>=2.90
+
+# Fase 2 — SMPL-X (opcional, para submit.py em modo direto com USE_SMPLX=true)
+# CPU:  pip install torch --index-url https://download.pytorch.org/whl/cpu
+# GPU:  pip install torch --index-url https://download.pytorch.org/whl/cu121
+# Depois: pip install smplx[all] scipy

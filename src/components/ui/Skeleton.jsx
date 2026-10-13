@@ -4,7 +4,7 @@ const Skeleton = ({ lines = 1, variant = 'line', width, height, className = '' }
   if (variant === 'line' || lines > 1) {
     const count = variant === 'line' ? lines : 1;
     return (
-      <div className={`ui-skeleton-group ${className}`}>
+      <div className={`ui-skeleton-group ${className}`} aria-hidden="true">
         {Array.from({ length: count }, (_, i) => (
           <div
             key={i}
@@ -20,6 +20,7 @@ const Skeleton = ({ lines = 1, variant = 'line', width, height, className = '' }
   return (
     <div
       className={cls}
+      aria-hidden="true"
       style={{
         ...(width ? { width } : {}),
         ...(height ? { height } : {})

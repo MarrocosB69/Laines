@@ -30,7 +30,7 @@ export default function SeloEquivalencia({ desvio }) {
       className={`pp-selo-equiv pp-selo-equiv--${tom}`}
       title={`Reproduz ${n(pct, Number.isInteger(pct) ? 0 : 1)}% do nutriente âncora do alimento original`}
     >
-      {n(pct, Number.isInteger(pct) ? 0 : 1)}%
+      {n(pct, Number.isInteger(pct) ? 0 : 1)}% da âncora
     </span>
   );
 }

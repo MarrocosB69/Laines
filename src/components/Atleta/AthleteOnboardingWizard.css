@@ -1,3 +1,24 @@
+/* Cadastro clínico inicial do atleta (AthleteOnboardingWizard.jsx), onda B
+   de docs/implementacao/telas-v2/change-intent.md: o mesmo padrão novo dos
+   modais do atleta (ver src/views/Athlete/AthleteEbiaModal.css), aqui com
+   classes próprias, sem app-modal-*.
+
+   Casca branca com --lt-radius-card e a raia azul e verde sob o cabeçalho;
+   a saudação na voz de campanha, como a da Visão geral; campos de 48 px com
+   rótulo em Sofia 700; opções marcáveis de 44 px; progresso escrito ("Passo
+   2 de 4") com a barra e os pontos só como gráfico; botões de 44 px,
+   primário no degradê de largada e secundário em contorno.
+
+   Escopo: tudo começa em `.athlete-wizard-overlay` ou `.athlete-wizard`.
+   Armadilhas globais redeclaradas: h2 em Poppins e com cor, `label` a
+   13 px com margem, `p` com entrelinha 1,6, `button { white-space: nowrap }`,
+   `*:focus-visible` verde e `input:not([type=checkbox]):not([type=radio])`
+   (0,2,1) de theme.css, vencido aqui com (0,4,1). */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../views/landing/landing-tokens.css';
+
+/* ── Casca ───────────────────────────────────────────────────────────── */
 .athlete-wizard-overlay {
   position: fixed;
   inset: 0;
@@ -5,371 +26,438 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  background: color-mix(in srgb, var(--pn-text-1) 34%, transparent);
+  padding: var(--lt-space-4);
+  background: rgba(11, 42, 94, 0.55); /* --lt-color-stadium a 55% */
 }
 
 .athlete-wizard {
+  --wizard-sombra-largada: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  --wizard-respiro: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+
+  box-sizing: border-box;
   width: min(720px, 100%);
   max-height: min(760px, calc(100vh - 2rem));
+  max-height: min(760px, calc(100dvh - 2rem));
   overflow: auto;
-  border: 1px solid var(--pn-border);
-  border-radius: var(--pn-r-2);
-  background: var(--pn-surface);
-  color: var(--pn-text-1);
-  box-shadow: 0 24px 60px color-mix(in srgb, var(--pn-text-1) 22%, transparent);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 30px 72px -38px rgba(10, 36, 68, 0.56);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
+.athlete-wizard :where(p) { margin: 0; line-height: var(--lt-leading-normal); }
+.athlete-wizard label { margin: 0; color: inherit; font-size: inherit; font-weight: inherit; }
+.athlete-wizard :where(button) { white-space: normal; }
+/* O contorno verde global sai; cada controle abaixo desenha o anel de foco. */
+.athlete-wizard :is(button, input, select, textarea):focus-visible { outline: none; }
+
 .athlete-wizard-header {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.2rem 0.85rem;
-  border-bottom: 1px solid var(--pn-border);
+  gap: var(--lt-space-4);
+  padding: var(--wizard-respiro) var(--wizard-respiro) calc(var(--lt-space-4) + 3px);
+  border: 0;
 }
 
-.athlete-wizard-header p {
-  margin: 0 0 0.25rem;
-  color: var(--pn-text-3);
-  font-size: 0.72rem;
+.athlete-wizard-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.athlete-wizard-header > div { min-width: 0; }
+
+/* "Cadastro clínico — LAINES": rótulo em caixa alta, apoio a 6,59:1. */
+.athlete-wizard .athlete-wizard-header p {
+  margin: 0 0 var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 
-.athlete-wizard-header h2 {
+/* A saudação na voz de campanha; reset do h2 global. */
+.athlete-wizard .athlete-wizard-header h2 {
   margin: 0;
-  color: var(--pn-text-1);
-  font-size: 1.18rem;
-  line-height: 1.2;
+  padding-right: 0.1em;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-lg);
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  overflow-wrap: anywhere;
 }
 
-.athlete-wizard-close {
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--pn-border);
-  border-radius: var(--pn-r-1);
-  background: var(--pn-surface-2);
-  color: var(--pn-text-2);
-  cursor: pointer;
-  font-size: 1.3rem;
-  line-height: 1;
-}
-
-.athlete-wizard-close:hover {
-  border-color: var(--pn-border-mid);
-  color: var(--pn-text-1);
-}
-
-.athlete-wizard-progress {
-  padding: 0.95rem 1.2rem 0;
-}
-
-.athlete-wizard-progress-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.55rem;
-  color: var(--pn-text-3);
-  font-size: 0.78rem;
-}
-
-.athlete-wizard-progress-label strong {
-  color: var(--pn-text-1);
-}
-
-.athlete-wizard-progress-track {
-  height: 0.45rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--pn-surface-2);
-}
-
-.athlete-wizard-progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--pn-accent);
-  transition: width 180ms ease;
-}
-
-.athlete-wizard-progress-fill-step-1 { width: 25%; }
-.athlete-wizard-progress-fill-step-2 { width: 50%; }
-.athlete-wizard-progress-fill-step-3 { width: 75%; }
-.athlete-wizard-progress-fill-step-4 { width: 100%; }
-
-.athlete-wizard-dots {
-  display: flex;
-  gap: 0.4rem;
-  margin-top: 0.7rem;
-}
-
-.athlete-wizard-dot {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 999px;
-  background: var(--pn-border-mid);
-}
-
-.athlete-wizard-dot.is-active {
-  background: var(--pn-accent);
-}
-
-.athlete-wizard-dot.is-complete {
-  background: var(--pn-ok);
-}
-
-.athlete-wizard-form {
-  padding: 1rem 1.2rem 1.2rem;
-}
-
-.athlete-wizard-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-
-.athlete-wizard-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.38rem;
-}
-
-.athlete-wizard-field-full {
-  grid-column: 1 / -1;
-}
-
-.athlete-wizard-field span {
-  color: var(--pn-text-2);
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.athlete-wizard-field input,
-.athlete-wizard-field select,
-.athlete-wizard-field textarea {
-  width: 100%;
-  border: 1px solid var(--pn-border-mid);
-  border-radius: var(--pn-r-1);
-  background: var(--pn-surface);
-  color: var(--pn-text-1);
-  font: inherit;
-  font-size: 0.9rem;
-  padding: 0.62rem 0.7rem;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
-}
-
-.athlete-wizard-field textarea {
-  min-height: 5.2rem;
-  resize: vertical;
-}
-
-.athlete-wizard-field input:focus,
-.athlete-wizard-field select:focus,
-.athlete-wizard-field textarea:focus {
-  outline: none;
-  border-color: var(--pn-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pn-accent) 18%, transparent);
-}
-
-.athlete-wizard-error {
-  margin: 0.9rem 0 0;
-  border: 1px solid color-mix(in srgb, var(--pn-warn) 24%, transparent);
-  border-radius: var(--pn-r-1);
-  background: color-mix(in srgb, var(--pn-warn) 8%, transparent);
-  color: var(--pn-warn);
-  font-size: 0.86rem;
-  font-weight: 700;
-  padding: 0.65rem 0.75rem;
-}
-
-.athlete-wizard-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
-  margin-top: 1.1rem;
-  padding-top: 0.95rem;
-  border-top: 1px solid var(--pn-border);
-}
-
-.athlete-wizard-actions-main {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.65rem;
-}
-
-.athlete-wizard-button {
-  min-height: 2.5rem;
-  border: 1px solid var(--pn-border-mid);
-  border-radius: var(--pn-r-1);
-  background: var(--pn-surface);
-  color: var(--pn-text-2);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 800;
-  padding: 0.55rem 0.9rem;
-}
-
-.athlete-wizard-button:hover {
-  border-color: var(--pn-accent);
-}
-
-.athlete-wizard-button-primary {
-  border-color: var(--pn-accent);
-  background: var(--pn-accent);
-  color: var(--pn-surface);
-}
-
-.athlete-wizard-button-secondary {
-  background: var(--pn-surface-2);
-}
-
-.athlete-wizard-button-ghost {
-  border-color: transparent;
-  background: transparent;
-  color: var(--pn-text-3);
-}
-
-/* ── New elements ── */
-
-.athlete-wizard-section-title {
-  margin: 0.7rem 0 0.25rem;
-  color: var(--pn-text-2);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.athlete-wizard-field-label {
-  margin: 0 0 0.45rem;
-  color: var(--pn-text-2);
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.athlete-wizard-checkbox-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.athlete-wizard-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-  border: 1px solid var(--pn-border-mid);
-  border-radius: var(--pn-r-1);
-  padding: 0.3rem 0.6rem;
-  font-size: 0.82rem;
-  color: var(--pn-text-2);
-  transition: border-color 120ms ease, background 120ms ease;
-}
-
-.athlete-wizard-checkbox:has(input:checked) {
-  border-color: var(--pn-accent);
-  background: color-mix(in srgb, var(--pn-accent) 10%, transparent);
-  color: var(--pn-text-1);
-}
-
-.athlete-wizard-checkbox input[type="checkbox"] {
-  width: auto;
-  padding: 0;
-  border: none;
-  accent-color: var(--pn-accent);
-}
-
-.athlete-wizard-list-row,
-.athlete-wizard-med-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.athlete-wizard-list-input {
-  flex: 1;
-  border: 1px solid var(--pn-border-mid);
-  border-radius: var(--pn-r-1);
-  background: var(--pn-surface);
-  color: var(--pn-text-1);
-  font: inherit;
-  font-size: 0.88rem;
-  padding: 0.52rem 0.65rem;
-}
-
-.athlete-wizard-list-input:focus {
-  outline: none;
-  border-color: var(--pn-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pn-accent) 16%, transparent);
-}
-
-.athlete-wizard-icon-btn {
-  display: flex;
+.athlete-wizard .athlete-wizard-close {
+  display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--pn-border-mid);
-  border-radius: var(--pn-r-1);
-  background: var(--pn-surface);
-  color: var(--pn-text-3);
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, color 160ms;
+}
+
+@media (hover: hover) {
+  .athlete-wizard .athlete-wizard-close:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+}
+
+.athlete-wizard .athlete-wizard-close:focus-visible { border-color: var(--lt-color-brand-blue); box-shadow: var(--lt-focus-ring); }
+.athlete-wizard .athlete-wizard-close:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Progresso: o texto diz o passo; barra e pontos são gráfico ──────── */
+.athlete-wizard-progress { padding: var(--lt-space-4) var(--wizard-respiro) 0; }
+
+.athlete-wizard .athlete-wizard-progress-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-1) var(--lt-space-4);
+  margin-bottom: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.athlete-wizard .athlete-wizard-progress-label strong { color: var(--lt-color-text); font-size: var(--lt-text-base); font-weight: 700; }
+
+.athlete-wizard .athlete-wizard-progress-track {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+}
+
+/* A barra cresce por transform (a classe do passo muda a escala), não
+   por largura: a transição fica só em transform, com movimento permitido. */
+.athlete-wizard .athlete-wizard-progress-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+  transform-origin: 0 50%;
+}
+
+.athlete-wizard .athlete-wizard-progress-fill-step-1 { transform: scaleX(0.25); }
+.athlete-wizard .athlete-wizard-progress-fill-step-2 { transform: scaleX(0.5); }
+.athlete-wizard .athlete-wizard-progress-fill-step-3 { transform: scaleX(0.75); }
+.athlete-wizard .athlete-wizard-progress-fill-step-4 { transform: none; }
+
+.athlete-wizard .athlete-wizard-dots { display: flex; align-items: center; gap: var(--lt-space-2); margin-top: var(--lt-space-3); }
+
+.athlete-wizard .athlete-wizard-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-border-field);
+}
+
+.athlete-wizard .athlete-wizard-dot.is-active { width: 1.5rem; background: var(--lt-color-brand-blue); }
+.athlete-wizard .athlete-wizard-dot.is-complete { background: var(--lt-color-brand-green); }
+
+/* ── Formulário ──────────────────────────────────────────────────────── */
+.athlete-wizard-form { padding: var(--lt-space-5) var(--wizard-respiro) var(--wizard-respiro); }
+
+.athlete-wizard .athlete-wizard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-4) var(--lt-space-5);
+  align-items: start;
+  min-width: 0;
+}
+
+.athlete-wizard .athlete-wizard-field { display: flex; flex-direction: column; gap: var(--lt-space-2); min-width: 0; }
+.athlete-wizard .athlete-wizard-field-full { grid-column: 1 / -1; min-width: 0; }
+
+/* Rótulo do campo e título do grupo: o .ip-label da inscrição. */
+.athlete-wizard .athlete-wizard-field > span,
+.athlete-wizard .athlete-wizard-field-label {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.athlete-wizard .athlete-wizard-field-label { margin-bottom: var(--lt-space-2); }
+
+.athlete-wizard .athlete-wizard-section-title {
+  margin: var(--lt-space-2) 0 0;
+  padding: 0 0 var(--lt-space-2);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.athlete-wizard .athlete-wizard-field :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]),
+.athlete-wizard .athlete-wizard-list-input:not([type="checkbox"]):not([type="radio"]) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.athlete-wizard .athlete-wizard-field textarea:not([type="checkbox"]) { height: auto; min-height: 6rem; padding: 0.75rem 0.875rem; resize: vertical; }
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI; o valor é o mesmo de avaliacao-base.css. */
+.athlete-wizard .athlete-wizard-field select:not([multiple]) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
   cursor: pointer;
 }
 
-.athlete-wizard-icon-btn:hover {
-  border-color: var(--pn-danger, #ef4444);
-  color: var(--pn-danger, #ef4444);
+.athlete-wizard :is(.athlete-wizard-field :is(input, textarea), .athlete-wizard-list-input)::placeholder { color: var(--lt-color-text-subtle); opacity: 1; }
+
+.athlete-wizard .athlete-wizard-field :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):focus,
+.athlete-wizard .athlete-wizard-list-input:not([type="checkbox"]):not([type="radio"]):focus {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
 }
 
-.athlete-wizard-add-btn {
+/* Aviso de pré-preenchimento: informativo, tinta sobre o azul claro. */
+.athlete-wizard p.athlete-wizard-mandatory-note {
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Opções marcáveis e sim/não: alvos de 44 px ──────────────────────── */
+.athlete-wizard .athlete-wizard-checkbox-grid { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); min-width: 0; }
+
+.athlete-wizard .athlete-wizard-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+/* Sim/não em linha inteira (ToggleRow e RED-S): bloco no fundo de campo. */
+.athlete-wizard .athlete-wizard-checkbox.athlete-wizard-field-full { border-color: transparent; background: var(--lt-color-surface-field); font-weight: 700; }
+
+.athlete-wizard .athlete-wizard-checkbox:has(input:checked) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+
+@media (hover: hover) {
+  .athlete-wizard .athlete-wizard-checkbox:hover { border-color: var(--lt-color-brand-blue); }
+}
+
+.athlete-wizard .athlete-wizard-checkbox:has(input:focus-visible) { box-shadow: var(--lt-focus-ring); }
+
+.athlete-wizard .athlete-wizard-checkbox input[type="checkbox"] {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  accent-color: var(--lt-color-brand-blue);
+  cursor: pointer;
+}
+
+/* ── Listas: lesões, competições, medicamentos e suplementos ─────────── */
+.athlete-wizard .athlete-wizard-list-row,
+.athlete-wizard .athlete-wizard-med-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lt-space-2); min-width: 0; }
+
+.athlete-wizard .athlete-wizard-list-input:not([type="checkbox"]):not([type="radio"]) { flex: 1 1 9rem; width: auto; }
+
+.athlete-wizard .athlete-wizard-icon-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, color 160ms;
+}
+
+@media (hover: hover) {
+  .athlete-wizard .athlete-wizard-icon-btn:hover { border-color: var(--lt-color-danger-text); background: var(--lt-color-danger-bg); color: var(--lt-color-danger-text); }
+}
+
+.athlete-wizard .athlete-wizard-add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  border: 1px dashed var(--pn-border-mid);
-  border-radius: var(--pn-r-1);
-  background: transparent;
-  color: var(--pn-text-3);
+  justify-self: start;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px dashed var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
   cursor: pointer;
-  font: inherit;
-  font-size: 0.8rem;
-  padding: 0.45rem 0.75rem;
-  margin-top: 0.25rem;
-  transition: border-color 120ms, color 120ms;
+  transition: background-color 160ms, border-color 160ms;
 }
 
-.athlete-wizard-add-btn:hover {
-  border-color: var(--pn-accent);
-  color: var(--pn-accent);
+@media (hover: hover) {
+  .athlete-wizard .athlete-wizard-add-btn:hover { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
 }
 
-.athlete-wizard-mandatory-note {
-  color: var(--pn-text-3);
-  font-size: 0.76rem;
+.athlete-wizard :is(.athlete-wizard-icon-btn, .athlete-wizard-add-btn):focus-visible { box-shadow: var(--lt-focus-ring); }
+
+/* ── Erro e rodapé ───────────────────────────────────────────────────── */
+.athlete-wizard .athlete-wizard-error {
+  margin: var(--lt-space-4) 0 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
 }
 
-@media (width <= 640px) {
-  .athlete-wizard-overlay {
-    align-items: flex-start;
-    padding: 0.75rem;
-  }
+.athlete-wizard .athlete-wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  margin-top: var(--lt-space-5);
+  padding-top: var(--lt-space-4);
+  border-top: 1px solid var(--lt-color-border);
+}
 
-  .athlete-wizard-grid {
-    grid-template-columns: 1fr;
-  }
+.athlete-wizard span.athlete-wizard-mandatory-note {
+  flex: 1 1 12rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
 
-  .athlete-wizard-actions {
-    align-items: stretch;
-    flex-direction: column-reverse;
-  }
+.athlete-wizard .athlete-wizard-actions-main { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--lt-space-2); }
 
-  .athlete-wizard-actions-main,
-  .athlete-wizard-button {
-    width: 100%;
-  }
+.athlete-wizard .athlete-wizard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-5);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+/* Continuar / Concluir e entrar: branco sobre o degradê, 4,82:1 e 6,20:1. */
+.athlete-wizard .athlete-wizard-button-primary {
+  border: 0;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: var(--wizard-sombra-largada);
+  color: var(--lt-color-text-inverse);
+}
+
+.athlete-wizard .athlete-wizard-button-ghost { border-color: transparent; background: none; }
+
+@media (hover: hover) {
+  .athlete-wizard .athlete-wizard-button-secondary:hover:not(:disabled),
+  .athlete-wizard .athlete-wizard-button-ghost:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+  .athlete-wizard .athlete-wizard-button-primary:hover:not(:disabled) { box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
+}
+
+.athlete-wizard .athlete-wizard-button:focus-visible { box-shadow: var(--lt-focus-ring); }
+.athlete-wizard .athlete-wizard-button:disabled { box-shadow: none; opacity: 0.6; cursor: not-allowed; }
+
+/* ── Celular: uma coluna e ações empilhadas, a principal por cima ────── */
+@media (max-width: 40rem) {
+  .athlete-wizard-overlay { align-items: flex-start; padding: var(--lt-space-3); }
+  .athlete-wizard .athlete-wizard-grid { grid-template-columns: minmax(0, 1fr); }
+  .athlete-wizard .athlete-wizard-actions,
+  .athlete-wizard .athlete-wizard-actions-main { flex-direction: column-reverse; align-items: stretch; }
+  .athlete-wizard .athlete-wizard-actions-main,
+  .athlete-wizard .athlete-wizard-button { width: 100%; }
+}
+
+/* ── Movimento ──────────────────────────────────────────────────────────
+   Só com movimento permitido, só transform, sem will-change e sem laço:
+   a barra avança de um passo para o outro. */
+@media (prefers-reduced-motion: no-preference) {
+  .athlete-wizard .athlete-wizard-progress-fill { transition: transform 220ms var(--lt-ease-out); }
 }

@@ -1,863 +1,699 @@
+/* Moldura do portal do professor (ProfessorView.jsx) e a aba "Alunos e
+   Atletas" de ProfessorDashboard.jsx, na direção "Energia e velocidade"
+   da landing (docs/design/landing-guia-visual.md, seção "Direção vigente";
+   docs/implementacao/telas-v2/change-intent.md, onda C). A Visão geral tem
+   escopo próprio (.prof-visao-geral, ProfessorDashboard.css) e não usa
+   nada daqui além do layout de .professor-dashboard.
+
+   Duas partes (a antiga parte 2, a regra ampla `.professor-view .chip`,
+   saiu na onda E1: o prontuário deixou de ser aberto dentro de
+   .professor-view, e o único outro `.chip` do portal, o semestre da turma,
+   já tinha todas as propriedades dela sobrescritas pela regra 0,4,0 mais
+   abaixo):
+   1. Fundo do portal com o valor de antes; avatar e ícone da aba nos
+      tokens, iguais aos de AdminHeader.css (onda F). O cabeçalho em si saiu
+      daqui e ficou com AdminHeader.css (onda A), igual nos cinco portais.
+   3. Barra de contexto e aba "Alunos e Atletas", escopadas em
+      `.professor-view .prof-context-bar` e `.professor-view .professor-grid`
+      (antes eram `.professor-view .X`, que alcançavam também a Pesquisa e
+      a agenda). O rótulo de seção da agenda foi para ProfessorAgenda.css.
+
+   Na parte 3: cartões brancos com --lt-radius-card, linhas no fundo de
+   campo, títulos em Sofia 700, alvos de 44 px, campos de 48 px, foco com
+   --lt-focus-ring e o estado do atleta sempre escrito. Armadilhas globais
+   declaradas de volta (h2/h3 em Poppins e com cor, `p`, `label` a 13 px,
+   `button { white-space: nowrap }`, `input:not(...)` 0,2,1, `.patient-card`
+   e `.patient-status-pill` de theme.css, `.empty-state` e
+   `.laines-feedback-state` de index.css). */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* ── 1. Fundo, avatar e ícone do portal (ver acima) ──────────────────── */
 .professor-view {
-  --prof-primary: #1d3350;
-  --prof-accent: #274264;
-  --prof-muted: #64748b;
-  --prof-surface: #ffffff;
-  --prof-surface-alt: #f8fafc;
-  --prof-border: rgba(20, 53, 84, 0.12);
-  --prof-shadow: 0 16px 34px -30px rgba(20, 53, 84, 0.28);
+  background: var(--color-surface);
 }
 
-.professor-view .professor-dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding-bottom: 2rem;
-}
-
-.professor-view {
-  background: var(--surface);
-}
-
-.professor-view .admin-bg-pattern {
-  background: radial-gradient(circle at top left, rgba(116, 168, 101, 0.08), transparent 45%),
-              linear-gradient(180deg, rgba(247, 250, 252, 0.6), rgba(247, 250, 252, 1));
-}
-
-.professor-view .admin-header {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
-}
-
-.professor-view .breadcrumb-text {
-  color: var(--text);
-}
-
-.professor-view .breadcrumb-text.mute {
-  color: var(--color-text-tertiary);
-}
-
-.professor-view .breadcrumb-separator {
-  color: var(--color-text-light);
-}
-
-.professor-view .icon-wrapper {
-  color: var(--prof-primary);
-}
-
-.professor-view .theme-toggle,
-.professor-view .notifications-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--muted);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.professor-view .theme-toggle:hover,
-.professor-view .notifications-btn:hover {
-  background: var(--surface-2);
-  color: var(--prof-primary);
-}
-
-.professor-view .notifications-btn .badge,
-.professor-view .notification-badge {
-  background: var(--color-dark-blue);
-}
-
-.professor-view .user-profile .avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #1D3350, #274264);
-  color: #ffffff;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
-}
-
-.professor-view .laines-sidebar {
-  --sidebar-accent: #1d3350;
-  --sidebar-accent-soft: rgba(29, 51, 80, 0.14);
-  --sidebar-accent-strong: rgba(29, 51, 80, 0.95);
-}
-
-.professor-view .professor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.professor-view .professor-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-}
-
-.professor-view .professor-header h1 {
-  font-size: var(--font-size-4xl);
-  color: var(--prof-primary);
-  margin: 0.4rem 0 0.2rem;
-  font-weight: var(--font-weight-extrabold);
-}
-
-.professor-view .professor-header p {
-  color: #475569;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-}
-
-.professor-view .professor-dashboard h2 {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-extrabold);
-}
-
-.professor-view .professor-dashboard h3 {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-extrabold);
-}
-
-.professor-view .professor-dashboard p {
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
-}
-
-.professor-view .section-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-black);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #475569;
-}
-
-.professor-view .professor-status-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.9rem 1.2rem;
-  background: #ffffff;
-  border-radius: 1.2rem;
-  border: 1px solid var(--prof-border);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-}
-
-.professor-view .professor-refresh-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  padding: 0.72rem 0.85rem;
-  background: #ffffff;
-  border: 1px solid var(--prof-border);
-  border-radius: 1rem;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-}
-
-.professor-view .professor-refresh-meta {
-  font-size: 0.74rem;
-  color: #64748b;
-  font-weight: 700;
-}
-
-.professor-view .is-rotating {
-  animation: professor-rotate 0.8s linear infinite;
-}
-
-@keyframes professor-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.professor-view .status-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.08);
-  color: var(--prof-primary);
-}
-
-.professor-view .status-label {
-  font-size: var(--font-size-xxs);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: var(--font-weight-extrabold);
-  color: var(--prof-muted);
-  margin: 0;
-}
-
-.professor-view .status-value {
-  font-size: var(--font-size-lg);
-  color: var(--prof-primary);
-  font-weight: var(--font-weight-extrabold);
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.professor-view .professor-status-detail {
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: #64748b;
-}
-
-.professor-view .professor-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.professor-view .stat-card-action {
-  border: none;
-  background: transparent;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.professor-view .stat-card-action .ui-card {
-  width: 100%;
-}
-
-.professor-view .stat-card-action.active .ui-card {
-  border-color: rgba(15, 23, 42, 0.2);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
-  transform: translateY(-2px);
-}
-
-.professor-view .stat-card-action:focus-visible {
-  outline: 3px solid rgba(31, 82, 139, 0.25);
-  outline-offset: 4px;
-  border-radius: 16px;
-}
-
-.professor-view .professor-metric-panel {
-  margin-top: 1.5rem;
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid var(--prof-border);
-  padding: 1.5rem;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-}
-
-.professor-view .metric-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.professor-view .metric-panel-header h3 {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  color: var(--prof-primary);
-}
-
-.professor-view .metric-panel-header p {
-  margin: 0.25rem 0 0;
-  color: var(--prof-muted);
-  font-size: 0.9rem;
-}
-
-.professor-view .metric-close {
-  border: 1px solid var(--prof-border);
-  border-radius: 999px;
-  background: #ffffff;
-  padding: 0.5rem 1rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--prof-primary);
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.professor-view .metric-close:hover {
-  border-color: rgba(15, 23, 42, 0.2);
-  color: #0f172a;
-}
-
-.professor-view .metric-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 320px;
-  overflow: auto;
-}
-
-.professor-view .metric-item {
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(248, 250, 252, 0.8);
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-.professor-view .metric-item:hover {
-  border-color: rgba(15, 23, 42, 0.18);
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
-  transform: translateY(-1px);
-}
-
-.professor-view .metric-item:focus-visible {
-  outline: none;
-  border-color: rgba(16, 51, 85, 0.38);
-  box-shadow: var(--focus-ring);
-}
-
-.professor-view .metric-item:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-  box-shadow: none;
-  transform: none;
-}
-
-.professor-view .metric-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.professor-view .metric-main--result {
-  width: 100%;
-  gap: 0.45rem;
-}
-
-.professor-view .metric-item--result {
-  align-items: flex-start;
-}
-
-.professor-view .professor-clinical-result {
-  width: 100%;
-}
-
-.professor-view .metric-main strong {
-  font-size: 0.95rem;
-  color: var(--prof-primary);
-}
-
-.professor-view .metric-main span {
-  font-size: 0.85rem;
-  color: var(--prof-muted);
-}
-
-.professor-view .metric-meta {
-  font-size: 0.8rem;
-  color: var(--prof-primary);
-  font-weight: 700;
-}
-
-.professor-view .metric-empty {
-  padding: 1rem;
-  text-align: center;
-  font-size: 0.88rem;
-  font-weight: 700;
-}
-
-.professor-view .metric-close:focus-visible,
-.professor-view .patient-action-btn:focus-visible,
-.professor-view .patient-clear-btn:focus-visible,
-.professor-view .student-card:focus-visible,
-.professor-view .patient-card:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.professor-view .professor-stat-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 1.5rem;
-  border: 1px solid var(--prof-border);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.professor-view .professor-stat-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  border-color: rgba(15, 23, 42, 0.16);
-}
-
-.professor-view .professor-stat-card .stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--prof-surface-alt);
-  color: var(--prof-primary);
-}
-
-.professor-view .professor-stat-card .stat-label {
-  font-size: 0.9rem;
-  color: #475569;
-  font-weight: var(--font-weight-bold);
-  margin: 0.75rem 0 0.1rem;
-}
-
-.professor-view .professor-stat-card .stat-value {
-  font-size: 2.25rem;
-  margin: 0;
-  color: var(--prof-primary);
-  font-weight: 800;
-}
-
-.professor-view .tone-indigo .stat-icon { color: #0f172a; }
-.professor-view .tone-blue .stat-icon { color: #0f172a; }
-.professor-view .tone-green .stat-icon { color: #0f172a; }
-
-.professor-view .professor-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 2rem;
-}
-
-.professor-view .section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.professor-view .section-header h2 {
-  font-size: var(--font-size-2xl);
-  color: var(--prof-primary);
-  margin: 0;
-}
-
-.professor-view .chip {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.08);
-  color: var(--prof-primary);
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-black);
-  text-transform: uppercase;
-}
-
-.professor-view .search-box {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 0.9rem;
-  padding: 0.65rem 0.9rem;
-  color: #94a3b8;
-  box-shadow: var(--shadow-sm);
-}
-
-.professor-view .search-box input {
-  border: none;
-  outline: none;
-  background: transparent;
-  width: 100%;
-  font-size: var(--font-size-sm);
-  color: var(--prof-primary);
-  font-weight: var(--font-weight-semibold);
-}
-
-.professor-view .search-box input::placeholder {
-  color: #94a3b8;
-}
-
-.professor-view .student-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.professor-view .student-card {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 1rem 1.1rem;
-  background: #ffffff;
-  border: 1px solid transparent;
-  border-radius: 1.2rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-}
-
-.professor-view .student-card:hover {
-  border-color: rgba(15, 23, 42, 0.16);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
-}
-
-.professor-view .student-card.active {
-  border-color: rgba(15, 23, 42, 0.24);
-  box-shadow: 0 16px 34px rgba(16, 51, 85, 0.1);
-}
-
-.professor-view .student-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 1rem;
-  background: var(--prof-surface-alt);
-  color: var(--prof-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: var(--font-weight-black);
-}
-
-.professor-view .student-card h3 {
-  font-size: var(--font-size-md);
-  margin: 0;
-  color: var(--prof-primary);
-}
-
-.professor-view .student-card p {
-  margin: 0.2rem 0 0;
-  font-size: var(--font-size-xs);
-  color: #475569;
-  font-weight: var(--font-weight-bold);
-}
-
-.professor-view .professor-patients {
-  background: #ffffff;
-  border: 1px solid var(--prof-border);
-  border-radius: 1.5rem;
-  padding: 1.5rem;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-}
-
-.professor-view .professor-patients .muted {
-  font-size: var(--font-size-sm);
-  color: var(--prof-muted);
-  font-weight: var(--font-weight-semibold);
-  margin-top: 0.3rem;
-}
-
-.professor-view .patient-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-top: 1.2rem;
-}
-
-.professor-view .patient-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin: 1rem 0 1.5rem;
-}
-
-.professor-view .patient-controls .search-box {
-  flex: 1;
-}
-
-.professor-view .patient-sort {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: var(--font-size-xs);
-  color: #475569;
-  font-weight: var(--font-weight-bold);
-}
-
-.professor-view .patient-clear-btn {
-  align-self: flex-end;
-  border-radius: 999px;
-  padding: 0.52rem 0.9rem;
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.professor-view .patient-summary-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.35rem 0 0.2rem;
-}
-
-.professor-view .patient-summary-chip {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  padding: 0.25rem 0.6rem;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #1d3350;
-  background: rgba(248, 250, 252, 0.92);
-}
-
-.professor-view .patient-summary-chip.warning {
-  color: #92400e;
-  border-color: rgba(217, 119, 6, 0.32);
-  background: rgba(254, 243, 199, 0.9);
-}
-
-.professor-view .patient-summary-chip.muted {
-  color: #475569;
-  border-color: rgba(100, 116, 139, 0.22);
-  background: rgba(241, 245, 249, 0.95);
-}
-
-.professor-view .patient-sort select {
-  border: 1px solid var(--prof-border);
-  border-radius: 0.8rem;
-  padding: 0.55rem 0.8rem;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--prof-primary);
-  background: #ffffff;
-}
-
-.professor-view .patient-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 999px;
-  padding: 0.55rem 1rem;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  color: var(--prof-primary);
-  background: #ffffff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.professor-view .patient-action-btn:hover {
-  background: var(--prof-surface-alt);
-  border-color: rgba(15, 23, 42, 0.2);
-}
-
-.professor-view .patient-card {
-  background: #ffffff;
-  border: 1px solid transparent;
-  border-radius: 1.4rem;
-  padding: 1.2rem;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
-}
-
-.professor-view .patient-card:hover {
-  border-color: rgba(15, 23, 42, 0.18);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.1);
-  transform: translateY(-2px);
-}
-
-.professor-view .patient-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.8rem;
-}
-
-.professor-view .patient-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 0.9rem;
-  background: rgba(15, 23, 42, 0.08);
-  color: var(--prof-primary);
-  font-weight: var(--font-weight-black);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.professor-view .patient-action {
-  width: 36px;
-  height: 36px;
-  border-radius: 0.8rem;
-  background: #fff;
-  border: 1px solid var(--prof-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--prof-muted);
-}
-
-.professor-view .patient-card h3 {
-  font-size: var(--font-size-md);
-  color: var(--prof-primary);
-  margin: 0;
-}
-
-.professor-view .patient-card p {
-  font-size: var(--font-size-xs);
-  color: #475569;
-  font-weight: var(--font-weight-bold);
-  margin: 0.4rem 0 0;
-}
-
-.professor-view .patient-status-pill {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 0.45rem;
-  padding: 0.24rem 0.6rem;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  font-size: 0.66rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #1d3350;
-  background: rgba(239, 246, 255, 0.9);
-}
-
-.professor-view .patient-status-pill.status-lista-de-espera {
-  color: #92400e;
-  border-color: rgba(217, 119, 6, 0.35);
-  background: rgba(254, 243, 199, 0.92);
-}
-
-.professor-view .patient-status-pill.status-triagem {
-  color: #1e3a8a;
-  border-color: rgba(59, 130, 246, 0.32);
-  background: rgba(219, 234, 254, 0.95);
-}
-
-.professor-view .patient-status-pill.status-alta {
-  color: #065f46;
-  border-color: rgba(16, 185, 129, 0.34);
-  background: rgba(209, 250, 229, 0.95);
-}
-
-.professor-view .patient-status-pill.status-inativo {
-  color: #475569;
-  border-color: rgba(100, 116, 139, 0.28);
-  background: rgba(241, 245, 249, 0.95);
-}
-
-.professor-view .patient-link {
-  margin-top: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: var(--font-size-xxs);
-  font-weight: var(--font-weight-black);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--prof-primary);
-}
-
-.professor-view .empty-state {
-  padding: 1.2rem;
-  text-align: center;
-  font-weight: 700;
-  font-size: 0.86rem;
-}
-
-.professor-view .empty-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 3rem 2rem;
-  border: 2px dashed var(--prof-border);
-  border-radius: 1.5rem;
-  color: #475569;
-  text-align: center;
-}
-
-.professor-view .empty-panel h3 {
-  margin: 0.2rem 0 0;
-  color: var(--prof-primary);
-}
-
-.professor-view .empty-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 1.2rem;
-  background: var(--prof-surface-alt);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@media (max-width: 1024px) {
-  .professor-view .professor-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .professor-view .professor-header h1 {
-    font-size: var(--font-size-3xl);
-  }
-
-  .professor-view .professor-header-actions {
-    width: 100%;
-  }
-
-  .professor-view .professor-status-card,
-  .professor-view .professor-refresh-card {
-    width: 100%;
-  }
-
-  .professor-view .patient-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .professor-view .patient-clear-btn {
-    align-self: stretch;
-    justify-content: center;
-  }
-}
-
-/* Header alignment with global premium shell */
-.professor-view .admin-header {
-  height: 56px;
-  min-height: 56px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-}
-
-.professor-view .header-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-}
+/* O cabeçalho (.admin-header, .header-btn) e o fundo decorativo
+   (.admin-bg-pattern) ficam a cargo de AdminHeader.css e AdminView.css, como
+   nos outros portais. As cópias que havia aqui carregavam depois de
+   SidebarShell.css e anulavam, no celular, a reserva de 72 px para o botão
+   da barra lateral; os botões ficavam com 32 px. O fundo decorativo não
+   aparecia: fica atrás de .admin-container, cujo conteúdo é opaco. */
 
+/* Iniciais em branco sobre o azul do estádio (13,93:1) e ícone no verde
+   de texto da marca (5,37:1), os mesmos de AdminHeader.css. */
 .professor-view .user-profile-mini .avatar,
 .professor-view .user-profile .avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-navy);
+  background: var(--lt-color-stadium);
   box-shadow: none;
+}
+
+.professor-view .icon-wrapper {
+  color: var(--lt-color-brand-green-text);
+}
+
+/* O ícone de atualizar gira só enquanto atualiza e só sem movimento
+   reduzido (a Visão geral e a agenda repetem a regra no próprio escopo). */
+@media (prefers-reduced-motion: no-preference) {
+  .is-rotating { animation: prof-rotate 0.8s linear infinite; }
+
+  @keyframes prof-rotate { to { transform: rotate(360deg); } }
+}
+
+/* ── 3. Layout do painel do professor ────────────────────────────────── */
+.professor-view .professor-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-5);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  padding-bottom: var(--lt-space-6);
+}
+
+/* ── Barra de contexto (aba "Alunos e Atletas") ──────────────────────── */
+.professor-view .prof-context-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+}
+
+.professor-view .prof-context-bar__left,
+.professor-view .prof-context-bar__right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  min-width: 0;
+}
+
+.professor-view .prof-context-bar__greeting {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+}
+
+.professor-view .prof-context-bar__sync {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+/* Cobertura da supervisão: selo claro com o texto azul (5,57:1) e o
+   complemento em apoio (5,79:1 sobre --lt-color-track-tint). */
+.professor-view .prof-context-bar__chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-1);
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+}
+
+.professor-view .prof-context-bar__chip-sub {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
+}
+
+/* ── Botões de components/ui dentro da aba ───────────────────────────
+   0,3,0 ou mais: vence `.ui-button`, `.ui-button-sm` e `.ui-button-ghost`
+   (ui.css, onda A) em qualquer ordem. Secundário em contorno; o primário
+   ("Novo atleta") no degradê de largada, o único sólido do bloco. */
+.professor-view .prof-context-bar .ui-button,
+.professor-view .professor-grid .ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: 0 var(--lt-space-4);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+.professor-view .professor-grid .ui-button.ui-button-primary {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse); /* 4,82:1 no topo, 6,20:1 na base */
+}
+
+@media (hover: hover) {
+  .professor-view .prof-context-bar .ui-button:hover:not(:disabled),
+  .professor-view .professor-grid .ui-button:not(.ui-button-primary):hover:not(:disabled) {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
+    color: var(--lt-color-brand-blue);
+  }
+
+  .professor-view .professor-grid .ui-button.ui-button-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+    box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
+    color: var(--lt-color-text-inverse);
+  }
+}
+
+.professor-view .prof-context-bar .ui-button:disabled,
+.professor-view .professor-grid .ui-button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Aba "Alunos e Atletas": turma à esquerda, atletas à direita ─────── */
+.professor-view .professor-grid {
+  /* O par de "atenção" de painel.css, já medido. */
+  --pv-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --pv-atencao-fundo */
+  --pv-atencao-fundo: #fff7ed;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--lt-space-4);
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+@media (min-width: 64rem) {
+  .professor-view .professor-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--lt-space-5);
+  }
+}
+
+.professor-view .professor-grid .professor-students,
+.professor-view .professor-grid .professor-patients {
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: clamp(var(--lt-space-4), 4vw, var(--lt-space-5));
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 18px 40px -30px rgba(10, 36, 68, 0.35);
+}
+
+/* Reset dos globais de título e parágrafo (0,2,1). */
+.professor-view .professor-grid :is(h2, h3) {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+}
+
+.professor-view .professor-grid p { margin: 0; line-height: var(--lt-leading-normal); }
+
+.professor-view .professor-grid .section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-4);
+  margin: 0 0 var(--lt-space-4);
+}
+
+.professor-view .professor-grid .section-header > div { flex: 1 1 14rem; min-width: 0; }
+
+.professor-view .professor-grid .section-header h2 {
+  font-size: var(--lt-text-title);
+  overflow-wrap: anywhere;
+}
+
+.professor-view .professor-grid .professor-patients .muted {
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+/* O semestre da turma: 0,4,0 vence o `.chip` global de ProntuarioTheme.css. */
+.professor-view .professor-grid .section-header .chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Busca: a caixa inteira é o campo de 48 px; o foco aparece nela ──── */
+.professor-view .professor-grid .search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-text-muted); /* ícone: 6,59:1 */
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.professor-view .professor-grid .search-box svg { flex: none; }
+
+.professor-view .professor-grid .search-box:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* 0,3,1: vence `input:not(...):not(...)` (0,2,1) e `.content-area input`. */
+.professor-view .professor-grid .search-box input {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 45px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  text-overflow: ellipsis;
+}
+
+.professor-view .professor-grid .search-box input:focus { outline: none; border: 0; box-shadow: none; }
+
+.professor-view .professor-grid .search-box input::placeholder {
+  color: var(--lt-color-text-subtle);
+  opacity: 1;
+}
+
+/* ── Turma: um aluno por linha, no fundo de campo ────────────────────── */
+.professor-view .professor-grid .student-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-3) 0 0;
+}
+
+.professor-view .professor-grid .student-card {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--lt-target-min);
+  margin: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+  transition: background-color 160ms, box-shadow 160ms;
+}
+
+.professor-view .professor-grid .student-card > div:last-child { min-width: 0; }
+
+/* Aluno aberto: anel azul de 2 px e fundo claro (forma, não só cor). */
+.professor-view .professor-grid .student-card.active {
+  background: var(--lt-color-track-tint);
+  box-shadow: inset 0 0 0 2px var(--lt-color-brand-blue);
+}
+
+@media (hover: hover) {
+  .professor-view .professor-grid .student-card:hover { background: var(--lt-color-track-tint); }
+}
+
+.professor-view .professor-grid .student-avatar,
+.professor-view .professor-grid .patient-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+}
+
+.professor-view .professor-grid .student-card h3,
+.professor-view .professor-grid .patient-card h3 {
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.professor-view .professor-grid .student-card p,
+.professor-view .professor-grid .patient-card p {
+  margin-top: 0.125rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
+  line-height: var(--lt-leading-snug);
+}
+
+/* ── Contagem por estado dos atletas do aluno: sempre escrita ────────── */
+.professor-view .professor-grid .patient-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-2);
+  margin: 0 0 var(--lt-space-4);
+}
+
+.professor-view .professor-grid .patient-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Espera: o par de atenção do Painel (6,88:1). Inativos: apoio (6,17:1). */
+.professor-view .professor-grid .patient-summary-chip.warning {
+  background: var(--pv-atencao-fundo);
+  box-shadow: none;
+  color: var(--pv-atencao-texto);
+}
+
+.professor-view .professor-grid .patient-summary-chip.muted {
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+}
+
+/* ── Filtros dos atletas: busca, dois seletores rotulados e limpar ───── */
+.professor-view .professor-grid .patient-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-3);
+  margin: 0 0 var(--lt-space-4);
+}
+
+.professor-view .professor-grid .patient-controls .search-box { flex: 1 1 14rem; }
+.professor-view .professor-grid .patient-controls .ui-button { min-height: 48px; }
+
+.professor-view .professor-grid .patient-sort {
+  display: flex;
+  flex: 0 1 12rem;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* 0,3,1: vence `label` de theme.css (13 px, cinza, margem de 6 px). */
+.professor-view .professor-grid .patient-sort label {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Seta própria no azul de --lt-color-brand-blue (#2560a8): var() não entra
+   no data URI, então o hex fica igual ao de inscricao-campos.css. */
+.professor-view .professor-grid .prof-select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 2.6rem 0 0.875rem;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background-color: var(--lt-color-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%232560a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 18px 18px;
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+
+.professor-view .professor-grid .prof-select:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Atletas do aluno: um cartão por atleta, no fundo de campo ───────── */
+.professor-view .professor-grid .patient-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+/* Três classes: vence `.patient-card` e `.patient-card:hover` de theme.css
+   (fundo, borda, sombra e o hover que sobe 1 px) em qualquer ordem. */
+.professor-view .professor-grid .patient-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  overflow: visible;
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  box-shadow: none;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+  transition: background-color 160ms, box-shadow 160ms;
+}
+
+.professor-view .professor-grid .patient-card:hover { transform: none; }
+
+@media (hover: hover) {
+  .professor-view .professor-grid .patient-card:hover {
+    background: var(--lt-color-track-tint);
+    box-shadow: inset 0 0 0 1.5px var(--lt-color-brand-blue);
+  }
+}
+
+.professor-view .professor-grid .patient-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2);
+}
+
+/* O olho de "abrir": só gráfico; o cartão inteiro é o botão. */
+.professor-view .professor-grid .patient-action {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+/* ── Estado do atleta: sempre escrito; a cor só acompanha ──────────────
+   Ativo e demais: azul sobre --lt-color-track-tint (5,57:1). Triagem: o
+   mesmo azul em contorno sobre branco (6,33:1). Lista de espera: o par de
+   atenção (6,88:1). Alta: o par de sucesso (6,81:1). Inativo: apoio sobre
+   branco com contorno (6,59:1). */
+.professor-view .professor-grid .patient-status-pill {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+
+.professor-view .professor-grid .patient-status-pill.status-triagem {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-brand-blue);
+  color: var(--lt-color-brand-blue);
+}
+
+.professor-view .professor-grid .patient-status-pill.status-lista-de-espera {
+  background: var(--pv-atencao-fundo);
+  color: var(--pv-atencao-texto);
+}
+
+.professor-view .professor-grid .patient-status-pill.status-alta {
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.professor-view .professor-grid .patient-status-pill.status-inativo {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text-muted);
+}
+
+/* ── Vazio e carregando: o tom de .painel-estado ──────────────────────
+   0,3,0 vence `.empty-state` e `.laines-feedback-state` de index.css e
+   theme.css (borda tracejada, 48 px de respiro, largura de 320 px). */
+.professor-view .professor-grid .empty-state,
+.professor-view .professor-grid .empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-5) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  text-align: center;
+}
+
+.professor-view .professor-grid .patient-grid > .empty-state { grid-column: 1 / -1; }
+.professor-view .professor-grid .empty-panel { padding: var(--lt-space-7) var(--lt-space-4); }
+
+.professor-view .professor-grid .empty-icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 0 var(--lt-space-1);
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+.professor-view .professor-grid .empty-panel h3 { font-size: var(--lt-text-title); }
+
+.professor-view .professor-grid .empty-panel p {
+  max-width: 36rem;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-weight: 400;
+}
+
+/* ── Foco: o anel da landing ─────────────────────────────────────────── */
+.professor-view .prof-context-bar .ui-button:focus-visible,
+.professor-view .professor-grid .ui-button:focus-visible,
+.professor-view .professor-grid .student-card:focus-visible,
+.professor-view .professor-grid .patient-card:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Telas estreitas ─────────────────────────────────────────────────── */
+@media (max-width: 48rem) {
+  .professor-view .prof-context-bar { align-items: flex-start; }
+  .professor-view .professor-grid .patient-controls { flex-direction: column; align-items: stretch; }
+  .professor-view .professor-grid .patient-sort { flex-basis: auto; }
+  .professor-view .professor-grid .patient-controls .search-box { flex-basis: auto; }
 }

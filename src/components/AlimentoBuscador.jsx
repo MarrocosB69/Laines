@@ -185,6 +185,9 @@ const AlimentoBuscador = ({ disabled = false, onAdd, grupoFiltro = '' }) => {
       quantidadeMedida: Number(quantidadeNum.toFixed(2)),
       quantidadeGramas,
       calorias: energiaKcal,
+      carboidrato: cho,
+      proteina: ptn,
+      lipidios: lip,
       cho,
       ptn,
       lip,
@@ -210,10 +213,13 @@ const AlimentoBuscador = ({ disabled = false, onAdd, grupoFiltro = '' }) => {
     ? Number(((toNumber(selecionado.energiaKcal) || 0) * quantidadeGramas / 100).toFixed(0))
     : null;
 
+  // Rótulos: fora de uma avaliação (a prescrição, em RefeicaoBuilder) eles
+  // continuam só para leitor de tela (sr-only), como antes; dentro de
+  // .av-modulo o CSS deste componente os mostra acima de cada campo.
   return (
     <div className="alimento-buscador">
       <div className="alimento-buscador__row-search">
-        <label className="sr-only" htmlFor={`${idPrefix}-query`}>Buscar alimento</label>
+        <label className="sr-only alimento-buscador__rotulo" id={`${idPrefix}-query-rotulo`} htmlFor={`${idPrefix}-query`}>Buscar alimento</label>
         <div className="alimento-buscador__search">
           <Search size={16} />
           <input
@@ -225,42 +231,49 @@ const AlimentoBuscador = ({ disabled = false, onAdd, grupoFiltro = '' }) => {
               setQuery(event.target.value);
               if (!event.target.value.trim()) setSelecionado(null);
             }}
-            placeholder={grupoFiltro ? `Buscar preparação (ex.: arroz cozido, frango grelhado...)` : `Buscar alimento TACO (ex.: arroz, banana, frango...)`}
+            placeholder={grupoFiltro ? `Buscar preparação (ex.: arroz cozido, frango grelhado...)` : `Buscar alimento (ex.: arroz, banana, frango…)`}
             disabled={disabled}
             aria-required="true"
           />
         </div>
       </div>
 
+      {/* Medida, quantidade e "Adicionar" so fazem sentido depois de escolher
+          o alimento. Sempre visiveis, ocupavam duas linhas mortas por coluna. */}
+      {selecionado && (
       <div className="alimento-buscador__row-controls">
-        <label className="sr-only" htmlFor={`${idPrefix}-medida`}>Medida caseira</label>
-        <select
-          id={`${idPrefix}-medida`}
-          className="busca-unidade"
-          value={medida}
-          onChange={(event) => setMedida(event.target.value)}
-          disabled={disabled || !selecionado}
-          aria-required="true"
-        >
-          {medidasDisponiveis.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.label}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor={`${idPrefix}-quantidade`}>Quantidade</label>
-        <input
-          id={`${idPrefix}-quantidade`}
-          className="busca-qty"
-          type="number"
-          min="0.1"
-          step="0.1"
-          value={quantidade}
-          onChange={(event) => setQuantidade(event.target.value)}
-          disabled={disabled}
-          placeholder="Qtd."
-          aria-required="true"
-        />
+        <div className="alimento-buscador__campo alimento-buscador__campo--medida">
+          <label className="sr-only alimento-buscador__rotulo" htmlFor={`${idPrefix}-medida`}>Medida caseira</label>
+          <select
+            id={`${idPrefix}-medida`}
+            className="busca-unidade"
+            value={medida}
+            onChange={(event) => setMedida(event.target.value)}
+            disabled={disabled || !selecionado}
+            aria-required="true"
+          >
+            {medidasDisponiveis.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="alimento-buscador__campo alimento-buscador__campo--quantidade">
+          <label className="sr-only alimento-buscador__rotulo" htmlFor={`${idPrefix}-quantidade`}>Quantidade</label>
+          <input
+            id={`${idPrefix}-quantidade`}
+            className="busca-qty"
+            type="number"
+            min="0.1"
+            step="0.1"
+            value={quantidade}
+            onChange={(event) => setQuantidade(event.target.value)}
+            disabled={disabled}
+            placeholder="Qtd."
+            aria-required="true"
+          />
+        </div>
         <button
           type="button"
           className="btn-adicionar-alimento"
@@ -270,6 +283,7 @@ const AlimentoBuscador = ({ disabled = false, onAdd, grupoFiltro = '' }) => {
           <PlusCircle size={16} /> Adicionar
         </button>
       </div>
+      )}
 
       <div className="alimento-buscador__meta">
         {selecionado ? (
@@ -282,16 +296,20 @@ const AlimentoBuscador = ({ disabled = false, onAdd, grupoFiltro = '' }) => {
               <span className="alimento-buscador__meta-kcal">{kcalPreview} kcal</span>
             )}
           </>
-        ) : (
-          <span>Selecione um alimento para adicionar na refeicao.</span>
-        )}
+        ) : null}
       </div>
 
-      {loading && <div className="alimento-buscador__status">Buscando...</div>}
-      {error && <div className="alimento-buscador__error">{error}</div>}
+      {/* "Buscando..." e o erro entram numa região que já existe na página:
+          um aria-live só anuncia o que muda depois de estar lá. */}
+      <div className="alimento-buscador__avisos" role="status" aria-live="polite">
+        {loading && <div className="alimento-buscador__status">Buscando...</div>}
+        {error && <div className="alimento-buscador__error">{error}</div>}
+      </div>
 
+      {/* A lista leva o nome do campo de busca. Cada resultado é um botão:
+          Tab percorre a lista, Enter ou espaço escolhe. */}
       {!loading && resultados.length > 0 && (
-        <ul className="alimento-buscador__results">
+        <ul className="alimento-buscador__results" aria-labelledby={`${idPrefix}-query-rotulo`}>
           {resultados.map((item) => (
             <li key={item.id}>
               <button
@@ -299,7 +317,16 @@ const AlimentoBuscador = ({ disabled = false, onAdd, grupoFiltro = '' }) => {
                 onClick={() => handleSelect(item)}
                 disabled={disabled}
               >
-                <span className="alimento-buscador__result-nome">{item.descricao}</span>
+                <span className="alimento-buscador__result-nome">
+                  {item.descricao}
+                  {/* TACO e TBCA divergem em varios alimentos: saber de qual
+                      tabela veio o valor faz parte da decisao clinica. */}
+                  {item.fonte && (
+                    <span className={`alimento-buscador__fonte fonte-${String(item.fonte).toLowerCase()}`}>
+                      {item.fonte}
+                    </span>
+                  )}
+                </span>
                 <span className="alimento-buscador__result-side">
                   {item.energiaKcal != null && (
                     <span className="alimento-buscador__result-kcal">

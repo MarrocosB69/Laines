@@ -9,6 +9,9 @@ import {
 } from 'typeorm';
 
 @Entity('avaliacoes')
+@Index('idx_avaliacoes_paciente_tipo_status', ['pacienteId', 'tipo', 'status'])
+@Index('idx_avaliacoes_paciente_status', ['pacienteId', 'status'])
+@Index('idx_avaliacoes_projeto_status', ['projetoId', 'status'])
 export class Avaliacao {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -89,6 +92,15 @@ export class Avaliacao {
 
   @Column({ name: 'pontuacao_ebia', type: 'int', nullable: true })
   pontuacaoEBIA?: number;
+
+  @Column({ name: 'revisado_em', type: 'timestamp', nullable: true })
+  revisadoEm?: string | null;
+
+  @Column({ name: 'revisado_por_id', type: 'uuid', nullable: true })
+  revisadoPorId?: string | null;
+
+  @Column({ name: 'revisado_por_nome', type: 'varchar', length: 120, nullable: true })
+  revisadoPorNome?: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

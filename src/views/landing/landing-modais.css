@@ -1,0 +1,467 @@
+/* Modais de solicitacao de acesso e de recuperacao de senha.
+   Redesenho (docs/design/landing-guia-visual.md): aplica os tokens --lt-*
+   nos elementos proprios desta peca (grid de campos, mensagens, botoes,
+   etapas da recuperacao) para que os dois modais leiam como a mesma
+   familia do painel de login (landing-login.css) — mesma escala de texto,
+   mesmo espacamento, mesmo foco, mesmo estilo unico de botao secundario.
+
+   As classes app-modal-* continuam vindo de src/styles/modalSystem.css
+   (compartilhado com o resto do sistema) sem redefinicao: toda regra
+   abaixo qualifica um seletor proprio da landing (.request-*, .recovery-*)
+   ao lado delas — nunca o nome app-modal-* isolado —, entao nada daqui
+   vaza para outros modais do sistema que usam so as classes app-modal-*. */
+
+/* ── Modals ──────────────────────────────────────────────────────────────── */
+.request-modal-overlay { z-index: 2500; }
+
+.request-modal {
+  --app-modal-width: 880px;
+  width: min(880px, calc(100vw - 1rem));
+  max-width: calc(100vw - 1rem);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.recovery-modal {
+  --app-modal-width: 620px;
+  width: min(620px, calc(100vw - 1rem));
+  max-width: calc(100vw - 1rem);
+}
+
+.recovery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.request-modal-header { gap: var(--lt-space-4); }
+
+/* Alvo de 44px para fechar a modal (UX-08 cita "fechar modal" como exemplo
+   direto do alvo minimo de conforto). Soh cresce a area clicavel via
+   min-width/min-height — que tem precedencia sobre width/height quando
+   maiores, por especificacao CSS — o desenho do X continua o mesmo.
+   Classe propria da landing ao lado de app-modal-close: nao afeta o botao
+   fechar de nenhum outro modal do sistema. */
+.request-modal-close {
+  min-width: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+}
+
+.request-form { display: flex; flex-direction: column; gap: var(--lt-space-4); }
+
+.request-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-4);
+}
+
+.request-field { display: flex; flex-direction: column; gap: var(--lt-space-2); }
+
+.request-field span {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-2xs);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* O :not() repetido nao e enfeite: iguala a especificidade da regra global de
+   theme.css (input:not([type=checkbox]):not([type=radio]), 0,2,1), que antes
+   vencia e desenhava borda, fundo branco e padding no campo interno - a
+   caixa dentro da caixa. theme.css e compartilhado com todo o sistema, entao
+   a correcao fica do lado da landing. */
+.request-field input:not([type="checkbox"]):not([type="radio"]),
+.request-field select,
+.request-field textarea {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--lt-radius-control);
+  border: 1.5px solid var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  padding: 0 var(--lt-space-4);
+  font-family: var(--lt-font-family);
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+
+.request-field textarea {
+  min-height: 6rem;
+  padding: var(--lt-space-3) var(--lt-space-4);
+  resize: vertical;
+}
+
+/* Foco unificado com o resto da familia — halo branco + anel azul solido
+   (--lt-focus-ring), o mesmo tratamento de .field-shell:focus-within em
+   landing-login.css. Nunca mais o brilho verde translucido anterior, que
+   nao cruzava 3:1 contra o botao primario em nenhuma opacidade testada
+   (ver guia visual, "Foco visivel"). */
+.request-field input:not([type="checkbox"]):not([type="radio"]):focus,
+.request-field select:focus,
+.request-field textarea:focus {
+  outline: none;
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
+  background: var(--lt-color-surface);
+}
+
+.request-field.full { grid-column: 1 / -1; }
+
+/* Cabecalho de secao dentro do formulario longo: reaproveita
+   .app-modal-form-section (modalSystem.css) sem redefini-la — a mesma
+   classe que ja separa blocos de campo em outros modais do sistema.
+   Existir como marco textual (nao so espaco em branco extra) e o que da
+   orientacao num formulario de ate 13 campos: a pessoa sabe em que bloco
+   esta e quanto falta. */
+
+/* Nota fixa sobre os campos condicionais: por que "Matricula" ou
+   "Conselho profissional" aparecem/somem ao trocar o cargo. Sempre
+   visivel (nao só quando um campo já apareceu) para que a pessoa leia a
+   regra antes de escolher, nao descubra por tentativa. Ligada ao select
+   de cargo via aria-describedby (ver AccessRequestModal.jsx). */
+.request-section-hint {
+  grid-column: 1 / -1;
+  margin: calc(-1 * var(--lt-space-1)) 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-subtle);
+  line-height: var(--lt-leading-normal);
+}
+
+.request-section-hint svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--lt-color-brand-blue);
+}
+
+/* Erro/sucesso do formulario: icone + texto, nunca so a cor de fundo —
+   mesmo principio de .landing-error em landing-login.css. */
+.request-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-2);
+  border-radius: var(--lt-radius-control);
+  padding: var(--lt-space-2) var(--lt-space-3);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+.request-message svg { flex-shrink: 0; margin-top: 0.1rem; }
+
+.request-message.error {
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+}
+
+.request-message.success {
+  border: 1px solid rgba(22, 163, 74, 0.28);
+  background: var(--lt-color-success-bg);
+  color: var(--lt-color-success-text);
+}
+
+.request-actions { padding-top: 0; }
+
+/* Alvo minimo de conforto (UX-08) nos botoes de rodape dos dois modais —
+   .app-modal-btn (modalSystem.css) define 38px de min-height; aqui, so
+   para os modais da landing, sobe para 44px via classe propria, sem tocar
+   o arquivo compartilhado. */
+.request-secondary, .request-primary {
+  min-width: 10rem;
+  min-height: var(--lt-target-min);
+  padding: var(--lt-space-3) var(--lt-space-4);
+  font-family: var(--lt-font-family);
+}
+
+/* Unico estilo secundario do guia: contorno neutro, texto azul — a mesma
+   linguagem das portas secundárias do painel (.lp-porta, landing-login.css).
+   Sobrescreve o navy/borda-navy padrao de .app-modal-btn--secondary so
+   para os botoes secundarios da landing (mesma especificidade; esta regra
+   vence por ordem de carga — landing-modais.css e importado depois do
+   CSS global do sistema). */
+.request-secondary {
+  border-color: var(--lt-color-border);
+  color: var(--lt-color-brand-blue);
+  background: transparent; /* igual ao secundario do painel: contorno, sem preenchimento */
+}
+
+.request-secondary:hover:not(:disabled) {
+  background: rgba(37, 96, 168, 0.06);
+  border-color: rgba(37, 96, 168, 0.3);
+}
+
+/* Verde reservado a acao primaria da regiao — a mesma família do
+   botão Entrar do painel (.lp-botao-entrar, landing-login.css), nunca misturado com azul (o guia
+   reserva o azul para link/acao secundaria). */
+.request-primary {
+  color: var(--lt-color-text-inverse);
+  background: var(--lt-color-brand-green-text);
+  /* Solido, nao gradiente: com texto branco, os pontos claros do gradiente
+     mediam 3,45:1 e 4,21:1 - abaixo do minimo. O guia pede um botao solido
+     por regiao, e #4a9c35 era um tom solto fora do vocabulario. */
+  box-shadow: 0 4px 18px -4px rgba(61, 140, 42, 0.45);
+}
+
+.request-primary:hover:not(:disabled) {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px -8px rgba(61, 140, 42, 0.5);
+}
+
+.recovery-password-hint {
+  display: block;
+  margin-top: var(--lt-space-1);
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-subtle);
+  line-height: var(--lt-leading-normal);
+}
+
+/* ── Recovery steps ──────────────────────────────────────────────────────
+   Torna visivel em qual das 4 etapas (identificar / enviado / redefinir /
+   concluido) a pessoa esta. Quando a modal abre direto em "redefinir"
+   (link recebido por e-mail), "identificar" e "enviado" aparecem
+   concluidas: so existe link valido se elas ja aconteceram, mesmo que
+   numa sessao anterior — o indicador nao inventa uma sequencia falsa,
+   descreve o que de fato ja ocorreu.
+
+   Estado nunca so por cor: o marcador muda de FORMA (numero -> check) e o
+   rotulo de texto acompanha sempre a etapa atual, nunca so o
+   preenchimento do circulo. */
+.recovery-steps {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: var(--lt-space-4) var(--app-modal-padding-x) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+}
+
+.recovery-steps__item {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+}
+
+.recovery-steps__item:not(:last-child) { flex: 1; }
+
+.recovery-steps__item:not(:last-child)::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  min-width: var(--lt-space-4);
+  background: var(--lt-color-border);
+  margin: 0 var(--lt-space-2);
+}
+
+.recovery-steps__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-subtle);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+}
+
+.recovery-steps__item--done .recovery-steps__marker {
+  border-color: var(--lt-color-brand-green-text);
+  background: var(--lt-color-brand-green-text);
+  color: var(--lt-color-text-inverse);
+}
+
+.recovery-steps__item--current .recovery-steps__marker {
+  border-color: var(--lt-color-brand-blue);
+  color: var(--lt-color-brand-blue);
+  background: var(--lt-color-surface);
+}
+
+.recovery-steps__label {
+  font-size: var(--lt-text-2xs);
+  color: var(--lt-color-text-subtle);
+  white-space: nowrap;
+}
+
+.recovery-steps__item--current .recovery-steps__label {
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+@media (max-width: 540px) {
+  /* O rotulo continua no DOM para leitor de tela; some visualmente para o
+     indicador caber em telas estreitas — a etapa atual ja e nomeada por
+     extenso no subtitulo do cabecalho (app-modal-subtitle), que nao
+     depende de espaco horizontal para ser lido. */
+  .recovery-steps__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* ── Recovery done state ─────────────────────────────────────────────────── */
+.recovery-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--lt-space-3);
+  padding-top: var(--lt-space-2);
+  padding-bottom: var(--lt-space-2);
+}
+
+/* Icone de sucesso: --lt-color-success-text (nao o verde de marca) porque
+   a funcao aqui e "estado de sucesso", nao identidade — o mesmo token que
+   .request-message.success ja usa para o texto. */
+.recovery-done__icon { color: var(--lt-color-success-text); }
+
+.recovery-done__title {
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  color: var(--lt-color-text);
+  margin: 0;
+}
+
+.recovery-done__desc {
+  font-size: var(--lt-text-base);
+  color: var(--lt-color-text-muted);
+  margin: 0;
+  max-width: 28ch;
+  line-height: var(--lt-leading-normal);
+}
+
+/* Corrigido: o tom antigo (#7a96ae) mede 3,09:1 sobre branco — abaixo do
+   minimo AA para texto normal (ver guia visual, achado que motivou
+   --lt-color-text-subtle). */
+.request-privacy-notice {
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-subtle);
+  line-height: var(--lt-leading-normal);
+  margin: var(--lt-space-2) 0 var(--lt-space-1);
+  padding: 0 0.2rem;
+}
+
+/* ── Coerencia com o painel de login ──────────────────────────────────────
+   Os modais abrem a partir do painel e sao lidos em seguida a ele: titulo,
+   botoes e foco precisam ser da mesma familia. Sem estas regras valiam os
+   padroes de .app-modal-* (modalSystem.css): titulo ~17-21px em outro tom de
+   navy, botoes 13px sem o tratamento do painel e o anel de foco translucido
+   que o guia reprova. Tudo com escopo da landing - .app-modal-* sozinha nunca
+   e redefinida aqui, para nao vazar para o resto do sistema. */
+.request-modal .app-modal-title,
+.recovery-modal .app-modal-title {
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-lg);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: var(--lt-leading-tight);
+  color: var(--lt-color-text);
+}
+
+/* Mesma tipografia do painel: primário como o botão Entrar
+   (.lp-botao-entrar), secundário como a ação das portas (.lp-porta__acao). */
+.request-primary {
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.request-secondary {
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+.request-primary:focus-visible,
+.request-secondary:focus-visible,
+.request-modal-close:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Campo com moldura e alternar senha (usados pela recuperacao de senha) ──
+   Vieram de landing-login.css sem mudanca de regra: o painel de login foi
+   redesenhado (direcao Energia e velocidade) e deixou de usar .field-shell,
+   mas PasswordRecoveryModal.jsx continua usando. O foco de
+   .password-visibility veio de landing-base.css pelo mesmo motivo. */
+.field-shell {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-height: 48px;
+  border-radius: var(--lt-radius-control);
+  border: 1.5px solid var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  padding: 0 var(--lt-space-4);
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+}
+
+/* Foco do campo unificado com o anel do restante do painel: halo branco +
+   anel azul solido (--lt-focus-ring), nunca o brilho verde translucido
+   anterior, que nao cruzava 3:1 contra o botao primario. */
+.field-shell:focus-within {
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-surface);
+  box-shadow: var(--lt-focus-ring);
+}
+
+.field-shell svg { color: var(--lt-color-text-subtle); flex-shrink: 0; }
+
+/* O :not() repetido nao e enfeite: iguala a especificidade da regra global de
+   theme.css (input:not([type=checkbox]):not([type=radio]), 0,2,1), que antes
+   vencia e desenhava borda, fundo branco e padding no campo interno - a
+   caixa dentro da caixa. theme.css e compartilhado com todo o sistema, entao
+   a correcao fica do lado da landing. */
+.field-shell input:not([type="checkbox"]):not([type="radio"]) {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-family: var(--lt-font-family);
+}
+
+/* Placeholder de baixo contraste e intencional: o rotulo persistente
+   acima do campo ja identifica o campo (ver guia visual, "O que ja
+   esta bem"), entao WCAG 1.4.3 nao se aplica aqui. Sem token — e
+   decoracao de conveniencia, nao vocabulario de hierarquia. */
+.field-shell input:not([type="checkbox"]):not([type="radio"])::placeholder { color: #a6bece; }
+
+/* Alternar visibilidade da senha: alvo minimo explicito na lista da
+   auditoria (UX-08). O icone continua pequeno; a area clicavel cresce
+   via min-width/min-height, nao via desenho. */
+.password-visibility {
+  min-width: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+  margin: 0 calc(-1 * var(--lt-space-2));
+  border: none;
+  background: transparent;
+  color: var(--lt-color-text-subtle);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--lt-radius-control);
+  transition: color 0.15s, background 0.15s;
+}
+
+.password-visibility:hover {
+  color: var(--lt-color-brand-blue);
+  background: rgba(37, 96, 168, 0.08);
+}
+
+.password-visibility:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}

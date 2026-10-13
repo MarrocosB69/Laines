@@ -1,30 +1,47 @@
+/* Peças de components/ui na direção "Energia e velocidade" (tokens --lt-*,
+   src/views/landing/landing-tokens.css, carregados por src/index.css). A API
+   dos componentes não muda. As telas migradas que usam estas peças
+   (avaliações, Pesquisa, Áreas, Visão geral) redeclaram o que precisam no
+   próprio escopo, com especificidade maior. */
 .ui-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--lt-color-surface);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-card);
   padding: 20px 24px;
   box-shadow: var(--shadow-sm);
-  transition: var(--transition);
+  transition: box-shadow 160ms;
 }
 
 .ui-card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .ui-card {
+    transition: box-shadow 160ms, transform 160ms;
+  }
+
+  .ui-card:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Botão: 44 px no tamanho padrão, Sofia 700, foco --lt-focus-ring. */
 .ui-button {
+  box-sizing: border-box;
   border: none;
-  border-radius: var(--radius-md);
-  min-height: 38px;
+  border-radius: var(--lt-radius-control);
+  min-height: var(--lt-target-min);
   padding: 9px 20px;
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: var(--transition);
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms, color 160ms;
 }
 
 .ui-button:disabled {
@@ -32,63 +49,82 @@
   cursor: not-allowed;
 }
 
-.ui-button:active {
-  transform: scale(0.98);
+.ui-button:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
+/* Aperto que encolhe o botão: movimento, só sem preferência por menos. */
+@media (prefers-reduced-motion: no-preference) {
+  .ui-button {
+    transition: background-color 160ms, border-color 160ms, box-shadow 160ms, color 160ms, transform 120ms;
+  }
+
+  .ui-button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Branco sobre o degradê de largada: 4,82:1 no topo e 6,20:1 na base.
+   Antes, branco sobre --color-primary (#74A865) media 2,8:1. */
 .ui-button-primary {
-  background: var(--color-primary);
-  color: #fff;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  color: var(--lt-color-text-inverse);
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
 }
 
 .ui-button-primary:hover {
-  background: var(--color-primary-dark);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
 }
 
+/* Secundário: contorno de campo e texto azul (6,33:1). */
 .ui-button-secondary {
-  background: transparent;
-  color: var(--color-text-primary);
-  border: 1.5px solid var(--color-dark-blue);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  border: 1.5px solid var(--lt-color-border-field);
 }
 
 .ui-button-secondary:hover {
-  background: color-mix(in srgb, var(--color-dark-blue) 6%, transparent);
+  border-color: var(--lt-color-brand-blue);
+  background: var(--lt-color-track-tint);
 }
 
+/* Perigo: vermelho de texto sobre o fundo de erro (5,91:1). */
 .ui-button-danger {
-  background: #fee2e2;
-  color: var(--color-error);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
 }
 
 .ui-button-danger:hover {
-  background: #fecaca;
+  background: var(--lt-color-danger-bg);
+  box-shadow: inset 0 0 0 1.5px var(--lt-color-danger-text);
 }
 
 .ui-button-ghost {
   background: transparent;
-  color: var(--color-text-primary);
+  color: var(--lt-color-text);
   border: none;
   padding-left: 8px;
   padding-right: 8px;
 }
 
 .ui-button-ghost:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--color-dark-blue);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
-/* Tamanhos */
+/* Tamanhos. O pequeno fica em 36 px (linhas densas de lista e tabela). */
 .ui-button-sm {
-  min-height: 32px;
+  min-height: 36px;
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: var(--lt-text-sm);
 }
 
 .ui-button-lg {
-  min-height: 46px;
+  min-height: 48px;
   padding: 12px 28px;
-  font-size: 15px;
+  font-size: var(--lt-text-control);
 }
 
 /* Largura total */
@@ -97,8 +133,12 @@
   justify-content: center;
 }
 
-.ui-button-spinner {
-  animation: ui-spin 0.8s linear infinite;
+/* O giro só roda sem preferência por menos movimento; com ela, o botão
+   continua marcado como ocupado (aria-busy) e o texto não muda. */
+@media (prefers-reduced-motion: no-preference) {
+  .ui-button-spinner {
+    animation: ui-spin 0.8s linear infinite;
+  }
 }
 
 @keyframes ui-spin {
@@ -118,18 +158,20 @@
   margin-bottom: 24px;
 }
 
+/* h3: fonte e cor declaradas aqui vencem o título global. */
 .ui-section-header h3 {
   margin: 0;
-  font-size: 20px;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-title);
   font-weight: 700;
-  color: var(--color-navy);
+  color: var(--lt-color-text);
   line-height: 1.2;
 }
 
 .ui-section-header p {
   margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--color-text-muted);
+  font-size: var(--lt-text-sm);
+  color: var(--lt-color-text-muted);
 }
 
 .ui-stat-card {
@@ -138,12 +180,13 @@
   gap: 14px;
 }
 
+/* Ícone azul sobre o tom de pista: 5,57:1. */
 .ui-stat-icon {
   width: 42px;
   height: 42px;
-  border-radius: var(--radius-md);
-  background: rgba(16, 51, 85, 0.06);
-  color: var(--color-navy);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -151,24 +194,24 @@
 
 .ui-stat-label {
   margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-muted);
+  font-size: var(--lt-text-xs);
+  font-weight: 600;
+  color: var(--lt-color-text-muted);
 }
 
 .ui-stat-value {
   display: block;
   font-size: 28px;
   font-weight: 700;
-  color: var(--color-navy);
+  color: var(--lt-color-text);
   line-height: 1;
 }
 
 .ui-stat-meta {
   display: block;
   margin-top: 6px;
-  font-size: 12px;
-  color: var(--color-text-muted);
+  font-size: var(--lt-text-xs);
+  color: var(--lt-color-text-muted);
 }
 
 .ui-toast-stack {
@@ -181,15 +224,19 @@
   z-index: 9999;
 }
 
+/* Aviso (UiFeedbackContext): cartão branco com o título escrito; a faixa à
+   esquerda só acompanha o tipo. */
 .ui-toast {
   min-width: 260px;
   max-width: 360px;
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--lt-color-surface);
+  border: 1px solid var(--lt-color-border);
+  border-left: 4px solid var(--lt-color-brand-blue);
+  border-radius: var(--lt-radius-control);
   box-shadow: var(--shadow-md);
   padding: 12px 14px;
-  color: var(--color-text-primary);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
 }
 
 .ui-toast-header {
@@ -201,32 +248,53 @@
   margin-bottom: 4px;
 }
 
+/* Fechar com alvo de 44 px; a margem negativa evita engordar o aviso. */
 .ui-toast-header button {
+  flex: none;
+  justify-content: center;
+  min-width: var(--lt-target-min);
+  min-height: var(--lt-target-min);
+  margin: -12px -12px -12px 0;
+  padding: 0;
   border: none;
+  border-radius: var(--lt-radius-control);
   background: transparent;
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
-  color: inherit;
+  color: var(--lt-color-text-muted);
+}
+
+.ui-toast-header button:hover {
+  color: var(--lt-color-text);
+  background: var(--lt-color-track-tint);
+}
+
+.ui-toast-header button:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
 }
 
 .ui-toast p {
   margin: 0;
-  color: var(--color-text-muted);
-  font-size: 13px;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
   line-height: 1.4;
 }
 
 .ui-toast-error {
-  border-color: rgba(239, 68, 68, 0.25);
+  border-color: rgba(185, 28, 28, 0.25);
+  border-left-color: var(--lt-color-danger-text);
 }
 
 .ui-toast-success {
-  border-color: rgba(22, 163, 74, 0.25);
+  border-color: rgba(22, 101, 52, 0.25);
+  border-left-color: var(--lt-color-success-text);
 }
 
 .ui-toast-warning {
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(154, 52, 18, 0.3);
+  border-left-color: #9a3412;
 }
 
 .ui-confirm-overlay {
@@ -235,34 +303,35 @@
 
 .ui-confirm-dialog {
   --app-modal-width: 460px;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--lt-color-border);
 }
 
 .ui-confirm-warning {
-  border-color: rgba(245, 158, 11, 0.35);
+  border-color: rgba(154, 52, 18, 0.35);
 }
 
 .ui-confirm-danger {
-  border-color: rgba(239, 68, 68, 0.35);
+  border-color: rgba(185, 28, 28, 0.35);
 }
 
+/* Pergunta curta: um degrau abaixo do título padrão de modal. */
 .ui-confirm-header .app-modal-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--lt-text-md);
 }
 
 .ui-confirm-body p {
   margin: 0;
-  color: var(--color-text-muted);
+  color: var(--lt-color-text-muted);
   line-height: 1.45;
-  font-size: 13px;
+  font-size: var(--lt-text-base);
 }
 
 .ui-confirm-details {
   margin: 8px 0 0;
   padding: 0 0 0 18px;
-  color: var(--color-text-muted);
-  font-size: 13px;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
   line-height: 1.55;
 }
 
@@ -274,23 +343,26 @@
   padding-top: 0;
 }
 
-/* ── Skeleton ──────────────────────────────────────────────── */
+/* ── Skeleton ──────────────────────────────────────────────────
+   Bloco parado na tinta a 8%. O pulso mexe só em opacidade, no próprio
+   elemento e com a mesma duração de antes (1,4 s): a Visão geral do
+   professor limita a 3 voltas com animation-iteration-count e desliga com
+   movimento reduzido. O brilho anterior animava background-position. */
 
 @keyframes ui-shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position:  200% 0; }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
 }
 
 .ui-skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(29, 51, 80, 0.06) 25%,
-    rgba(29, 51, 80, 0.13) 50%,
-    rgba(29, 51, 80, 0.06) 75%
-  );
-  background-size: 200% 100%;
-  animation: ui-shimmer 1.4s ease-in-out infinite;
+  background: rgba(38, 41, 71, 0.08);
   border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ui-skeleton {
+    animation: ui-shimmer 1.4s ease-in-out infinite;
+  }
 }
 
 .ui-skeleton-group {
@@ -311,12 +383,12 @@
 
 .ui-skeleton-block {
   height: 80px;
-  border-radius: var(--radius-md, 10px);
+  border-radius: var(--lt-radius-control);
 }
 
 .ui-skeleton-card {
   height: 120px;
-  border-radius: var(--radius-lg, 14px);
+  border-radius: var(--lt-radius-card);
 }
 
 .ui-skeleton-circle {
@@ -333,7 +405,7 @@
   gap: 6px;
   padding: 32px 20px;
   text-align: center;
-  color: var(--color-text-muted);
+  color: var(--lt-color-text-muted);
 }
 
 .ui-feedback-state--sm {
@@ -351,35 +423,208 @@
   padding: 12px 0;
 }
 
+/* O estado vem escrito no título; o ícone só acompanha. No erro, o ícone
+   usa o vermelho de texto por inteiro (5,91:1 no fundo de erro). */
 .ui-feedback-state__icon {
-  color: rgba(29, 51, 80, 0.28);
+  color: var(--lt-color-text-subtle);
   margin-bottom: 4px;
   line-height: 1;
 }
 
 .ui-feedback-state--error .ui-feedback-state__icon {
-  color: var(--color-error, #ef4444);
-  opacity: 0.7;
+  color: var(--lt-color-danger-text);
 }
 
 .ui-feedback-state__title {
   margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  color: var(--lt-color-text);
 }
 
 .ui-feedback-state--sm .ui-feedback-state__title {
-  font-size: 13px;
+  font-size: var(--lt-text-sm);
 }
 
 .ui-feedback-state__description {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--lt-text-sm);
   line-height: 1.45;
   max-width: 300px;
 }
 
 .ui-feedback-state__action {
   margin-top: 8px;
+}
+
+/* ── AttachmentThumbnail ───────────────────────────────────────
+   Cores e pesos nos tokens. Tamanhos, raios e respiros da prévia e da
+   etiqueta de extensão ficam: as miniaturas compactas de Áreas e de
+   Pesquisa redeclaram cor e tamanho, mas herdam essa geometria. */
+.attachment-thumbnail {
+  width: 100%;
+  min-width: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  padding: 0.58rem;
+  display: flex;
+  align-items: center;
+  gap: 0.64rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.attachment-thumbnail:hover {
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: 0 14px 30px -26px rgba(20, 53, 84, 0.45);
+}
+
+/* Vazio: tracejado sobre o fundo de campo; o texto diz "Selecionar
+   arquivo", a borda só acompanha. */
+.attachment-thumbnail--empty {
+  border-style: dashed;
+  background: var(--lt-color-surface-field);
+}
+
+.attachment-thumbnail--compact {
+  cursor: default;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  gap: 0.46rem;
+}
+
+.attachment-thumbnail--compact:hover {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.attachment-thumbnail__preview {
+  position: relative;
+  width: 3.55rem;
+  height: 3.55rem;
+  border-radius: 0.78rem;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.attachment-thumbnail--empty .attachment-thumbnail__preview {
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+}
+
+.attachment-thumbnail--compact .attachment-thumbnail__preview {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 0.68rem;
+}
+
+.attachment-thumbnail__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attachment-thumbnail__extension {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.2rem;
+  max-width: calc(100% - 0.4rem);
+  border-radius: 0.32rem;
+  background: var(--lt-color-text);
+  color: var(--lt-color-text-inverse);
+  font-size: 0.53rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.18rem 0.24rem;
+}
+
+.attachment-thumbnail--compact .attachment-thumbnail__extension {
+  font-size: 0.48rem;
+  padding: 0.14rem 0.2rem;
+}
+
+.attachment-thumbnail__content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.14rem;
+  text-align: left;
+}
+
+.attachment-thumbnail__title {
+  overflow: hidden;
+  color: var(--lt-color-text);
+  font-size: 0.84rem;
+  line-height: 1.24;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-thumbnail__description {
+  overflow: hidden;
+  color: var(--lt-color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-thumbnail--compact .attachment-thumbnail__title {
+  font-size: 0.78rem;
+}
+
+.attachment-thumbnail--compact .attachment-thumbnail__description {
+  font-size: 0.66rem;
+}
+
+/* Remover: alvo de 44 px, o mesmo desenho que Áreas já usa. Vermelho de
+   texto sobre o fundo de erro, 5,91:1; o nome vem do aria-label. */
+.attachment-thumbnail__remove {
+  box-sizing: border-box;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  margin-left: auto;
+  border: 1.5px solid transparent;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.attachment-thumbnail__remove:hover,
+.attachment-thumbnail__remove:focus-visible {
+  outline: none;
+  background: var(--lt-color-danger-bg);
+  border-color: var(--lt-color-danger-text);
+}
+
+.attachment-thumbnail__remove:focus-visible {
+  box-shadow: var(--lt-focus-ring);
+}
+
+input.attachment-thumbnail__input,
+.attachment-thumbnail__input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }

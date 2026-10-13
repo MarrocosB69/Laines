@@ -90,6 +90,14 @@ const createLaunchResult = (project, error) => {
   };
 };
 
+const getLoginIdentifier = (page) => page
+  .locator('[data-testid="login-identifier"], input[autocomplete="username"]')
+  .first();
+
+const getLoginPassword = (page) => page
+  .locator('[data-testid="login-password"], input[autocomplete="current-password"]')
+  .first();
+
 const runProject = async (project) => {
   let browser;
   try {
@@ -105,7 +113,7 @@ const runProject = async (project) => {
   try {
     checks.push(await runCase(page, 'login_page_loads', async () => {
       await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      await page.waitForSelector('text=Entrar na plataforma', { timeout: 15_000 });
+      await page.waitForSelector('[data-testid="login-identifier"]', { timeout: 15_000 });
     }));
 
     checks.push(await runCase(page, 'responsive_no_horizontal_overflow', async () => {
@@ -117,13 +125,13 @@ const runProject = async (project) => {
 
     checks.push(await runCase(page, 'invalid_login_feedback', async () => {
       await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(adminEmail);
-      await page.locator('input[autocomplete="current-password"]').fill('senha-invalida');
+      await getLoginIdentifier(page).fill(adminEmail);
+      await getLoginPassword(page).fill('senha-invalida');
       await page.getByRole('button', { name: /entrar agora|entrando/i }).click();
       const error = page.locator('.landing-error');
       await error.waitFor({ state: 'visible', timeout: 20_000 });
       const text = await error.innerText();
-      assert(/credenciais|inv[aá]lid/i.test(text), `mensagem inesperada de erro: ${text}`);
+      assert(/credenciais|inv.lid|incorret/i.test(text), `mensagem inesperada de erro: ${text}`);
     }));
 
     checks.push(await runCase(page, 'admin_login_logout', async () => {
@@ -145,8 +153,8 @@ const runProject = async (project) => {
       };
 
       await page.goto(`${baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(adminEmail);
-      await page.locator('input[autocomplete="current-password"]').fill(adminPassword);
+      await getLoginIdentifier(page).fill(adminEmail);
+      await getLoginPassword(page).fill(adminPassword);
       await page.getByRole('button', { name: /entrar agora|entrando/i }).click();
       await page.waitForURL(/\/admin$/, { timeout: 45_000 });
 
@@ -173,7 +181,7 @@ const runProject = async (project) => {
       }
 
       await page.waitForURL((url) => url.pathname === '/' || url.pathname === '/login', { timeout: 45_000 });
-      await page.waitForSelector('text=Entrar na plataforma', { timeout: 20_000 });
+      await page.waitForSelector('[data-testid="login-identifier"]', { timeout: 20_000 });
     }));
   } finally {
     const failedChecks = checks.filter((item) => item.status === 'failed');

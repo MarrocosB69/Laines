@@ -1,0 +1,417 @@
+<!doctype html>
+<!--
+  LAINES, landing v2, direção A: a curva da pista.
+  Mockup estático de direção de arte (docs/design/landing-v2/plano.md).
+  Não é código de produção. Os números da frase de estatística são VALORES DE
+  EXEMPLO; na página real vêm de GET /public/stats.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LAINES: entrar (direção A, a curva)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Sofia Sans 400–700 (39,4 KB) + Extra Condensed 800 (15,4 KB), subconjunto latino. -->
+<link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:wght@800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta (contraste em contraste.cjs) */
+    --tinta:   #262947; /* 14,09:1 sobre cal. Azul-violeta do corredor do emblema. */
+    --apoio:   #555c78; /*  6,59:1 sobre cal */
+    --pista:   #2560a8; /*  6,33:1 sobre cal. Raias, links, foco. */
+    --gramado: #3d8c2a; /*  só gráfico (4,21:1 contra a página) */
+    --largada: #2d7a1a; /*  5,37:1 com cal por cima. Único botão sólido. */
+    --cal:     #ffffff;
+    --borda:   #7a8098; /*  3,91:1 sobre cal, limite de componente */
+    --erro-texto: #b91c1c;
+    --erro-fundo: #fef2f2;
+
+    --letra: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --letra-titulo: 'Sofia Sans Extra Condensed', 'Arial Narrow', sans-serif-condensed, sans-serif;
+
+    /* Escala de quarta (~1,33) */
+    --t-13: 0.8125rem;
+    --t-16: 1rem;
+    --t-17: 1.0625rem;
+    --t-21: 1.3125rem;
+    --t-28: 1.75rem;
+
+    --margem: clamp(1rem, 4.5vw, 4rem);
+
+    /* Pista: largura de raia e de linha. 8 raias. */
+    --raia: 11px;
+    --linha: 2px;
+    --raio-curva: 300px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--cal);
+    color: var(--tinta);
+    font-family: var(--letra);
+    font-size: var(--t-16);
+    line-height: 1.5;
+  }
+
+  /* ── Grade ────────────────────────────────────────────────────────────
+     Ordem no DOM: título, curva, acesso, texto, rodapé. No celular é a
+     ordem visual; no desktop a grade leva o texto para baixo do título e o
+     acesso para a coluna da direita. */
+  .pagina {
+    min-height: 100vh;
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "titulo"
+      "curva"
+      "acesso"
+      "texto"
+      "rodape";
+  }
+
+  .titulo { grid-area: titulo; }
+  .curva  { grid-area: curva; }
+  .acesso { grid-area: acesso; }
+  .liga   { grid-area: texto; }
+  .rodape { grid-area: rodape; }
+
+  /* ── Título: nome da liga em Extra Condensed ─────────────────────────── */
+  .titulo { padding: 1.5rem var(--margem) 0; }
+  .titulo h1 {
+    margin: 0;
+    font-family: var(--letra-titulo);
+    font-weight: 800;
+    font-size: clamp(2.5rem, 1.6rem + 3.4vw, 4.25rem);
+    line-height: 0.95;
+    letter-spacing: 0.005em;
+    color: var(--tinta);
+    max-width: 11ch;
+    /* 11ch da fonte estreita segura o nome em três linhas estáveis:
+       "Liga Acadêmica / Interprofissional de / Nutrição Esportiva". */
+  }
+  .titulo h1 span { display: block; white-space: nowrap; }
+  .titulo__instituicao {
+    margin: 0.75rem 0 0;
+    color: var(--apoio);
+    font-size: var(--t-16);
+    text-wrap: balance;
+  }
+
+  /* ── A curva ──────────────────────────────────────────────────────────
+     Uma forma só: o gramado é um retângulo com o canto superior direito
+     arredondado (a dobra fica voltada para o formulário; as retas saem pela
+     borda esquerda da página, então todo corte acontece na borda); as oito raias são sombras sólidas concêntricas, que
+     acompanham o raio. Linha branca, raia azul, linha branca... A primeira
+     linha separa gramado e pista (1,50:1 entre si, nunca se tocam). */
+  .curva {
+    position: relative;
+    overflow: hidden;
+    height: 148px;
+    margin-top: 1.25rem;
+    --raia: 5px;
+    --linha: 1.5px;
+    --raio-curva: 150px;
+    --banda: calc(8 * (var(--raia) + var(--linha)) + var(--linha));
+  }
+  .curva__gramado {
+    position: absolute;
+    top: calc(var(--banda) + 6px);
+    right: calc(var(--banda) + 6px);
+    width: 300%;
+    height: 400%;
+    background: var(--gramado);
+    border-top-right-radius: var(--raio-curva);
+    box-shadow:
+      0 0 0 calc(1 * var(--linha) + 0 * var(--raia)) var(--cal),
+      0 0 0 calc(1 * var(--linha) + 1 * var(--raia)) var(--pista),
+      0 0 0 calc(2 * var(--linha) + 1 * var(--raia)) var(--cal),
+      0 0 0 calc(2 * var(--linha) + 2 * var(--raia)) var(--pista),
+      0 0 0 calc(3 * var(--linha) + 2 * var(--raia)) var(--cal),
+      0 0 0 calc(3 * var(--linha) + 3 * var(--raia)) var(--pista),
+      0 0 0 calc(4 * var(--linha) + 3 * var(--raia)) var(--cal),
+      0 0 0 calc(4 * var(--linha) + 4 * var(--raia)) var(--pista),
+      0 0 0 calc(5 * var(--linha) + 4 * var(--raia)) var(--cal),
+      0 0 0 calc(5 * var(--linha) + 5 * var(--raia)) var(--pista),
+      0 0 0 calc(6 * var(--linha) + 5 * var(--raia)) var(--cal),
+      0 0 0 calc(6 * var(--linha) + 6 * var(--raia)) var(--pista),
+      0 0 0 calc(7 * var(--linha) + 6 * var(--raia)) var(--cal),
+      0 0 0 calc(7 * var(--linha) + 7 * var(--raia)) var(--pista),
+      0 0 0 calc(8 * var(--linha) + 7 * var(--raia)) var(--cal),
+      0 0 0 calc(8 * var(--linha) + 8 * var(--raia)) var(--pista);
+  }
+  /* O emblema, recortado em círculo: o arquivo é opaco com fundo branco
+     quadrado, então vira um medalhão branco sobre o gramado. */
+  /* Ancorado pela base, dentro do gramado: não corta em janela baixa. */
+  .curva__emblema {
+    position: absolute;
+    width: 76px;
+    height: 76px;
+    left: var(--margem);
+    bottom: 12px;
+    border-radius: 50%;
+    background: var(--cal);
+    overflow: hidden;
+  }
+  .curva__emblema img { display: block; width: 100%; height: 100%; }
+
+  /* Único movimento que não vem de ação da pessoa: a curva se revela uma
+     vez, a partir da dobra. Com movimento reduzido, ela já está pronta. */
+  @media (prefers-reduced-motion: no-preference) {
+    .curva__gramado { animation: revelar 900ms cubic-bezier(.2, .7, .2, 1) both; }
+    @keyframes revelar {
+      from { clip-path: circle(0 at 100% 0); }
+      to   { clip-path: circle(150% at 100% 0); }
+    }
+  }
+
+  /* ── Acesso ───────────────────────────────────────────────────────── */
+  .acesso {
+    padding: 1.75rem var(--margem) 0;
+    max-width: 34rem;
+  }
+  .acesso h2 {
+    margin: 0;
+    font-size: var(--t-28);
+    line-height: 1.15;
+    font-weight: 700;
+  }
+  .inteiro { white-space: nowrap; }
+  .acesso__dica {
+    margin: 0.375rem 0 1.25rem;
+    color: var(--apoio);
+    font-size: var(--t-16);
+  }
+
+  .campo { margin-bottom: 1rem; }
+  .campo label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-weight: 700;
+    font-size: var(--t-16);
+  }
+  .campo input {
+    display: block;
+    width: 100%;
+    height: 50px;
+    padding: 0 0.875rem;
+    border: 1.5px solid var(--borda);
+    border-radius: 4px;
+    background: var(--cal);
+    color: var(--tinta);
+    font: inherit;
+    font-size: var(--t-17);
+  }
+  .campo__senha { position: relative; }
+  .campo__senha input { padding-right: 6rem; }
+  .campo__mostrar {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--pista);
+    font: inherit;
+    font-weight: 700;
+    font-size: var(--t-16);
+    cursor: pointer;
+  }
+
+  .botao-entrar {
+    display: block;
+    width: 100%;
+    height: 52px;
+    margin-top: 1.5rem;
+    border: 0;
+    border-radius: 4px;
+    background: var(--largada);
+    color: var(--cal);
+    font: inherit;
+    font-weight: 700;
+    font-size: var(--t-17);
+    cursor: pointer;
+  }
+  .botao-entrar:hover { background: #256816; } /* 6,77:1 com cal */
+
+  .erro {
+    margin: 1rem 0 0;
+    padding: 0.625rem 0.875rem;
+    border-radius: 4px;
+    background: var(--erro-fundo);
+    color: var(--erro-texto);
+    font-weight: 600;
+  }
+
+  .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pista);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  .link:hover { text-decoration-thickness: 3px; }
+  .esqueci {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 0.25rem;
+  }
+
+  /* As duas portas secundárias: pergunta em texto corrido, destino em link.
+     Mesmo estilo para as duas, porque têm o mesmo peso. */
+  .portas {
+    margin: 1.75rem 0 0;
+    padding: 1.25rem 0 0;
+    border-top: 1.5px solid #e3e5ec;
+  }
+  .portas p { margin: 0 0 0.875rem; color: var(--apoio); }
+  .portas .link { color: var(--pista); }
+
+  /* ── Texto da liga ───────────────────────────────────────────────── */
+  .liga {
+    padding: 1.5rem var(--margem) 0;
+    max-width: 38rem;
+  }
+  .liga p { margin: 0 0 0.75rem; color: var(--apoio); }
+  .liga p:first-child { color: var(--tinta); }
+  .liga strong { color: var(--tinta); font-weight: 700; }
+  /* Estado dos números: carregando = espaço reservado e vazio; erro = a
+     frase some inteira. Nunca zero no lugar de ausência. */
+  .liga__numeros[data-estado="carregando"] { visibility: hidden; }
+  .liga__numeros[data-estado="indisponivel"] { display: none; }
+
+  .rodape {
+    padding: 1.5rem var(--margem) 1.5rem;
+    color: var(--apoio);
+    font-size: var(--t-13);
+  }
+  .rodape p { margin: 0; text-wrap: balance; }
+
+  /* ── Foco ────────────────────────────────────────────────────────── */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 3px solid var(--pista);
+    outline-offset: 2px;
+  }
+  .campo input:focus-visible { border-color: var(--pista); }
+
+  /* ── Desktop ───────────────────────────────────────────────────────── */
+  @media (min-width: 60rem) {
+    .pagina {
+      grid-template-columns: minmax(0, 7fr) minmax(22rem, 5fr);
+      grid-template-rows: auto auto minmax(240px, 1fr) auto;
+      grid-template-areas:
+        "titulo acesso"
+        "texto  acesso"
+        "curva  acesso"
+        "curva  rodape";
+      column-gap: clamp(2rem, 4vw, 4rem);
+    }
+    .titulo { padding-top: clamp(2.5rem, 8vh, 5rem); }
+    .liga { padding-top: 1.5rem; max-width: 36rem; }
+    .acesso {
+      padding: clamp(2.5rem, 8vh, 5rem) var(--margem) 0 0;
+      max-width: 27rem;
+    }
+    .rodape { padding: 1.5rem var(--margem) 1.75rem 0; align-self: end; }
+    .curva {
+      height: auto;
+      margin-top: 2rem;
+      --raia: 11px;
+      --linha: 2px;
+      --raio-curva: 300px;
+    }
+    .curva__emblema {
+      width: 128px;
+      height: 128px;
+      bottom: 32px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+  <header class="titulo">
+    <h1>
+      <span>Liga Acadêmica</span>
+      <span>Interprofissional de</span>
+      <span>Nutrição Esportiva</span>
+    </h1>
+    <p class="titulo__instituicao">FACISA, Universidade Federal do Rio Grande do Norte</p>
+  </header>
+
+  <div class="curva" aria-hidden="true">
+    <div class="curva__gramado"></div>
+    <div class="curva__emblema">
+      <img src="../../../src/assets/LogoLaines.webp" alt="" width="512" height="512">
+    </div>
+  </div>
+
+  <main class="acesso" aria-labelledby="titulo-entrar">
+    <h2 id="titulo-entrar">Entrar</h2>
+    <p class="acesso__dica" id="dica-login">Use seu CPF, só os números, ou seu <span class="inteiro">e-mail</span> de acesso.</p>
+
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="login-id">CPF ou e-mail</label>
+        <input id="login-id" name="login" type="text" autocomplete="username" required aria-describedby="dica-login">
+      </div>
+      <div class="campo">
+        <label for="login-senha">Senha</label>
+        <div class="campo__senha">
+          <input id="login-senha" name="senha" type="password" autocomplete="current-password" required>
+          <button type="button" class="campo__mostrar" aria-controls="login-senha" aria-pressed="false">Mostrar</button>
+        </div>
+      </div>
+
+      <button type="submit" class="botao-entrar">Entrar</button>
+      <p class="erro" id="erro-login" role="alert" hidden>CPF, e-mail ou senha incorretos. Confira e tente de novo.</p>
+
+      <button type="button" class="link esqueci">Esqueci minha senha</button>
+    </form>
+
+    <div class="portas">
+      <p>É atleta e quer ser atendido pela liga? <a class="link" href="/inscricao">Entrar na lista de espera</a></p>
+      <p>Professor ou profissional de saúde sem conta? <button type="button" class="link">Solicitar acesso</button></p>
+    </div>
+  </main>
+
+  <section class="liga" aria-label="Sobre a liga">
+    <p>Alunos atendem atletas com supervisão profissional: avaliação, plano alimentar e revisão.</p>
+    <!-- VALORES DE EXEMPLO. Na página real: atletas = pacientes ativos,
+         avaliações = finalizadas, membros = usuários ativos (/public/stats). -->
+    <p class="liga__numeros" data-estado="ok">Hoje são <strong>48</strong> atletas ativos, <strong>312</strong> avaliações finalizadas e <strong>37</strong> membros ativos.</p>
+  </section>
+
+  <footer class="rodape">
+    <p>© 2026 LAINES, Universidade Federal do Rio Grande do Norte</p>
+  </footer>
+
+</div>
+<script>
+  // Só para o mockup: alternar a senha e não enviar o formulário.
+  const botao = document.querySelector('.campo__mostrar');
+  const senha = document.getElementById('login-senha');
+  botao.addEventListener('click', () => {
+    const mostrar = senha.type === 'password';
+    senha.type = mostrar ? 'text' : 'password';
+    botao.setAttribute('aria-pressed', String(mostrar));
+    botao.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+  });
+  document.getElementById('form-login').addEventListener('submit', (e) => e.preventDefault());
+</script>
+</body>
+</html>

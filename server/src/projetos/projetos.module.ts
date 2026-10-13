@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Projeto } from './projeto.entity';
+import { ProjetoProducao } from './projeto-producao.entity';
+import { ProjetoIdeia } from './projeto-ideia.entity';
 import { ProjetosService } from './projetos.service';
 import { ProjetosController } from './projetos.controller';
 import { RolesGuard } from '../auth/roles.guard';
@@ -10,7 +12,7 @@ import { User } from '../users/user.entity';
 import { Avaliacao } from '../avaliacoes/avaliacao.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Projeto, Paciente, User, Avaliacao]), RealtimeModule],
+  imports: [TypeOrmModule.forFeature([Projeto, ProjetoProducao, ProjetoIdeia, Paciente, User, Avaliacao]), RealtimeModule],
   providers: [ProjetosService, RolesGuard],
   controllers: [ProjetosController],
   exports: [ProjetosService]

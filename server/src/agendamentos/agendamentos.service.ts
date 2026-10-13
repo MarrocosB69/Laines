@@ -23,6 +23,7 @@ import {
   isStudentMemberRole,
   normalizeRole
 } from '../auth/access-control';
+import { clinicalScopeCondition, resolveClinicalLink, studentLookupFromRepository } from '../auth/authorization';
 
 function formatDateTimeBr(date?: string | null, time?: string | null): string {
   if (!date) return 'data a confirmar';
@@ -70,27 +71,9 @@ export class AgendamentosService {
     });
   }
 
-  private canAccessViaPaciente(user: AuthenticatedUser, paciente: Paciente | null) {
-    if (!paciente) return false;
-    const role = normalizeRole(user.role);
-    if (hasGlobalAccess(role)) return true;
-
-    if (isStudentMemberRole(role)) {
-      return paciente.alunoResponsavelId === user.id
-        || (paciente.equipeTecnicaIds || []).includes(user.id);
-    }
-
-    if (hasTeamScopedAccess(role)) {
-      return paciente.professorSupervisorId === user.id
-        || paciente.alunoResponsavelId === user.id
-        || (paciente.equipeTecnicaIds || []).includes(user.id);
-    }
-
-    if (role === 'atleta') {
-      return paciente.atletaUserId === user.id;
-    }
-
-    return false;
+  // Contrato unico (UPD-12): inclui a cadeia do aluno responsavel.
+  private async canAccessViaPaciente(user: AuthenticatedUser, paciente: Paciente | null) {
+    return (await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo))) !== null;
   }
 
   private parseDateOrUndefined(value?: string) {
@@ -286,6 +269,12 @@ export class AgendamentosService {
     if (!paciente.alunoResponsavelId) {
       throw new BadRequestException('Paciente nao possui aluno responsavel vinculado.');
     }
+    if (!paciente.professorSupervisorId) {
+      throw new BadRequestException('Paciente nao possui supervisor responsavel vinculado.');
+    }
+    if (!paciente.projetoId) {
+      throw new BadRequestException('Paciente nao possui projeto vinculado.');
+    }
     if (alunoId && paciente.alunoResponsavelId !== alunoId) {
       throw new BadRequestException('Paciente informado pertence a outro aluno responsavel.');
     }
@@ -296,19 +285,22 @@ export class AgendamentosService {
       .orderBy('agendamento.scheduledAt', 'DESC');
 
     const role = normalizeRole(user.role);
-    if (!hasGlobalAccess(role)) {
+    if (!hasGlobalAccess(role) && role !== 'coord_atendimento') {
       if (isStudentMemberRole(role)) {
         qb.andWhere('agendamento.alunoId = :userId', { userId: user.id });
       } else if (hasTeamScopedAccess(role) || role === 'atleta') {
+        // Contrato unico (UPD-12): mesmo escopo de pacientes, com cadeia de supervisao.
         qb.leftJoin(Paciente, 'paciente', 'paciente.id = agendamento.pacienteId');
-        if (role === 'atleta') {
-          qb.andWhere('paciente.atletaUserId = :userId', { userId: user.id });
-        } else {
-          qb.andWhere(
-            '(paciente.professorSupervisorId = :userId OR paciente.alunoResponsavelId = :userId OR :userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[])))',
-            { userId: user.id }
-          );
-        }
+        const alunosSupervisionadosSubQuery = this.usersRepo
+          .createQueryBuilder('aluno_supervisionado')
+          .select('aluno_supervisionado.id')
+          .where('(aluno_supervisionado.supervisorId = :userId OR aluno_supervisionado.profissionalId = :userId)')
+          .andWhere('aluno_supervisionado.deletedAt IS NULL');
+        qb.andWhere(
+          clinicalScopeCondition({ alias: 'paciente', user, supervisedStudentsSubquery: alunosSupervisionadosSubQuery.getQuery() }) || '1 = 0',
+          { userId: user.id }
+        );
+        qb.setParameters(alunosSupervisionadosSubQuery.getParameters());
       } else {
         qb.andWhere('1 = 0');
       }
@@ -352,7 +344,7 @@ export class AgendamentosService {
 
     if (agendamento.pacienteId) {
       const paciente = await this.pacientesRepo.findOne({ where: { id: agendamento.pacienteId } });
-      if (this.canAccessViaPaciente(user, paciente)) {
+      if (await this.canAccessViaPaciente(user, paciente)) {
         return agendamento;
       }
     }
@@ -376,7 +368,7 @@ export class AgendamentosService {
 
     const paciente = await this.resolvePacienteOrThrow(payload.pacienteId);
     if (paciente && !hasGlobalAccess(role)) {
-      if (!this.canAccessViaPaciente(user, paciente)) {
+      if (!(await this.canAccessViaPaciente(user, paciente))) {
         throw new ForbiddenException('Sem permissao para agendar para este paciente.');
       }
     }
@@ -565,7 +557,7 @@ export class AgendamentosService {
       ...normalizedPayload,
       ...normalizedDateFields,
       scheduledAt: scheduledAt ?? agendamento.scheduledAt
-    } as any);
+    });
     const saved = await this.repo.save(merged);
     this.realtime.emit('agendamentos.updated', saved);
 
@@ -728,10 +720,11 @@ export class AgendamentosService {
           });
         }
       } else if (event === 'falta') {
-        // Notifica supervisores sobre a falta
-        await this.notificacoes.createForRoles(['professor', 'coordenador'], {
+        const recipients = [paciente?.professorSupervisorId, ...(paciente?.equipeMultiIds || [])]
+          .filter((id): id is string => !!id);
+        await this.notificacoes.createForUsers([...new Set(recipients)], {
           titulo: 'Falta registrada',
-          mensagem: `${atletaNome} não compareceu à consulta de ${dtLabel}. Verifique risco de inativação.`,
+          mensagem: 'Há uma falta registrada na sua equipe. Consulte a agenda dos pacientes vinculados.',
           tipo: 'alerta_clinico',
         });
       }
@@ -746,7 +739,7 @@ export class AgendamentosService {
       throw new NotFoundException('Agendamento nao encontrado.');
     }
     await this.repo.delete(id);
-    this.realtime.emit('agendamentos.deleted', { id });
+    this.realtime.emit('agendamentos.deleted', { id, pacienteId: agendamento.pacienteId });
     return { success: true };
   }
 }

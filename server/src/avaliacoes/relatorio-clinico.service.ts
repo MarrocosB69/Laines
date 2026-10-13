@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Avaliacao } from './avaliacao.entity';
+import { ROTULO_CLASSIFICACAO_DE } from './normalizers/triagem-reds-normalizer';
 import { Paciente } from '../pacientes/paciente.entity';
 import { AuthenticatedUser, hasGlobalAccess, hasTeamScopedAccess, isStudentMemberRole, normalizeRole } from '../auth/access-control';
 
@@ -100,7 +101,7 @@ function extractReds(av: Avaliacao): string[] {
   const out = asRec(res.output ?? res.calculated);
   const lines: string[] = [];
   const clas = toStr(d.classificacaoDE ?? out.classificacaoDE ?? av.classificacao, '');
-  if (clas) lines.push(`Classificação DE: ${clas}`);
+  if (clas) lines.push(`Classificação DE: ${ROTULO_CLASSIFICACAO_DE[clas] || clas}`);
   const leafScore = toNum(d.leafqScore ?? d.leafScore ?? out.leafqScore);
   if (leafScore !== null) lines.push(`LEAF-Q: ${leafScore}`);
   const redsCat = toStr(d.redsCatClassificacao ?? out.redsCatClassificacao, '');
@@ -188,7 +189,7 @@ const TIPO_LABEL: Record<string, string> = {
   bioimpedancia: 'Bioimpedância',
   composicao_corporal_integrada: 'Composição corporal',
   gasto_energetico_total: 'Gasto energético total',
-  triagem_reds: 'Triagem RED-S',
+  triagem_reds: 'Triagem de Disponibilidade Energetica',
   exames_laboratoriais: 'Exames laboratoriais',
   psicologia: 'Psicologia',
   fisioterapia: 'Fisioterapia',
@@ -211,11 +212,13 @@ export class RelatorioClinicoService {
     if (hasTeamScopedAccess(role)) {
       return paciente.professorSupervisorId === user.id
         || paciente.alunoResponsavelId === user.id
-        || (paciente.equipeTecnicaIds || []).includes(user.id);
+        || (paciente.equipeTecnicaIds || []).includes(user.id)
+        || (paciente.equipeMultiIds || []).includes(user.id);
     }
     if (isStudentMemberRole(role)) {
       return paciente.alunoResponsavelId === user.id
-        || (paciente.equipeTecnicaIds || []).includes(user.id);
+        || (paciente.equipeTecnicaIds || []).includes(user.id)
+        || (paciente.equipeMultiIds || []).includes(user.id);
     }
     if (role === 'atleta') return paciente.atletaUserId === user.id;
     return false;
@@ -233,7 +236,6 @@ export class RelatorioClinicoService {
 
     let PDFDocument: any;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       PDFDocument = require('pdfkit');
     } catch {
       throw new BadRequestException('Dependencia pdfkit nao instalada no servidor.');
@@ -318,11 +320,11 @@ export class RelatorioClinicoService {
       sectionTitle('Identificação do atleta');
       kv('Nome', toStr(paciente.nome));
       kv('Prontuário', toStr(paciente.prontuario));
-      kv('CPF', toStr(paciente.cpf));
       kv('Modalidade', toStr(paciente.modalidadePrincipal));
-      kv('Membro responsável', toStr(paciente.alunoResponsavelNome));
-      kv('Professor orientador', toStr(paciente.professorSupervisorNome));
-      kv('Total de avaliações', String(avaliacoes.length));
+      if (paciente.projetoNome) kv('Projeto', toStr(paciente.projetoNome));
+      kv('Aluno responsável', toStr(paciente.alunoResponsavelNome));
+      kv('Professor supervisor', toStr(paciente.professorSupervisorNome));
+      kv('Total de avaliações finalizadas', String(avaliacoes.length));
       doc.moveDown(0.3);
 
       // ── Seções por tipo ─────────────────────────────────────────────────
@@ -366,23 +368,35 @@ export class RelatorioClinicoService {
         } else if (tipo === 'evolucao_retorno') {
           extractEvolucao(av).forEach((l) => line(l));
         } else {
-          // Fallback genérico: classificação + warnings
           const clas = toStr(av.classificacao ?? av.classificacaoLabel, '');
           if (clas) line(`Classificação: ${clas}`);
-          const warns = Array.isArray(av.resultados?.warnings) ? av.resultados!.warnings as string[] : [];
-          warns.slice(0, 3).forEach((w) => line(`• ${w}`, 8));
+          else line('Dados registrados. Consulte o prontuário eletrônico para detalhes.');
         }
 
         doc.moveDown(0.2);
       }
 
-      // ── Assinatura ──────────────────────────────────────────────────────
-      ensureSpace(70);
+      // ── Rodapé institucional ────────────────────────────────────────────
+      ensureSpace(80);
       doc.moveDown(1.5);
       const sigY = doc.y;
-      doc.moveTo(PL, sigY).lineTo(PL + CW / 2 - 20, sigY).lineWidth(0.5).strokeColor('#9ca3af').stroke();
+      const halfW = CW / 2 - 20;
+
+      doc.moveTo(PL, sigY).lineTo(PL + halfW, sigY).lineWidth(0.5).strokeColor('#9ca3af').stroke();
       doc.font('Helvetica').fontSize(8).fillColor('#6b7280')
-        .text('Assinatura do responsável pela avaliação', PL, sigY + 4, { width: CW / 2 });
+        .text('Aluno(a) responsável', PL, sigY + 4, { width: halfW });
+
+      const sigX2 = PL + CW / 2 + 20;
+      doc.moveTo(sigX2, sigY).lineTo(sigX2 + halfW, sigY).lineWidth(0.5).strokeColor('#9ca3af').stroke();
+      doc.font('Helvetica').fontSize(8).fillColor('#6b7280')
+        .text('Professor(a) supervisor(a)', sigX2, sigY + 4, { width: halfW });
+
+      doc.moveDown(2);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#9ca3af')
+        .text(
+          'Documento de uso clínico e formativo — LAINES / UFRN. Não substitui avaliação médica individualizada.',
+          PL, doc.y, { width: CW, align: 'center' },
+        );
 
       doc.end();
     });

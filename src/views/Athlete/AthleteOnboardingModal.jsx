@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useModalBodyLock } from '../../hooks/useModalBodyLock';
@@ -190,6 +190,8 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const modalRef = useRef(null);
+  // Ids dos títulos dos grupos de opções (role="group" + aria-labelledby).
+  const grupoId = useId();
 
   useModalBodyLock(isOpen);
   useModalFocusTrap(isOpen, modalRef);
@@ -543,8 +545,8 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
               placeholder={isYes(formData.preparaRefeicoes) ? 'Ex: eu mesmo(a)' : 'Ex: mãe, pai, parceiro(a)'}
             />
 
-            <label className="athlete-onboarding-field md:col-span-2">
-              <span>Temperos utilizados ao cozinhar</span>
+            <div className="athlete-onboarding-field athlete-onboarding-group md:col-span-2" role="group" aria-labelledby={`${grupoId}-temperos`}>
+              <span id={`${grupoId}-temperos`}>Temperos utilizados ao cozinhar</span>
               <div className="athlete-onboarding-check-grid">
                 {QUICK_OPTIONS.temperos.map((option) => (
                   <label key={option} className="athlete-onboarding-check-item">
@@ -564,11 +566,12 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
                 onChange={handleChange}
                 className="athlete-onboarding-input"
                 placeholder="Outros separados por vírgula"
+                aria-labelledby={`${grupoId}-temperos`}
               />
-            </label>
+            </div>
 
-            <label className="athlete-onboarding-field md:col-span-2">
-              <span>Óleos ou gorduras utilizadas</span>
+            <div className="athlete-onboarding-field athlete-onboarding-group md:col-span-2" role="group" aria-labelledby={`${grupoId}-oleosGorduras`}>
+              <span id={`${grupoId}-oleosGorduras`}>Óleos ou gorduras utilizadas</span>
               <div className="athlete-onboarding-check-grid">
                 {QUICK_OPTIONS.oleosGorduras.map((option) => (
                   <label key={option} className="athlete-onboarding-check-item">
@@ -588,11 +591,12 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
                 onChange={handleChange}
                 className="athlete-onboarding-input"
                 placeholder="Outros separados por vírgula"
+                aria-labelledby={`${grupoId}-oleosGorduras`}
               />
-            </label>
+            </div>
 
-            <label className="athlete-onboarding-field md:col-span-2">
-              <span>Equipamentos disponíveis em casa</span>
+            <div className="athlete-onboarding-field athlete-onboarding-group md:col-span-2" role="group" aria-labelledby={`${grupoId}-equipamentosCasa`}>
+              <span id={`${grupoId}-equipamentosCasa`}>Equipamentos disponíveis em casa</span>
               <div className="athlete-onboarding-check-grid">
                 {QUICK_OPTIONS.equipamentosCasa.map((option) => (
                   <label key={option} className="athlete-onboarding-check-item">
@@ -612,8 +616,9 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
                 onChange={handleChange}
                 className="athlete-onboarding-input"
                 placeholder="Outros separados por vírgula"
+                aria-labelledby={`${grupoId}-equipamentosCasa`}
               />
-            </label>
+            </div>
 
             <div className="athlete-onboarding-toggle">
               <label className="athlete-onboarding-checkbox">
@@ -720,8 +725,8 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
               placeholder="Registre doenças prévias, tratamentos e contexto de saúde relevante."
             />
 
-            <label className="athlete-onboarding-field md:col-span-2">
-              <span>Comorbidades pessoais</span>
+            <div className="athlete-onboarding-field athlete-onboarding-group md:col-span-2" role="group" aria-labelledby={`${grupoId}-comorbidadesPessoais`}>
+              <span id={`${grupoId}-comorbidadesPessoais`}>Comorbidades pessoais</span>
               <div className="athlete-onboarding-check-grid">
                 {COMORBIDADES_OPTIONS.map((option) => (
                   <label key={`pessoal-${option.id}`} className="athlete-onboarding-check-item">
@@ -734,10 +739,10 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
                   </label>
                 ))}
               </div>
-            </label>
+            </div>
 
-            <label className="athlete-onboarding-field md:col-span-2">
-              <span>Comorbidades familiares</span>
+            <div className="athlete-onboarding-field athlete-onboarding-group md:col-span-2" role="group" aria-labelledby={`${grupoId}-comorbidadesFamiliares`}>
+              <span id={`${grupoId}-comorbidadesFamiliares`}>Comorbidades familiares</span>
               <div className="athlete-onboarding-check-grid">
                 {COMORBIDADES_OPTIONS.map((option) => (
                   <label key={`familiar-${option.id}`} className="athlete-onboarding-check-item">
@@ -750,11 +755,11 @@ const AthleteOnboardingModal = ({ isOpen, patient, onClose, onSave }) => {
                   </label>
                 ))}
               </div>
-            </label>
+            </div>
           </div>
 
           {error && (
-            <div className="athlete-onboarding-error">
+            <div className="athlete-onboarding-error" role="alert">
               {error}
             </div>
           )}

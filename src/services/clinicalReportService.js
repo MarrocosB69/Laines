@@ -122,6 +122,8 @@ export function buildClinicalReportModel({
     patient: {
       id: patient?.id || patientId || '',
       nome: patient?.nome || patientId || 'Paciente',
+      prontuario: patient?.prontuario || '',
+      modalidade: patient?.modalidadePrincipal || patient?.modalidade || '',
       projeto: patient?.projetoNome || 'Nao vinculado'
     },
     overview: {
@@ -168,7 +170,6 @@ export function buildClinicalReportHtml(model) {
   const activeModule = report.activeModule || null;
   const modules = Array.isArray(report.modules) ? report.modules : [];
   const history = Array.isArray(report.history) ? report.history : [];
-  const formulasCatalogadas = Array.isArray(report.formulasCatalogadas) ? report.formulasCatalogadas : [];
   const historyRowsLimit = 40;
 
   const moduleRowsHtml = modules.map((module) => `
@@ -198,20 +199,15 @@ export function buildClinicalReportHtml(model) {
       <td>${escapeHtml(item.tipoLabel || item.tipo || '-')}</td>
       <td>${escapeHtml(item.statusLabel || '-')}</td>
       <td>${escapeHtml(item.responsavel || '-')}</td>
-      <td>${escapeHtml(item.formulaId || '-')}</td>
     </tr>
   `).join('');
-
-  const formulaListHtml = formulasCatalogadas.length
-    ? formulasCatalogadas.map((formula) => `<li>${escapeHtml(formula)}</li>`).join('')
-    : '<li>Nenhuma formula catalogada no periodo.</li>';
 
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Relatorio clinico - ${escapeHtml(patient.nome || 'Paciente')}</title>
+  <title>Andamento das avaliações — ${escapeHtml(patient.nome || 'Paciente')}</title>
   <style>
     :root { color-scheme: light; }
     * { box-sizing: border-box; }
@@ -423,8 +419,9 @@ export function buildClinicalReportHtml(model) {
     <header class="report-header">
       <div class="report-header-top">
         <div>
-          <span class="report-tag">LAINES - Relatorio Clinico Estruturado</span>
-          <h1 class="report-title">Relatorio de Avaliacoes</h1>
+          <span class="report-tag">LAINES — Relatório de Andamento das Avaliações</span>
+          <h1 class="report-title">Andamento das Avaliações</h1>
+          <p style="margin:4px 0 0;font-size:12px;color:#497085;">Registro de progresso do protocolo avaliativo — não substitui o prontuário clínico.</p>
         </div>
         <div class="report-generated">
           <div>Gerado em: ${escapeHtml(report.generatedAtLabel || 'Nao informado')}</div>
@@ -434,9 +431,9 @@ export function buildClinicalReportHtml(model) {
       </div>
       <div class="report-patient-grid">
         <div class="patient-item"><small>Paciente</small><strong>${escapeHtml(patient.nome || 'Nao informado')}</strong></div>
-        <div class="patient-item"><small>ID</small><strong>${escapeHtml(patient.id || '-')}</strong></div>
+        <div class="patient-item"><small>Prontuario</small><strong>${escapeHtml(patient.prontuario || '-')}</strong></div>
+        <div class="patient-item"><small>Modalidade</small><strong>${escapeHtml(patient.modalidade || 'Nao informada')}</strong></div>
         <div class="patient-item"><small>Projeto</small><strong>${escapeHtml(patient.projeto || 'Nao vinculado')}</strong></div>
-        <div class="patient-item"><small>Versao do modelo</small><strong>${escapeHtml(report.schemaVersion || REPORT_SCHEMA_VERSION)}</strong></div>
       </div>
     </header>
 
@@ -502,11 +499,10 @@ export function buildClinicalReportHtml(model) {
             <th>Tipo</th>
             <th>Status</th>
             <th>Responsavel</th>
-            <th>Formula</th>
           </tr>
         </thead>
         <tbody>
-          ${historyRowsHtml || '<tr><td colspan="5">Nenhum registro no historico.</td></tr>'}
+          ${historyRowsHtml || '<tr><td colspan="4">Nenhum registro no historico.</td></tr>'}
         </tbody>
       </table>
       <p class="report-footnote">
@@ -516,10 +512,11 @@ export function buildClinicalReportHtml(model) {
       </p>
     </section>
 
-    <section class="section">
-      <h2 class="section-title">Catalogo De Formulas Aplicadas</h2>
-      <ul class="formula-list">${formulaListHtml}</ul>
-    </section>
+    <footer style="padding:14px 24px;border-top:1px solid #edf4f8;background:#f7fcfe;">
+      <p style="margin:0;font-size:11px;color:#7a96a6;text-align:center;">
+        Documento de uso interno — LAINES / UFRN &nbsp;|&nbsp; Gerado em ${escapeHtml(report.generatedAtLabel || '')} por ${escapeHtml(report.exportedBy?.nome || 'Equipe LAINES')} (${escapeHtml(report.exportedBy?.perfil || '-')})
+      </p>
+    </footer>
   </main>
 </body>
 </html>`;
@@ -528,7 +525,7 @@ export function buildClinicalReportHtml(model) {
 export function buildReportFilename(nameOrId, extension = 'html') {
   const safeSlug = slugifyFilename(nameOrId || 'paciente');
   const stamp = new Date().toISOString().slice(0, 10);
-  return `relatorio-clinico-${safeSlug}-${stamp}.${extension}`;
+  return `relatorio-andamento-${safeSlug}-${stamp}.${extension}`;
 }
 
 export function downloadTextFile(content, filename, mimeType = 'text/plain;charset=utf-8;') {

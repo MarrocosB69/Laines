@@ -22,7 +22,9 @@ import {
   IsOptional,
   IsString,
   Max,
-  Min
+  MaxLength,
+  Min,
+  MinLength
 } from 'class-validator';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -30,6 +32,7 @@ import { AuthenticatedUser } from '../auth/access-control';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { ADMIN_ROLES, STUDENT_MEMBER_ROLES } from '../common/domain/access.constants';
+import { parsePagination } from '../common/pagination';
 import { PlanoAlimentarService } from './plano-alimentar.service';
 import { PlanoAlimentarStatus } from './plano-alimentar.entity';
 
@@ -42,6 +45,9 @@ const ROLES_EDICAO = [
   'tecnico',
   'colaborador'
 ];
+// UPD-17: devolver exige vinculo de supervisao ou gestao; a regra fina (link
+// supervisor/supervisao_aluno/gestao) vive no servico, este e so o pre-filtro.
+const ROLES_DEVOLUCAO = [...ADMIN_ROLES, 'professor', 'profissional', 'pesquisador', 'tecnico', 'colaborador'];
 
 class ListPlanosQueryDto {
   @IsOptional()
@@ -157,6 +163,17 @@ class ReviewPlanoDto {
   confirmarComposicaoManual?: boolean;
 }
 
+class DevolverPlanoDto {
+  @IsInt()
+  @Min(0)
+  expectedVersion!: number;
+
+  @IsString()
+  @MinLength(5)
+  @MaxLength(1000)
+  observacao!: string;
+}
+
 class ExportPlanoQueryDto {
   @IsOptional()
   @Type(() => Number)
@@ -182,6 +199,22 @@ export class PlanoAlimentarController {
     @Param('pacienteId', new ParseUUIDPipe()) pacienteId: string
   ) {
     return this.service.getPacienteContext(pacienteId, req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('fila-revisao')
+  filaRevisao(
+    @Req() req: { user: AuthenticatedUser },
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string
+  ) {
+    const { limit: parsedLimit, offset: parsedOffset } = parsePagination({
+      limit,
+      offset,
+      defaultLimit: 25,
+      maxLimit: 100
+    });
+    return this.service.findFilaRevisao(req.user, { limit: parsedLimit, offset: parsedOffset });
   }
 
   @UseGuards(JwtAuthGuard)
@@ -220,6 +253,13 @@ export class PlanoAlimentarController {
   @Post(':id/ativar')
   ativar(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string, @Body() dto: ReviewPlanoDto) {
     return this.service.ativar(id, req.user, dto.expectedVersion);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...ROLES_DEVOLUCAO)
+  @Post(':id/devolver')
+  devolver(@Req() req: { user: AuthenticatedUser }, @Param('id', new ParseUUIDPipe()) id: string, @Body() dto: DevolverPlanoDto) {
+    return this.service.devolver(id, dto.expectedVersion, dto.observacao, req.user);
   }
 
   @UseGuards(JwtAuthGuard)

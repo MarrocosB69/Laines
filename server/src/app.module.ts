@@ -22,11 +22,15 @@ import { SettingsModule } from './settings/settings.module';
 import { MetsModule } from './mets/mets.module';
 import { TacoModule } from './taco/taco.module';
 import { PlanosAlimentaresModule } from './planos-alimentares/planos-alimentares.module';
+import { PublicModule } from './public/public.module';
+import { MailModule } from './mail/mail.module';
+import { AvaliacaoImagemModule } from './avaliacao-imagem/avaliacao-imagem.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['server/.env', '.env'],
       load: [configuration]
     }),
     TypeOrmModule.forRootAsync({
@@ -76,7 +80,10 @@ import { PlanosAlimentaresModule } from './planos-alimentares/planos-alimentares
     TacoModule,
     PlanosAlimentaresModule,
     ObservabilityModule,
-    AnalyticsModule
+    AnalyticsModule,
+    PublicModule,
+    MailModule,
+    AvaliacaoImagemModule
   ],
   controllers: [AppController],
   providers: [AppService]

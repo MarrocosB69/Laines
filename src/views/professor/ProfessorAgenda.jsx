@@ -217,11 +217,15 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
     setTypeFilter('all');
   };
 
+  // O carregando fica dentro da raiz `.professor-agenda` só para o CSS
+  // escopado alcançá-lo; o conteúdo é o mesmo de antes.
   if (loading) {
     return (
-      <div className="professor-agenda-loading laines-feedback-state">
-        <RefreshCw size={18} className="is-rotating" />
-        <span>Carregando agenda do professor...</span>
+      <div className="professor-agenda">
+        <div className="professor-agenda-loading laines-feedback-state" role="status">
+          <RefreshCw size={18} className="is-rotating" />
+          <span>Carregando agenda do professor...</span>
+        </div>
       </div>
     );
   }
@@ -275,21 +279,30 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
             placeholder="Buscar por atleta, aluno ou horário..."
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
+            aria-label="Buscar na agenda por atleta, aluno ou horário"
           />
         </div>
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+          aria-label="Filtrar por status"
+        >
           <option value="all">Todos os status</option>
           <option value="agendada">Agendada</option>
           <option value="realizada">Realizada</option>
           <option value="remarcada">Remarcada</option>
           <option value="falta">Falta</option>
         </select>
-        <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+        <select
+          value={typeFilter}
+          onChange={(event) => setTypeFilter(event.target.value)}
+          aria-label="Filtrar por tipo"
+        >
           <option value="all">Todos os tipos</option>
           <option value="primeira_consulta">Primeira consulta</option>
           <option value="retorno">Retorno</option>
         </select>
-        <button type="button" onClick={handleResetFilters} disabled={!hasFilters}>
+        <button type="button" className="professor-agenda-clear" onClick={handleResetFilters} disabled={!hasFilters}>
           Limpar filtros
         </button>
       </section>
@@ -309,7 +322,7 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
             >
               <ChevronLeft size={16} />
             </button>
-            <h3>{formatMonthTitle(monthCursor)}</h3>
+            <h3 aria-live="polite">{formatMonthTitle(monthCursor)}</h3>
             <button
               type="button"
               className="month-nav-btn"
@@ -338,12 +351,18 @@ const ProfessorAgenda = ({ onSelectPatient, initialState = null, onStateChange =
               const isToday = dayKey === dayKeyToday;
               const hasItems = dayItems.length > 0;
 
+              // Nome acessível com a data por extenso e a contagem: sem ele, o
+              // leitor de tela ouvia só "5 2". Selecionado e hoje também vão
+              // em aria-pressed e aria-current, além da forma no CSS.
               return (
                 <button
                   key={dayKey}
                   type="button"
                   className={`calendar-day-btn ${isSelected ? 'is-selected' : ''} ${isToday ? 'is-today' : ''} ${hasItems ? 'has-items' : ''}`}
                   onClick={() => setSelectedDay(dayKey)}
+                  aria-pressed={isSelected}
+                  aria-current={isToday ? 'date' : undefined}
+                  aria-label={`${cellDate.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}${hasItems ? `, ${dayItems.length} consulta(s)` : ''}`}
                 >
                   <span className="day-number">{cellDate.getDate()}</span>
                   {hasItems && <span className="day-badge">{dayItems.length}</span>}

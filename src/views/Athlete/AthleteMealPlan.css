@@ -1,0 +1,315 @@
+/* Plano alimentar visto pelo atleta (AthleteMealPlan.jsx), na direção
+   "Energia e velocidade" (onda B de docs/implementacao/telas-v2/
+   change-intent.md). O cartão em volta é o `.ap-card` de AthletePortal.css;
+   aqui fica o miolo: cada refeição num bloco próprio, com o nome, o
+   horário e, por alimento, a medida caseira e os gramas.
+
+   Nada a mais aparece: a tela mostra o que o componente já mostrava. A
+   entrega do servidor traz também calorias e macronutrientes por alimento
+   e por refeição, e este componente não os exibe; a onda não muda isso.
+
+   Escopo: tudo começa em `.ap-meal-plan`. Armadilhas globais redeclaradas:
+   h1…h6 em Poppins e com cor, `p` com entrelinha 1,6 e `button { white-space:
+   nowrap }`. Os botões levam as classes ui-button* de components/ui (onda
+   A); o desenho deles aqui não depende do que a onda A fizer.
+
+   Contraste pela fórmula de scripts/test-landing-tokens.cjs; só tokens
+   --lt-*. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+.ap-meal-plan {
+  gap: var(--lt-space-4);
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
+}
+
+.ap-meal-plan :where(h2, h3) {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.ap-meal-plan :where(p) { margin: 0; line-height: var(--lt-leading-normal); }
+
+/* ── Cabeçalho: título, versão e as duas ações ───────────────────────── */
+.ap-meal-plan .ap-meal-plan-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  min-width: 0;
+}
+
+.ap-meal-plan .ap-meal-plan-header > div:first-child { flex: 1 1 14rem; min-width: 0; }
+
+.ap-meal-plan .ap-meal-plan-header h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  font-size: var(--lt-text-title);
+  line-height: var(--lt-leading-tight);
+}
+
+.ap-meal-plan .ap-meal-plan-header h2 svg { flex: none; color: var(--lt-color-brand-blue); }
+
+.ap-meal-plan .ap-meal-plan-header p {
+  margin-top: var(--lt-space-1);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+}
+
+.ap-meal-plan .ap-meal-plan-actions { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); }
+
+/* Atualizar em contorno, Baixar PDF no degradê de largada (branco a
+   4,82:1 e 6,20:1 nas pontas). Três classes vencem ui.css e theme.css. */
+.ap-meal-plan .ap-meal-plan-actions .ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0 var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  cursor: pointer;
+  transform: none;
+  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
+}
+
+.ap-meal-plan .ap-meal-plan-actions .ui-button svg { flex: none; }
+
+.ap-meal-plan .ap-meal-plan-actions .ui-button-secondary {
+  border: 1.5px solid var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+}
+
+.ap-meal-plan .ap-meal-plan-actions .ui-button-primary {
+  border: 0;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
+  color: var(--lt-color-text-inverse);
+}
+
+@media (hover: hover) {
+  .ap-meal-plan .ap-meal-plan-actions .ui-button-secondary:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); }
+  .ap-meal-plan .ap-meal-plan-actions .ui-button-primary:hover:not(:disabled) { background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom)); box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85); }
+}
+
+.ap-meal-plan .ap-meal-plan-actions .ui-button:active { transform: none; }
+.ap-meal-plan .ap-meal-plan-actions .ui-button:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+.ap-meal-plan .ap-meal-plan-actions .ui-button:disabled { box-shadow: none; opacity: 0.6; cursor: not-allowed; }
+
+/* Aviso do download: informativo, tinta sobre o azul claro (12,39:1). */
+.ap-meal-plan .ap-meal-plan-notice {
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+/* Início, fim e revisão: selos no fundo de campo (apoio a 6,17:1). */
+.ap-meal-plan .ap-meal-plan-metadata { display: flex; flex-wrap: wrap; gap: var(--lt-space-2); min-width: 0; }
+
+.ap-meal-plan .ap-meal-plan-metadata > span {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* ── Refeições: um bloco por refeição, empilhado no celular ──────────── */
+.ap-meal-plan .ap-meal-plan-meals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.ap-meal-plan .ap-meal-plan-meal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+  overflow-wrap: anywhere;
+}
+
+.ap-meal-plan .ap-meal-plan-meal-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  padding: 0 0 var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+}
+
+.ap-meal-plan .ap-meal-plan-meal-title h3 {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-snug);
+}
+
+/* Horário: selo branco com o número em azul (6,33:1). */
+.ap-meal-plan .ap-meal-plan-meal-title > span {
+  flex: none;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+}
+
+.ap-meal-plan .ap-meal-plan-meal > p:not(.ap-meal-plan-instructions) { color: var(--lt-color-text-muted); }
+
+/* Alimentos: o nome à esquerda e a porção à direita; sem espaço, a porção
+   desce para a linha de baixo em vez de cortar. */
+.ap-meal-plan .ap-meal-plan-foods,
+.ap-meal-plan .ap-meal-plan-alternatives ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ap-meal-plan .ap-meal-plan-foods > li,
+.ap-meal-plan .ap-meal-plan-alternatives li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.125rem var(--lt-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-2) 0;
+}
+
+.ap-meal-plan .ap-meal-plan-foods > li + li,
+.ap-meal-plan .ap-meal-plan-alternatives li + li { border-top: 1px solid var(--lt-color-border); }
+
+.ap-meal-plan .ap-meal-plan-foods > li > span:first-child,
+.ap-meal-plan .ap-meal-plan-alternatives li > span:first-child {
+  flex: 1 1 12rem;
+  min-width: 0;
+  color: var(--lt-color-text);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+}
+
+.ap-meal-plan .ap-meal-plan-alternatives li strong { font-weight: 700; }
+
+.ap-meal-plan .ap-meal-plan-alternative-note {
+  flex: 1 1 100%;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+/* Porção: medida caseira e gramas, apoio a 6,17:1 sobre o fundo de campo. */
+.ap-meal-plan .ap-meal-plan-portion,
+.ap-meal-plan .ap-meal-plan-foods > li > span:last-child:not(:first-child) {
+  flex: 0 1 auto;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  font-weight: 600;
+  line-height: var(--lt-leading-snug);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ap-meal-plan .ap-meal-plan-portion > span + span::before { content: ' · '; }
+
+/* Substituições: a linha que abre tem 44 px e o azul de ação. */
+.ap-meal-plan .ap-meal-plan-alternatives {
+  margin: 0;
+  padding-top: var(--lt-space-2);
+  border-top: 1px solid var(--lt-color-border);
+  font-size: var(--lt-text-base);
+}
+
+.ap-meal-plan .ap-meal-plan-alternatives summary {
+  display: list-item;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  padding: 0.625rem var(--lt-space-2);
+  border-radius: var(--lt-radius-control);
+  color: var(--lt-color-brand-blue);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .ap-meal-plan .ap-meal-plan-alternatives summary:hover { background: var(--lt-color-track-tint); }
+}
+
+.ap-meal-plan .ap-meal-plan-alternatives summary:focus-visible { outline: none; box-shadow: var(--lt-focus-ring); }
+
+.ap-meal-plan .ap-meal-plan-instructions {
+  color: var(--lt-color-text);
+  line-height: var(--lt-leading-normal);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Orientações gerais e suplementação: blocos no fundo de campo. */
+.ap-meal-plan .ap-meal-plan-guidance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  min-width: 0;
+  padding: var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.ap-meal-plan .ap-meal-plan-guidance h3 { font-size: var(--lt-text-md); line-height: var(--lt-leading-snug); }
+
+/* ── Celular: as duas ações dividem a linha ──────────────────────────── */
+@media (max-width: 30rem) {
+  .ap-meal-plan .ap-meal-plan-actions { width: 100%; }
+  .ap-meal-plan .ap-meal-plan-actions .ui-button { flex: 1 1 8rem; }
+}

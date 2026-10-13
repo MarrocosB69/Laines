@@ -1,5 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { MotionConfig, motion } from 'framer-motion';
 import {
   AlertCircle,
   Bell,
@@ -247,11 +247,15 @@ const SettingsPage = () => {
     await persistSettings(DEFAULT_SETTINGS, 'reset');
   }, [confirm, ensureCanManageSettings, persistSettings]);
 
+  // MotionConfig: com "reduzir movimento" no sistema, a entrada da página
+  // não desloca nada (só a opacidade continua).
   return (
+    <MotionConfig reducedMotion="user">
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="settings-page">
-      <div className="settings-header">
+      {/* h2, não h1: o cabeçalho do portal já tem o h1 com o título da página. */}
+      <header className="settings-header">
         <div className="header-left">
-          <h1>Configurações do sistema</h1>
+          <h2>Configurações do sistema</h2>
           <p>Personalize as configurações do LAINES conforme suas necessidades</p>
           <span className="settings-meta">
             {lastSavedLabel}
@@ -261,6 +265,7 @@ const SettingsPage = () => {
 
         <div className="header-actions">
           <button
+            type="button"
             onClick={handleReset}
             className="action-btn secondary"
             disabled={isSaving || isLoadingSettings || !canManageSettings}
@@ -270,6 +275,7 @@ const SettingsPage = () => {
             Restaurar padrão
           </button>
           <button
+            type="button"
             onClick={handleSave}
             className="action-btn primary"
             disabled={isSaving || isLoadingSettings || !hasUnsavedChanges || !canManageSettings}
@@ -288,16 +294,16 @@ const SettingsPage = () => {
             )}
           </button>
         </div>
-      </div>
+      </header>
 
       {saveMessage && (
-        <div className={`status-message ${saveMessage.type}`}>
+        <div className={`status-message ${saveMessage.type}`} role={saveMessage.type === 'error' ? 'alert' : 'status'}>
           {saveMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
           <span>{saveMessage.text}</span>
         </div>
       )}
       {isLoadingSettings && (
-        <div className="status-message info">
+        <div className="status-message info" role="status">
           <RefreshCw size={18} className="spinner" />
           <span>Carregando configurações persistidas...</span>
         </div>
@@ -316,16 +322,20 @@ const SettingsPage = () => {
             <h3>Configurações</h3>
           </div>
 
-          <nav className="sidebar-nav">
+          {/* aria-current anuncia a seção aberta; na tela, fundo claro e o
+              traço azul (span, porque div não cabe dentro de button). */}
+          <nav className="sidebar-nav" aria-label="Seções das configurações">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
                 className={`sidebar-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+                aria-current={activeTab === tab.id ? 'true' : undefined}
               >
                 <span className="nav-icon">{tab.icon}</span>
                 <span className="nav-label">{tab.label}</span>
-                {activeTab === tab.id && <div className="nav-indicator" />}
+                {activeTab === tab.id && <span className="nav-indicator" aria-hidden="true" />}
               </button>
             ))}
           </nav>
@@ -341,6 +351,7 @@ const SettingsPage = () => {
         </div>
       </div>
     </motion.div>
+    </MotionConfig>
   );
 };
 

@@ -194,9 +194,9 @@ export const buildAvaliacaoMeta = (avaliacao) => {
     analitos: 'Analitos',
     adesaoPlanoAlimentar: 'Adesao ao plano alimentar',
     adesaoAtividadeFisica: 'Adesao a atividade fisica',
-    scoreAdesaoGeral: 'Score de adesao geral',
+    scoreAdesaoGeral: 'Score de Aplicação da Dieta',
     disponibilidadeEnergetica: 'Disponibilidade energetica',
-    scoreLeafQ: 'Score de rastreio RED-S',
+    scoreLeafQ: 'Score de rastreio de Disponibilidade Energetica',
     faseAtual: 'Fase atual',
     sessoesSemana: 'Sessoes da semana',
     cargaSemanaAtual: 'Carga semanal atual'

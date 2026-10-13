@@ -7,11 +7,11 @@ const adminPassword = process.env.E2E_ADMIN_PASSWORD || process.env.E2E_PASSWORD
 test.describe('Readiness UI', () => {
   test('login admin e logout funcionam', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByText('Entrar na plataforma')).toBeVisible();
+    await expect(page.getByTestId('login-identifier')).toBeVisible();
 
-    await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(adminEmail);
-    await page.locator('input[autocomplete="current-password"]').fill(adminPassword);
-    await page.getByRole('button', { name: /entrar agora|entrando/i }).click();
+    await page.getByTestId('login-identifier').fill(adminEmail);
+    await page.getByTestId('login-password').fill(adminPassword);
+    await page.getByTestId('login-submit').click();
 
     await page.waitForURL('**/admin', { timeout: 30_000 });
     await expect(page).toHaveURL(/\/admin$/);
@@ -26,18 +26,19 @@ test.describe('Readiness UI', () => {
   test('erro de credencial exibe feedback amigavel', async ({ page }) => {
     await page.goto('/login');
 
-    await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(adminEmail);
-    await page.locator('input[autocomplete="current-password"]').fill('senha-errada');
-    await page.getByRole('button', { name: /entrar agora|entrando/i }).click();
+    await page.getByTestId('login-identifier').fill(adminEmail);
+    await page.getByTestId('login-password').fill('senha-errada');
+    await page.getByTestId('login-submit').click();
 
     const errorAlert = page.locator('.landing-error');
     await expect(errorAlert).toBeVisible();
-    await expect(errorAlert).toContainText(/credenciais|inválid|inválidas|inválido|erro/i);
+    // Mensagens de LoginPage.jsx para 401 e para bloqueio (423/429).
+    await expect(errorAlert).toContainText(/incorretos|temporariamente/i);
   });
 
   test('layout de login responsivo sem overflow horizontal', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByText('Entrar na plataforma')).toBeVisible();
+    await expect(page.getByTestId('login-identifier')).toBeVisible();
 
     const noHorizontalOverflow = await page.evaluate(() => (
       document.documentElement.scrollWidth <= (window.innerWidth + 1)
@@ -50,21 +51,21 @@ test.describe('Readiness UI', () => {
 
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
-    const loginInputFocused = await page.locator('input[placeholder="usuario@laines.ufrn.br"]').evaluate((element) => element === document.activeElement);
+    const loginInputFocused = await page.getByTestId('login-identifier').evaluate((element) => element === document.activeElement);
     expect(loginInputFocused).toBeTruthy();
 
     await page.keyboard.press('Tab');
-    const passwordInputFocused = await page.locator('input[autocomplete="current-password"]').evaluate((element) => element === document.activeElement);
+    const passwordInputFocused = await page.getByTestId('login-password').evaluate((element) => element === document.activeElement);
     expect(passwordInputFocused).toBeTruthy();
   });
 
   test('avaliacao completa carrega shell operacional e mantem responsividade', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByText('Entrar na plataforma')).toBeVisible();
+    await expect(page.getByTestId('login-identifier')).toBeVisible();
 
-    await page.locator('input[placeholder="usuario@laines.ufrn.br"]').fill(adminEmail);
-    await page.locator('input[autocomplete="current-password"]').fill(adminPassword);
-    await page.getByRole('button', { name: /entrar agora|entrando/i }).click();
+    await page.getByTestId('login-identifier').fill(adminEmail);
+    await page.getByTestId('login-password').fill(adminPassword);
+    await page.getByTestId('login-submit').click();
 
     await page.waitForURL('**/admin', { timeout: 30_000 });
     await page.goto('/avaliacao/paciente-etapa8-smoke', { waitUntil: 'domcontentloaded' });

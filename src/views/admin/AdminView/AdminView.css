@@ -1,16 +1,22 @@
+/* Moldura dos cinco portais e das rotas com barra lateral
+   (RouteSidebarLayout). É daqui, e não do body, que as telas herdam fonte e
+   tinta. Tokens --lt-* (src/views/landing/landing-tokens.css, via
+   src/index.css). O fundo continua branco: é o fundo sobre o qual as telas
+   migradas (Visão geral, áreas, plano, avaliações) foram medidas.
+   O modo escuro abaixo fica como estava (decisão adiada pelo usuário). */
 .admin-view {
   --admin-sidebar-width: 248px;
   --admin-sidebar-collapsed-width: 78px;
-  --admin-bg: var(--color-surface);
-  --admin-surface: var(--color-white);
-  --admin-surface-soft: #f3f6fb;
-  --admin-border: var(--color-border);
-  --admin-border-strong: #cbd5e1;
-  --admin-text: var(--color-text-primary);
-  --admin-muted: var(--color-text-muted);
-  --admin-accent: var(--color-navy);
-  --admin-accent-soft: rgba(16, 51, 85, 0.08);
-  --admin-success: #4d9c6c;
+  --admin-bg: var(--lt-color-surface);
+  --admin-surface: var(--lt-color-surface);
+  --admin-surface-soft: var(--lt-color-surface-field);
+  --admin-border: var(--lt-color-border);
+  --admin-border-strong: var(--lt-color-border-field);
+  --admin-text: var(--lt-color-text);
+  --admin-muted: var(--lt-color-text-muted);
+  --admin-accent: var(--lt-color-brand-blue);
+  --admin-accent-soft: var(--lt-color-track-tint);
+  --admin-success: var(--lt-color-success-text);
   --admin-shadow-soft: var(--shadow-sm);
   --admin-shadow: var(--shadow-md);
 
@@ -20,7 +26,7 @@
   position: relative;
   color: var(--admin-text);
   background: var(--admin-bg);
-  font-family: "Inter", sans-serif;
+  font-family: var(--lt-font-family);
 }
 
 .admin-view.dark-mode {
@@ -61,7 +67,15 @@
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  transition: margin-left 0.28s ease, width 0.28s ease;
+}
+
+/* Acompanha a barra lateral ao recolher. Anima margem e largura, não
+   transform: trocar exigiria mudar o layout da moldura, então só fica
+   restrito a quem não pediu menos movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  .admin-main-content {
+    transition: margin-left 0.28s ease, width 0.28s ease;
+  }
 }
 
 .admin-main-content.collapsed {
@@ -79,13 +93,16 @@
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0;
-  padding: 24px;
+  padding: 18px 20px;
   border-radius: 0;
   border: 0;
-  background: var(--color-surface);
+  background: var(--lt-color-surface);
   box-shadow: none;
   min-height: calc(100vh - 56px);
-  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .content-area { scroll-behavior: smooth; }
 }
 
 .admin-view.dark-mode .content-area {

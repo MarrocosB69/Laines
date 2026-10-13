@@ -30,9 +30,11 @@ const ProntuarioTabs = ({ tabs = [], activeTab, onChange }) => {
         return (
           <button
             key={tab.id}
+            id={`pron-aba-${tab.id}`}
             type="button"
             role="tab"
             aria-selected={isActive}
+            aria-controls="pron-aba-conteudo"
             className={`pron-tab ${isActive ? 'active' : ''}`}
             onClick={() => onChange?.(tab.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}

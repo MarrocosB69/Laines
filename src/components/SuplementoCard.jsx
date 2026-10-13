@@ -15,12 +15,12 @@ const SuplementoCard = ({
   readOnly = false
 }) => {
   const idPrefix = useId();
+  const wadaStatus = String(value?.statusWADA || 'risco').toLowerCase();
   const wadaBadgeClass = useMemo(() => {
-    const status = String(value?.statusWADA || 'risco').toLowerCase();
-    if (status === 'aprovado') return 'wada-ok';
-    if (status === 'proibido') return 'wada-proibido';
+    if (wadaStatus === 'aprovado') return 'wada-ok';
+    if (wadaStatus === 'proibido') return 'wada-proibido';
     return 'wada-verificar';
-  }, [value?.statusWADA]);
+  }, [wadaStatus]);
 
   const patch = (changes) => {
     onChange?.({
@@ -108,12 +108,26 @@ const SuplementoCard = ({
       </div>
 
       <span className={`wada-badge ${wadaBadgeClass}`}>
-        {String(value?.statusWADA || 'risco').toLowerCase() === 'aprovado'
+        {wadaStatus === 'aprovado'
           ? 'WADA: OK'
-          : String(value?.statusWADA || 'risco').toLowerCase() === 'proibido'
+          : wadaStatus === 'proibido'
             ? 'WADA: Proibido'
             : 'WADA: Verificar'}
       </span>
+
+      {(wadaStatus === 'risco' || value?.justificativaClinica) && (
+        <div className="suplemento-card__field suplemento-card__field--justificativa">
+          <label htmlFor={`${idPrefix}-justificativa`}>Justificativa clinica</label>
+          <textarea
+            id={`${idPrefix}-justificativa`}
+            value={value?.justificativaClinica || ''}
+            onChange={(event) => patch({ justificativaClinica: event.target.value })}
+            placeholder="Conduta, avaliacao de risco e motivo da prescricao."
+            disabled={readOnly}
+            rows={2}
+          />
+        </div>
+      )}
 
       {!readOnly && (
         <button type="button" className="btn-remover-suplemento" onClick={onRemove} aria-label="Remover suplemento">
@@ -123,7 +137,14 @@ const SuplementoCard = ({
 
       <div className="wada-aviso">
         <AlertCircle size={14} />
-        <span>Verifique o suplemento em www.globaldro.com antes de prescrever a atletas federados.</span>
+        <span>
+          {/* O GlobalDRO responde sobre substancias e medicamentos; ele nao
+              certifica a seguranca antidopagem de um suplemento, e consulta sem
+              resultado nao equivale a liberacao (CLI-09). */}
+          {wadaStatus === 'proibido'
+            ? 'Suplemento proibido bloqueia a ativacao do plano. Remova ou substitua antes da liberacao clinica.'
+            : 'Suplementos exigem avaliacao profissional especifica. Consultar substancias no GlobalDRO nao certifica a seguranca antidopagem do produto.'}
+        </span>
       </div>
     </div>
   );

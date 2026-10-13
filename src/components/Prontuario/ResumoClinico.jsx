@@ -10,21 +10,27 @@ const isFieldEmpty = (value) => (
   || String(value).trim() === '---'
 );
 
-const GROUP_ORDER = ['identificacao', 'socioeconomico', 'clinico', 'alimentar', 'rotina'];
+const GROUP_ORDER = ['identificacao', 'socioeconomico', 'clinico', 'alimentar', 'rotina', 'triagem'];
 
 const GROUP_LABELS = {
   identificacao: 'Identificação',
   socioeconomico: 'Contexto Socioeconômico',
   clinico: 'Saúde e Histórico Clínico',
   alimentar: 'Hábitos Alimentares',
-  rotina: 'Atividade e Rotina'
+  rotina: 'Atividade e Rotina',
+  triagem: 'Triagem pública inicial'
 };
 
 const ResumoClinico = ({
   dadosGeraisFields = [],
   formatGeneralValue,
   formatGeneralDate,
-  athleteHasLogin = false,
+  // Duas coisas distintas que uma prop so vinha carregando: ter conta de
+  // acesso e ter completado a ficha inicial. Um atleta pode ter a primeira
+  // sem a segunda — e e exatamente nesse caso que liberar o formulario e o
+  // que destrava o preenchimento.
+  athleteHasAccount = false,
+  athleteRegistrationCompleted = false,
   ebiaSelfFormEnabled = false,
   ebiaSelfFormReleasedAt = null,
   ebiaSelfFormConsumedAt = null,
@@ -92,19 +98,19 @@ const ResumoClinico = ({
       <article className="pron-card pron-panel">
         <header className="pron-panel-header">
           <div>
-            <h2>Dados Clínicos</h2>
+            <h2>Dados declarados pelo atleta</h2>
             <p>Cadastro inicial preenchido pelo atleta — fonte: autorrelato.</p>
           </div>
           <div className="pron-inline-actions">
-            <span className={`pron-badge ${athleteHasLogin ? 'pron-badge-ok' : 'pron-badge-warn'}`}>
-              {athleteHasLogin ? 'Cadastro confirmado' : 'Cadastro pendente'}
+            <span className={`pron-badge ${athleteRegistrationCompleted ? 'pron-badge-ok' : 'pron-badge-warn'}`}>
+              {athleteRegistrationCompleted ? 'Cadastro confirmado' : 'Cadastro pendente'}
             </span>
             {podeEditarAvaliacoes ? (
               <button
                 type="button"
                 className="pron-btn pron-btn-secondary"
                 onClick={handleReleaseEbiaToAthlete}
-                disabled={isReleasingEbia || !athleteHasLogin}
+                disabled={isReleasingEbia}
               >
                 {isReleasingEbia
                   ? 'Atualizando...'
@@ -116,7 +122,7 @@ const ResumoClinico = ({
           </div>
         </header>
 
-        {(athleteHasLogin && ebiaSelfFormEnabled) || (athleteHasLogin && ebiaSelfFormConsumedAt) ? (
+        {ebiaSelfFormEnabled || ebiaSelfFormConsumedAt ? (
           <div className="pron-inline-status">
             {ebiaSelfFormEnabled && (
               <span>
@@ -133,10 +139,14 @@ const ResumoClinico = ({
           <div className="athlete-form-release-panel">
             <div className="athlete-form-release-head">
               <div>
-                <h3>Formularios do atleta</h3>
+                <h3>Formulários do atleta</h3>
                 <p>Ligue ou suspenda o acesso no portal sem apagar rascunhos ou envios ja feitos.</p>
               </div>
-              {!athleteHasLogin ? (
+              {!athleteHasAccount ? (
+                <span className="pron-badge pron-badge-warn" title="A liberação fica registrada e passa a valer quando o acesso for criado">
+                  Atleta ainda sem acesso
+                </span>
+              ) : !athleteRegistrationCompleted ? (
                 <span className="pron-badge pron-badge-warn">Cadastro inicial pendente</span>
               ) : null}
             </div>
@@ -159,14 +169,21 @@ const ResumoClinico = ({
                           {statusLabel} em {formatDate ? formatDate(statusDate) : statusDate.toLocaleDateString('pt-BR')}
                         </small>
                       ) : (
-                        <small>{enabled ? 'Liberado para preenchimento' : 'Nao aparece no portal'}</small>
+                        <small>
+                          {enabled
+                            ? athleteHasAccount
+                              ? 'Liberado para preenchimento'
+                              : 'Liberado; passa a valer quando o acesso for criado'
+                            : 'Nao aparece no portal'}
+                        </small>
                       )}
                     </div>
                     <button
                       type="button"
                       className={`pron-btn pron-btn-sm ${enabled ? 'pron-btn-secondary' : 'pron-btn-primary'}`}
                       onClick={() => handleToggleAthleteFormAccess?.(item.type)}
-                      disabled={!athleteHasLogin || Boolean(togglingAthleteFormType)}
+                      disabled={Boolean(togglingAthleteFormType)}
+                      aria-label={`${isBusy ? 'Atualizando...' : enabled ? 'Suspender acesso' : 'Liberar'}: ${item.title}`}
                     >
                       {isBusy ? 'Atualizando...' : enabled ? 'Suspender acesso' : 'Liberar'}
                     </button>
@@ -186,16 +203,16 @@ const ResumoClinico = ({
               return (
                 <div key={groupKey} className="pron-dados-grupo">
                   <div className="pron-dados-grupo__header">
-                    <span>{GROUP_LABELS[groupKey]}</span>
+                    <h3>{GROUP_LABELS[groupKey]}</h3>
                   </div>
-                  <div className="dados-grid">
+                  <dl className="dados-grid">
                     {fields.map((field) => (
                       <div key={field.label}>
-                        <div className="campo-label">{field.label}</div>
-                        <div className="campo-valor">{field.displayValue || '—'}</div>
+                        <dt className="campo-label">{field.label}</dt>
+                        <dd className="campo-valor">{field.displayValue || '—'}</dd>
                       </div>
                     ))}
-                  </div>
+                  </dl>
                 </div>
               );
             })}
@@ -208,7 +225,11 @@ const ResumoClinico = ({
             className="pron-btn pron-btn-secondary"
             onClick={() => setMostrarVazios((prev) => !prev)}
           >
-            {mostrarVazios ? 'Ocultar campos vazios' : `Ver ${qtdVazios} campos não preenchidos`}
+            {mostrarVazios
+              ? 'Ocultar campos vazios'
+              : qtdVazios > 0
+                ? `Ver ${qtdVazios} campos não preenchidos`
+                : 'Todos os campos recebidos estão preenchidos'}
           </button>
         </footer>
       </article>
@@ -216,8 +237,8 @@ const ResumoClinico = ({
       <article className="pron-card pron-panel">
         <header className="pron-panel-header">
           <div className="pron-title-inline">
-            <FileText size={16} />
-            <h2>Resumo Clínico</h2>
+            <FileText size={18} aria-hidden="true" />
+            <h2>Resumo clínico</h2>
           </div>
           <div className="pron-inline-actions">
             <span className="pron-badge pron-badge-info">Interpretação do profissional</span>
@@ -249,16 +270,17 @@ const ResumoClinico = ({
                 Editar
               </button>
             ) : (
-              <span className="pron-text-muted">Somente leitura</span>
+              <span className="pron-text-muted pron-readonly-note">Somente leitura</span>
             )}
           </div>
         </header>
 
         <div className="anamnese-card">
-          <div className="campo-label">Queixa principal</div>
+          <div className="campo-label" id="resumo-queixa-rotulo">Queixa principal</div>
           {isEditingSummary ? (
             <textarea
               className="pron-textarea"
+              aria-labelledby="resumo-queixa-rotulo"
               rows="4"
               value={summaryDraft.observacoes}
               onChange={(event) => handleSummaryChange('observacoes', event.target.value)}
@@ -271,10 +293,11 @@ const ResumoClinico = ({
         <div className="pron-divider" />
 
         <div>
-          <div className="campo-label">Histórico de saúde</div>
+          <div className="campo-label" id="resumo-historico-rotulo">Histórico de saúde</div>
           {isEditingSummary ? (
             <textarea
               className="pron-textarea"
+              aria-labelledby="resumo-historico-rotulo"
               rows="4"
               value={summaryDraft.historicoSaude}
               onChange={(event) => handleSummaryChange('historicoSaude', event.target.value)}
@@ -287,9 +310,9 @@ const ResumoClinico = ({
         <div className="pron-divider" />
 
         <div className="pron-stack-xs">
-          <div className="campo-label">Comorbidades pessoais</div>
+          <div className="campo-label" id="resumo-comorbidades-rotulo">Comorbidades pessoais</div>
           {isEditingSummary ? (
-            <div className="pron-checkbox-grid">
+            <div className="pron-checkbox-grid" role="group" aria-labelledby="resumo-comorbidades-rotulo">
               {comorbidadesOptions.map((item) => (
                 <label key={item.id} className="pron-checkbox-item">
                   <input
@@ -315,9 +338,9 @@ const ResumoClinico = ({
         </div>
 
         <div className="pron-stack-xs">
-          <div className="campo-label">Histórico familiar</div>
+          <div className="campo-label" id="resumo-familiar-rotulo">Histórico familiar</div>
           {isEditingSummary ? (
-            <div className="pron-checkbox-grid">
+            <div className="pron-checkbox-grid" role="group" aria-labelledby="resumo-familiar-rotulo">
               {comorbidadesOptions.map((item) => (
                 <label key={`fam-${item.id}`} className="pron-checkbox-item">
                   <input
@@ -342,7 +365,7 @@ const ResumoClinico = ({
           )}
         </div>
 
-        {summaryError ? <div className="pron-error">{summaryError}</div> : null}
+        {summaryError ? <div className="pron-error" role="alert">{summaryError}</div> : null}
       </article>
     </section>
   );

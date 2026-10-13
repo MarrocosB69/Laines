@@ -8,6 +8,8 @@ VM_IP="${VM_IP:-10.3.227.82}"
 APP_USER="${APP_USER:-admin}"
 SITE_CONF="/etc/nginx/sites-available/$DOMAIN"
 SITE_LINK="/etc/nginx/sites-enabled/$DOMAIN"
+TLS_CERT="/etc/letsencrypt/live/$DOMAIN/fullchain.pem"
+TLS_KEY="/etc/letsencrypt/live/$DOMAIN/privkey.pem"
 STAMP="$(date +%Y%m%d-%H%M)"
 
 log() {
@@ -25,6 +27,10 @@ backup_file() {
     fi
     printf 'Backup criado: %s\n' "$backup"
   fi
+}
+
+has_tls_certificate() {
+  sudo test -f "$TLS_CERT" && sudo test -f "$TLS_KEY"
 }
 
 require_project() {
@@ -106,13 +112,23 @@ build_backend() {
 configure_nginx() {
   log "Configurando Nginx"
   local template="$PROJECT_DIR/deploy/nginx/$DOMAIN.conf"
-  if [ ! -f "$template" ]; then
-    echo "Template Nginx nao encontrado: $template" >&2
+  local http_template="$PROJECT_DIR/deploy/nginx/$DOMAIN-http.conf"
+  local selected_template="$template"
+  if ! has_tls_certificate; then
+    selected_template="$http_template"
+    echo "Certificado TLS ainda nao encontrado; usando configuracao HTTP temporaria."
+  fi
+  if [ ! -f "$selected_template" ]; then
+    echo "Template Nginx nao encontrado: $selected_template" >&2
     exit 1
   fi
 
   backup_file "$SITE_CONF"
-  sudo cp "$template" "$SITE_CONF"
+  # envsubst substitui ${MINIO_CSP_ORIGIN} no CSP do nginx.
+  # Defina MINIO_CSP_ORIGIN no ambiente antes do deploy quando usar MinIO externo
+  # (ex: export MINIO_CSP_ORIGIN="https://minio.facisa.ufrn.br:9000").
+  # Deixe vazio para driver local (padrão).
+  MINIO_CSP_ORIGIN="${MINIO_CSP_ORIGIN:-}" envsubst '${MINIO_CSP_ORIGIN}' < "$selected_template" | sudo tee "$SITE_CONF" > /dev/null
 
   if [ -e /etc/nginx/sites-enabled/default ] || [ -L /etc/nginx/sites-enabled/default ]; then
     backup_file /etc/nginx/sites-enabled/default
@@ -157,7 +173,7 @@ configure_pm2() {
   log "Configurando PM2"
   local scheme="http"
   local secure_cookie="false"
-  if sudo test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem"; then
+  if has_tls_certificate; then
     scheme="https"
     secure_cookie="true"
   fi
@@ -213,10 +229,15 @@ run_checks() {
   npm -v
   pm2 status
   curl -fsS http://127.0.0.1:4000/health
-  curl -fsS -H "Host: $DOMAIN" http://127.0.0.1/api/health
   sudo nginx -t
   sudo systemctl status nginx --no-pager
-  curl -fsSI -H "Host: $DOMAIN" http://127.0.0.1
+  if has_tls_certificate; then
+    curl -fkS --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/api/health"
+    curl -fkSI --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/"
+  else
+    curl -fsS -H "Host: $DOMAIN" http://127.0.0.1/api/health
+    curl -fsSI -H "Host: $DOMAIN" http://127.0.0.1
+  fi
   pm2 reload laines-api --update-env
   pm2 logs laines-api --lines 50 --nostream
 }
@@ -233,6 +254,9 @@ main() {
   build_backend
   configure_nginx
   maybe_configure_https
+  if has_tls_certificate; then
+    configure_nginx
+  fi
   configure_pm2
   configure_firewall
   run_checks

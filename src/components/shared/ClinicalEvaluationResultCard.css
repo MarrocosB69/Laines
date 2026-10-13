@@ -1,397 +1,380 @@
+/* Cartão de resultado clínico (ClinicalEvaluationResultCard.jsx), usado no
+   detalhe das métricas da Visão geral do professor. Direção "Energia e
+   velocidade" (docs/design/landing-guia-visual.md, seção "Direção
+   vigente"; docs/implementacao/telas-v2/change-intent.md, onda C), com o
+   vocabulário das peças do Painel (src/components/painel/painel.css).
+
+   Escopado na raiz `.clinical-result-card`; títulos e botão redeclaram
+   fonte, cor e quebra contra os globais de src/index.css e theme.css.
+
+   Cada semântica tem forma própria, além do texto que sempre a nomeia:
+   - estado do registro (Finalizada, Pendente…): selo em caixa alta;
+   - classificação (referência populacional): selo preenchido;
+   - sinal (tom do resultado): selo com um ponto;
+   - comparativo com a anterior: contorno contínuo;
+   - distância da meta individual: contorno tracejado.
+   A cor acompanha o tom. O domínio da avaliação (data-domain) já vem
+   escrito no tipo; a faixa colorida por domínio saiu, e o acento no alto
+   segue o tom do resultado, como nos indicadores do Painel.
+
+   Pares de contraste: os tokens --lt-* e o par de "atenção" de painel.css. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../../views/landing/landing-tokens.css';
+
+/* ── Raiz ────────────────────────────────────────────────────────────── */
 .clinical-result-card {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-top: 3px solid transparent;
-  border-radius: 14px;
-  background: #ffffff;
-  padding: 0.9rem 1rem;
+  --crc-atencao-texto: #9a3412; /* 7,31:1 sobre branco · 6,88:1 sobre --crc-atencao-fundo */
+  --crc-atencao-fundo: #fff7ed;
+  --crc-atencao-traco: #c2410c; /* gráfico, não texto: 5,18:1 sobre branco */
+
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  gap: var(--lt-space-3);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  text-align: left;
+  white-space: normal;
 }
 
-/* ── Domain accent border-top ── */
-.clinical-result-card[data-domain="antropometria"]     { border-top: 3px solid var(--color-accent, #56ADDB); }
-.clinical-result-card[data-domain="nutricao"]          { border-top: 3px solid #16a34a; }
-.clinical-result-card[data-domain="clinica"]           { border-top: 3px solid #e11d48; }
-.clinical-result-card[data-domain="multiprofissional"] { border-top: 3px solid #7c3aed; }
-.clinical-result-card[data-domain="social"]            { border-top: 3px solid #d97706; }
-.clinical-result-card[data-domain="anamnese"]          { border-top: 3px solid #4f46e5; }
-.clinical-result-card[data-domain="default"]           { border-top: 3px solid transparent; }
+.clinical-result-card.compact { gap: var(--lt-space-2); padding: var(--lt-space-3) var(--lt-space-4); }
 
-.clinical-result-card.compact {
-  padding: 0.75rem 0.85rem;
+/* O acento do tom: marca curta e inclinada no alto, como no Painel. */
+.clinical-result-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-4);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--crc-tom, var(--lt-color-border-field));
+  transform: skewX(-20deg);
 }
 
-.clinical-result-card__header {
+.clinical-result-card.tone-success { --crc-tom: var(--lt-color-brand-green); }
+.clinical-result-card.tone-warning { --crc-tom: var(--crc-atencao-traco); }
+.clinical-result-card.tone-danger { --crc-tom: var(--lt-color-danger-text); }
+.clinical-result-card.tone-info { --crc-tom: var(--lt-color-brand-blue); }
+.clinical-result-card.tone-neutral { --crc-tom: var(--lt-color-border-field); }
+
+/* ── Cabeçalho: tipo, título, data e o estado do registro ────────────── */
+.clinical-result-card .clinical-result-card__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.clinical-result-card__title-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.clinical-result-card__type {
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #64748b;
-  font-weight: 800;
-}
-
-.clinical-result-card__title-wrap h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #0f172a;
-  font-weight: 800;
-}
-
-.clinical-result-card__status {
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.clinical-result-card__status.tone-success {
-  background: rgba(16, 185, 129, 0.14);
-  color: #047857;
-}
-
-.clinical-result-card__status.tone-warning {
-  background: rgba(245, 158, 11, 0.18);
-  color: #92400e;
-}
-
-.clinical-result-card__status.tone-danger {
-  background: rgba(239, 68, 68, 0.14);
-  color: #b91c1c;
-}
-
-.clinical-result-card__status.tone-info {
-  background: rgba(14, 165, 233, 0.15);
-  color: #0369a1;
-}
-
-.clinical-result-card__status.tone-neutral {
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
-}
-
-.clinical-result-card__main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-}
-
-.clinical-result-card__value {
-  font-size: 1.08rem;
-  line-height: 1.1;
-  color: #0f172a;
-}
-
-.clinical-result-card__classification {
-  border-radius: 999px;
-  padding: 0.22rem 0.6rem;
-  font-size: 0.64rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 800;
-}
-
-.clinical-result-card__classification.tone-success {
-  background: rgba(16, 185, 129, 0.14);
-  color: #047857;
-}
-
-.clinical-result-card__classification.tone-warning {
-  background: rgba(245, 158, 11, 0.18);
-  color: #92400e;
-}
-
-.clinical-result-card__classification.tone-danger {
-  background: rgba(239, 68, 68, 0.14);
-  color: #b91c1c;
-}
-
-.clinical-result-card__classification.tone-info {
-  background: rgba(14, 165, 233, 0.16);
-  color: #0369a1;
-}
-
-.clinical-result-card__classification.tone-neutral {
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
-}
-
-.clinical-result-card__interpretation {
-  margin: 0;
-  font-size: 0.76rem;
-  line-height: 1.4;
-  color: #475569;
-}
-
-.clinical-result-card__signals {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.5rem;
-  align-items: center;
-}
-
-.clinical-result-card__semaphore {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 999px;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.63rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 800;
-}
-
-.clinical-result-card__semaphore i {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  display: inline-block;
-}
-
-.clinical-result-card__semaphore.tone-success {
-  background: rgba(16, 185, 129, 0.14);
-  color: #047857;
-}
-
-.clinical-result-card__semaphore.tone-success i {
-  background: #10b981;
-}
-
-.clinical-result-card__semaphore.tone-warning {
-  background: rgba(245, 158, 11, 0.18);
-  color: #92400e;
-}
-
-.clinical-result-card__semaphore.tone-warning i {
-  background: #f59e0b;
-}
-
-.clinical-result-card__semaphore.tone-danger {
-  background: rgba(239, 68, 68, 0.15);
-  color: #b91c1c;
-}
-
-.clinical-result-card__semaphore.tone-danger i {
-  background: #ef4444;
-}
-
-.clinical-result-card__semaphore.tone-info {
-  background: rgba(14, 165, 233, 0.15);
-  color: #0369a1;
-}
-
-.clinical-result-card__semaphore.tone-info i {
-  background: #0ea5e9;
-}
-
-.clinical-result-card__semaphore.tone-neutral {
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
-}
-
-.clinical-result-card__semaphore.tone-neutral i {
-  background: #64748b;
-}
-
-.clinical-result-card__variation {
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.62rem;
-  font-weight: 700;
-  background: rgba(148, 163, 184, 0.18);
-  color: #475569;
-}
-
-.clinical-result-card__variation.dir-up {
-  background: rgba(16, 185, 129, 0.14);
-  color: #047857;
-}
-
-.clinical-result-card__variation.dir-down {
-  background: rgba(239, 68, 68, 0.14);
-  color: #b91c1c;
-}
-
-.clinical-result-card__detail-btn {
-  border: 1px solid rgba(148, 163, 184, 0.34);
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.64rem;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 0.2rem 0.6rem;
-  cursor: pointer;
-}
-
-.clinical-result-card__detail-btn:hover {
-  background: rgba(15, 23, 42, 0.05);
-}
-
-.clinical-result-card__bio-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.45rem;
-}
-
-.clinical-result-card__bio-metric {
-  border-radius: 0.7rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(248, 250, 252, 0.78);
-  padding: 0.5rem 0.55rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-}
-
-.clinical-result-card__bio-metric-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.3rem;
-}
-
-.clinical-result-card__bio-metric-head span {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #475569;
-  font-weight: 800;
-}
-
-.clinical-result-card__bio-metric strong {
-  font-size: 0.95rem;
-  color: #0f172a;
-}
-
-.clinical-result-card__target-chip {
-  font-size: 0.54rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border-radius: 999px;
-  padding: 0.13rem 0.4rem;
-}
-
-.clinical-result-card__target-chip.tone-success {
-  background: rgba(16, 185, 129, 0.15);
-  color: #047857;
-}
-
-.clinical-result-card__target-chip.tone-warning {
-  background: rgba(245, 158, 11, 0.2);
-  color: #92400e;
-}
-
-.clinical-result-card__target-chip.tone-danger {
-  background: rgba(239, 68, 68, 0.18);
-  color: #b91c1c;
-}
-
-.clinical-result-card__target-chip.tone-neutral {
-  background: rgba(148, 163, 184, 0.2);
-  color: #475569;
-}
-
-.clinical-result-card__subtitle {
-  color: #64748b;
-  font-size: 0.66rem;
-  font-weight: 700;
-}
-
-.clinical-result-card__bio-secondary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem 0.55rem;
-  font-size: 0.67rem;
-  color: #334155;
-}
-
-.clinical-result-card__bio-secondary strong {
-  color: #0f172a;
-}
-
-.clinical-result-card__bio-details {
-  border-top: 1px dashed rgba(148, 163, 184, 0.35);
-  padding-top: 0.5rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
-  gap: 0.35rem 0.55rem;
-}
-
-.clinical-result-card__bio-details span {
-  font-size: 0.68rem;
-  color: #334155;
-}
-
-.clinical-result-card__meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem 0.6rem;
-  margin: 0;
-}
-
-.clinical-result-card__meta div {
+  gap: var(--lt-space-2) var(--lt-space-3);
   min-width: 0;
 }
 
-.clinical-result-card__meta dt {
-  font-size: 0.62rem;
+.clinical-result-card .clinical-result-card__title-wrap {
+  display: flex;
+  flex: 1 1 12rem;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.clinical-result-card .clinical-result-card__type {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #64748b;
-  font-weight: 800;
 }
 
-.clinical-result-card__meta dd {
-  margin: 0.1rem 0 0;
-  font-size: 0.74rem;
-  color: #0f172a;
+/* 0,2,1: vence h1…h6 globais (Poppins, cor e tamanho). */
+.clinical-result-card .clinical-result-card__title-wrap h4 {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.clinical-result-card .clinical-result-card__subtitle {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
-.clinical-result-card.tone-success {
-  border-left: 4px solid #10b981;
+/* ── Selos: base comum; cada semântica muda a forma logo abaixo ──────── */
+.clinical-result-card .clinical-result-card__status,
+.clinical-result-card .clinical-result-card__classification,
+.clinical-result-card .clinical-result-card__semaphore,
+.clinical-result-card .clinical-result-card__variation,
+.clinical-result-card .clinical-result-card__target-chip {
+  --crc-selo-texto: var(--lt-color-text-muted);
+  --crc-selo-fundo: var(--lt-color-surface-field);
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: var(--lt-radius-pill);
+  background: var(--crc-selo-fundo);
+  color: var(--crc-selo-texto);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-.clinical-result-card.tone-warning {
-  border-left: 4px solid #f59e0b;
+/* Tons: sucesso 6,81:1; atenção 6,88:1; perigo 5,91:1; informação
+   (azul sobre --lt-color-track-tint) 5,57:1; neutro (apoio sobre campo)
+   6,17:1. Os contornos abaixo usam o mesmo texto sobre branco. */
+.clinical-result-card .tone-success,
+.clinical-result-card .dir-up { --crc-selo-texto: var(--lt-color-success-text); --crc-selo-fundo: var(--lt-color-success-bg); }
+.clinical-result-card .tone-warning { --crc-selo-texto: var(--crc-atencao-texto); --crc-selo-fundo: var(--crc-atencao-fundo); }
+.clinical-result-card .tone-danger,
+.clinical-result-card .dir-down { --crc-selo-texto: var(--lt-color-danger-text); --crc-selo-fundo: var(--lt-color-danger-bg); }
+.clinical-result-card .tone-info { --crc-selo-texto: var(--lt-color-brand-blue); --crc-selo-fundo: var(--lt-color-track-tint); }
+.clinical-result-card .tone-neutral,
+.clinical-result-card .dir-flat { --crc-selo-texto: var(--lt-color-text-muted); --crc-selo-fundo: var(--lt-color-surface-field); }
+
+/* Estado do registro: selo em caixa alta, como .painel-tag. */
+.clinical-result-card .clinical-result-card__status {
+  flex: none;
+  font-size: var(--lt-text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.clinical-result-card.tone-danger {
-  border-left: 4px solid #ef4444;
+/* Sinal: o ponto na cor do tom, antes do texto. */
+.clinical-result-card .clinical-result-card__semaphore i {
+  display: inline-block;
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentcolor;
 }
 
-.clinical-result-card.tone-info {
-  border-left: 4px solid #0ea5e9;
+/* Comparativo: contorno contínuo sobre branco. */
+.clinical-result-card .clinical-result-card__variation {
+  background: var(--lt-color-surface);
+  box-shadow: inset 0 0 0 1px currentcolor;
+  font-weight: 600;
 }
 
-.clinical-result-card.tone-neutral {
-  border-left: 4px solid #94a3b8;
+/* Meta individual: contorno tracejado sobre branco. */
+.clinical-result-card .clinical-result-card__target-chip {
+  flex: none;
+  border: 1.5px dashed currentcolor;
+  background: var(--lt-color-surface);
+  font-size: var(--lt-text-2xs);
 }
 
-@media (max-width: 640px) {
-  .clinical-result-card__meta {
-    grid-template-columns: 1fr;
+/* ── Valor principal e classificação ─────────────────────────────────── */
+.clinical-result-card .clinical-result-card__main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-2) var(--lt-space-3);
+  min-width: 0;
+}
+
+.clinical-result-card .clinical-result-card__value {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.clinical-result-card .clinical-result-card__interpretation {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+.clinical-result-card .clinical-result-card__signals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+/* Ver detalhes: secundário em contorno, alvo de 44 px (aria-expanded). */
+.clinical-result-card .clinical-result-card__detail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  margin: 0 0 0 auto;
+  padding: 0 var(--lt-space-3);
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  box-shadow: none;
+  color: var(--lt-color-brand-blue);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms;
+}
+
+@media (hover: hover) {
+  .clinical-result-card .clinical-result-card__detail-btn:hover {
+    border-color: var(--lt-color-brand-blue);
+    background: var(--lt-color-track-tint);
   }
+}
+
+.clinical-result-card .clinical-result-card__detail-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring);
+}
+
+/* ── Bioimpedância: métricas principais em linhas de campo ───────────── */
+.clinical-result-card .clinical-result-card__bio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: var(--lt-space-2);
+  min-width: 0;
+}
+
+.clinical-result-card .clinical-result-card__bio-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--lt-space-1);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-3);
+  border: 0;
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+.clinical-result-card .clinical-result-card__bio-metric-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-1);
+  width: 100%;
+  min-width: 0;
+}
+
+.clinical-result-card .clinical-result-card__bio-metric-head > span {
+  color: var(--lt-color-text-muted); /* 6,17:1 sobre o campo */
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.clinical-result-card .clinical-result-card__bio-metric > strong {
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-md);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight);
+  font-variant-numeric: tabular-nums;
+}
+
+.clinical-result-card .clinical-result-card__bio-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-1) var(--lt-space-3);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+.clinical-result-card .clinical-result-card__bio-secondary strong,
+.clinical-result-card .clinical-result-card__bio-details strong {
+  color: var(--lt-color-text);
+  font-weight: 700;
+}
+
+.clinical-result-card .clinical-result-card__bio-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--lt-space-2) var(--lt-space-3);
+  padding-top: var(--lt-space-3);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.clinical-result-card .clinical-result-card__bio-details span {
+  min-width: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* ── Metadados: responsável, data, projeto e completude ──────────────── */
+.clinical-result-card .clinical-result-card__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-2) var(--lt-space-3);
+  margin: 0;
+  padding-top: var(--lt-space-3);
+  border-top: 1px solid var(--lt-color-border);
+}
+
+.clinical-result-card .clinical-result-card__meta div { min-width: 0; }
+
+.clinical-result-card .clinical-result-card__meta dt {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* O valor quebra linha em vez de ser cortado com reticências. */
+.clinical-result-card .clinical-result-card__meta dd {
+  margin: 0.125rem 0 0;
+  overflow: visible;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 40rem) {
+  .clinical-result-card .clinical-result-card__meta { grid-template-columns: minmax(0, 1fr); }
 }

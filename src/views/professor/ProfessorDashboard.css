@@ -1,0 +1,333 @@
+/* Visão geral do professor (ProfessorDashboard.jsx, aba "dashboard"),
+   montada com as peças de src/components/painel/ (contrato em
+   docs/implementacao/visao-geral-v2/contrato-painel.md). Tudo escopado em
+   `.prof-visao-geral`: ProfessorView.css é compartilhado com o resto do
+   portal, e a aba "Alunos e Atletas" usa o mesmo componente.
+
+   Aqui fica só o que é deste painel: ações do cabeçalho, a fila de revisão
+   e o detalhe das métricas dentro dos blocos. Texto sempre sobre os
+   cartões brancos do painel, com tokens claros --lt-*. Títulos e botões
+   declaram fonte, cor e quebra (armadilhas globais de index.css/theme.css). */
+
+.prof-visao-geral {
+  --prof-vg-texto: var(--lt-color-text, #262947);
+  --prof-vg-apoio: var(--lt-color-text-muted, #555c78);
+  --prof-vg-campo: var(--lt-color-surface-field, #f3f8fd);
+  --prof-vg-borda: var(--lt-color-border, rgba(12, 31, 48, 0.12));
+  --prof-vg-borda-campo: var(--lt-color-border-field, #7a8098);
+  --prof-vg-azul: var(--lt-color-brand-blue, #2560a8);
+  --prof-vg-azul-fundo: var(--lt-color-track-tint, #eaf1fa);
+  --prof-vg-alvo: var(--lt-target-min, 44px);
+
+  min-width: 0;
+  color: var(--prof-vg-texto);
+  font-family: var(--lt-font-family, 'Sofia Sans', system-ui, sans-serif);
+}
+
+/* ── Grade ────────────────────────────────────────────────────────────
+   "O que precisa de você" (fila de revisão + pendentes) é o bloco mais
+   alto: ocupa a linha. Agenda e supervisionados dividem a linha seguinte;
+   `auto` neutraliza a regra "última seção ímpar ocupa tudo" do painel. */
+@media (min-width: 72rem) {
+  .prof-visao-geral .painel > #precisa-de-voce { grid-column: 1 / -1; }
+  .prof-visao-geral .painel > #supervisionados { grid-column: auto; }
+}
+
+/* ── Ações do cabeçalho: sincronização e Atualizar ────────────────────── */
+.prof-visao-geral .prof-painel-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2, 0.5rem) var(--lt-space-3, 0.75rem);
+}
+
+.prof-visao-geral .prof-painel-acoes__sync {
+  color: var(--prof-vg-apoio);
+  font-size: var(--lt-text-sm, 0.8125rem);
+  font-weight: 600;
+}
+
+.prof-visao-geral .prof-painel-acoes .ui-button {
+  min-height: var(--prof-vg-alvo);
+  padding: 0 var(--lt-space-4, 1rem);
+  border: 1.5px solid var(--prof-vg-borda-campo);
+  border-radius: var(--lt-radius-control, 0.75rem);
+  background: var(--lt-color-surface, #ffffff);
+  color: var(--prof-vg-azul);
+  font-family: inherit;
+  font-size: var(--lt-text-sm, 0.8125rem);
+  font-weight: 700;
+}
+
+@media (hover: hover) {
+  .prof-visao-geral .prof-painel-acoes .ui-button:hover:not(:disabled) {
+    border-color: var(--prof-vg-azul);
+    background: var(--prof-vg-azul-fundo);
+  }
+}
+
+/* O ícone gira só enquanto atualiza; sem giro com movimento reduzido. */
+@media (prefers-reduced-motion: reduce) {
+  .prof-visao-geral .is-rotating { animation: none; }
+}
+
+/* ── Fila de revisão dentro de "O que precisa de você" ────────────────
+   FilaRevisao traz o próprio cartão; aqui ele vira um trecho do bloco
+   (menos cartões aninhados), com título de subseção abaixo do título do
+   bloco. O componente e o CSS dele (components/Supervisao/) não mudam. */
+.prof-visao-geral .sup-fila {
+  margin: 0 0 var(--lt-space-5, 1.5rem);
+  padding: 0 0 var(--lt-space-5, 1.5rem);
+  border: 0;
+  border-bottom: 1px solid var(--prof-vg-borda);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.prof-visao-geral .sup-fila__title { color: var(--prof-vg-texto); }
+
+.prof-visao-geral .sup-fila__title h2 {
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--prof-vg-texto);
+  font-family: var(--lt-font-family, 'Sofia Sans', system-ui, sans-serif);
+  font-size: var(--lt-text-md, 1.125rem);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight, 1.15);
+  letter-spacing: 0;
+}
+
+.prof-visao-geral .sup-fila__title p {
+  color: var(--prof-vg-apoio);
+  font-size: var(--lt-text-sm, 0.8125rem);
+}
+
+.prof-visao-geral .sup-fila .ui-button {
+  min-height: var(--prof-vg-alvo);
+  font-family: inherit;
+  white-space: normal;
+}
+
+.prof-visao-geral .sup-fila textarea {
+  font-family: inherit;
+  font-size: var(--lt-text-control, 1rem);
+}
+
+/* O esqueleto de FeedbackState pulsa em laço: aqui, 3 vezes (4,2 s) e
+   nenhuma com movimento reduzido. */
+.prof-visao-geral .ui-skeleton { animation-iteration-count: 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .prof-visao-geral .ui-skeleton { animation: none; }
+}
+
+/* Foco dos controles próprios deste painel: anel azul da landing. */
+.prof-visao-geral .prof-painel-acoes .ui-button:focus-visible,
+.prof-visao-geral .sup-fila .ui-button:focus-visible,
+.prof-visao-geral .metric-close:focus-visible,
+.prof-visao-geral .metric-item:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-focus-ring, 0 0 0 2px #ffffff, 0 0 0 4px #2560a8);
+}
+
+/* ── Detalhe da métrica (antes em ProfessorView.css) ───────────────────
+   Abre dentro do bloco, abaixo das linhas: um trecho separado por um fio,
+   não um cartão dentro do cartão. */
+.prof-visao-geral .professor-metric-panel {
+  min-width: 0;
+  margin-top: var(--lt-space-4, 1rem);
+  padding-top: var(--lt-space-4, 1rem);
+  border-top: 1px solid var(--prof-vg-borda);
+  scroll-margin: var(--lt-space-5, 1.5rem);
+}
+
+/* Em "O que precisa de você" ele substitui a linha de pendentes: sem fio
+   próprio, porque é o primeiro trecho ou já vem depois do fio da fila. */
+.prof-visao-geral #precisa-de-voce .professor-metric-panel:first-child,
+.prof-visao-geral .sup-fila + .professor-metric-panel {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.prof-visao-geral .metric-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lt-space-2, 0.5rem) var(--lt-space-4, 1rem);
+  margin-bottom: var(--lt-space-3, 0.75rem);
+}
+
+.prof-visao-geral .metric-panel-header > div { flex: 1 1 14rem; min-width: 0; }
+
+.prof-visao-geral .metric-panel-header h3 {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--prof-vg-texto);
+  font-family: var(--lt-font-family, 'Sofia Sans', system-ui, sans-serif);
+  font-size: var(--lt-text-md, 1.125rem);
+  font-weight: 700;
+  line-height: var(--lt-leading-tight, 1.15);
+  letter-spacing: 0;
+}
+
+.prof-visao-geral .metric-panel-header p {
+  margin: var(--lt-space-1, 0.25rem) 0 0;
+  color: var(--prof-vg-apoio);
+  font-size: var(--lt-text-sm, 0.8125rem);
+  line-height: var(--lt-leading-normal, 1.5);
+}
+
+.prof-visao-geral .metric-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--prof-vg-alvo);
+  padding: 0 var(--lt-space-4, 1rem);
+  border: 1.5px solid var(--prof-vg-borda-campo);
+  border-radius: var(--lt-radius-control, 0.75rem);
+  background: var(--lt-color-surface, #ffffff);
+  color: var(--prof-vg-azul);
+  font-family: inherit;
+  font-size: var(--lt-text-sm, 0.8125rem);
+  font-weight: 700;
+  white-space: normal;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .prof-visao-geral .metric-close:hover {
+    border-color: var(--prof-vg-azul);
+    background: var(--prof-vg-azul-fundo);
+  }
+}
+
+.prof-visao-geral .metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2, 0.5rem);
+  max-height: 26rem;
+  margin-top: var(--lt-space-3, 0.75rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.prof-visao-geral .metric-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-3, 0.75rem);
+  width: 100%;
+  min-height: var(--prof-vg-alvo);
+  padding: var(--lt-space-3, 0.75rem) var(--lt-space-4, 1rem);
+  border: 1px solid transparent;
+  border-radius: var(--lt-radius-control, 0.75rem);
+  background: var(--prof-vg-campo);
+  color: var(--prof-vg-texto);
+  font-family: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .prof-visao-geral .metric-item:hover:not(:disabled) {
+    border-color: var(--prof-vg-azul);
+    background: var(--prof-vg-azul-fundo);
+  }
+}
+
+.prof-visao-geral .metric-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.prof-visao-geral .metric-item--result { align-items: flex-start; }
+
+/* Linha de resultado (realizadas e pendentes): o cartão tem botão próprio
+   ("Ver detalhes completos") e não pode ficar dentro de um botão. A linha
+   é um grupo no fundo de campo: no alto, o botão que abre o prontuário
+   (nome e data ou estado); abaixo, o cartão, fora do botão. */
+.prof-visao-geral .metric-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2, 0.5rem);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--lt-space-1, 0.25rem) var(--lt-space-2, 0.5rem) var(--lt-space-3, 0.75rem);
+  border-radius: var(--lt-radius-control, 0.75rem);
+  background: var(--prof-vg-campo);
+}
+
+.prof-visao-geral .metric-result > .metric-item {
+  padding-inline: var(--lt-space-2, 0.5rem);
+  background: transparent;
+}
+
+.prof-visao-geral .metric-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.prof-visao-geral .metric-main--result { flex: 1 1 auto; gap: var(--lt-space-2, 0.5rem); }
+
+.prof-visao-geral .professor-clinical-result { width: 100%; }
+
+.prof-visao-geral .metric-main strong {
+  color: var(--prof-vg-texto);
+  font-size: var(--lt-text-base, 0.9375rem);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug, 1.35);
+  overflow-wrap: anywhere;
+}
+
+.prof-visao-geral .metric-main > span {
+  color: var(--prof-vg-apoio);
+  font-size: var(--lt-text-sm, 0.8125rem);
+  overflow-wrap: anywhere;
+}
+
+.prof-visao-geral .metric-meta {
+  flex: none;
+  max-width: 45%;
+  color: var(--prof-vg-texto);
+  font-size: var(--lt-text-sm, 0.8125rem);
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.prof-visao-geral .metric-empty {
+  padding: var(--lt-space-4, 1rem);
+  border-radius: var(--lt-radius-control, 0.75rem);
+  background: var(--prof-vg-campo);
+  color: var(--prof-vg-apoio);
+  font-size: var(--lt-text-sm, 0.8125rem);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Títulos dos componentes compartilhados que o detalhe usa (resumo clínico
+   e cartão de resultado): só a família, contra o Poppins global de h1…h6. */
+.prof-visao-geral .evaluation-summary-strip h4,
+.prof-visao-geral .clinical-result-card__title-wrap h4 {
+  font-family: var(--lt-font-family, 'Sofia Sans', system-ui, sans-serif);
+}
+
+@media (max-width: 30rem) {
+  .prof-visao-geral .metric-item {
+    flex-wrap: wrap;
+  }
+
+  .prof-visao-geral .metric-meta {
+    max-width: none;
+    text-align: left;
+  }
+}

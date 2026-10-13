@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { GripVertical, Plus, ChevronDown, ChevronRight, Copy, Pencil, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Plus, ChevronDown, ChevronRight, Copy, Pencil } from 'lucide-react';
 import { ANCORAS, rotuloAncora } from '../../core/prescricao/horarios.js';
 import AlimentoLinha from './AlimentoLinha.jsx';
+import BuscaAlimento from './BuscaAlimento.jsx';
 import Etiqueta from './Etiqueta.jsx';
 import { n } from './formato.js';
 
@@ -16,6 +17,7 @@ export default function RefeicaoCard({
   valoresPorItem,
   opcoesPorItem,
   sugestoesPorItem,
+  restritosPorItem = {},
   abertos,
   blocoPorAlimentoId,
   horario,
@@ -23,95 +25,117 @@ export default function RefeicaoCard({
   porcoesPorItem = {},
   onToggle,
   onAdicionarAlimento,
+  buscaAberta = false,
+  buscaAlimento,
+  onBuscarAlimento,
+  onEscolherAlimento,
+  onFecharBusca,
   onEditarRefeicao,
   onDuplicarRefeicao,
   onExcluirRefeicao,
   ...handlers
 }) {
   const [editando, setEditando] = useState(false);
+  const botaoAdicionarRef = useRef(null);
   const { igPonderado, cargaGlicemica, choDisponivel: disp } = totais;
+  const semEnergia = itens.length > 0 && itens.every((item) => item.comp?.kcal == null);
+  const energiaParcial = itens.some((item) => item.comp?.kcal == null);
   const valorAncora = refeicao.ancora ? `${refeicao.ancora.ref}:${refeicao.ancora.min}` : '';
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2">
+    <div className="pp-refeicao">
+      <div className="pp-refeicao__cabeca">
         {editando ? (
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <label className="sr-only" htmlFor={`nome-${refeicao.id}`}>Nome da refeição</label>
-            <input
-              id={`nome-${refeicao.id}`}
-              value={refeicao.nome}
-              onChange={(e) => onEditarRefeicao(refeicao.id, { nome: e.target.value })}
-              className="pp-largura-nome rounded border border-stone-200 text-sm"
-            />
-            <label className="sr-only" htmlFor={`ancora-${refeicao.id}`}>Ancoragem</label>
-            <select
-              id={`ancora-${refeicao.id}`}
-              value={valorAncora}
-              onChange={(e) => {
-                if (!e.target.value) {
-                  // Voltar para horario fixo preserva a hora que estava valendo,
-                  // em vez de zerar e obrigar a redigitar.
-                  onEditarRefeicao(refeicao.id, {
-                    ancora: null, etiqueta: null, horarioFixo: horario || '12:00'
-                  });
-                } else {
-                  const [ref, min] = e.target.value.split(':');
-                  onEditarRefeicao(refeicao.id, {
-                    ancora: { ref, min: Number(min) }, etiqueta: 'peri-treino', horarioFixo: null
-                  });
-                }
-              }}
-              className="rounded border border-stone-200 text-xs"
-            >
-              {ANCORAS.map((a2) => (
-                <option key={a2.valor} value={a2.valor}>{a2.rotulo}</option>
-              ))}
-            </select>
+          <div className="pp-refeicao__edicao">
+            <div className="pp-campo pp-campo--nome">
+              <label className="pp-rotulo" htmlFor={`nome-${refeicao.id}`}>Nome da refeição</label>
+              <input
+                id={`nome-${refeicao.id}`}
+                value={refeicao.nome}
+                onChange={(e) => onEditarRefeicao(refeicao.id, { nome: e.target.value })}
+                className="pp-controle"
+              />
+            </div>
+            <div className="pp-campo">
+              <label className="pp-rotulo" htmlFor={`ancora-${refeicao.id}`}>Ancoragem</label>
+              <select
+                id={`ancora-${refeicao.id}`}
+                value={valorAncora}
+                onChange={(e) => {
+                  if (!e.target.value) {
+                    // Voltar para horario fixo preserva a hora que estava valendo,
+                    // em vez de zerar e obrigar a redigitar.
+                    onEditarRefeicao(refeicao.id, {
+                      ancora: null, etiqueta: null, horarioFixo: horario || '12:00'
+                    });
+                  } else {
+                    const [ref, min] = e.target.value.split(':');
+                    onEditarRefeicao(refeicao.id, {
+                      ancora: { ref, min: Number(min) }, etiqueta: 'peri-treino', horarioFixo: null
+                    });
+                  }
+                }}
+                className="pp-controle"
+              >
+                {ANCORAS.map((a2) => (
+                  <option key={a2.valor} value={a2.valor}>{a2.rotulo}</option>
+                ))}
+              </select>
+            </div>
             {!refeicao.ancora && (
               <>
-                <label className="sr-only" htmlFor={`hora-${refeicao.id}`}>Horário</label>
-                <input
-                  id={`hora-${refeicao.id}`}
-                  type="time"
-                  value={refeicao.horarioFixo || '12:00'}
-                  onChange={(e) => e.target.value && onEditarRefeicao(refeicao.id, { horarioFixo: e.target.value })}
-                  className="rounded border border-stone-200 text-xs"
-                />
+                <div className="pp-campo">
+                  <label className="pp-rotulo" htmlFor={`hora-${refeicao.id}`}>Horário</label>
+                  <input
+                    id={`hora-${refeicao.id}`}
+                    type="time"
+                    value={refeicao.horarioFixo || '12:00'}
+                    onChange={(e) => e.target.value && onEditarRefeicao(refeicao.id, { horarioFixo: e.target.value })}
+                    className="pp-controle pp-controle--hora"
+                  />
+                </div>
               </>
             )}
-            <button type="button" onClick={() => setEditando(false)} className="text-xs text-stone-700 hover:text-stone-900">
-              pronto
-            </button>
-            <button
-              type="button"
-              onClick={() => onExcluirRefeicao(refeicao.id)}
-              className="pp-excluir text-xs text-stone-400 hover:text-red-600"
-            >
-              excluir refeição
-            </button>
+            <div className="pp-refeicao__edicao-acoes">
+              <button type="button" onClick={() => setEditando(false)} className="pp-botao pp-botao--secundario">
+                pronto
+              </button>
+              {/* Destrutiva e sem confirmacao: o nome da refeicao entra no nome
+                  acessivel para nao haver duvida de qual sera excluida. */}
+              <button
+                type="button"
+                onClick={() => onExcluirRefeicao(refeicao.id)}
+                aria-label={`excluir refeição ${refeicao.nome}`}
+                className="pp-botao pp-botao--perigo"
+              >
+                excluir refeição
+              </button>
+            </div>
           </div>
         ) : (
-        <button
-          type="button"
-          onClick={() => onToggle(refeicao.id)}
-          aria-expanded={refeicao.aberta}
-          className="flex min-w-0 items-center gap-2 text-left"
-        >
-          <GripVertical className="w-4 h-4 shrink-0 text-stone-300" aria-hidden="true" />
-          {/* O horario vem calculado: refeicao ancorada segue o treino. */}
-          <span className="text-sm text-stone-900">{refeicao.nome}</span>
-          {horario && <span className="text-xs text-stone-500">{horario}</span>}
-          {refeicao.ancora && (
-            <span className="text-xs text-stone-400">{rotuloAncora(refeicao.ancora)}</span>
-          )}
-          {refeicao.etiqueta && <Etiqueta tom="atencao">{refeicao.etiqueta}</Etiqueta>}
-        </button>
+        <h3 className="pp-refeicao__titulo">
+          <button
+            type="button"
+            onClick={() => onToggle(refeicao.id)}
+            aria-expanded={refeicao.aberta}
+            className="pp-refeicao__alternar"
+          >
+            {/* O horario vem calculado: refeicao ancorada segue o treino. */}
+            <span className="pp-refeicao__nome">{refeicao.nome}</span>
+            {horario && <span className="pp-refeicao__hora">{horario}</span>}
+            {refeicao.ancora && (
+              <span className="pp-refeicao__ancora">{rotuloAncora(refeicao.ancora)}</span>
+            )}
+            {refeicao.etiqueta && <Etiqueta tom="atencao">{refeicao.etiqueta}</Etiqueta>}
+          </button>
+        </h3>
         )}
-        <div className="flex shrink-0 items-center gap-2 text-xs text-stone-500">
-          <span className="whitespace-nowrap">{n(totais.kcal)} kcal</span>
+        <div className="pp-refeicao__resumo">
+          <span className="pp-refeicao__kcal">
+            {semEnergia ? '—' : n(totais.kcal)} kcal{energiaParcial && !semEnergia ? ' · subtotal' : ''}
+          </span>
           {!refeicao.aberta && (
-            <span className="whitespace-nowrap rounded bg-stone-100 px-2 py-0.5">
+            <span className="pp-refeicao__indices">
               IG {n(igPonderado)} · CG {n(cargaGlicemica)}
             </span>
           )}
@@ -120,25 +144,25 @@ export default function RefeicaoCard({
             onClick={() => setEditando((v) => !v)}
             aria-label={`Editar ${refeicao.nome}`}
             aria-pressed={editando}
-            className="text-stone-400 hover:text-stone-700"
+            className="pp-icone-botao"
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <Pencil className="pp-icone" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() => onDuplicarRefeicao(refeicao.id)}
             aria-label={`Duplicar ${refeicao.nome}`}
-            className="text-stone-400 hover:text-stone-700"
+            className="pp-icone-botao"
           >
-            <Copy className="w-3.5 h-3.5" />
+            <Copy className="pp-icone" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() => onToggle(refeicao.id)}
             aria-label={refeicao.aberta ? `Fechar ${refeicao.nome}` : `Abrir ${refeicao.nome}`}
-            className="text-stone-400 hover:text-stone-700"
+            className="pp-icone-botao"
           >
-            {refeicao.aberta ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {refeicao.aberta ? <ChevronDown className="pp-icone" aria-hidden="true" /> : <ChevronRight className="pp-icone" aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -158,48 +182,50 @@ export default function RefeicaoCard({
           ) : (
           /* table-fixed seria mais previsivel, mas impede a coluna do nome de
              ceder por ultimo: aqui a largura vem das regras de cada celula. */
-          <table className="mt-2 w-full border-collapse text-xs">
-            <caption className="sr-only">
+          <table className="pp-tabela">
+            <caption className="pp-sr">
               Alimentos de {refeicao.nome}{horario ? ` às ${horario}` : ''}
             </caption>
             <thead>
-              <tr className="border-b border-stone-200 text-stone-400">
-                <th scope="col" className="w-6 pb-1">
-                  <span className="sr-only">Reordenar</span>
+              <tr>
+                <th scope="col" className="pp-tabela__alca">
+                  <span className="pp-sr">Ordem</span>
                 </th>
-                <th scope="col" className="pb-1 text-left font-normal">Alimento</th>
+                <th scope="col" className="pp-tabela__nome">Alimento</th>
                 {metodo === 'alimentos' ? (
                   <>
-                    <th scope="col" className="w-20 pb-1 pr-2 text-right font-normal">Qtd</th>
-                    <th scope="col" className="pb-1 text-left font-normal whitespace-nowrap">
+                    <th scope="col" className="pp-tabela__num">Qtd</th>
+                    <th scope="col" className="pp-tabela__medida">
                       Medida caseira
                     </th>
-                    <th scope="col" className="w-12 pb-1 text-right font-normal">kcal</th>
-                    <th scope="col" className="w-8 pb-1 text-right font-normal">C</th>
-                    <th scope="col" className="w-8 pb-1 text-right font-normal">P</th>
-                    <th scope="col" className="w-8 pb-1 text-right font-normal">L</th>
+                    <th scope="col" className="pp-tabela__num">kcal</th>
+                    <th scope="col" className="pp-tabela__num">C</th>
+                    <th scope="col" className="pp-tabela__num">P</th>
+                    <th scope="col" className="pp-tabela__num">L</th>
                   </>
                 ) : (
-                  <th scope="col" colSpan={6} className="pb-1 text-right font-normal">
+                  <th scope="col" colSpan={6} className="pp-tabela__num">
                     {metodo === 'equivalentes' ? 'Equivalentes' : 'Grupo'}
                   </th>
                 )}
-                <th scope="col" className="w-8 pb-1">
-                  <span className="sr-only">Trocar</span>
+                <th scope="col" className="pp-tabela__acoes">
+                  <span className="pp-sr">Trocar</span>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {itens.map((item) => (
+              {itens.map((item, indice) => (
                 <AlimentoLinha
                   key={item.id}
                   item={item}
+                  ordem={indice + 1}
                   valores={valoresPorItem[item.id]}
                   ancora={ancoraPorItem[item.id]}
                   aberto={abertos.has(item.id)}
                   opcoes={opcoesPorItem[item.id] ?? []}
                   sugestoes={sugestoesPorItem[item.id]?.candidatos ?? []}
                   motivo={sugestoesPorItem[item.id]?.motivo ?? null}
+                  restrito={restritosPorItem[item.id] ?? null}
                   blocoSalvo={blocoPorAlimentoId[item.alimentoId]}
                   colunas={COLUNAS}
                   metodo={metodo}
@@ -211,15 +237,17 @@ export default function RefeicaoCard({
           </table>
           )}
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="pp-refeicao__rodape">
             <button
               type="button"
+              ref={botaoAdicionarRef}
               onClick={onAdicionarAlimento}
-              className="flex items-center gap-1.5 whitespace-nowrap text-xs text-stone-500 hover:text-stone-800"
+              aria-expanded={buscaAberta}
+              className="pp-botao pp-botao--secundario"
             >
-              <Plus className="w-3.5 h-3.5" /> Adicionar alimento
+              <Plus className="pp-icone" aria-hidden="true" /> Adicionar alimento
             </button>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="pp-refeicao__etiquetas">
               {itens.length > 0 && (
                 <>
               <Etiqueta tom={igPonderado !== null && igPonderado <= 55 ? 'ok' : 'neutro'}>
@@ -234,18 +262,42 @@ export default function RefeicaoCard({
             </div>
           </div>
 
+          {buscaAberta && (
+            <BuscaAlimento
+              id={`busca-alimento-${refeicao.id}`}
+              modo="principal"
+              termo={buscaAlimento.termo}
+              resultados={buscaAlimento.resultados}
+              carregando={buscaAlimento.carregando}
+              erro={buscaAlimento.erro}
+              onTermo={onBuscarAlimento}
+              onEscolher={(alimento, quantidade, medidaIdx) => {
+                onEscolherAlimento(alimento, quantidade, medidaIdx);
+                botaoAdicionarRef.current?.focus();
+              }}
+              onFechar={() => {
+                onFecharBusca();
+                botaoAdicionarRef.current?.focus();
+              }}
+            />
+          )}
+
           {/* A orientacao acompanha a refeicao no PDF do paciente: e onde cabe
-              "prepare no domingo e congele em porcoes". */}
-          <label className="sr-only" htmlFor={`orient-${refeicao.id}`}>
-            Orientação de {refeicao.nome}
-          </label>
-          <input
-            id={`orient-${refeicao.id}`}
-            value={refeicao.orientacao ?? ''}
-            onChange={(e) => onEditarRefeicao(refeicao.id, { orientacao: e.target.value })}
-            placeholder="Orientação para o paciente"
-            className="pp-orientacao mt-2 w-full border-t border-stone-200 text-xs"
-          />
+              "prepare no domingo e congele em porcoes". O rotulo, antes so
+              para leitor de tela, agora fica visivel: o placeholder some ao
+              digitar e nao pode ser o unico nome do campo. */}
+          <div className="pp-campo pp-refeicao__orientacao">
+            <label className="pp-rotulo" htmlFor={`orient-${refeicao.id}`}>
+              Orientação de {refeicao.nome}
+            </label>
+            <input
+              id={`orient-${refeicao.id}`}
+              value={refeicao.orientacoes ?? refeicao.orientacao ?? ''}
+              onChange={(e) => onEditarRefeicao(refeicao.id, { orientacoes: e.target.value })}
+              placeholder="Orientação para o paciente"
+              className="pp-controle"
+            />
+          </div>
         </>
       )}
     </div>

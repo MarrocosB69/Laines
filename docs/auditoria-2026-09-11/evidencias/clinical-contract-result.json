@@ -9,31 +9,27 @@
       "cargaGlicemica": null
     },
     "backendTotals": {
-      "calorias": 0,
-      "cho": 0,
-      "ptn": 0,
-      "lip": 0,
-      "fibra": 0
+      "calorias": 200,
+      "cho": 30,
+      "ptn": 10,
+      "lip": 4,
+      "fibra": 6
     },
     "activationAllowed": false,
     "blockers": [
-      "Cadastre ao menos uma refeicao com alimento antes de ativar.",
-      "Nao foi possivel calcular totais nutricionais validos."
+      "Confirme a revisao final profissional antes de ativar."
     ]
   },
   "legacyContract": {
-    "normalizedLegacyItemCount": 0,
+    "normalizedLegacyItemCount": 1,
     "normalizedLegacyFoodCount": 1,
-    "frontendAfterNormalizedLegacyItemCount": 0,
-    "rawLegacyMigrationPreservesGuidance": false,
+    "frontendAfterNormalizedLegacyItemCount": 1,
+    "rawLegacyMigrationPreservesGuidance": true,
     "rawLegacyMigrationPreservesUnlinkedSubstitutes": true,
-    "backendPreservesUnlinkedSubstitutes": false
+    "backendPreservesUnlinkedSubstitutes": true
   },
   "clientSuppliedReview": {
-    "confirmada": true,
-    "confirmadoEm": "2001-01-01T00:00:00.000Z",
-    "confirmadoPorId": "other_professional",
-    "confirmadoPorNome": "Identidade declarada no payload"
+    "confirmada": false
   },
   "draftGetUsedAsReference": {
     "fixtureStatus": "rascunho",
@@ -43,10 +39,10 @@
     "frontendFor200Percent": "ok",
     "backendFor200Percent": 0
   },
-  "legacyNullToZero": 0,
+  "legacyNullToZero": null,
   "clientSuppliedLegacyNutrients": {
-    "calorias": 99999,
-    "cho": 88888,
+    "calorias": 0,
+    "cho": 0,
     "ptn": 0,
     "lip": 0,
     "fibra": 0

@@ -24,7 +24,10 @@
     "defaultEmail": "e2e-aluno@teste.com",
     "defaultPassword": "e2e-password",
     "ciEmailEnv": "E2E_STUDENT_EMAIL",
-    "ciPasswordEnv": "E2E_STUDENT_PASSWORD"
+    "ciPasswordEnv": "E2E_STUDENT_PASSWORD",
+    "curso": "Nutricao",
+    "matricula": "20230050",
+    "periodo": "5"
   },
   {
     "key": "tecnico",
@@ -43,5 +46,126 @@
     "defaultPassword": "e2e-password",
     "ciEmailEnv": "E2E_ATHLETE_EMAIL",
     "ciPasswordEnv": "E2E_ATHLETE_PASSWORD"
+  },
+  {
+    "key": "coordenacao",
+    "role": "coordenacao",
+    "name": "Coordenacao E2E",
+    "defaultEmail": "e2e-coordenacao@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_COORDENACAO_EMAIL",
+    "ciPasswordEnv": "E2E_COORDENACAO_PASSWORD"
+  },
+  {
+    "key": "presidente",
+    "role": "presidente",
+    "name": "Presidencia E2E",
+    "defaultEmail": "e2e-presidente@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_PRESIDENTE_EMAIL",
+    "ciPasswordEnv": "E2E_PRESIDENTE_PASSWORD",
+    "curso": "Nutricao",
+    "matricula": "20221001",
+    "periodo": "8"
+  },
+  {
+    "key": "vice",
+    "role": "vice",
+    "name": "Vice E2E",
+    "defaultEmail": "e2e-vice@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_VICE_EMAIL",
+    "ciPasswordEnv": "E2E_VICE_PASSWORD",
+    "curso": "Nutricao",
+    "matricula": "20221002",
+    "periodo": "7"
+  },
+  {
+    "key": "diretoria_pesquisa",
+    "role": "aluno",
+    "name": "Diretoria Pesquisa E2E",
+    "defaultEmail": "e2e-diretoria-pesquisa@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_DIRETORIA_PESQUISA_EMAIL",
+    "ciPasswordEnv": "E2E_DIRETORIA_PESQUISA_PASSWORD",
+    "diretoria": "diretoria_pesquisa",
+    "curso": "Nutricao",
+    "matricula": "20221005",
+    "periodo": "7"
+  },
+  {
+    "key": "diretoria_extensao",
+    "role": "aluno",
+    "name": "Diretoria Extensao E2E",
+    "defaultEmail": "e2e-diretoria-extensao@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_DIRETORIA_EXTENSAO_EMAIL",
+    "ciPasswordEnv": "E2E_DIRETORIA_EXTENSAO_PASSWORD",
+    "diretoria": "diretoria_extensao",
+    "curso": "Nutricao",
+    "matricula": "20221006",
+    "periodo": "8"
+  },
+  {
+    "key": "diretoria_ensino",
+    "role": "aluno",
+    "name": "Diretoria Ensino E2E",
+    "defaultEmail": "e2e-diretoria-ensino@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_DIRETORIA_ENSINO_EMAIL",
+    "ciPasswordEnv": "E2E_DIRETORIA_ENSINO_PASSWORD",
+    "diretoria": "diretoria_ensino",
+    "curso": "Nutricao",
+    "matricula": "20221004",
+    "periodo": "8"
+  },
+  {
+    "key": "diretoria_marketing",
+    "role": "aluno",
+    "name": "Diretoria Marketing E2E",
+    "defaultEmail": "e2e-diretoria-marketing@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_DIRETORIA_MARKETING_EMAIL",
+    "ciPasswordEnv": "E2E_DIRETORIA_MARKETING_PASSWORD",
+    "diretoria": "diretoria_marketing",
+    "curso": "Nutricao",
+    "matricula": "20221003",
+    "periodo": "6"
+  },
+  {
+    "key": "coord_atendimento",
+    "role": "coord_atendimento",
+    "name": "Coord Atendimento E2E",
+    "defaultEmail": "e2e-coord-atendimento@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_COORD_ATENDIMENTO_EMAIL",
+    "ciPasswordEnv": "E2E_COORD_ATENDIMENTO_PASSWORD"
+  },
+  {
+    "key": "profissional",
+    "role": "profissional",
+    "name": "Profissional E2E",
+    "defaultEmail": "e2e-profissional@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_PROFISSIONAL_EMAIL",
+    "ciPasswordEnv": "E2E_PROFISSIONAL_PASSWORD"
+  },
+  {
+    "key": "pesquisador",
+    "role": "pesquisador",
+    "name": "Pesquisador E2E",
+    "defaultEmail": "e2e-pesquisador@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_PESQUISADOR_EMAIL",
+    "ciPasswordEnv": "E2E_PESQUISADOR_PASSWORD"
+  },
+  {
+    "key": "colaborador",
+    "role": "colaborador",
+    "name": "Colaborador E2E",
+    "defaultEmail": "e2e-colaborador@teste.com",
+    "defaultPassword": "e2e-password",
+    "ciEmailEnv": "E2E_COLABORADOR_EMAIL",
+    "ciPasswordEnv": "E2E_COLABORADOR_PASSWORD"
   }
 ]

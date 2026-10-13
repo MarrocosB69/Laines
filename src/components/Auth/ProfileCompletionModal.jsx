@@ -134,7 +134,7 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
         ref={modalRef}
       >
         <div className="app-modal-header profile-completion-header">
-          <div className="profile-completion-icon app-modal-header-icon">
+          <div className="profile-completion-icon app-modal-header-icon" aria-hidden="true">
             <UserRound size={20} />
           </div>
           <div className="app-modal-heading">
@@ -151,11 +151,11 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
             aria-label="Sair da sessão"
             title="Sair"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
-        <form className="app-modal-body profile-completion-form" onSubmit={handleSubmit}>
+        <form className="app-modal-body profile-completion-form" onSubmit={handleSubmit} noValidate>
           <div className="profile-completion-required">
             <strong>Campos obrigatórios</strong>
             <div className="profile-completion-required-list">
@@ -163,8 +163,9 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
                 const missing = completionState.missingFields.includes(field);
                 return (
                   <span key={field} className={`profile-completion-required-item ${missing ? 'pending' : 'ok'}`}>
-                    {missing ? <AlertCircle size={13} /> : <CheckCircle2 size={13} />}
+                    {missing ? <AlertCircle size={13} aria-hidden="true" /> : <CheckCircle2 size={13} aria-hidden="true" />}
                     {getRequiredFieldLabel(field)}
+                    <span className="profile-completion-sr">{missing ? ' (pendente)' : ' (preenchido)'}</span>
                   </span>
                 );
               })}
@@ -209,11 +210,10 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
                   <input value={form.periodo} onChange={handleFieldChange('periodo')} required />
                 </label>
                 <label className="profile-completion-field">
-                  <span>Professor supervisor *</span>
+                  <span>Professor supervisor <small>(necessário para atender; não bloqueia a Liga)</small></span>
                   <select
                     value={form.supervisorId}
                     onChange={handleFieldChange('supervisorId')}
-                    required
                     disabled={loadingOptions}
                   >
                     <option value="">Selecione</option>
@@ -225,11 +225,10 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
                   </select>
                 </label>
                 <label className="profile-completion-field profile-completion-field--full">
-                  <span>Projeto *</span>
+                  <span>Projeto <small>(necessário para atender; não bloqueia a Liga)</small></span>
                   <select
                     value={form.projetoId}
                     onChange={handleFieldChange('projetoId')}
-                    required
                     disabled={loadingOptions}
                   >
                     <option value="">Selecione</option>
@@ -245,8 +244,8 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
           </div>
 
           {error && (
-            <div className="profile-completion-error">
-              <AlertCircle size={14} />
+            <div className="profile-completion-error" role="alert">
+              <AlertCircle size={14} aria-hidden="true" />
               <span>{error}</span>
             </div>
           )}
@@ -260,7 +259,7 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
               onClick={logout}
               disabled={saving}
             >
-              <LogOut size={14} />
+              <LogOut size={14} aria-hidden="true" />
               Sair
             </button>
             <button
@@ -269,7 +268,7 @@ const ProfileCompletionModal = ({ isOpen, user }) => {
               onClick={handleSubmit}
               disabled={saving || loadingOptions}
             >
-              <Save size={14} />
+              <Save size={14} aria-hidden="true" />
               {saving ? 'Salvando...' : 'Salvar cadastro'}
             </button>
           </div>

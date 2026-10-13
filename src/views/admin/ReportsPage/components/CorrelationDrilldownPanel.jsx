@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ListFilter } from 'lucide-react';
+import { MIN_HIGHLIGHT_SAMPLE, isSmallSample } from '../config/reportsConfig';
 
 const domains = [
   { id: 'absenteeism', label: 'Faltas' },
@@ -62,8 +63,8 @@ const CorrelationDrilldownPanel = ({ correlations }) => {
     <section className="drilldown-panel">
       <div className="drilldown-header">
         <div>
-          <h3>Drill-down analítico</h3>
-          <p>Detalhamento por dimensão para orientar decisões operacionais.</p>
+          <h3 id="relatorios-drilldown-titulo">Drill-down analítico</h3>
+          <p>{`Detalhamento por dimensão para orientar decisões operacionais. Grupo com menos de ${MIN_HIGHLIGHT_SAMPLE} casos vem marcado como amostra pequena.`}</p>
         </div>
         <span className="drilldown-badge">
           <ListFilter size={14} />
@@ -72,13 +73,14 @@ const CorrelationDrilldownPanel = ({ correlations }) => {
       </div>
 
       <div className="drilldown-controls">
-        <div className="drilldown-domain-tabs">
+        <div className="drilldown-domain-tabs" role="group" aria-label="Domínio do detalhamento">
           {domains.map((item) => (
             <button
               key={item.id}
               type="button"
               className={`drilldown-tab ${domain === item.id ? 'active' : ''}`}
               onClick={() => setDomain(item.id)}
+              aria-pressed={domain === item.id}
             >
               {item.label}
             </button>
@@ -96,15 +98,22 @@ const CorrelationDrilldownPanel = ({ correlations }) => {
       {rows.length === 0 ? (
         <div className="reports-empty-state laines-feedback-state">Sem dados suficientes para este detalhamento no recorte atual.</div>
       ) : (
-        <div className="drilldown-table-wrap">
+        // A tabela rola dentro do próprio contêiner em tela estreita; o
+        // contêiner entra na ordem do Tab para rolar pelo teclado.
+        <div
+          className="drilldown-table-wrap"
+          role="region"
+          aria-labelledby="relatorios-drilldown-titulo"
+          tabIndex={0}
+        >
           <table className="drilldown-table">
             <thead>
               <tr>
-                <th>Dimensão</th>
-                <th>Grupo</th>
-                <th>Indicador</th>
-                <th>Amostra</th>
-                <th>Odds ratio</th>
+                <th scope="col">Dimensão</th>
+                <th scope="col">Grupo</th>
+                <th scope="col">Indicador</th>
+                <th scope="col">Amostra</th>
+                <th scope="col">Odds ratio</th>
               </tr>
             </thead>
             <tbody>
@@ -113,7 +122,10 @@ const CorrelationDrilldownPanel = ({ correlations }) => {
                   <td>{row.dimension}</td>
                   <td>{row.label}</td>
                   <td>{Number(row.metric).toFixed(1)}%</td>
-                  <td>{Number(row.sampleSize || 0).toLocaleString('pt-BR')}</td>
+                  <td>
+                    {Number(row.sampleSize || 0).toLocaleString('pt-BR')}
+                    {isSmallSample(row) && <span className="drilldown-small-sample"> (amostra pequena)</span>}
+                  </td>
                   <td>{typeof row.oddsRatio === 'number' ? row.oddsRatio.toFixed(2) : '--'}</td>
                 </tr>
               ))}

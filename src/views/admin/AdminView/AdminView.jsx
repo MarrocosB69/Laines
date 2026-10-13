@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  BarChart3, FileText, Settings, UserCog, Stethoscope, Inbox, FlaskConical, BookOpen, Users2
+  BarChart3, FileText, Settings, UserCog, Stethoscope, Inbox, FlaskConical, BookOpen, Users2, Megaphone
 } from "lucide-react";
 import { useLocation, useSearchParams } from "react-router-dom";
 
@@ -17,18 +17,25 @@ import AccessRequests from "../Requests/AccessRequests";
 import ResearchProjects from "../Research/ResearchProjects";
 import Ensino from "../Areas/Ensino";
 import Extensao from "../Areas/Extensao";
+import Comunicacao from "../Areas/Comunicacao";
 import { useAuth } from "../../../contexts/AuthContext";
 import { usePacientes } from "../../../contexts/PacienteContext";
-import { getAllowedAdminTabs } from "../../../constants/adminTabs";
+import { getAllowedAdminTabsFromCapabilities } from "../../../constants/adminTabs";
+import {
+  getAcademicRootTab,
+  getAcademicSectionFromTab,
+  getAcademicTabFromSection
+} from "../../../constants/academicNavigation";
 import PatientProntuario from "../../Student/Patients/PatientProntuario";
 
 import "./AdminView.css";
 
 const AdminView = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const wasMobileRef = useRef(window.innerWidth <= 768);
+  const pendingTabRef = useRef(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [prontuarioReturnTab, setProntuarioReturnTab] = useState('patients');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -81,6 +88,7 @@ const AdminView = () => {
   }, [location.state, getPacienteById]);
 
   const handleTabChange = useCallback((tab) => {
+    pendingTabRef.current = tab;
     setActiveTab(tab);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -116,31 +124,44 @@ const AdminView = () => {
   }, [prontuarioReturnTab, setSearchParams]);
 
   const renderActiveComponent = useCallback(() => {
-    if (activeTab === 'patients' && selectedPatient) {
-      return (
-        <PatientProntuario
-          patient={selectedPatient}
-          onBack={handleBackFromProntuario}
-          originPath="/admin"
-          originView="patients"
-          originTab={prontuarioReturnTab || 'patients'}
-        />
-      );
-    }
+    const rootTab = getAcademicRootTab(activeTab);
+    const academicSection = getAcademicSectionFromTab(activeTab);
 
     const components = {
-      dashboard: <DashboardStats />,
+      dashboard: <DashboardStats onOpenAdminTab={handleTabChange} />,
       users: <UserManagement />,
       patients: <PatientManagement onOpenPatient={handleOpenPatientProntuario} />,
       reports: <ReportsPage />,
-      research: <ResearchProjects />,
-      ensino: <Ensino />,
-      extensao: <Extensao />,
+      research: (
+        <ResearchProjects
+          section={academicSection}
+          hideSectionTabs
+          onSectionChange={(nextSection) => handleTabChange(getAcademicTabFromSection('research', nextSection))}
+        />
+      ),
+      ensino: (
+        <Ensino
+          section={academicSection}
+          onSectionChange={(nextSection) => handleTabChange(getAcademicTabFromSection('ensino', nextSection))}
+        />
+      ),
+      extensao: (
+        <Extensao
+          section={academicSection}
+          onSectionChange={(nextSection) => handleTabChange(getAcademicTabFromSection('extensao', nextSection))}
+        />
+      ),
+      comunicacao: (
+        <Comunicacao
+          section={academicSection}
+          onSectionChange={(nextSection) => handleTabChange(getAcademicTabFromSection('comunicacao', nextSection))}
+        />
+      ),
       requests: <AccessRequests />,
       settings: <SettingsPage />,
     };
-    return components[activeTab] || components.dashboard;
-  }, [activeTab, handleBackFromProntuario, handleOpenPatientProntuario, prontuarioReturnTab, selectedPatient]);
+    return components[rootTab] || components.dashboard;
+  }, [activeTab, handleOpenPatientProntuario, handleTabChange]);
 
   const tabIcons = {
     dashboard: <BarChart3 size={16} />,
@@ -150,22 +171,37 @@ const AdminView = () => {
     research: <FlaskConical size={16} />,
     ensino: <BookOpen size={16} />,
     extensao: <Users2 size={16} />,
+    comunicacao: <Megaphone size={16} />,
     requests: <Inbox size={16} />,
     settings: <Settings size={16} />
   };
 
   const allowedTabs = useMemo(() => {
-    return getAllowedAdminTabs(user?.role);
+    return getAllowedAdminTabsFromCapabilities(user?.capabilities);
   }, [user]);
+
+  const isAllowedTab = useCallback((tab) => {
+    const rootTab = getAcademicRootTab(tab);
+    return allowedTabs.includes(rootTab);
+  }, [allowedTabs]);
 
   useEffect(() => {
     const requestedTab = String(searchParams.get('tab') || '').trim();
-    if (requestedTab && allowedTabs.includes(requestedTab) && requestedTab !== activeTab) {
+
+    if (pendingTabRef.current) {
+      if (requestedTab === pendingTabRef.current) {
+        pendingTabRef.current = null;
+      } else if (activeTab === pendingTabRef.current) {
+        return;
+      }
+    }
+
+    if (requestedTab && isAllowedTab(requestedTab) && requestedTab !== activeTab) {
       setActiveTab(requestedTab);
       return;
     }
 
-    if (!allowedTabs.includes(activeTab)) {
+    if (!isAllowedTab(activeTab)) {
       const fallback = allowedTabs[0] || 'dashboard';
       setActiveTab(fallback);
       setSearchParams((prev) => {
@@ -174,7 +210,7 @@ const AdminView = () => {
         return next;
       });
     }
-  }, [activeTab, allowedTabs, searchParams, setSearchParams]);
+  }, [activeTab, allowedTabs, isAllowedTab, searchParams, setSearchParams]);
 
   useEffect(() => {
     if (activeTab !== 'patients' && selectedPatient) {
@@ -185,6 +221,18 @@ const AdminView = () => {
   const mainContentClassName = `admin-main-content ${
     !isSidebarOpen ? (isMobile ? 'expanded' : 'collapsed') : ''
   }`;
+
+  if (activeTab === 'patients' && selectedPatient) {
+    return (
+      <PatientProntuario
+        patient={selectedPatient}
+        onBack={handleBackFromProntuario}
+        originPath="/admin"
+        originView="patients"
+        originTab={prontuarioReturnTab || 'patients'}
+      />
+    );
+  }
 
   return (
     <motion.div
@@ -222,7 +270,7 @@ const AdminView = () => {
             isSidebarOpen={isSidebarOpen}
             onToggleSidebar={toggleSidebar}
             activeTab={activeTab}
-            activeIcon={tabIcons[activeTab]}
+            activeIcon={tabIcons[getAcademicRootTab(activeTab)]}
           />
 
           <div className="content-area">

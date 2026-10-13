@@ -26,11 +26,11 @@ import { usePacientes } from '../../../contexts/PacienteContext';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import { logAudit } from '../../../services/audit';
 import { useModalBodyLock } from '../../../hooks/useModalBodyLock';
+import { normalizeRole } from '../../../constants/roles';
 import PatientModal from './PatientModal';
 import LinkPatientModal from '../Patients/LinkPatientModal';
-import AthleteOnboardingWizard from '../../../components/Atleta/AthleteOnboardingWizard';
-import { generateInstitutionalEmail } from '../../../utils/institutionalEmail';
 import { downloadCsv } from './exportUtils';
+import { FeedbackState } from '../../../components/ui';
 import './ManagementPages.css';
 
 const getStatusClassName = (status) => {
@@ -52,18 +52,30 @@ const getStatusLabel = (status) => {
   if (value === 'inativo') return 'Inativo';
   if (value === 'alta') return 'Alta';
   if (value === 'pendente') return 'Pendente';
+  if (value === 'lista de espera' || value === 'lista_espera') return 'Lista de espera';
+  if (value === 'triagem publica' || value === 'triagem_publica') return 'Triagem pública';
   if (!value) return 'Sem status';
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 };
 
 const PAGE_SIZE = 25;
+const PATIENT_MANAGER_ROLES = new Set(['admin', 'coordenacao']);
+const PATIENT_PENDING_CREATOR_ROLES = new Set(['professor', 'profissional', 'presidente', 'vice']);
+const WAITING_STATUS_TOKENS = new Set([
+  'espera',
+  'triagem',
+  'triagem publica',
+  'triagem_publica',
+  'pendente',
+  'lista de espera',
+  'lista_espera'
+]);
 
 const PatientManagement = ({ onOpenPatient = null }) => {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState(null);
@@ -86,8 +98,11 @@ const PatientManagement = ({ onOpenPatient = null }) => {
 
   const { user } = useAuth();
   const { vincularPaciente, getAlunosDisponiveis } = usePacientes();
+  const currentRole = normalizeRole(user?.role);
+  const canManagePatients = PATIENT_MANAGER_ROLES.has(currentRole);
+  const canCreatePatients = canManagePatients || PATIENT_PENDING_CREATOR_ROLES.has(currentRole);
 
-  useModalBodyLock(bulkModalOpen);
+  useModalBodyLock(bulkModalOpen && canManagePatients);
 
   const fetchPatients = useCallback(async ({ preserveCurrent = false } = {}) => {
     try {
@@ -145,19 +160,37 @@ const PatientManagement = ({ onOpenPatient = null }) => {
     total: patients.length,
     inTreatment: patients.filter((patient) => patient.status?.toLowerCase() === 'ativo').length,
     discharged: patients.filter((patient) => ['alta', 'concluido'].includes(patient.status?.toLowerCase())).length,
-    waiting: patients.filter((patient) => ['espera', 'triagem', 'pendente', 'lista de espera'].includes(patient.status?.toLowerCase())).length
+    waiting: patients.filter((patient) => (
+      WAITING_STATUS_TOKENS.has(String(patient.status || '').toLowerCase().trim())
+    )).length
   };
 
   const loadStudents = useCallback(async () => {
+    if (!canManagePatients) {
+      setStudents([]);
+      return;
+    }
     try {
       const alunos = await getAlunosDisponiveis();
       const patientsByAluno = patients.reduce((accumulator, patient) => {
-        const alunoId = patient.alunoResponsavel?.id || patient.alunoResponsavelId;
-        if (alunoId) accumulator[alunoId] = (accumulator[alunoId] || 0) + 1;
+        if (String(patient.status || '').toLowerCase().trim() !== 'ativo') {
+          return accumulator;
+        }
+        const linkedIds = new Set([
+          patient.alunoResponsavel?.id || patient.alunoResponsavelId,
+          ...(Array.isArray(patient.equipeTecnicaIds) ? patient.equipeTecnicaIds : []),
+          ...(Array.isArray(patient.equipeMultiIds) ? patient.equipeMultiIds : []),
+          ...(Array.isArray(patient.equipeProfissional)
+            ? patient.equipeProfissional.map((member) => member?.userId)
+            : [])
+        ].filter(Boolean));
+        linkedIds.forEach((alunoId) => {
+          accumulator[alunoId] = (accumulator[alunoId] || 0) + 1;
+        });
         return accumulator;
       }, {});
 
-      const limit = 5;
+      const limit = 3;
       const mapped = alunos.map((aluno) => {
         const count = patientsByAluno[aluno.id] || 0;
         const disponivel = Math.max(0, limit - count);
@@ -179,9 +212,10 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       });
       setStudents([]);
     }
-  }, [getAlunosDisponiveis, notify, patients]);
+  }, [canManagePatients, getAlunosDisponiveis, notify, patients]);
 
   const handleOpenLinkModal = (patient) => {
+    if (!canManagePatients) return;
     setLinkingPatient(patient);
     setIsLinkModalOpen(true);
   };
@@ -205,6 +239,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   };
 
   const handleLinkPatient = async (patientId, studentId) => {
+    if (!canManagePatients) return;
     await vincularPaciente(patientId, studentId);
     await loadStudents();
   };
@@ -243,7 +278,9 @@ const PatientManagement = ({ onOpenPatient = null }) => {
       || patient.nome?.toLowerCase().includes(term)
       || patient.modalidade?.toLowerCase().includes(term)
       || patient.modalidadePrincipal?.toLowerCase().includes(term);
-    const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter;
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'pending' && WAITING_STATUS_TOKENS.has(normalizedStatus))
+      || normalizedStatus === statusFilter;
     const matchesProject = projectFilter === 'all' || normalizedProject === projectFilter;
 
     return matchesSearch && matchesStatus && matchesProject;
@@ -296,57 +333,6 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   const handleRefresh = useCallback(() => {
     fetchPatients({ preserveCurrent: true });
   }, [fetchPatients]);
-
-  const handleWizardComplete = useCallback(async (dados) => {
-    try {
-      const nome = dados.nomeCompleto.trim();
-      const generatedEmail = generateInstitutionalEmail(nome);
-      let atletaUserId = null;
-
-      try {
-        const { data: created } = await api.post('/users', {
-          name: nome,
-          role: 'atleta',
-          cpf: dados.cpf || undefined,
-          dataNascimento: dados.dataNascimento || undefined,
-          telefone: dados.telefone || undefined,
-          status: 'ativo'
-        });
-        atletaUserId = created?.user?.id || null;
-        if (created?.tempPassword) {
-          notify({ type: 'info', title: 'Senha temporária gerada', message: `Login: ${generatedEmail} — Senha: ${created.tempPassword}`, duration: 12000 });
-        }
-      } catch (userErr) {
-        if (![403, 409].includes(Number(userErr?.response?.status))) throw userErr;
-      }
-
-      const observacoesParts = [
-        dados.alergiasIntolerancias && `Alergias/intolerâncias: ${dados.alergiasIntolerancias}`,
-        dados.medicamentosUso && `Medicamentos em uso: ${dados.medicamentosUso}`,
-        dados.observacoesGerais
-      ].filter(Boolean);
-
-      await api.post('/pacientes', {
-        nome,
-        cpf: dados.cpf || '',
-        dataNascimento: dados.dataNascimento || '',
-        genero: dados.sexoBiologico || 'nao_informado',
-        telefone: dados.telefone || '',
-        email: generatedEmail || dados.email || '',
-        modalidadePrincipal: dados.modalidadePrincipal || '',
-        tempoPratica: dados.anosPratica ? String(dados.anosPratica) : '',
-        observacoes: observacoesParts.join('\n'),
-        atletaUserId,
-        status: 'Ativo'
-      });
-
-      notify({ type: 'success', title: 'Atleta cadastrado', message: `${nome} foi adicionado com sucesso.` });
-      setIsWizardOpen(false);
-      fetchPatients({ preserveCurrent: true });
-    } catch (err) {
-      notify({ type: 'error', title: 'Erro ao cadastrar atleta', message: getApiErrorMessage(err, 'Não foi possível cadastrar o atleta.') });
-    }
-  }, [notify, fetchPatients]);
 
   const handleClearFilters = useCallback(() => {
     setStatusFilter('all');
@@ -402,6 +388,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   }, [filteredPatients, notify]);
 
   const handleBulkLink = async () => {
+    if (!canManagePatients) return;
     if (selectedPatients.length === 0) return;
     const selectedProject = projects.find((project) => project.id === bulkProjectId) || null;
     const accepted = await confirm({
@@ -456,6 +443,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   };
 
   const handleDelete = async (id) => {
+    if (!canManagePatients) return;
     const accepted = await confirm({
       title: 'Inativar atleta',
       message: 'Este atleta sairá das listagens ativas, mas prontuário, avaliações e anexos serão preservados. Deseja continuar?',
@@ -488,12 +476,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
   };
 
   if (loading && patients.length === 0) {
-    return (
-      <div className="admin-loading-state">
-        <Loader2 className="spin" size={30} />
-        <p>Carregando dados...</p>
-      </div>
-    );
+    return <FeedbackState loading skeletonLines={5} />;
   }
 
   return (
@@ -503,32 +486,39 @@ const PatientManagement = ({ onOpenPatient = null }) => {
         <div className="hero-glow hero-glow--secondary" />
         <div className="admin-management-hero__row">
           <div className="admin-management-hero__content">
-            <span className="admin-management-badge">Área do Professor</span>
-            <h1 className="admin-management-title">Meus Atletas</h1>
+            <span className="admin-management-badge">Atendimento</span>
+            <h1 className="admin-management-title">Cadastro de Atletas</h1>
             <p className="admin-management-subtitle">
-              Gestão clínica, acompanhamento de modalidades e vínculos de pesquisa.
+              Gestão de triagem, lista de espera, vínculos e acompanhamento da liga.
             </p>
           </div>
           <div className="admin-management-hero__actions">
-            <button
-              type="button"
-              onClick={() => setBulkModalOpen(true)}
-              disabled={selectedPatients.length === 0}
-              className={`admin-btn ${
-                selectedPatients.length > 0 ? 'admin-btn--soft-success' : 'admin-btn--surface'
-              }`}
-            >
-              <Link2 size={17} />
-              <span>Vincular ({selectedPatients.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsWizardOpen(true)}
-              className="admin-btn admin-btn--success"
-            >
-              <UserPlus size={18} />
-              <span>Novo Atleta</span>
-            </button>
+            {canManagePatients && (
+              <button
+                type="button"
+                onClick={() => setBulkModalOpen(true)}
+                disabled={selectedPatients.length === 0}
+                className={`admin-btn ${
+                  selectedPatients.length > 0 ? 'admin-btn--soft-success' : 'admin-btn--surface'
+                }`}
+              >
+                <Link2 size={17} />
+                <span>Vincular ({selectedPatients.length})</span>
+              </button>
+            )}
+            {canCreatePatients && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPatient(null);
+                  setIsModalOpen(true);
+                }}
+                className="admin-btn admin-btn--success"
+              >
+                <UserPlus size={18} />
+                <span>Novo Atleta</span>
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -546,6 +536,22 @@ const PatientManagement = ({ onOpenPatient = null }) => {
           </article>
         ))}
       </section>
+
+      {stats.waiting > 0 && (
+        <div className="admin-waitlist-banner">
+          <Clock size={18} className="admin-waitlist-banner__icon" />
+          <span className="admin-waitlist-banner__text">
+            <strong>{stats.waiting}</strong> {stats.waiting === 1 ? 'atleta' : 'atletas'} em triagem/lista aguardando avaliação e vínculo com aluno.
+          </span>
+          <button
+            type="button"
+            className="admin-waitlist-banner__btn"
+            onClick={() => setStatusFilter('pending')}
+          >
+            Ver pendentes
+          </button>
+        </div>
+      )}
 
       <section className="admin-management-toolbar">
         <div className="admin-management-search">
@@ -574,6 +580,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
             type="button"
             className={`admin-btn ${(isFilterPanelOpen || activeFilterCount > 0) ? 'admin-btn--soft-success' : 'admin-btn--surface'}`}
             onClick={() => setIsFilterPanelOpen((prev) => !prev)}
+            aria-expanded={isFilterPanelOpen}
           >
             <Filter size={16} />
             <span>{activeFilterCount > 0 ? `Filtros (${activeFilterCount})` : 'Filtrar'}</span>
@@ -618,6 +625,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                 className="admin-select"
               >
                 <option value="all">Todos</option>
+                <option value="pending">Triagem/lista de espera</option>
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
                     {getStatusLabel(status)}
@@ -657,7 +665,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
 
       <section className="admin-management-panel">
         {error && (
-          <div className="admin-alert-error">
+          <div className="admin-alert-error" role="alert">
             <AlertCircle size={18} />
             <p>{error}</p>
             <div className="admin-alert-error__actions">
@@ -688,45 +696,59 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                 >
                   Limpar busca e filtros
                 </button>
-              ) : (
+              ) : canCreatePatients ? (
                 <button
                   type="button"
                   className="admin-btn admin-btn--success"
-                  onClick={() => setIsWizardOpen(true)}
+                  onClick={() => {
+                    setSelectedPatient(null);
+                    setIsModalOpen(true);
+                  }}
                 >
                   <UserPlus size={16} />
                   <span>Cadastrar atleta</span>
                 </button>
+              ) : (
+                <span className="admin-readonly-note">Voce possui acesso de visualizacao aos atletas deste escopo.</span>
               )}
             </div>
           </div>
         ) : (
           <>
             <div className="admin-table-header">
-              <h3 className="admin-list-title">Lista de Atletas</h3>
+              <h3 id="patients-list-title" className="admin-list-title">Lista de Atletas</h3>
               <span className="admin-count-chip">{visiblePatients.length} de {filteredPatients.length} encontrados</span>
             </div>
 
             <p className="admin-table-hint">Em telas menores, deslize horizontalmente para ver todas as colunas.</p>
 
-            <div className="admin-management-table-wrap">
+            {/* Focável para o teclado rolar a tabela quando ela passa da
+                largura; o nome vem do título da lista. */}
+            <div
+              className="admin-management-table-wrap"
+              role="region"
+              aria-labelledby="patients-list-title"
+              tabIndex={0}
+            >
               <table className="admin-management-table">
                 <thead>
                   <tr>
-                    <th className="admin-select-col">
-                      <input
-                        type="checkbox"
-                        checked={isAllSelected}
-                        onChange={toggleSelectAll}
-                        className="admin-check-input"
-                        aria-label="Selecionar todos os atletas filtrados"
-                      />
-                    </th>
-                    <th>Atleta</th>
-                    <th>Modalidade</th>
-                    <th>Contato</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Ações</th>
+                    {canManagePatients && (
+                      <th scope="col" className="admin-select-col">
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={toggleSelectAll}
+                          className="admin-check-input"
+                          aria-label="Selecionar todos os atletas filtrados"
+                        />
+                      </th>
+                    )}
+                    <th scope="col">Atleta</th>
+                    <th scope="col">Modalidade</th>
+                    <th scope="col">Contato</th>
+                    <th scope="col">Status</th>
+                    <th scope="col" className="admin-th-actions">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -734,19 +756,21 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                     const isRowBusy = deletingPatientId === patient.id || openingPatientId === patient.id;
                     return (
                       <tr key={patient.id} className={isRowBusy ? 'admin-row-busy' : ''} aria-busy={isRowBusy}>
-                      <td className="admin-select-col">
-                        <input
-                          type="checkbox"
-                          checked={selectedPatients.includes(patient.id)}
-                          onChange={() => toggleSelectPatient(patient.id)}
-                          className="admin-check-input"
-                          disabled={isRowBusy}
-                          aria-label={`Selecionar atleta ${patient.nome || ''}`}
-                        />
-                      </td>
-                      <td className="admin-cell-user">
+                      {canManagePatients && (
+                        <td className="admin-select-col">
+                          <input
+                            type="checkbox"
+                            checked={selectedPatients.includes(patient.id)}
+                            onChange={() => toggleSelectPatient(patient.id)}
+                            className="admin-check-input"
+                            disabled={isRowBusy}
+                            aria-label={`Selecionar atleta ${patient.nome || ''}`}
+                          />
+                        </td>
+                      )}
+                      <th scope="row" className="admin-cell-user">
                         <div className="admin-user-block">
-                          <div className={getAvatarClassName(patient.status)}>
+                          <div className={getAvatarClassName(patient.status)} aria-hidden="true">
                             {getInitial(patient.nome)}
                           </div>
                           <div>
@@ -754,15 +778,15 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                             <p className="admin-user-meta">Prontuário: {patient.prontuario || '---'}</p>
                           </div>
                         </div>
-                      </td>
+                      </th>
                       <td>
-                        <div className="admin-row-muted" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div className="admin-row-muted">
                           <Dumbbell size={14} />
                           <span>{patient.modalidade || patient.modalidadePrincipal || 'Clínica Geral'}</span>
                         </div>
                       </td>
                       <td>
-                        <div className="admin-row-muted" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div className="admin-row-muted">
                           <Phone size={13} />
                           <span>{patient.telefone || 'Não informado'}</span>
                         </div>
@@ -775,42 +799,50 @@ const PatientManagement = ({ onOpenPatient = null }) => {
                       </td>
                       <td>
                         <div className="admin-table-actions">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenLinkModal(patient)}
-                            className="admin-action-btn admin-action-btn--link"
-                            title="Vincular"
-                            disabled={isRowBusy}
-                          >
-                            <Link2 size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (isRowBusy) return;
-                              setSelectedPatient(patient);
-                              setIsModalOpen(true);
-                            }}
-                            className="admin-action-btn admin-action-btn--edit"
-                            title="Editar"
-                            disabled={isRowBusy}
-                          >
-                            <Edit size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(patient.id)}
-                            className="admin-action-btn admin-action-btn--delete"
-                            title="Inativar"
-                            disabled={isRowBusy}
-                          >
-                            {deletingPatientId === patient.id ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
-                          </button>
+                          {canManagePatients && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenLinkModal(patient)}
+                                className="admin-action-btn admin-action-btn--link"
+                                title="Vincular"
+                                aria-label={`Vincular atleta ${patient.nome || ''}`}
+                                disabled={isRowBusy}
+                              >
+                                <Link2 size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isRowBusy) return;
+                                  setSelectedPatient(patient);
+                                  setIsModalOpen(true);
+                                }}
+                                className="admin-action-btn admin-action-btn--edit"
+                                title="Editar"
+                                aria-label={`Editar atleta ${patient.nome || ''}`}
+                                disabled={isRowBusy}
+                              >
+                                <Edit size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(patient.id)}
+                                className="admin-action-btn admin-action-btn--delete"
+                                title="Inativar"
+                                aria-label={`Inativar atleta ${patient.nome || ''}`}
+                                disabled={isRowBusy}
+                              >
+                                {deletingPatientId === patient.id ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+                              </button>
+                            </>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleOpenPatientProntuario(patient)}
                             className="admin-action-btn admin-action-btn--view"
                             title="Visualizar"
+                            aria-label={`Visualizar atleta ${patient.nome || ''}`}
                             disabled={isRowBusy}
                           >
                             {openingPatientId === patient.id ? <Loader2 size={15} className="spin" /> : <Eye size={15} />}
@@ -825,7 +857,7 @@ const PatientManagement = ({ onOpenPatient = null }) => {
             </div>
 
             {canLoadMorePatients && (
-              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '0.9rem' }}>
+              <div className="admin-loadmore-row">
                 <div className="admin-loadmore-wrap">
                   {filteredPatients.length > 0 ? (
                     <p className="admin-loadmore-meta">
@@ -860,25 +892,20 @@ const PatientManagement = ({ onOpenPatient = null }) => {
         initialData={selectedPatient}
       />
 
-      {isWizardOpen && (
-        <AthleteOnboardingWizard
-          onComplete={handleWizardComplete}
-          onClose={() => setIsWizardOpen(false)}
+      {canManagePatients && (
+        <LinkPatientModal
+          isOpen={isLinkModalOpen}
+          onClose={() => {
+            setIsLinkModalOpen(false);
+            setLinkingPatient(null);
+          }}
+          onLink={handleLinkPatient}
+          patient={linkingPatient}
+          students={students}
         />
       )}
 
-      <LinkPatientModal
-        isOpen={isLinkModalOpen}
-        onClose={() => {
-          setIsLinkModalOpen(false);
-          setLinkingPatient(null);
-        }}
-        onLink={handleLinkPatient}
-        patient={linkingPatient}
-        students={students}
-      />
-
-      {bulkModalOpen && typeof document !== 'undefined' && createPortal(
+      {canManagePatients && bulkModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           className="admin-bulk-modal-backdrop app-modal-overlay"
           role="presentation"
@@ -916,8 +943,9 @@ const PatientManagement = ({ onOpenPatient = null }) => {
 
             <div className="admin-bulk-modal__body app-modal-body">
               <div className="admin-bulk-modal__field">
-                <label className="admin-bulk-modal__label">Projeto de pesquisa</label>
+                <label className="admin-bulk-modal__label" htmlFor="bulk-project-select">Projeto de pesquisa</label>
                 <select
+                  id="bulk-project-select"
                   value={bulkProjectId}
                   onChange={(event) => setBulkProjectId(event.target.value)}
                   className="admin-select"

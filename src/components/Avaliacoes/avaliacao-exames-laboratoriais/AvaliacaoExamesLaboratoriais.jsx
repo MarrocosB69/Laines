@@ -2,9 +2,24 @@
 import { FileText, Plus, Save, Trash2 } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
-import { calculateLaboratoryEvaluation } from '../../../services/calculationEngine';
+import {
+  calculateLaboratoryEvaluation,
+  resolveLaboratoryConductTone
+} from '../../../services/calculationEngine';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  Campo,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao
+} from '../base';
 import './AvaliacaoExamesLaboratoriais.css';
+
+// Tom do aviso de conduta (condutaLabStatus.tone) no aviso da base: o título e
+// a mensagem já vão escritos; o ícone e o prefixo lido acompanham.
+const CONDUTA_TIPO_AVISO = { risk: 'perigo', warn: 'atencao', ok: 'sucesso' };
 
 // Catálogo completo de analitos com referências e unidades padrão.
 // Usado para auto-preenchimento quando o profissional digita o nome manualmente.
@@ -165,7 +180,7 @@ const PAINEL_TEMPLATES = [
   },
   {
     id: 'hormonal_feminino_reds',
-    label: 'Hormonal feminino / REDs',
+    label: 'Hormonal feminino / disponibilidade energética',
     analitos: [
       { nome: 'Estradiol', unidade: 'pg/mL', referenciaMin: '15', referenciaMax: '350' },
       { nome: 'Progesterona', unidade: 'ng/mL', referenciaMin: '0.1', referenciaMax: '25' },
@@ -223,8 +238,7 @@ const AvaliacaoExamesLaboratoriais = ({
   onboardingContext,
   moduleSnapshot,
   currentSessionId,
-  moduleHistory = [],
-  allEvaluationHistory = []
+  moduleHistory = []
 }) => {
   const [formData, setFormData] = useState(createInitialState);
   const [error, setError] = useState('');
@@ -486,42 +500,26 @@ const AvaliacaoExamesLaboratoriais = ({
     onboardingContext?.modalidadePrincipal
   ]);
 
-  const latestEvolucao = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'evolucao_retorno', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const latestTriagemReds = useMemo(
-    () => findLatestEvaluationByType(allEvaluationHistory, 'triagem_reds', currentSessionId),
-    [allEvaluationHistory, currentSessionId]
-  );
-  const redsClassificacao = useMemo(
-    () => resolveFirstToken([
-      latestTriagemReds?.resultados?.classificacaoDE,
-      latestTriagemReds?.resultados?.output?.classificacaoDE,
-      latestTriagemReds?.dados?.classificacaoDE,
-      latestTriagemReds?.classificacao
-    ]).toLowerCase(),
-    [latestTriagemReds]
-  );
-
+  // O tom sai do status real do painel (alterado, limitrofe, normal,
+  // sem_classificacao); sem classificação é "ainda não consolidados", nunca
+  // "consistentes" (WI-013, decisão 2). Os textos são os de antes.
   const condutaLabStatus = useMemo(() => {
-    const scoreRisco = parseNumeric(summary.scoreRisco);
-    const token = String(classification || '').toLowerCase();
-    if (token.includes('critico') || token.includes('alto') || (Number.isFinite(scoreRisco) && scoreRisco >= 70)) {
+    const tom = resolveLaboratoryConductTone({ statusPainel: classification, scoreRisco: summary.scoreRisco });
+    if (tom === 'risk') {
       return {
         tone: 'risk',
         title: 'Exames sugerem conduta prioritária',
         message: 'Classificação laboratorial com risco elevado. Reforce revisão clínica antes da prescrição.'
       };
     }
-    if (token.includes('moder') || token.includes('limitro') || (Number.isFinite(scoreRisco) && scoreRisco >= 40)) {
+    if (tom === 'warn') {
       return {
         tone: 'warn',
         title: 'Exames sugerem monitoramento',
         message: 'Há alterações que merecem seguimento próximo na evolução/retorno.'
       };
     }
-    if (hasValues) {
+    if (tom === 'ok') {
       return {
         tone: 'ok',
         title: 'Exames consistentes para conduta',
@@ -533,7 +531,7 @@ const AvaliacaoExamesLaboratoriais = ({
       title: 'Exames ainda não consolidados',
       message: 'Complete os analitos relevantes da sessão para fechar a conduta.'
     };
-  }, [classification, hasValues, summary.scoreRisco]);
+  }, [classification, summary.scoreRisco]);
 
   const handlePrepareNewCollection = useCallback(() => {
     const nowDate = toLocalDateInputValue(new Date());
@@ -551,19 +549,16 @@ const AvaliacaoExamesLaboratoriais = ({
   }, []);
 
   return (
-    <div className={`eval-card avaliacao-exames-laboratoriais${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <FileText size={22} />
-        </div>
-        <div>
-          <h3 className="eval-title">Exames laboratoriais</h3>
-          <p className="eval-subtitle">Analitos com classificação por referência e comparativo anterior.</p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card avaliacao-exames-laboratoriais${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Exames laboratoriais"
+      descricao="Analitos com classificação por referência e comparativo anterior."
+      icone={<FileText size={22} />}
+    >
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
 
       {isPrefilledFromHistory && (
-        <div className="avaliacao-exames-laboratoriais__prefill-note">
+        <AvisoAvaliacao tipo="info" className="avaliacao-exames-laboratoriais__prefill-note">
           <p>
             Pré-preenchimento inteligente ativo: usando estrutura da última coleta ({formatDateBr(prefillSourceDate)}).
             Revise os campos antes de salvar.
@@ -577,10 +572,13 @@ const AvaliacaoExamesLaboratoriais = ({
               Limpar valores para nova coleta
             </Button>
           )}
-        </div>
+        </AvisoAvaliacao>
       )}
 
-      <div className={`avaliacao-exames-laboratoriais__conduta-note tone-${condutaLabStatus.tone}`}>
+      <AvisoAvaliacao
+        tipo={CONDUTA_TIPO_AVISO[condutaLabStatus.tone] || 'info'}
+        className={`avaliacao-exames-laboratoriais__conduta-note tone-${condutaLabStatus.tone}`}
+      >
         <strong>{condutaLabStatus.title}</strong>
         <p>{condutaLabStatus.message}</p>
         <small>
@@ -589,51 +587,51 @@ const AvaliacaoExamesLaboratoriais = ({
           Frequência: {Number.isFinite(onboardingResumo.frequenciaSemanal) ? `${onboardingResumo.frequenciaSemanal}x/sem` : 'não informada'}
           {' | '}
           Duração: {Number.isFinite(onboardingResumo.duracaoSessao) ? `${onboardingResumo.duracaoSessao} min` : 'não informada'}
-          {' | '}
-          Evolução: {latestEvolucao?.id ? 'registrada' : 'pendente'}
-          {' | '}
-          RED-S: {redsClassificacao || 'não avaliada'}
         </small>
-      </div>
+      </AvisoAvaliacao>
 
-      <div className="eval-grid">
-        <div className="eval-field">
-          <label className="eval-label">Data da coleta</label>
-          <input
-            type="date"
-            className="eval-input"
-            value={formData.dataAvaliacao}
-            onChange={handleRootChange('dataAvaliacao')}
-            disabled={readOnly}
-          />
+      {/* Os três campos ficavam soltos entre os avisos e os analitos; agora
+          numa seção própria. Sem .eval-section, para a contagem do modo
+          essencial continuar a mesma. */}
+      <AvaliacaoSecao id="exames-coleta" titulo="Dados da coleta">
+        <div className="av-grade">
+          <Campo rotulo="Data da coleta" className="eval-field">
+            <input
+              type="date"
+              className="eval-input"
+              value={formData.dataAvaliacao}
+              onChange={handleRootChange('dataAvaliacao')}
+              disabled={readOnly}
+            />
+          </Campo>
+          <Campo rotulo="Painel" className="eval-field">
+            <input
+              type="text"
+              className="eval-input"
+              value={formData.painel}
+              onChange={handleRootChange('painel')}
+              disabled={readOnly}
+              placeholder="Ex.: lipidograma"
+            />
+          </Campo>
+          <Campo rotulo="Laboratório (opcional)" className="eval-field eval-field-full">
+            <input
+              type="text"
+              className="eval-input"
+              value={formData.laboratorio}
+              onChange={handleRootChange('laboratorio')}
+              disabled={readOnly}
+              placeholder="Nome do laboratório"
+            />
+          </Campo>
         </div>
-        <div className="eval-field">
-          <label className="eval-label">Painel</label>
-          <input
-            type="text"
-            className="eval-input"
-            value={formData.painel}
-            onChange={handleRootChange('painel')}
-            disabled={readOnly}
-            placeholder="Ex.: lipidograma"
-          />
-        </div>
-        <div className="eval-field eval-field-full">
-          <label className="eval-label">Laboratório (opcional)</label>
-          <input
-            type="text"
-            className="eval-input"
-            value={formData.laboratorio}
-            onChange={handleRootChange('laboratorio')}
-            disabled={readOnly}
-            placeholder="Nome do laboratório"
-          />
-        </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <div className="avaliacao-exames-laboratoriais__section-header">
-          <h4 className="eval-section-title">Analitos</h4>
+      <AvaliacaoSecao
+        id="exames-analitos"
+        titulo="Analitos"
+        className="eval-section"
+        acoes={(
           <Button
             type="button"
             variant="secondary"
@@ -642,11 +640,11 @@ const AvaliacaoExamesLaboratoriais = ({
           >
             <Plus size={16} /> Adicionar analito
           </Button>
-        </div>
-
+        )}
+      >
         {!readOnly && (
-          <div className="avaliacao-exames-laboratoriais__templates">
-            <span className="avaliacao-exames-laboratoriais__templates-label">Carregar painel:</span>
+          <div className="avaliacao-exames-laboratoriais__templates" role="group" aria-labelledby="exames-carregar-painel">
+            <span id="exames-carregar-painel" className="avaliacao-exames-laboratoriais__templates-label">Carregar painel:</span>
             {PAINEL_TEMPLATES.map((tpl) => (
               <button
                 key={tpl.id}
@@ -660,80 +658,95 @@ const AvaliacaoExamesLaboratoriais = ({
           </div>
         )}
 
-        <div className="avaliacao-exames-laboratoriais__row avaliacao-exames-laboratoriais__row--header">
-          <span>Analito</span>
-          <span>Valor</span>
-          <span>Unidade</span>
-          <span>Ref. min</span>
-          <span>Ref. max</span>
-          <span />
+        {/* Cabeçalho e linhas rolam juntos no invólucro (contrato, seção 3):
+            em tela estreita as colunas continuam alinhadas ao cabeçalho. */}
+        <div className="avaliacao-exames-laboratoriais__table-wrap">
+          <div className="avaliacao-exames-laboratoriais__row avaliacao-exames-laboratoriais__row--header" aria-hidden="true">
+            <span>Analito</span>
+            <span>Valor</span>
+            <span>Unidade</span>
+            <span>Ref. min</span>
+            <span>Ref. max</span>
+            <span />
+          </div>
+          <div className="avaliacao-exames-laboratoriais__rows">
+            {/* Cada campo da linha tem rótulo só para o leitor de tela, com a
+                linha e a coluna já escritas no cabeçalho acima. */}
+            {formData.analitos.map((row, linha) => (
+              <div key={row.id} className="avaliacao-exames-laboratoriais__row">
+                <Campo rotuloOculto rotulo={`Analito ${linha + 1}`}>
+                  <input
+                    type="text"
+                    className="eval-input"
+                    value={row.nome}
+                    onChange={handleAnalitoChange(row.id, 'nome')}
+                    onBlur={handleAnalitoNomeBlur(row.id)}
+                    disabled={readOnly}
+                    placeholder="Analito"
+                  />
+                </Campo>
+                <Campo rotuloOculto rotulo={`Analito ${linha + 1}: Valor`}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="eval-input"
+                    value={row.valor}
+                    onChange={handleAnalitoChange(row.id, 'valor')}
+                    disabled={readOnly}
+                    placeholder="Valor"
+                  />
+                </Campo>
+                <Campo rotuloOculto rotulo={`Analito ${linha + 1}: Unidade`}>
+                  <input
+                    type="text"
+                    className="eval-input"
+                    value={row.unidade}
+                    onChange={handleAnalitoChange(row.id, 'unidade')}
+                    disabled={readOnly}
+                    placeholder="Unidade"
+                  />
+                </Campo>
+                <Campo rotuloOculto rotulo={`Analito ${linha + 1}: Ref. min`}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="eval-input"
+                    value={row.referenciaMin}
+                    onChange={handleAnalitoChange(row.id, 'referenciaMin')}
+                    disabled={readOnly}
+                    placeholder="Ref. min"
+                  />
+                </Campo>
+                <Campo rotuloOculto rotulo={`Analito ${linha + 1}: Ref. max`}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="eval-input"
+                    value={row.referenciaMax}
+                    onChange={handleAnalitoChange(row.id, 'referenciaMax')}
+                    disabled={readOnly}
+                    placeholder="Ref. max"
+                  />
+                </Campo>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="avaliacao-exames-laboratoriais__remove-btn"
+                  onClick={() => removeAnalito(row.id)}
+                  disabled={readOnly}
+                  aria-label="Remover analito"
+                  title="Remover analito"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="avaliacao-exames-laboratoriais__rows">
-          {formData.analitos.map((row) => (
-            <div key={row.id} className="avaliacao-exames-laboratoriais__row">
-              <input
-                type="text"
-                className="eval-input"
-                value={row.nome}
-                onChange={handleAnalitoChange(row.id, 'nome')}
-                onBlur={handleAnalitoNomeBlur(row.id)}
-                disabled={readOnly}
-                placeholder="Analito"
-              />
-              <input
-                type="number"
-                step="0.01"
-                className="eval-input"
-                value={row.valor}
-                onChange={handleAnalitoChange(row.id, 'valor')}
-                disabled={readOnly}
-                placeholder="Valor"
-              />
-              <input
-                type="text"
-                className="eval-input"
-                value={row.unidade}
-                onChange={handleAnalitoChange(row.id, 'unidade')}
-                disabled={readOnly}
-                placeholder="Unidade"
-              />
-              <input
-                type="number"
-                step="0.01"
-                className="eval-input"
-                value={row.referenciaMin}
-                onChange={handleAnalitoChange(row.id, 'referenciaMin')}
-                disabled={readOnly}
-                placeholder="Ref. min"
-              />
-              <input
-                type="number"
-                step="0.01"
-                className="eval-input"
-                value={row.referenciaMax}
-                onChange={handleAnalitoChange(row.id, 'referenciaMax')}
-                disabled={readOnly}
-                placeholder="Ref. max"
-              />
-              <Button
-                type="button"
-                variant="secondary"
-                className="avaliacao-exames-laboratoriais__remove-btn"
-                onClick={() => removeAnalito(row.id)}
-                disabled={readOnly}
-                aria-label="Remover analito"
-                title="Remover analito"
-              >
-                <Trash2 size={16} />
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Resumo calculado</h4>
-        <div className="eval-summary-grid">
+      <AvaliacaoSecao id="exames-resumo" titulo="Resumo calculado" className="eval-section">
+        <div className="av-resultados">
           <SummaryCard label="Alterados" value={summary.alteracoesCount} />
           <SummaryCard label="Limítrofes" value={summary.limitesCount} />
           <SummaryCard label="Normais" value={summary.normaisCount} />
@@ -741,43 +754,21 @@ const AvaliacaoExamesLaboratoriais = ({
           <SummaryCard label="Classificação" value={classification} />
         </div>
         {evaluation?.warnings?.[0] && (
-          <div className="eval-note" style={{ marginTop: '0.75rem' }}>
+          <AvisoAvaliacao tipo="info">
             {evaluation.warnings[0]}
-          </div>
+          </AvisoAvaliacao>
         )}
-      </div>
+      </AvaliacaoSecao>
 
-      {error && <div className="form-error-message">{error}</div>}
-      {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
+      {error && <AvisoAvaliacao tipo="perigo" anunciar>{error}</AvisoAvaliacao>}
 
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={() => dispatchSave(false)} disabled={readOnly} loading={saveStatus === 'saving'}>
           <Save size={18} /> Salvar avaliação
         </Button>
-      </div>
-    </div>
+      </BarraAcoesAvaliacao>
+    </AvaliacaoModulo>
   );
-};
-
-const normalizeType = (value) => String(value || '').trim().toLowerCase().replace(/-/g, '_');
-
-const findLatestEvaluationByType = (history, tipo, sessaoId) => {
-  const normalizedType = normalizeType(tipo);
-  if (!Array.isArray(history)) return null;
-  const scoped = history.filter((item) => normalizeType(item?.tipo) === normalizedType);
-  if (!scoped.length) return null;
-  const normalizedSession = String(sessaoId || '').trim();
-  if (!normalizedSession) return scoped[0];
-  return scoped.find((item) => String(item?.sessaoId || '').trim() === normalizedSession) || scoped[0];
-};
-
-const resolveFirstToken = (values = []) => {
-  for (const value of values) {
-    const token = String(value || '').trim();
-    if (token) return token;
-  }
-  return '';
 };
 
 const formatDateBr = (value) => {
@@ -786,13 +777,16 @@ const formatDateBr = (value) => {
   return parsed.toLocaleDateString('pt-BR');
 };
 
+// Mesma assinatura e mesmo texto: o número com a unidade ao lado, o texto
+// (a classificação do painel) como veio e "Não informado" na ausência.
 const SummaryCard = ({ label, value, unit = '' }) => (
-  <div className="eval-summary-item">
-    <span>{label}</span>
-    <strong>
-      {Number.isFinite(value) ? `${value}${unit ? ` ${unit}` : ''}` : (value || 'Não informado')}
-    </strong>
-  </div>
+  <ResultadoCalculado
+    className={`exames-resumo-card${Number.isFinite(value) ? '' : ' exames-resumo-card--texto'}`}
+    rotulo={label}
+    valor={Number.isFinite(value) ? value : (value || null)}
+    unidade={Number.isFinite(value) && unit ? unit : undefined}
+    semValor="Não informado"
+  />
 );
 
 const parseNumeric = (value) => {

@@ -109,7 +109,7 @@ export class SettingsService {
     });
     const previous = normalizeAdminConsoleSettings(currentEntity?.payload || {});
     const incoming = input && typeof input === 'object'
-      ? (input as unknown as Record<string, unknown>)
+      ? { ...input }
       : {};
     const next = normalizeAdminConsoleSettings({
       ...previous,

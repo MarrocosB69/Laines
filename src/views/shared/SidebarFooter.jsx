@@ -1,5 +1,6 @@
 import React from 'react';
 import { LogOut } from 'lucide-react';
+import { nomeExibicao } from './nomeExibicao';
 
 const SidebarFooter = ({ displayName, userInitials, onLogout, isCollapsed = false }) => (
   <div className={`sb-footer ${isCollapsed ? 'sb-footer--collapsed' : ''}`}>
@@ -9,7 +10,7 @@ const SidebarFooter = ({ displayName, userInitials, onLogout, isCollapsed = fals
       </div>
       {!isCollapsed && (
         <div className="sb-footer__info">
-          <p className="sb-footer__name">{displayName}</p>
+          <p className="sb-footer__name" title={displayName}>{nomeExibicao(displayName)}</p>
           <p className="sb-footer__status">
             <span className="sb-footer__status-dot" aria-hidden="true" />
             Sessão ativa

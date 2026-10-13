@@ -1,12 +1,57 @@
+/* Sistema global de modais (app-modal-*), carregado por index.css e usado
+   no app inteiro: nenhuma classe sai nem muda de nome.
+   Direção "Energia e velocidade" (docs/implementacao/telas-v2/): superfície
+   branca com --lt-radius-card, título em Sofia 700, campos de 48 px, alvos
+   de 44 px, foco --lt-focus-ring, primário no degradê de largada e
+   secundário em contorno.
+   Ficam como estavam, porque a avaliação por imagem (ai-wizard) e os modais
+   da landing desenham por cima deles: o véu, o desfoque, a sombra da casca
+   e as transições dos botões.
+
+   Tokens da família de modais. Os nomes --mdl-* continuam (outros CSS os
+   consomem); os valores passam aos tokens --lt-*. text-2 e text-3 caem no
+   mesmo tom de apoio, porque o vocabulário novo tem três degraus de texto. */
+:root {
+  --mdl-surface:       var(--lt-color-surface);
+  --mdl-surface-2:     var(--lt-color-surface-field);
+  --mdl-surface-tint:  var(--lt-color-surface-field);
+
+  --mdl-navy:          var(--lt-color-text);
+  --mdl-text-1:        var(--lt-color-text);
+  --mdl-text-2:        var(--lt-color-text-muted);
+  --mdl-text-3:        var(--lt-color-text-muted);
+  --mdl-text-4:        var(--lt-color-text-subtle);
+  --mdl-text-faint:    var(--lt-color-border-field);
+
+  --mdl-border:        var(--lt-color-border);
+  --mdl-border-2:      var(--lt-color-border);
+  --mdl-border-3:      var(--lt-color-border);
+
+  --mdl-blue:          var(--lt-color-brand-blue);
+  --mdl-ok:            var(--lt-color-success-text);
+  --mdl-ok-deep:       var(--lt-color-success-text);
+  --mdl-ok-strong:     var(--lt-color-success-text);
+  --mdl-ok-bg:         var(--lt-color-success-bg);
+  --mdl-ok-border:     rgba(22, 101, 52, 0.28);
+  --mdl-danger:        var(--lt-color-danger-text);
+  --mdl-danger-mid:    var(--lt-color-danger-text);
+  --mdl-danger-bg:     var(--lt-color-danger-bg);
+  --mdl-danger-bg-2:   var(--lt-color-danger-bg);
+  --mdl-danger-border: rgba(185, 28, 28, 0.28);
+  --mdl-warn-bg:       #fff7ed; /* fundo do par de atenção de painel.css */
+}
+
+/* Véu: a casca branca contra o véu sobre uma página branca mede 4,7:1
+   (acima dos 3:1 de limite de componente); sobre páginas escuras, mais. */
 .app-modal-overlay {
   --app-modal-z: 2500;
   --app-modal-overlay-bg: rgba(4, 15, 30, 0.58);
   --app-modal-backdrop-blur: 5px;
-  --app-modal-radius: 1.18rem;
+  --app-modal-radius: var(--lt-radius-card);
   --app-modal-padding-x: clamp(1.6rem, 2.3vw, 2.35rem);
   --app-modal-padding-y: 1.02rem;
   --app-modal-content-max-width: 920px;
-  --app-modal-header-bg: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  --app-modal-header-bg: var(--mdl-surface);
   position: fixed;
   inset: 0;
   z-index: var(--app-modal-z);
@@ -32,8 +77,9 @@
   display: flex;
   flex-direction: column;
   border-radius: var(--app-modal-radius);
-  border: 1px solid rgba(219, 227, 238, 0.95);
-  background: linear-gradient(168deg, #ffffff 0%, #f7fafe 100%);
+  border: 1px solid var(--lt-color-border);
+  background: var(--mdl-surface);
+  color: var(--lt-color-text);
   box-shadow: 0 30px 72px -38px rgba(15, 23, 42, 0.56);
 }
 
@@ -64,7 +110,7 @@
 .app-modal-header {
   flex-shrink: 0;
   padding: var(--app-modal-padding-y) var(--app-modal-padding-x) 0.95rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--mdl-border-2);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -72,13 +118,17 @@
   background: var(--app-modal-header-bg);
 }
 
+/* Fechar: alvo de 44 px (UX-08 cita "fechar modal"); o X continua pequeno. */
 .app-modal-close {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 999px;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
-  color: #64748b;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border-radius: var(--lt-radius-pill);
+  border: 1px solid var(--mdl-border);
+  background: var(--mdl-surface);
+  color: var(--mdl-text-3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -87,15 +137,15 @@
 }
 
 .app-modal-close:hover:not(:disabled) {
-  border-color: #cbd5e1;
-  color: #0f172a;
-  background: #f8fafc;
+  border-color: var(--lt-color-brand-blue);
+  color: var(--mdl-text-1);
+  background: var(--lt-color-track-tint);
 }
 
 .app-modal-close:focus-visible {
   outline: none;
-  border-color: #103355;
-  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.18);
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
 }
 
 .app-modal-body {
@@ -103,7 +153,7 @@
   min-height: 0;
   overflow: auto;
   padding: 0.95rem var(--app-modal-padding-x) 1.15rem;
-  background: #ffffff;
+  background: var(--mdl-surface);
 }
 
 .app-modal-body > * {
@@ -113,8 +163,8 @@
 
 .app-modal-footer {
   flex-shrink: 0;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-top: 1px solid var(--mdl-border-2);
+  background: var(--mdl-surface-2);
   padding: 0.84rem var(--app-modal-padding-x) 0.9rem;
   display: flex;
   align-items: center;
@@ -129,38 +179,45 @@
   gap: 0.3rem;
 }
 
+/* Título em Sofia 700 no degrau de título de modal. É h2/h3/h4 conforme o
+   modal: fonte, cor e fundo redeclarados contra os títulos globais. */
 .app-modal-title {
   margin: 0;
-  font-size: clamp(1.08rem, 1.6vw, 1.34rem);
-  line-height: 1.2;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: #0f172a;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--mdl-text-1);
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  overflow-wrap: break-word;
 }
 
 .app-modal-subtitle {
   margin: 0;
-  font-size: 0.83rem;
-  line-height: 1.42;
-  color: #64748b;
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  color: var(--mdl-text-3);
 }
 
 .app-modal-eyebrow {
   margin: 0;
-  font-size: 0.68rem;
-  font-weight: 800;
+  font-size: var(--lt-text-2xs);
+  font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--mdl-text-3);
 }
 
+/* Ícone do cabeçalho: azul sobre o tom de pista (5,57:1). */
 .app-modal-header-icon {
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 0.85rem;
-  border: 1px solid #dbe3ee;
-  background: #f8fbff;
-  color: #103355;
+  border-radius: var(--lt-radius-control);
+  border: 0;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -183,12 +240,12 @@
   grid-column: 1 / -1;
   margin: 0.12rem 0 0;
   padding-bottom: 0.35rem;
-  border-bottom: 1px dashed #dbe3ee;
-  font-size: 0.73rem;
-  font-weight: 800;
+  border-bottom: 1px dashed var(--mdl-border);
+  font-size: var(--lt-text-xs);
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--mdl-text-3);
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -207,55 +264,63 @@
 
 .app-modal-field-label {
   margin: 0;
-  font-size: 0.79rem;
+  font-size: var(--lt-text-sm);
   font-weight: 700;
-  color: #475569;
+  color: var(--lt-color-text);
 }
 
-.app-modal-input,
+/* Campo de 48 px com borda de componente (3,91:1) e texto de 16 px, que
+   evita o zoom do iOS no foco. O :not() repetido no input iguala e passa a
+   especificidade de `input:not([type=checkbox]):not([type=radio])` de
+   theme.css (0,2,1), que antes vencia estas regras de classe. */
+.app-modal-input:not([type="checkbox"]):not([type="radio"]),
 .app-modal-select,
 .app-modal-textarea {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 2.62rem;
-  border-radius: 0.82rem;
-  border: 1px solid #dbe3ee;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 0.84rem;
-  font-weight: 500;
-  padding: 0.56rem 0.74rem;
+  min-height: 48px;
+  border-radius: var(--lt-radius-control);
+  border: 1.5px solid var(--lt-color-border-field);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-control);
+  font-weight: 400;
+  line-height: var(--lt-leading-normal);
+  padding: 0 var(--lt-space-4);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .app-modal-textarea {
   min-height: 6.2rem;
+  padding: var(--lt-space-3) var(--lt-space-4);
   resize: vertical;
 }
 
 .app-modal-input::placeholder,
 .app-modal-textarea::placeholder {
-  color: #94a3b8;
+  color: var(--mdl-text-4);
 }
 
-.app-modal-input:focus,
+.app-modal-input:not([type="checkbox"]):not([type="radio"]):focus,
 .app-modal-select:focus,
 .app-modal-textarea:focus {
   outline: none;
-  border-color: #103355;
-  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.13);
+  border-color: var(--lt-color-brand-blue);
+  box-shadow: var(--lt-focus-ring);
 }
 
-.app-modal-input:disabled,
+.app-modal-input:not([type="checkbox"]):not([type="radio"]):disabled,
 .app-modal-select:disabled,
 .app-modal-textarea:disabled {
   opacity: 0.72;
   cursor: not-allowed;
-  background: #f8fafc;
+  background: var(--mdl-surface-2);
 }
 
 .app-modal-inline-message {
   grid-column: 1 / -1;
-  border-radius: 0.82rem;
+  border-radius: var(--lt-radius-control);
   border: 1px solid transparent;
   padding: 0.58rem 0.72rem;
   display: flex;
@@ -266,15 +331,15 @@
 }
 
 .app-modal-inline-message--error {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
+  border-color: var(--mdl-danger-border);
+  background: var(--mdl-danger-bg);
+  color: var(--mdl-danger-mid);
 }
 
 .app-modal-inline-message--success {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-  color: #166534;
+  border-color: var(--mdl-ok-border);
+  background: var(--mdl-ok-bg);
+  color: var(--mdl-ok-deep);
 }
 
 .app-modal-actions {
@@ -285,15 +350,20 @@
   gap: 0.56rem;
 }
 
+/* Botões de 44 px. A borda de 1 px, a entrelinha herdada e a transição
+   ficam como estavam: os modais da landing desenham por cima e mudariam de
+   altura ou perderiam o próprio movimento de hover. */
 .app-modal-btn {
-  min-height: 38px;
-  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  min-height: var(--lt-target-min);
+  border-radius: var(--lt-radius-control);
   border: 1px solid transparent;
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
-  padding: 9px 20px;
+  padding: 0 var(--lt-space-5);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -310,44 +380,49 @@
 
 .app-modal-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(16, 51, 85, 0.2);
+  box-shadow: var(--lt-focus-ring);
 }
 
+/* Secundário: contorno de campo, texto azul (6,33:1). */
 .app-modal-btn--secondary {
-  border-color: var(--color-navy);
+  border-color: var(--lt-color-border-field);
   border-width: 1.5px;
-  background: transparent;
-  color: var(--color-navy);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-brand-blue);
 }
 
 .app-modal-btn--secondary:hover:not(:disabled) {
-  background: rgba(16, 51, 85, 0.05);
-  border-color: var(--color-navy);
-  color: var(--color-navy);
+  background: var(--lt-color-track-tint);
+  border-color: var(--lt-color-brand-blue);
+  color: var(--lt-color-brand-blue);
 }
 
+/* Primário no degradê de largada: branco a 4,82:1 no topo e 6,20:1 na base.
+   Antes, branco sobre #74A865 media 2,8:1. */
 .app-modal-btn--primary {
-  border-color: var(--color-green);
-  background: var(--color-green);
-  color: #ffffff;
-  box-shadow: var(--shadow-sm);
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--lt-color-start-top), var(--lt-color-start-bottom));
+  color: var(--lt-color-text-inverse);
+  box-shadow: 0 10px 22px -16px rgba(42, 111, 24, 0.8);
 }
 
 .app-modal-btn--primary:hover:not(:disabled) {
-  background: var(--color-green-dark);
-  border-color: var(--color-green-dark);
+  box-shadow: 0 14px 26px -12px rgba(42, 111, 24, 0.85);
 }
 
+/* Perigo: vermelho de texto sobre o fundo de erro (5,91:1); o hover marca a
+   borda em vez de trocar o tom. */
 .app-modal-btn--danger {
   border-color: transparent;
-  background: #fee2e2;
-  color: #991b1b;
+  border-width: 1.5px;
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
   box-shadow: none;
 }
 
 .app-modal-btn--danger:hover:not(:disabled) {
-  background: #fecaca;
-  border-color: transparent;
+  background: var(--lt-color-danger-bg);
+  border-color: var(--lt-color-danger-text);
 }
 
 .app-modal-body::-webkit-scrollbar {
@@ -355,7 +430,7 @@
 }
 
 .app-modal-body::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--mdl-text-faint);
   border-radius: 999px;
 }
 
@@ -369,7 +444,7 @@
     width: min(var(--app-modal-width), calc(100vw - 1rem));
     max-height: calc(100vh - 1rem);
     max-height: calc(100dvh - 1rem);
-    border-radius: 1rem;
+    border-radius: var(--app-modal-radius);
   }
 
   .app-modal-header,

@@ -419,7 +419,7 @@ export class RefreshTokensService {
         expiresAt: nextRefreshTokenExpiresAt,
         userAgent: this.normalizeOptionalText(input.userAgent, 255),
         ipAddress: this.normalizeOptionalText(input.ipAddress, 64)
-      } as unknown as Partial<RefreshToken>)
+      })
       .where('id = :id', { id: payload.jti })
       .andWhere('token_hash = :tokenHash', { tokenHash })
       .andWhere('user_id = :userId', { userId: payload.sub })
@@ -530,7 +530,7 @@ export class RefreshTokensService {
       .update(RefreshToken)
       .set({
         revokedAt: () => 'NOW()'
-      } as unknown as Partial<RefreshToken>)
+      })
       .where('user_id = :userId', { userId: normalizedUserId })
       .andWhere('family_id = :familyId', { familyId: normalizedFamilyId })
       .andWhere('revoked_at IS NULL')
@@ -545,7 +545,7 @@ export class RefreshTokensService {
       .update(RefreshToken)
       .set({
         revokedAt: () => 'NOW()'
-      } as unknown as Partial<RefreshToken>)
+      })
       .where('user_id = :userId', { userId: normalizedUserId })
       .andWhere('revoked_at IS NULL')
       .execute();

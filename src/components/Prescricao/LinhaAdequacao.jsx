@@ -7,40 +7,55 @@ import { n } from './formato.js';
  * A inversão do sódio (passar de 100% é excesso, não conquista) vive em
  * `situacaoAdequacao`; aqui cada situação só vira um tom. A cor nunca carrega
  * sozinha o significado — o valor e o percentual estão sempre na linha.
+ *
+ * Os tons são tokens (PrescricaoPlano.css): meta atingida em verde, limite e
+ * meta não atingida em vermelho, referência populacional em azul — três
+ * semânticas, três cores, e o rótulo escrito ao lado de cada uma.
  */
 const COR_SITUACAO = {
-  'sem-dado': '#D6D3D1',
-  ok: '#059669',
-  atencao: '#D97706',
-  insuficiente: '#DC2626',
-  excedido: '#DC2626'
+  'sem-dado': 'var(--pp-raia)',
+  ok: 'var(--lt-color-brand-green)',
+  atencao: 'var(--pp-atencao-traco)',
+  insuficiente: 'var(--lt-color-danger-text)',
+  excedido: 'var(--lt-color-danger-text)',
+  'referencia-atingida': 'var(--lt-color-brand-blue)',
+  'referencia-abaixo': 'var(--pp-atencao-traco)'
+};
+
+const ROTULO_SITUACAO = {
+  'sem-dado': 'Sem dados suficientes', ok: 'Na faixa', atencao: 'Ajuste',
+  insuficiente: 'Abaixo da meta', excedido: 'Acima da meta ou limite',
+  'referencia-atingida': 'Referência populacional atingida', 'referencia-abaixo': 'Abaixo da referência populacional'
 };
 
 export default function LinhaAdequacao({ linha }) {
   const { percentual, direcao, cobertura: cob, situacao } = linha;
+  const parcial = linha.valor !== null && Number.isFinite(cob) && cob < 1;
   const largura = percentual === null ? 0 : Math.min(percentual, 100);
   const cor = COR_SITUACAO[situacao] ?? COR_SITUACAO['sem-dado'];
 
   return (
-    <tr className="border-b border-stone-200 text-xs">
-      <th scope="row" className="py-1 pr-2 text-left font-normal text-stone-700">
+    <tr className="pp-adequacao__linha" aria-label={`${linha.rotulo}: ${ROTULO_SITUACAO[situacao] || 'Sem dados suficientes'}${parcial ? ', subtotal conhecido' : ''}`}>
+      <th scope="row" className="pp-adequacao__nutriente">
         {linha.rotulo}
-        {direcao === 'limite' && <span className="ml-1 text-stone-400">limite</span>}
+        {direcao === 'limite' && <span className="pp-adequacao__limite">limite</span>}
+        <span className={`pp-situacao pp-situacao--${situacao}`}>{ROTULO_SITUACAO[situacao]}</span>
       </th>
-      <td className="py-1 pr-2 whitespace-nowrap text-right text-stone-800">
-        {n(linha.valor, linha.valor !== null && linha.valor < 20 ? 1 : 0)} {linha.unidade}
+      <td className="pp-adequacao__valor" data-rotulo={parcial ? 'Subtotal conhecido' : 'Plano'}>
+        {n(linha.valor, linha.valor !== null && linha.valor < 20 ? 1 : 0)} {linha.unidade}{parcial && <span aria-hidden="true"> *</span>}
       </td>
-      <td className="py-1 pr-2 whitespace-nowrap text-right text-stone-500">
+      <td className="pp-adequacao__referencia" data-rotulo="Referência">
         {n(linha.referencia, linha.referencia < 20 ? 1 : 0)}
-        {linha.tipo !== 'meta' && <span className="ml-1 text-stone-400">{linha.tipo}</span>}
+        {linha.tipo !== 'meta' && <span className="pp-adequacao__tipo">{linha.tipo}</span>}
       </td>
-      <td className="w-16 py-1 pl-2">
-        <span className="block h-1 rounded-sm bg-stone-200">
-          <span className="adequacao-barra block h-1" style={{ width: `${largura}%`, background: cor }} />
+      <td className="pp-adequacao__proporcao">
+        <span className="pp-adequacao__trilho">
+          <span className="adequacao-barra pp-adequacao__barra" style={{ width: `${largura}%`, background: cor }} />
         </span>
+        <span className="pp-adequacao__pct">{n(percentual, 0)}{percentual !== null ? '%' : ''}</span>
       </td>
-      <td className="w-14 py-1 whitespace-nowrap text-right text-stone-400">
-        {cob < 1 ? `${Math.round(cob * 100)}%` : ''}
+      <td className="pp-adequacao__cobertura" data-rotulo="Cobert.">
+        {Number.isFinite(cob) && cob < 1 ? `${Math.min(99, Math.round(cob * 100))}%` : ''}
       </td>
     </tr>
   );

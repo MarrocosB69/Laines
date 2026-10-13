@@ -1,6 +1,5 @@
 ﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Scale } from 'lucide-react';
-import MiniSparkline from '../../shared/MiniSparkline';
+import { Scale } from 'lucide-react';
 import { Button } from '../../ui';
 import { toLocalDateInputValue } from '../../../utils/dateUtils';
 import {
@@ -8,9 +7,36 @@ import {
   calculateBiaEvaluation,
   validatePhysiologicalRange
 } from '../../../services/calculationEngine';
+import ValorAnterior from '../components/ValorAnterior';
+import { acharValorAnterior } from '../components/historicoDeCampo';
 import { useUiFeedback } from '../../../contexts/UiFeedbackContext';
 import '../avaliacoes.css';
+import {
+  AvaliacaoModulo,
+  AvaliacaoSecao,
+  AvaliacaoIndice,
+  Campo,
+  CampoNumero,
+  GrupoOpcoes,
+  Opcao,
+  ResultadoCalculado,
+  AvisoAvaliacao,
+  BarraAcoesAvaliacao,
+  Tendencia
+} from '../base';
 import './BioimpedanciaForm.css';
+
+// Ordem visual: coleta e preparo, a base que o aparelho pede (sexo, idade,
+// estatura, peso), a leitura, os resultados e as comparações.
+const BIA_INDICE = [
+  { id: 'bia-preparo', titulo: 'Equipamento e condições pré-avaliação' },
+  { id: 'bia-base', titulo: 'Base antropométrica' },
+  { id: 'bia-leitura', titulo: 'Dados de entrada ou leitura direta' },
+  { id: 'bia-resultados', titulo: 'Resultados calculados' },
+  { id: 'bia-evolucao', titulo: 'Comparação longitudinal' },
+  { id: 'bia-fontes', titulo: 'Comparativo BIA vs Dobras vs DEXA (sessão)' },
+  { id: 'bia-observacoes', titulo: 'Observações' }
+];
 
 const BIA_TYPE_OPTIONS = [
   { value: 'tetrapolar_segmentar', label: 'Tetrapolar segmentar' },
@@ -68,7 +94,6 @@ const BioimpedanciaForm = ({
   moduleSnapshot,
   currentSessionId,
   moduleHistory = [],
-  allEvaluationHistory = [],
   lockSharedAnthropometry = false,
   readOnly = false
 }) => {
@@ -258,6 +283,18 @@ const BioimpedanciaForm = ({
   );
 
   const history = useMemo(() => normalizeBiaHistory(moduleHistory), [moduleHistory]);
+
+  // O historico ja chegava como prop e so alimentava o grafico do rodape.
+  // Aqui ele passa a alimentar tambem a leitura campo a campo.
+  const anteriores = useMemo(() => {
+    const buscar = (aliases) => acharValorAnterior(moduleHistory, aliases, { ignorarId: moduleSnapshot?.id });
+    return {
+      percentFat: buscar(['percentFat', 'percentual_gordura', 'percentualGordura']),
+      fatMassKg:  buscar(['fatMassKg', 'massa_gorda', 'massaGorda']),
+      leanMassKg: buscar(['leanMassKg', 'massa_magra', 'massaMagra']),
+      tbwL:       buscar(['tbwL', 'agua_total', 'aguaTotal'])
+    };
+  }, [moduleHistory, moduleSnapshot?.id]);
   const currentSnapshotId = moduleSnapshot?.id || '';
   const refHistory = useMemo(
     () => history.filter((item) => !currentSnapshotId || item.id !== currentSnapshotId).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)),
@@ -297,26 +334,6 @@ const BioimpedanciaForm = ({
     if (Number.isFinite(evaluation?.inputNormalized?.percentFat)) values.push(evaluation.inputNormalized.percentFat);
     return values.slice(-6);
   }, [evaluation, refHistory]);
-
-  const comparativeSources = useMemo(
-    () => buildCompositionSourceComparison({
-      allHistory: allEvaluationHistory,
-      currentSessionId: moduleSnapshot?.sessaoId || currentSessionId,
-      currentBia: {
-        percentFat: evaluation?.inputNormalized?.percentFat,
-        leanMass: evaluation?.inputNormalized?.leanMassKg,
-        date: normalizeDateValue(dados.dataAvaliacao)
-      }
-    }),
-    [
-      allEvaluationHistory,
-      currentSessionId,
-      dados.dataAvaliacao,
-      evaluation?.inputNormalized?.leanMassKg,
-      evaluation?.inputNormalized?.percentFat,
-      moduleSnapshot?.sessaoId
-    ]
-  );
 
   const interpretation = useMemo(() => {
     const row = comparisonRows.find((item) => item.key === 'leanMass');
@@ -647,214 +664,249 @@ const BioimpedanciaForm = ({
   }, [dados.entryMode, dados.equipamento, isChecklistConfirmed]);
 
   return (
-    <div className={`eval-card bioimpedancia-form bioimpedancia-form--modern${readOnly ? ' eval-card--readonly' : ''}`}>
-      <div className="eval-header">
-        <div className="eval-icon">
-          <Scale size={22} />
-        </div>
-        <div>
-          <h3 className="eval-title">Bioimpedancia (BIA)</h3>
-          <p className="eval-subtitle">Leituras de composição corporal com derivações automáticas e comparação longitudinal.</p>
-        </div>
-      </div>
+    <AvaliacaoModulo
+      className={`eval-card bioimpedancia-form bioimpedancia-form--modern${readOnly ? ' eval-card--readonly' : ''}`}
+      titulo="Bioimpedancia (BIA)"
+      descricao="Leituras de composição corporal com derivações automáticas e comparação longitudinal."
+      icone={<Scale size={22} />}
+    >
+      <AvaliacaoIndice itens={BIA_INDICE} />
+
+      {readOnly && <AvisoAvaliacao tipo="info">Somente leitura para o seu perfil.</AvisoAvaliacao>}
 
       {onboardingResumo.length > 0 ? (
-        <div className="eval-note">
+        <AvisoAvaliacao tipo="info">
           <strong>Contexto do onboarding:</strong> {onboardingResumo.join(' | ')}
-        </div>
+        </AvisoAvaliacao>
       ) : null}
-      <div className="eval-note">
+      <AvisoAvaliacao tipo="info">
         <strong>Status de comparabilidade:</strong> {comparabilidadeColeta}
-      </div>
+      </AvisoAvaliacao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Equipamento e condições pré-avaliação</h4>
-        <div className="bia-grid">
-          <div className="eval-field">
-            <label className="eval-label">Data da avaliação</label>
-            <input
-              type="date"
-              className="eval-input"
-              value={dados.dataAvaliacao}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'dataAvaliacao', event.target.value)}
+      <AvaliacaoSecao id="bia-preparo" titulo="Equipamento e condições pré-avaliação" className="eval-section">
+        <AvaliacaoSecao titulo="Coleta">
+          <div className="av-grade">
+            <Campo rotulo="Data da avaliação" className="eval-field">
+              <input
+                type="date"
+                className="eval-input"
+                value={dados.dataAvaliacao}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'dataAvaliacao', event.target.value)}
+                disabled={readOnly}
+              />
+            </Campo>
+            <Campo rotulo="Equipamento (marca/modelo/frequência)" className="eval-field">
+              <input
+                type="text"
+                className="eval-input"
+                value={dados.equipamento}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'equipamento', event.target.value)}
+                disabled={readOnly}
+                placeholder="Ex.: InBody 270 50kHz"
+              />
+            </Campo>
+            <Campo rotulo="Tipo de BIA" className="eval-field">
+              <select
+                className="eval-input"
+                value={dados.biaType}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'biaType', event.target.value)}
+                disabled={readOnly}
+              >
+                {BIA_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </Campo>
+            <Campo rotulo="Modo de inserção" className="eval-field">
+              <select
+                className="eval-input"
+                value={dados.entryMode}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'entryMode', event.target.value)}
+                disabled={readOnly}
+              >
+                <option value="manual">Manual</option>
+                <option value="importacao">Importação</option>
+              </select>
+            </Campo>
+          </div>
+        </AvaliacaoSecao>
+
+        <AvaliacaoSecao titulo="Condições pré-avaliação">
+          <div className="av-grade">
+            <BaseNumericField
+              label="Jejum"
+              unit="h"
+              value={dados.fastingHours}
+              onChange={(value) => updateField(setDados, setHasUserInput, 'fastingHours', value)}
               disabled={readOnly}
+              placeholder="Ex.: 8"
+            />
+            <Campo rotulo="Hidratação" className="eval-field">
+              <select
+                className="eval-input"
+                value={dados.hydrationStatus}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'hydrationStatus', event.target.value)}
+                disabled={readOnly}
+              >
+                <option value="nao_informado">Não informado</option>
+                <option value="adequada">Adequada</option>
+                <option value="desidratado">Desidratado</option>
+                <option value="hiperidratado">Hiperidratado</option>
+              </select>
+            </Campo>
+            <Campo rotulo="Atividade física nas últimas 24h" className="eval-field">
+              <select
+                className="eval-input"
+                value={dados.hadPhysicalActivity24h}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'hadPhysicalActivity24h', normalizeYesNo(event.target.value))}
+                disabled={readOnly}
+              >
+                <option value="nao_informado">Não informado</option>
+                <option value="nao">Não</option>
+                <option value="sim">Sim</option>
+              </select>
+            </Campo>
+            <Campo rotulo="Fase ciclo menstrual" className="eval-field">
+              <select
+                className="eval-input"
+                value={dados.menstrualPhase}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'menstrualPhase', event.target.value)}
+                disabled={readOnly}
+              >
+                <option value="nao_informado">Não informado</option>
+                <option value="folicular">Folicular</option>
+                <option value="ovulatoria">Ovulatória</option>
+                <option value="lutea">Lútea</option>
+                <option value="menstrual">Menstrual</option>
+                <option value="nenhuma">Não se aplica</option>
+              </select>
+            </Campo>
+
+            <BaseNumericField
+              label="MET treino anterior"
+              unit="MET"
+              value={dados.esportivo.metAnterior}
+              onChange={(value) => updateBioEsportivoField(setDados, setHasUserInput, 'metAnterior', value)}
+              disabled={readOnly}
+              placeholder="Ex.: 9.5"
             />
           </div>
-          <div className="eval-field">
-            <label className="eval-label">Equipamento (marca/modelo/frequência)</label>
-            <input
-              type="text"
-              className="eval-input"
-              value={dados.equipamento}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'equipamento', event.target.value)}
+
+          {/* A legenda já traz "(obrigatorio)" escrito: a prop `obrigatorio`
+              repetiria a palavra. */}
+          <GrupoOpcoes legenda="Checklist de preparo (obrigatorio)" className="eval-field eval-field-full bia-checklist">
+            <Opcao
+              tipo="checkbox"
+              className="bia-check-item"
+              rotulo={'Jejum >= 4h'}
+              checked={Boolean(dados.esportivo?.checklistPreparo?.jejum4h)}
+              onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'jejum4h', event.target.checked)}
               disabled={readOnly}
-              placeholder="Ex.: InBody 270 50kHz"
             />
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Tipo de BIA</label>
-            <select
-              className="eval-input"
-              value={dados.biaType}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'biaType', event.target.value)}
+            <Opcao
+              tipo="checkbox"
+              className="bia-check-item"
+              rotulo="Sem exercício nas últimas 24h"
+              checked={Boolean(dados.esportivo?.checklistPreparo?.semExercicio24h)}
+              onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'semExercicio24h', event.target.checked)}
               disabled={readOnly}
-            >
-              {BIA_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Modo de inserção</label>
-            <select
-              className="eval-input"
-              value={dados.entryMode}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'entryMode', event.target.value)}
+            />
+            <Opcao
+              tipo="checkbox"
+              className="bia-check-item"
+              rotulo="Bexiga vazia"
+              checked={Boolean(dados.esportivo?.checklistPreparo?.bexigaVazia)}
+              onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'bexigaVazia', event.target.checked)}
               disabled={readOnly}
-            >
-              <option value="manual">Manual</option>
-              <option value="importacao">Importação</option>
-            </select>
-          </div>
-          <BaseNumericField
-            label="Jejum"
-            unit="h"
-            value={dados.fastingHours}
-            onChange={(value) => updateField(setDados, setHasUserInput, 'fastingHours', value)}
-            disabled={readOnly}
-            placeholder="Ex.: 8"
-          />
-          <div className="eval-field">
-            <label className="eval-label">Hidratação</label>
-            <select
-              className="eval-input"
-              value={dados.hydrationStatus}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'hydrationStatus', event.target.value)}
+            />
+            <Opcao
+              tipo="checkbox"
+              className="bia-check-item"
+              rotulo="Sem metais/acessorios"
+              checked={Boolean(dados.esportivo?.checklistPreparo?.semMetais)}
+              onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'semMetais', event.target.checked)}
               disabled={readOnly}
-            >
-              <option value="nao_informado">Não informado</option>
-              <option value="adequada">Adequada</option>
-              <option value="desidratado">Desidratado</option>
-              <option value="hiperidratado">Hiperidratado</option>
-            </select>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Atividade física nas últimas 24h</label>
-            <select
-              className="eval-input"
-              value={dados.hadPhysicalActivity24h}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'hadPhysicalActivity24h', normalizeYesNo(event.target.value))}
-              disabled={readOnly}
-            >
-              <option value="nao_informado">Não informado</option>
-              <option value="nao">Não</option>
-              <option value="sim">Sim</option>
-            </select>
-          </div>
-          <div className="eval-field">
-            <label className="eval-label">Fase ciclo menstrual</label>
-            <select
-              className="eval-input"
-              value={dados.menstrualPhase}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'menstrualPhase', event.target.value)}
-              disabled={readOnly}
-            >
-              <option value="nao_informado">Não informado</option>
-              <option value="folicular">Folicular</option>
-              <option value="ovulatoria">Ovulatória</option>
-              <option value="lutea">Lútea</option>
-              <option value="menstrual">Menstrual</option>
-              <option value="nenhuma">Não se aplica</option>
-            </select>
-          </div>
+            />
+          </GrupoOpcoes>
 
-          <BaseNumericField
-            label="MET treino anterior"
-            unit="MET"
-            value={dados.esportivo.metAnterior}
-            onChange={(value) => updateBioEsportivoField(setDados, setHasUserInput, 'metAnterior', value)}
-            disabled={readOnly}
-            placeholder="Ex.: 9.5"
-          />
-
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Checklist de preparo (obrigatorio)</label>
-            <div className="bia-checklist-grid">
-              <label className="bia-check-item">
-                <input
-                  type="checkbox"
-                  checked={Boolean(dados.esportivo?.checklistPreparo?.jejum4h)}
-                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'jejum4h', event.target.checked)}
-                  disabled={readOnly}
-                />
-                <span>{'Jejum >= 4h'}</span>
-              </label>
-              <label className="bia-check-item">
-                <input
-                  type="checkbox"
-                  checked={Boolean(dados.esportivo?.checklistPreparo?.semExercicio24h)}
-                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'semExercicio24h', event.target.checked)}
-                  disabled={readOnly}
-                />
-                <span>Sem exercício nas últimas 24h</span>
-              </label>
-              <label className="bia-check-item">
-                <input
-                  type="checkbox"
-                  checked={Boolean(dados.esportivo?.checklistPreparo?.bexigaVazia)}
-                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'bexigaVazia', event.target.checked)}
-                  disabled={readOnly}
-                />
-                <span>Bexiga vazia</span>
-              </label>
-              <label className="bia-check-item">
-                <input
-                  type="checkbox"
-                  checked={Boolean(dados.esportivo?.checklistPreparo?.semMetais)}
-                  onChange={(event) => updateBioChecklist(setDados, setHasUserInput, 'semMetais', event.target.checked)}
-                  disabled={readOnly}
-                />
-                <span>Sem metais/acessorios</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {blockByChecklist && (
-          <div className="bia-precheck-alert">
-            <AlertTriangle size={16} />
-            <div>
+          {blockByChecklist && (
+            <AvisoAvaliacao tipo="atencao" className="bia-precheck-alert">
               <strong>Formulário bloqueado até confirmar todo o checklist de preparo.</strong>
-            </div>
-          </div>
-        )}
+            </AvisoAvaliacao>
+          )}
 
-        {showPrecheckAlert && (
-          <div className="bia-precheck-alert">
-            <AlertTriangle size={16} />
-            <div>
+          {showPrecheckAlert && (
+            <AvisoAvaliacao tipo="atencao" className="bia-precheck-alert">
               <strong>Resultado pode estar subestimado. Considere repetir em condicoes padronizadas.</strong>
               <ul>
                 {evaluation.warnings.precheck.map((item) => <li key={item}>{item}</li>)}
               </ul>
-            </div>
-          </div>
-        )}
-      </div>
+            </AvisoAvaliacao>
+          )}
+        </AvaliacaoSecao>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Dados de entrada ou leitura direta</h4>
+      {/* Antes da leitura: sexo, idade, estatura e peso são o que o aparelho
+          pede antes de medir. Bloco movido de depois da leitura. */}
+      <AvaliacaoSecao id="bia-base" titulo="Base antropométrica" className="eval-section">
+        <div className="av-grade">
+          <BaseNumericField
+            label="Peso"
+            unit="kg"
+            value={dados.weightKg}
+            onChange={(value) => updateField(setDados, setHasUserInput, 'weightKg', value)}
+            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
+            state={resolveInputState(fieldValidation.weightKg, submitAttempted || touched.weightKg)}
+            onBlur={() => setTouched((prev) => ({ ...prev, weightKg: true }))}
+            className="eval-field--critical"
+          />
+          <BaseNumericField
+            label="Estatura"
+            unit="cm"
+            value={dados.heightCm}
+            onChange={(value) => updateField(setDados, setHasUserInput, 'heightCm', value)}
+            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
+            state={resolveInputState(fieldValidation.heightCm, submitAttempted || touched.heightCm)}
+            onBlur={() => setTouched((prev) => ({ ...prev, heightCm: true }))}
+          />
+          <BaseNumericField
+            label="Idade"
+            unit="anos"
+            value={dados.ageYears}
+            onChange={(value) => updateField(setDados, setHasUserInput, 'ageYears', value)}
+            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
+          />
+          <Campo rotulo="Sexo biologico" className="eval-field">
+            <select
+              className="eval-input"
+              value={dados.sex}
+              onChange={(event) => updateField(setDados, setHasUserInput, 'sex', event.target.value)}
+              disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
+            >
+              <option value="">Selecione</option>
+              <option value="MASCULINO">Masculino</option>
+              <option value="FEMININO">Feminino</option>
+            </select>
+          </Campo>
+        </div>
+        {lockSharedAnthropometry && (
+          <AvisoAvaliacao tipo="info" className="bia-shared-hint">Peso, estatura, idade e sexo estão sincronizados com a ficha base compartilhada.</AvisoAvaliacao>
+        )}
+      </AvaliacaoSecao>
+
+      <AvaliacaoSecao id="bia-leitura" titulo="Dados de entrada ou leitura direta" className="eval-section">
         {dados.entryMode === 'importacao' && (
-          <div className="eval-field eval-field-full">
-            <label className="eval-label">Importação (colar resultado)</label>
-            <textarea
-              className="eval-textarea"
-              rows={4}
-              value={dados.importText}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'importText', event.target.value)}
-              disabled={readOnly || blockByChecklist}
-              placeholder="Cole o texto exportado do equipamento..."
-            />
+          <div className="bia-import">
+            <Campo rotulo="Importação (colar resultado)" className="eval-field eval-field-full">
+              <textarea
+                className="eval-textarea"
+                rows={4}
+                value={dados.importText}
+                onChange={(event) => updateField(setDados, setHasUserInput, 'importText', event.target.value)}
+                disabled={readOnly || blockByChecklist}
+                placeholder="Cole o texto exportado do equipamento..."
+              />
+            </Campo>
             <div className="bia-import-actions">
               <Button
                 type="button"
@@ -868,7 +920,7 @@ const BioimpedanciaForm = ({
           </div>
         )}
 
-        <div className="bia-grid">
+        <div className="av-grade">
           <BaseNumericField
             label="Resistencia"
             unit="ohm"
@@ -892,6 +944,8 @@ const BioimpedanciaForm = ({
           />
           <BaseNumericField
             label="% Gordura"
+            anterior={anteriores.percentFat}
+            melhorQuando="menor"
             unit="%"
             value={dados.percentFat}
             onChange={(value) => updateField(setDados, setHasUserInput, 'percentFat', value)}
@@ -902,6 +956,8 @@ const BioimpedanciaForm = ({
           />
           <BaseNumericField
             label="Massa gorda"
+            anterior={anteriores.fatMassKg}
+            melhorQuando="menor"
             unit="kg"
             value={dados.fatMassKg}
             onChange={(value) => updateField(setDados, setHasUserInput, 'fatMassKg', value)}
@@ -909,6 +965,8 @@ const BioimpedanciaForm = ({
           />
           <BaseNumericField
             label="Massa magra"
+            anterior={anteriores.leanMassKg}
+            melhorQuando="maior"
             unit="kg"
             value={dados.leanMassKg}
             onChange={(value) => updateField(setDados, setHasUserInput, 'leanMassKg', value)}
@@ -917,6 +975,7 @@ const BioimpedanciaForm = ({
           />
           <BaseNumericField
             label="Agua corporal total"
+            anterior={anteriores.tbwL}
             unit="L"
             value={dados.tbwL}
             onChange={(value) => updateField(setDados, setHasUserInput, 'tbwL', value)}
@@ -944,58 +1003,12 @@ const BioimpedanciaForm = ({
             disabled={readOnly || blockByChecklist}
           />
         </div>
-      </div>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Base antropométrica</h4>
-        <div className="bia-grid">
-          <BaseNumericField
-            label="Peso"
-            unit="kg"
-            value={dados.weightKg}
-            onChange={(value) => updateField(setDados, setHasUserInput, 'weightKg', value)}
-            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
-            state={resolveInputState(fieldValidation.weightKg, submitAttempted || touched.weightKg)}
-            onBlur={() => setTouched((prev) => ({ ...prev, weightKg: true }))}
-            className="eval-field--critical"
-          />
-          <BaseNumericField
-            label="Estatura"
-            unit="cm"
-            value={dados.heightCm}
-            onChange={(value) => updateField(setDados, setHasUserInput, 'heightCm', value)}
-            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
-            state={resolveInputState(fieldValidation.heightCm, submitAttempted || touched.heightCm)}
-            onBlur={() => setTouched((prev) => ({ ...prev, heightCm: true }))}
-          />
-          <BaseNumericField
-            label="Idade"
-            unit="anos"
-            value={dados.ageYears}
-            onChange={(value) => updateField(setDados, setHasUserInput, 'ageYears', value)}
-            disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
-          />
-          <div className="eval-field">
-            <label className="eval-label">Sexo biologico</label>
-            <select
-              className="eval-input"
-              value={dados.sex}
-              onChange={(event) => updateField(setDados, setHasUserInput, 'sex', event.target.value)}
-              disabled={readOnly || blockByChecklist || lockSharedAnthropometry}
-            >
-              <option value="">Selecione</option>
-              <option value="MASCULINO">Masculino</option>
-              <option value="FEMININO">Feminino</option>
-            </select>
-          </div>
-        </div>
-        {lockSharedAnthropometry && (
-          <p className="bia-shared-hint">Peso, estatura, idade e sexo estão sincronizados com a ficha base compartilhada.</p>
-        )}
-      </div>
-
-      <div className="eval-results-section">
-        <div className="bia-results-grid">
+      {/* O título vinha do ::after de .eval-results-section em avaliacoes.css;
+          agora é o título da seção. */}
+      <AvaliacaoSecao id="bia-resultados" titulo="Resultados calculados">
+        <div className="av-resultados">
           <ResultCard
             label="% Gordura"
             value={evaluation?.inputNormalized?.percentFat}
@@ -1060,73 +1073,54 @@ const BioimpedanciaForm = ({
             }}
           />
         </div>
+      </AvaliacaoSecao>
 
-        <div className="bia-comparison">
-          <div className="bia-table-wrap">
-            <table className="bia-table">
-              <thead>
-                <tr>
-                  <th>Indicador</th>
-                  <th>Atual</th>
-                  <th>Anterior</th>
-                  <th>Primeira</th>
-                  <th>Delta abs.</th>
-                  <th>Delta %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows.map((row) => (
-                  <tr key={row.key}>
-                    <td>{row.label}</td>
-                    <td>{formatMetric(row.current, row.unit, row.key)}</td>
-                    <td>{formatMetric(row.previous, row.unit, row.key)}</td>
-                    <td>{formatMetric(row.first, row.unit, row.key)}</td>
-                    <td className={resolveDeltaClass(row.delta.deltaAbs)}>{formatSigned(row.delta.deltaAbs, row.unit, row.key)}</td>
-                    <td className={resolveDeltaClass(row.delta.deltaPct)}>{formatSigned(row.delta.deltaPct, '%', 'percent')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="bia-sparkline-card">
-            <p>% gordura (últimos 6)</p>
-            <MiniSparkline values={sparklineValues} target={previous?.metrics?.percentFat ?? null} width={240} height={82} />
-          </div>
-          <p className="bia-interpretation">{interpretation}</p>
-        </div>
-      </div>
-
-      <div className="eval-section">
-        <h4 className="eval-section-title">Comparativo BIA vs Dobras vs DEXA (sessão)</h4>
-        <div className="bia-table-wrap">
-          <table className="bia-table bia-source-table">
+      {/* Tabela, tendência e interpretação estavam no pé dos resultados. A
+          tabela rola dentro do invólucro (focável, com o nome da seção). */}
+      <AvaliacaoSecao id="bia-evolucao" titulo="Comparação longitudinal">
+        <div className="bia-table-wrap" tabIndex={0} role="region" aria-labelledby="bia-evolucao-titulo">
+          <table className="bia-table">
             <thead>
               <tr>
-                <th>Fonte</th>
-                <th>% Gordura</th>
-                <th>Massa magra</th>
-                <th>Data</th>
-                <th>Delta vs BIA</th>
+                <th scope="col">Indicador</th>
+                <th scope="col">Atual</th>
+                <th scope="col">Anterior</th>
+                <th scope="col">Primeira</th>
+                <th scope="col">Delta abs.</th>
+                <th scope="col">Delta %</th>
               </tr>
             </thead>
             <tbody>
-              {comparativeSources.map((row) => (
-                <tr key={row.source}>
-                  <td>{row.label}</td>
-                  <td>{formatMetric(row.percentFat, '%', 'percentFat')}</td>
-                  <td>{formatMetric(row.leanMass, 'kg', 'leanMass')}</td>
-                  <td>{row.dateLabel || '--'}</td>
-                  <td className={resolveDeltaClass(row.deltaVsBia)}>{formatSigned(row.deltaVsBia, 'p.p.', 'percent')}</td>
+              {comparisonRows.map((row) => (
+                <tr key={row.key}>
+                  <th scope="row">{row.label}</th>
+                  <td>{formatMetric(row.current, row.unit, row.key)}</td>
+                  <td>{formatMetric(row.previous, row.unit, row.key)}</td>
+                  <td>{formatMetric(row.first, row.unit, row.key)}</td>
+                  <td className={resolveDeltaClass(row.delta.deltaAbs)}>{formatSigned(row.delta.deltaAbs, row.unit, row.key)}</td>
+                  <td className={resolveDeltaClass(row.delta.deltaPct)}>{formatSigned(row.delta.deltaPct, '%', 'percent')}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+        <Tendencia
+          className="bia-sparkline-card"
+          rotulo="% gordura (últimos 6)"
+          valores={sparklineValues}
+          alvo={previous?.metrics?.percentFat ?? null}
+          largura={240}
+          altura={82}
+          unidade="%"
+          casas={2}
+          rotuloAlvo="valor anterior"
+        />
+        <p className="bia-interpretation">{interpretation}</p>
+      </AvaliacaoSecao>
 
-      <div className="eval-section">
-        <h4 className="eval-section-title">Observações</h4>
-        <div className="eval-field eval-field-full">
+      <AvaliacaoSecao id="bia-observacoes" titulo="Observações" className="eval-section">
+        {/* O rótulo é o próprio título da seção, que já dizia "Observações". */}
+        <Campo rotulo="Observações" rotuloOculto className="eval-field eval-field-full">
           <textarea
             className="eval-textarea"
             rows={3}
@@ -1134,54 +1128,62 @@ const BioimpedanciaForm = ({
             onChange={(event) => updateField(setDados, setHasUserInput, 'observacoes', event.target.value)}
             disabled={readOnly || blockByChecklist}
           />
-        </div>
-      </div>
+        </Campo>
+      </AvaliacaoSecao>
 
-      {readOnly && <div className="eval-note">Somente leitura para o seu perfil.</div>}
-
-      <div className="eval-actions">
-        {saveStatus ? <span className={`save-indicator ${saveStatus}`}>{saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo' : 'Erro ao salvar'}</span> : null}
+      {/* "Salvando...", "Salvo" e "Erro ao salvar" são os textos padrão da barra. */}
+      <BarraAcoesAvaliacao status={saveStatus}>
         <Button type="button" variant="primary" onClick={handleSalvar} disabled={readOnly || blockByChecklist} loading={saveStatus === 'saving'}>
           Salvar bioimpedancia
         </Button>
-      </div>
+      </BarraAcoesAvaliacao>
 
-      {error && <div className="eval-note bia-error-note">{error}</div>}
-    </div>
+      {error && <AvisoAvaliacao tipo="perigo" anunciar className="bia-error-note">{error}</AvisoAvaliacao>}
+    </AvaliacaoModulo>
   );
 };
 
-const BaseNumericField = ({ label, unit, value, onChange, disabled, placeholder = '', state = '', onBlur, className = '' }) => (
-  <div className={`eval-field${className ? ` ${className}` : ''}`}>
-    <label className="eval-label">
-      {label}
-      <span className="bia-unit-badge">{unit}</span>
-    </label>
-    <input
-      type="text"
-      inputMode="decimal"
-      className={`eval-input ${state === 'error' ? 'bia-input-invalid' : ''} ${state === 'warning' ? 'bia-input-warning' : ''}`}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      disabled={disabled}
-      placeholder={placeholder}
-      onBlur={onBlur}
-    />
-  </div>
+const BaseNumericField = ({
+  label, unit, value, onChange, disabled, placeholder = '', state = '', onBlur, className = '',
+  anterior = null, casas = 1, melhorQuando = null
+}) => (
+  <CampoNumero
+    rotulo={label}
+    unidade={unit}
+    className={`eval-field${className ? ` ${className}` : ''}`}
+    // A medicao anterior fica na propria linha do campo: e aqui que ela
+    // responde "esse numero faz sentido?". Sem historico, nada (como antes).
+    anterior={anterior ? <ValorAnterior anterior={anterior} atual={value} casas={casas} melhorQuando={melhorQuando} /> : null}
+    type="text"
+    inputMode="decimal"
+    inputClassName={`eval-input ${state === 'error' ? 'bia-input-invalid' : ''} ${state === 'warning' ? 'bia-input-warning' : ''}`}
+    value={value}
+    onChange={(event) => onChange(event.target.value)}
+    disabled={disabled}
+    placeholder={placeholder}
+    onBlur={onBlur}
+  />
 );
 
+// Mesmos textos de antes: "Não calculado" sem valor e "Sem classificação" sem
+// rótulo. O tom só acompanha uma classificação escrita; a fonte vai como
+// referência e a variação em relação à anterior, no texto de apoio.
 const ResultCard = ({ label, value, unit = '', digits = 2, classification, delta }) => {
   const tone = resolveTone(classification?.tone);
   return (
-    <article className="bia-result-card">
-      <span className="bia-result-label">{label}</span>
-      <strong>{Number.isFinite(value) ? `${formatNumber(value, digits)}${unit ? ` ${unit}` : ''}` : 'Não calculado'}</strong>
-      <span className={`bia-status-badge bia-tone-${tone}`}>{classification?.label || 'Sem classificação'}</span>
-      {classification?.source ? <small>{classification.source}</small> : null}
-      {delta && Number.isFinite(delta.deltaAbs) ? (
+    <ResultadoCalculado
+      className="bia-result-card"
+      rotulo={label}
+      valor={Number.isFinite(value) ? formatNumber(value, digits) : null}
+      unidade={unit || undefined}
+      semValor="Não calculado"
+      classificacao={classification?.label || 'Sem classificação'}
+      tom={classification?.label ? tone : 'neutral'}
+      referencia={classification?.source || null}
+      metodo={delta && Number.isFinite(delta.deltaAbs) ? (
         <small className={`bia-delta ${resolveDeltaClass(delta.deltaAbs)}`}>{formatSigned(delta.deltaAbs, unit, unit === '%' ? 'percent' : 'default')}</small>
       ) : null}
-    </article>
+    />
   );
 };
 
@@ -1500,94 +1502,5 @@ function extractFirstNumber(line) {
   if (!match) return null;
   const numeric = Number(match[1]);
   return Number.isFinite(numeric) ? numeric : null;
-}
-
-function buildCompositionSourceComparison({ allHistory = [], currentSessionId = '', currentBia }) {
-  const rows = [];
-  rows.push({
-    source: 'bia_atual',
-    label: 'BIA (atual)',
-    percentFat: currentBia?.percentFat ?? null,
-    leanMass: currentBia?.leanMass ?? null,
-    dateLabel: currentBia?.date || '--',
-    deltaVsBia: 0
-  });
-
-  const normalizedHistory = Array.isArray(allHistory) ? allHistory : [];
-  const sessionRows = currentSessionId
-    ? normalizedHistory.filter((item) => String(item?.sessaoId || '') === String(currentSessionId))
-    : normalizedHistory;
-
-  const pickLatestByType = (typeMatcher) => {
-    const filtered = sessionRows.filter((item) => typeMatcher(normalizeType(item?.tipo)));
-    filtered.sort((a, b) => {
-      const aTime = resolveDate(a?.updatedAt || a?.createdAt || a?.data)?.getTime() || 0;
-      const bTime = resolveDate(b?.updatedAt || b?.createdAt || b?.data)?.getTime() || 0;
-      return bTime - aTime;
-    });
-    return filtered[0] || null;
-  };
-
-  const dobras = pickLatestByType((type) => type === 'dobras_cutaneas');
-  if (dobras) {
-    const dobrasPercent = parseNumeric(firstDefined(
-      dobras?.dados?.percentual_gordura,
-      dobras?.dados?.resultados_calculados?.percentual_gordura,
-      dobras?.resultados?.percentual_gordura,
-      dobras?.resultados?.percentualGordura
-    ));
-    const dobrasLean = parseNumeric(firstDefined(
-      dobras?.dados?.massa_magra,
-      dobras?.dados?.resultados_calculados?.massa_magra_kg,
-      dobras?.resultados?.massa_magra,
-      dobras?.resultados?.massaMagra
-    ));
-    rows.push({
-      source: 'dobras',
-      label: 'Dobras cutâneas',
-      percentFat: dobrasPercent,
-      leanMass: dobrasLean,
-      dateLabel: formatDateLabel(dobras?.updatedAt || dobras?.createdAt || dobras?.data),
-      deltaVsBia: Number.isFinite(dobrasPercent) && Number.isFinite(currentBia?.percentFat)
-        ? dobrasPercent - currentBia.percentFat
-        : null
-    });
-  }
-
-  const dexa = pickLatestByType((type) => type.includes('dexa') || type.includes('dxa'));
-  if (dexa) {
-    const dexaPercent = parseNumeric(firstDefined(
-      dexa?.dados?.percentual_gordura,
-      dexa?.resultados?.percentual_gordura,
-      dexa?.resultados?.percentualGordura
-    ));
-    const dexaLean = parseNumeric(firstDefined(
-      dexa?.dados?.massa_magra,
-      dexa?.resultados?.massa_magra,
-      dexa?.resultados?.massaMagra
-    ));
-    rows.push({
-      source: 'dexa',
-      label: 'DEXA',
-      percentFat: dexaPercent,
-      leanMass: dexaLean,
-      dateLabel: formatDateLabel(dexa?.updatedAt || dexa?.createdAt || dexa?.data),
-      deltaVsBia: Number.isFinite(dexaPercent) && Number.isFinite(currentBia?.percentFat)
-        ? dexaPercent - currentBia.percentFat
-        : null
-    });
-  }
-
-  return rows;
-}
-
-function normalizeType(value) {
-  return String(value || '').trim().toLowerCase().replace(/-/g, '_');
-}
-
-function formatDateLabel(value) {
-  const date = resolveDate(value);
-  if (!date) return '--';
-  return date.toLocaleDateString('pt-BR');
 }
 

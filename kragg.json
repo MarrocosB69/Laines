@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/@tortastudios/kragg-ts/kragg.schema.json",
+  "profile": "strict-ai-typescript",
+  "source_paths": ["server/src"],
+  "tsconfig": "server/tsconfig.json",
+  "test_paths": ["scripts/test-security-realtime.cjs"],
+  "test_runner": "node",
+  "test_command": ["node", "--test"],
+  "max_violations_per_gate": 25
+}

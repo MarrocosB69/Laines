@@ -14,6 +14,7 @@ import { normalizeFisioterapiaPayload } from './fisioterapia-normalizer';
 import { normalizePsicologiaPayload } from './psicologia-normalizer';
 import { normalizeTriagemRedsPayload } from './normalizers/triagem-reds-normalizer';
 import { normalizeCargaTreinoPayload } from './normalizers/carga-treino-normalizer';
+import { normalizePlanoMetasPayload } from './normalizers/plano-metas-normalizer';
 
 type GenericPayload = {
   tipo?: string;
@@ -46,7 +47,8 @@ const NORMALIZERS: Record<string, PayloadNormalizer> = {
   anamnese_inicial: normalizeAnamneseInicialPayload,
   avaliacao_clinica: normalizeAvaliacaoClinicaPayload,
   triagem_reds: normalizeTriagemRedsPayload,
-  carga_treino: normalizeCargaTreinoPayload
+  carga_treino: normalizeCargaTreinoPayload,
+  plano_metas: normalizePlanoMetasPayload
 };
 
 export const normalizeAvaliacaoPayload = <T extends GenericPayload>(payload: T): T => {

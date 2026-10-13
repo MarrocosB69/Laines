@@ -3,15 +3,16 @@ import {
   NotFoundException,
   BadRequestException,
   Optional,
-  ForbiddenException
+  ForbiddenException,
+  ServiceUnavailableException
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { randomUUID } from 'crypto';
 import { constants as fsConstants } from 'fs';
-import { access, unlink } from 'fs/promises';
-import { basename, extname, resolve } from 'path';
+import { access, mkdir, open, unlink } from 'fs/promises';
+import { basename, dirname, extname, resolve } from 'path';
 import { Paciente } from './paciente.entity';
 import { User } from '../users/user.entity';
 import { Avaliacao } from '../avaliacoes/avaliacao.entity';
@@ -25,12 +26,40 @@ import { AdicionarMensagemProfessorDto } from './dto/adicionar-mensagem-professo
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { ObservabilityService } from '../observability/observability.service';
 import {
+  asJsonRecord,
+  buildCadastroAtletaConsolidado,
+  compactJsonRecord,
+  getCadastroAtletaOrigins,
+  mergeAthleteConfirmation
+} from './athlete-cadastro.utils';
+import {
   AuthenticatedUser,
   hasGlobalAccess,
   hasTeamScopedAccess,
   isStudentMemberRole,
   normalizeRole
 } from '../auth/access-control';
+import {
+  auditManagementAccess,
+  clinicalScopeCondition,
+  isManagementLink,
+  resolveCaseCapabilities,
+  resolveClinicalLink,
+  resolveDirectClinicalLink,
+  studentLookupFromRepository
+} from '../auth/authorization';
+import { AVALIACAO_REGISTRY_BY_TIPO } from '../avaliacoes/evaluation-registry';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+import { getDiretoriaPermissionSource } from '../common/domain/access.constants';
+import {
+  ORDEM_PRIORIDADE_CONTATO,
+  VERSAO_PRIORIDADE_CONTATO,
+  prioridadeContatoDaTriagem
+} from './triagem-publica-prioridade';
+import {
+  gerarRelatorioTriagemPdf,
+  projetarRelatorioTriagem
+} from './triagem-publica-relatorio';
 
 const ATTACHMENT_FILENAME_REGEX = /^[\w.-]+$/;
 const ATTACHMENT_MIME_BY_EXT: Record<string, string> = {
@@ -42,16 +71,79 @@ const ATTACHMENT_MIME_BY_EXT: Record<string, string> = {
 type AtualizarPacienteWithMetadata = AtualizarPacienteDto & {
   linkedAt?: Date | null;
   prontuario?: string;
+  equipeMultiIds?: string[];
 };
 
 const PACIENTE_STATUS_VALUES = [
   'Ativo',
   'Lista de Espera',
+  'Triagem Publica',
   'Inativo',
   'Alta',
   'Triagem'
 ] as const;
 type PacienteStatus = (typeof PACIENTE_STATUS_VALUES)[number];
+const PATIENT_MANAGER_ROLES = new Set(['admin', 'coordenacao', 'coord_atendimento']);
+const PATIENT_PENDING_CREATOR_ROLES = new Set(['professor', 'profissional', 'presidente', 'vice']);
+const PRESIDENCY_ROLES = new Set(['presidente', 'vice']);
+const EXTENSION_TRIAGE_STATUS_VALUES = ['triagem publica', 'triagem_publica', 'triagem'];
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EQUIPE_MULTI_AREAS = new Set(['nutricao', 'fisioterapia', 'psicologia', 'educacao_fisica', 'medicina', 'outro']);
+const EQUIPE_MULTI_PAPEIS = new Set(['avaliador', 'supervisor', 'consultor', 'outro']);
+const PATIENT_MANAGER_ONLY_UPDATE_FIELDS = new Set<keyof AtualizarPacienteDto>([
+  'nome',
+  'cpf',
+  'dataNascimento',
+  'genero',
+  'sexoBiologico',
+  'telefone',
+  'email',
+  'endereco',
+  'bairro',
+  'cidade',
+  'estado',
+  'status',
+  'modalidadePrincipal',
+  'tempoPratica',
+  'frequenciaSemanal',
+  'duracaoSessao',
+  'outrasModalidades',
+  'tipoTreino',
+  'intensidade',
+  'objetivo',
+  'projetoId',
+  'projetoNome',
+  'alunoResponsavelId',
+  'alunoResponsavelNome',
+  'professorSupervisorId',
+  'professorSupervisorNome',
+  'equipeTecnicaIds',
+  'equipeProfissional',
+  'atletaUserId',
+  'consentimentoPesquisa',
+  'consentimentoData',
+  'consentimentoVersao'
+]);
+const PATIENT_SCOPED_UPDATE_FIELDS = new Set<keyof AtualizarPacienteDto>([
+  'observacoes',
+  'historicoSaude',
+  'comorbidadesPessoais',
+  'comorbidadesFamiliares',
+  'confirmacaoAtleta'
+]);
+const PATIENT_SCOPED_CONFIRMATION_FIELDS = new Set([
+  'ebiaSelfForm',
+  'formulariosLiberados'
+]);
+const COORD_ATENDIMENTO_PROTECTED_FIELDS = new Set([
+  ...PATIENT_SCOPED_UPDATE_FIELDS,
+  'confirmacaoAtleta',
+  'consentimentoPesquisa',
+  'consentimentoData',
+  'consentimentoVersao'
+]);
+const EQUIPE_MULTI_ROLES = new Set(['aluno', 'presidente', 'vice', 'professor', 'profissional', 'pesquisador', 'colaborador']);
+const CREDENTIALED_SUPERVISOR_ROLES = new Set(['professor', 'profissional']);
 
 @Injectable()
 export class PacientesService {
@@ -63,7 +155,8 @@ export class PacientesService {
     private usersService: UsersService,
     private realtime: RealtimeGateway,
     private readonly config: ConfigService,
-    @Optional() private readonly observability?: ObservabilityService
+    @Optional() private readonly observability?: ObservabilityService,
+    @Optional() private readonly auditoria?: AuditoriaService
   ) {}
 
   private recordQuery(label: string, startedAt: number, context = 'GET /pacientes') {
@@ -96,6 +189,11 @@ export class PacientesService {
       return value
         .split(',')
         .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    if (value && typeof value === 'object') {
+      return Object.values(value as Record<string, unknown>)
+        .flatMap((item) => this.normalizeStringArray(item))
         .filter(Boolean);
     }
     return [];
@@ -138,6 +236,48 @@ export class PacientesService {
     return true;
   }
 
+  private sanitizeFormReleasePatch(value: unknown) {
+    const record = asJsonRecord(value);
+    return compactJsonRecord({
+      enabled: record.enabled === true,
+      releaseId: this.normalizeText(record.releaseId) || undefined,
+      releasedAt: this.normalizeText(record.releasedAt) || undefined,
+      releasedById: this.normalizeText(record.releasedById) || undefined,
+      releasedByName: this.normalizeText(record.releasedByName) || undefined,
+      disabledAt: this.normalizeText(record.disabledAt) || undefined,
+      disabledById: this.normalizeText(record.disabledById) || undefined,
+      disabledByName: this.normalizeText(record.disabledByName) || undefined,
+      consumedAt: record.consumedAt === null ? null : this.normalizeText(record.consumedAt) || undefined,
+      consumedByAvaliacaoId: record.consumedByAvaliacaoId === null
+        ? null
+        : this.normalizeText(record.consumedByAvaliacaoId) || undefined
+    });
+  }
+
+  private sanitizeScopedConfirmationPatch(incoming: unknown) {
+    const confirmation = asJsonRecord(incoming);
+    const attemptedBlockedField = Object.keys(confirmation)
+      .find((field) => !PATIENT_SCOPED_CONFIRMATION_FIELDS.has(field));
+    if (attemptedBlockedField) {
+      throw new ForbiddenException('Sem permissao para alterar dados sensiveis do cadastro do atleta.');
+    }
+
+    const next: Record<string, unknown> = {};
+    if (Object.prototype.hasOwnProperty.call(confirmation, 'ebiaSelfForm')) {
+      next.ebiaSelfForm = this.sanitizeFormReleasePatch(confirmation.ebiaSelfForm);
+    }
+    if (Object.prototype.hasOwnProperty.call(confirmation, 'formulariosLiberados')) {
+      const forms = asJsonRecord(confirmation.formulariosLiberados);
+      next.formulariosLiberados = Object.entries(forms).reduce<Record<string, unknown>>((acc, [type, release]) => {
+        const normalizedType = this.normalizeText(type);
+        if (!normalizedType) return acc;
+        acc[normalizedType] = this.sanitizeFormReleasePatch(release);
+        return acc;
+      }, {});
+    }
+    return compactJsonRecord(next);
+  }
+
   private todayDateIso() {
     return new Date().toISOString().slice(0, 10);
   }
@@ -170,64 +310,146 @@ export class PacientesService {
   }
 
   private isTeamMember(userId: string, paciente: Paciente) {
-    return Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId);
+    if (Array.isArray(paciente.equipeTecnicaIds) && paciente.equipeTecnicaIds.includes(userId)) return true;
+    if (Array.isArray(paciente.equipeMultiIds) && paciente.equipeMultiIds.includes(userId)) return true;
+    return false;
   }
 
-  private canAccessPaciente(user: AuthenticatedUser, paciente: Paciente) {
+  private syncEquipeMultiIds(
+    equipeProfissional: Array<{ userId: string; userName: string; area: string; papel: string }> | null | undefined
+  ): string[] {
+    if (!Array.isArray(equipeProfissional)) return [];
+    return [...new Set(equipeProfissional.map((m) => m.userId).filter(Boolean))];
+  }
+
+  private async resolveEquipeProfissionalOrThrow(
+    equipeProfissional: Array<{ userId: string; userName?: string; area?: string; papel?: string }> | null | undefined
+  ) {
+    if (!Array.isArray(equipeProfissional) || equipeProfissional.length === 0) return [];
+
+    const byUserIdInput = new Map<string, { userId: string; userName?: string; area?: string; papel?: string }>();
+    for (const member of equipeProfissional) {
+      const userId = this.normalizeText(member?.userId);
+      if (!userId) continue;
+      if (!UUID_V4_REGEX.test(userId)) {
+        throw new BadRequestException('Equipe multiprofissional contem identificador de usuario invalido.');
+      }
+      if (!byUserIdInput.has(userId)) {
+        byUserIdInput.set(userId, member);
+      }
+    }
+
+    const userIds = [...byUserIdInput.keys()];
+    if (userIds.length === 0) return [];
+
+    const users = await this.usersRepo
+      .createQueryBuilder('user')
+      .where('user.id IN (:...userIds)', { userIds })
+      .andWhere('user.deletedAt IS NULL')
+      .getMany();
+    const usersById = new Map(users.map((user) => [user.id, user]));
+
+    return userIds.map((userId) => {
+      const user = usersById.get(userId);
+      if (!user) {
+        throw new BadRequestException('Membro da equipe multiprofissional nao encontrado.');
+      }
+
+      const role = normalizeRole(user.role);
+      if (!EQUIPE_MULTI_ROLES.has(role)) {
+        throw new BadRequestException('Equipe multiprofissional deve conter alunos, docentes ou profissionais da LAINES.');
+      }
+      if (String(user.status || '').toLowerCase() !== 'ativo') {
+        throw new BadRequestException('Membro da equipe multiprofissional precisa estar ativo.');
+      }
+      if (isStudentMemberRole(role) && (!user.supervisorId || !user.projetoId)) {
+        throw new BadRequestException('Aluno da equipe multiprofissional precisa estar vinculado a supervisor e projeto.');
+      }
+
+      const input = byUserIdInput.get(userId);
+      const area = this.normalizeText(input?.area || 'outro').toLowerCase();
+      const papel = this.normalizeText(input?.papel || 'avaliador').toLowerCase();
+      if (!EQUIPE_MULTI_AREAS.has(area)) {
+        throw new BadRequestException('Area da equipe multiprofissional invalida.');
+      }
+      if (!EQUIPE_MULTI_PAPEIS.has(papel)) {
+        throw new BadRequestException('Papel da equipe multiprofissional invalido.');
+      }
+
+      return {
+        userId: user.id,
+        userName: user.name,
+        area,
+        papel
+      };
+    });
+  }
+
+  private hasPatientManagementAccess(user: AuthenticatedUser): boolean {
     const role = normalizeRole(user.role);
-    if (isStudentMemberRole(role)) {
-      if (!user.id) return false;
-      return paciente.alunoResponsavelId === user.id || this.isTeamMember(user.id, paciente);
-    }
+    return PATIENT_MANAGER_ROLES.has(role);
+  }
 
-    if (hasGlobalAccess(role)) return true;
-    if (!user.id) return false;
+  private hasExtensionTriageAccess(user: AuthenticatedUser): boolean {
+    const role = normalizeRole(user.role);
+    if (this.hasPatientManagementAccess(user)) return true;
+    if (PRESIDENCY_ROLES.has(role)) return false;
+    if (role === 'diretoria_extensao') return true;
+    if (!isStudentMemberRole(role)) return false;
+    return getDiretoriaPermissionSource({
+      role,
+      diretoria: user.diretoria || null
+    }) === 'diretoria_extensao';
+  }
 
-    if (hasTeamScopedAccess(role)) {
-      return paciente.professorSupervisorId === user.id
-        || paciente.alunoResponsavelId === user.id
-        || this.isTeamMember(user.id, paciente);
-    }
+  private isExtensionTriageStatus(status?: string | null) {
+    return EXTENSION_TRIAGE_STATUS_VALUES.includes(this.normalizeStatusForComparison(status));
+  }
 
-    if (role === 'atleta') {
-      return paciente.atletaUserId === user.id;
-    }
+  private async canManagePacienteCareTeam(user: AuthenticatedUser, _paciente: Paciente) {
+    return this.hasPatientManagementAccess(user);
+  }
 
-    return false;
+  // Contrato unico (UPD-12): vinculo direto, sem consulta ao banco.
+  private canAccessPaciente(user: AuthenticatedUser, paciente: Paciente) {
+    return resolveDirectClinicalLink(user, paciente) !== null;
+  }
+
+  // Contrato unico (UPD-12): inclui a cadeia do aluno responsavel.
+  private async canAccessPacienteForUser(user: AuthenticatedUser, paciente: Paciente) {
+    return (await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo))) !== null;
   }
 
   private applyScopeFilters(qb: SelectQueryBuilder<Paciente>, user: AuthenticatedUser) {
     const role = normalizeRole(user.role);
-    if (isStudentMemberRole(role)) {
-      if (!user.id) {
-        qb.andWhere('1 = 0');
-        return;
-      }
+    if (this.hasPatientManagementAccess(user)) {
+      return;
+    }
+
+    // Contrato unico (UPD-12): mesmo filtro de escopo dos demais objetos clinicos.
+    const alunosSupervisionadosSubQuery = this.usersRepo
+      .createQueryBuilder('aluno_supervisionado')
+      .select('aluno_supervisionado.id')
+      .where('(aluno_supervisionado.supervisorId = :userId OR aluno_supervisionado.profissionalId = :userId)')
+      .andWhere('aluno_supervisionado.deletedAt IS NULL');
+    const linkedScope = clinicalScopeCondition({
+      alias: 'paciente',
+      user,
+      supervisedStudentsSubquery: alunosSupervisionadosSubQuery.getQuery()
+    });
+    if (linkedScope === null) return;
+
+    // Presidencia/vice enxergam tambem a lista de espera para triagem de extensao.
+    if (PRESIDENCY_ROLES.has(role) && user.id) {
       qb.andWhere(
-        '(paciente.alunoResponsavelId = :userId OR :userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[])))',
-        { userId: user.id }
+        `(${linkedScope} OR LOWER(paciente.status) IN (:...waitlistStatuses))`,
+        { userId: user.id, waitlistStatuses: ['lista de espera', 'lista_espera', 'espera', 'triagem publica', 'triagem_publica', 'triagem'] }
       );
+      qb.setParameters(alunosSupervisionadosSubQuery.getParameters());
       return;
     }
-
-    if (hasGlobalAccess(role)) {
-      return;
-    }
-
-    if (hasTeamScopedAccess(role)) {
-      qb.andWhere(
-        '(paciente.professorSupervisorId = :userId OR paciente.alunoResponsavelId = :userId OR :userId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[])))',
-        { userId: user.id }
-      );
-      return;
-    }
-
-    if (role === 'atleta') {
-      qb.andWhere('paciente.atletaUserId = :userId', { userId: user.id });
-      return;
-    }
-
-    qb.andWhere('1 = 0');
+    qb.andWhere(linkedScope, { userId: user.id });
+    qb.setParameters(alunosSupervisionadosSubQuery.getParameters());
   }
 
   private async findByIdRaw(id: string) {
@@ -245,9 +467,34 @@ export class PacientesService {
     return `***.***.***-${digits.slice(-2)}`;
   }
 
+  private normalizeNullableDate(value: unknown, fieldLabel: string) {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+    const normalized = this.normalizeText(value);
+    if (!normalized) return null;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+      throw new BadRequestException(`${fieldLabel} invalida.`);
+    }
+    const parsed = new Date(`${normalized}T00:00:00.000Z`);
+    if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== normalized) {
+      throw new BadRequestException(`${fieldLabel} invalida.`);
+    }
+    return normalized;
+  }
+
+  private normalizePacienteDateFields(payload: Record<string, unknown>) {
+    if (Object.prototype.hasOwnProperty.call(payload, 'dataNascimento')) {
+      payload.dataNascimento = this.normalizeNullableDate(payload.dataNascimento, 'Data de nascimento');
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, 'consentimentoData')) {
+      payload.consentimentoData = this.normalizeNullableDate(payload.consentimentoData, 'Data do consentimento');
+    }
+  }
+
   private mapAthletePaciente(paciente: Paciente) {
     const confirmacaoAtleta = this.asObject(paciente.confirmacaoAtleta);
     const ebiaSelfForm = this.asObject(confirmacaoAtleta.ebiaSelfForm);
+    const cadastroAtleta = buildCadastroAtletaConsolidado(paciente);
     return {
       id: paciente.id,
       prontuario: paciente.prontuario,
@@ -274,9 +521,16 @@ export class PacientesService {
       consentimentoData: paciente.consentimentoData || null,
       faltas: paciente.faltas,
       confirmacaoAtleta: {
+        origem: confirmacaoAtleta.origem || cadastroAtleta.origemCadastro || null,
+        origens: Array.isArray(confirmacaoAtleta.origens) ? confirmacaoAtleta.origens : [],
+        cadastroStatus: confirmacaoAtleta.cadastroStatus || cadastroAtleta.statusCadastroAtleta || null,
         completed: Boolean(confirmacaoAtleta.completed),
+        completadoEm: confirmacaoAtleta.completadoEm || null,
         submittedAt: confirmacaoAtleta.submittedAt || null,
+        anamneseId: confirmacaoAtleta.anamneseId || null,
+        versao: confirmacaoAtleta.versao || null,
         dados: this.asObject(confirmacaoAtleta.dados),
+        formulariosLiberados: this.asObject(confirmacaoAtleta.formulariosLiberados),
         ebiaSelfForm: {
           enabled: Boolean(ebiaSelfForm.enabled),
           releasedAt: ebiaSelfForm.releasedAt || null,
@@ -284,8 +538,16 @@ export class PacientesService {
           consumedAt: ebiaSelfForm.consumedAt || null
         }
       },
+      cadastroAtleta,
       createdAt: paciente.createdAt,
       updatedAt: paciente.updatedAt
+    };
+  }
+
+  private mapPacienteResponse(paciente: Paciente) {
+    return {
+      ...paciente,
+      cadastroAtleta: buildCadastroAtletaConsolidado(paciente)
     };
   }
 
@@ -374,7 +636,7 @@ export class PacientesService {
     }
 
     if (!aluno.supervisorId || !aluno.projetoId) {
-      throw new BadRequestException('Aluno responsavel precisa estar vinculado a professor e projeto.');
+      throw new BadRequestException('Aluno responsavel precisa estar vinculado a supervisor e projeto.');
     }
 
     return {
@@ -389,16 +651,24 @@ export class PacientesService {
   private async resolveProfessorSupervisorOrThrow(supervisorId: string) {
     const supervisor = await this.usersRepo.findOne({ where: { id: supervisorId } });
     if (!supervisor) {
-      throw new BadRequestException('Professor supervisor nao encontrado.');
+      throw new BadRequestException('Supervisor responsavel nao encontrado.');
     }
 
     const role = normalizeRole(supervisor.role);
-    if (role !== 'professor') {
-      throw new BadRequestException('Supervisor deve ser um professor cadastrado.');
+    if (!CREDENTIALED_SUPERVISOR_ROLES.has(role)) {
+      throw new BadRequestException('Supervisor deve ser professor ou profissional credenciado cadastrado.');
     }
 
     if (String(supervisor.status || '').toLowerCase() !== 'ativo') {
-      throw new BadRequestException('Professor supervisor precisa estar ativo.');
+      throw new BadRequestException('Supervisor responsavel precisa estar ativo.');
+    }
+
+    if (
+      role === 'profissional'
+      && !this.normalizeText(supervisor.conselhoNumero)
+      && !this.normalizeText(supervisor.crn)
+    ) {
+      throw new BadRequestException('Profissional supervisor precisa possuir credencial cadastrada.');
     }
 
     return {
@@ -427,6 +697,9 @@ export class PacientesService {
     if (normalized === 'lista de espera' || normalized === 'lista_espera' || normalized === 'espera') {
       return 'Lista de Espera';
     }
+    if (normalized === 'triagem publica' || normalized === 'triagem_publica') {
+      return 'Triagem Publica';
+    }
     if (normalized === 'inativo') return 'Inativo';
     if (normalized === 'alta' || normalized === 'concluido') {
       return 'Alta';
@@ -438,6 +711,86 @@ export class PacientesService {
     throw new BadRequestException(`Status de paciente invalido. Valores aceitos: ${PACIENTE_STATUS_VALUES.join(', ')}.`);
   }
 
+  private normalizeStatusForComparison(status?: string | null) {
+    return String(status || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private isWaitlistStatus(status?: string | null) {
+    const normalized = this.normalizeStatusForComparison(status);
+    return normalized === 'lista de espera'
+      || normalized === 'lista_espera'
+      || normalized === 'espera'
+      || this.isExtensionTriageStatus(status);
+  }
+
+  private isActiveStatus(status?: string | null) {
+    return this.normalizeStatusForComparison(status) === 'ativo';
+  }
+
+  private mapWaitlistSummary(paciente: Paciente) {
+    return {
+      id: paciente.id,
+      prontuario: paciente.prontuario,
+      nome: paciente.nome,
+      status: paciente.status,
+      modalidadePrincipal: paciente.modalidadePrincipal || null,
+      projetoId: paciente.projetoId || null,
+      projetoNome: paciente.projetoNome || null,
+      dataCadastro: paciente.dataCadastro || null,
+      createdAt: paciente.createdAt,
+      updatedAt: paciente.updatedAt,
+      restricted: true
+    };
+  }
+
+  private mapPublicTriageResponse(paciente: Paciente) {
+    const confirmation = asJsonRecord(paciente.confirmacaoAtleta);
+    const publicInscricao = asJsonRecord(confirmation.inscricaoPublica);
+    const dados = asJsonRecord(publicInscricao.dados || confirmation.dados);
+    return {
+      id: paciente.id,
+      prontuario: paciente.prontuario,
+      nome: paciente.nome,
+      cpf: this.maskCpf(paciente.cpf),
+      status: paciente.status,
+      modalidadePrincipal: paciente.modalidadePrincipal || null,
+      telefone: paciente.telefone || null,
+      email: paciente.email || null,
+      cidade: paciente.cidade || null,
+      estado: paciente.estado || null,
+      dataCadastro: paciente.dataCadastro || null,
+      createdAt: paciente.createdAt,
+      updatedAt: paciente.updatedAt,
+      restricted: true,
+      triagemPublica: true,
+      prioridadeContato: prioridadeContatoDaTriagem(dados),
+      confirmacaoAtleta: {
+        origem: confirmation.origem || 'inscricao_publica',
+        origens: Array.isArray(confirmation.origens) ? confirmation.origens : [],
+        cadastroStatus: confirmation.cadastroStatus || 'triagem_publica',
+        inscricaoPublica: {
+          atualizadoEm: publicInscricao.atualizadoEm || confirmation.inscritoEm || null,
+          dados
+        },
+        dados
+      }
+    };
+  }
+
+  private async mapPacienteCreateResponse(paciente: Paciente, user: AuthenticatedUser) {
+    if (this.hasPatientManagementAccess(user)) {
+      return this.mapPacienteResponse(paciente);
+    }
+    if (await this.canAccessPacienteForUser(user, paciente)) {
+      return this.mapPacienteResponse(paciente);
+    }
+    return this.mapWaitlistSummary(paciente);
+  }
+
   private assertActivePatientLinks(payload: {
     status: PacienteStatus;
     alunoResponsavelId?: string;
@@ -447,9 +800,92 @@ export class PacientesService {
     if (payload.status !== 'Ativo') return;
     if (!payload.alunoResponsavelId || !payload.professorSupervisorId || !payload.projetoId) {
       throw new BadRequestException(
-        'Paciente ativo precisa estar vinculado a aluno responsavel, professor supervisor e projeto.'
+        'Paciente ativo precisa estar vinculado a aluno responsavel, supervisor responsavel e projeto.'
       );
     }
+  }
+
+  private async resolveStudentMemberIds(userIds: Array<string | null | undefined>) {
+    const ids = [...new Set(
+      userIds
+        .map((id) => this.normalizeText(id))
+        .filter(Boolean)
+    )];
+    if (ids.length === 0) return [];
+
+    const users = await this.usersRepo.createQueryBuilder('user')
+      .select(['user.id', 'user.role'])
+      .where('user.id IN (:...ids)', { ids })
+      .andWhere('user.deletedAt IS NULL')
+      .getMany();
+
+    return users
+      .filter((user) => isStudentMemberRole(normalizeRole(user.role)))
+      .map((user) => user.id);
+  }
+
+  private async assertStudentActiveLinkCapacityOrThrow(
+    userIds: Array<string | null | undefined>,
+    excludePacienteId?: string
+  ) {
+    const studentIds = await this.resolveStudentMemberIds(userIds);
+    for (const studentId of studentIds) {
+      const qb = this.repo.createQueryBuilder('paciente')
+        .where('LOWER(paciente.status) = :status', { status: 'ativo' })
+        .andWhere('paciente.deletedAt IS NULL')
+        .andWhere(
+          '(paciente.alunoResponsavelId = :studentId OR :studentId = ANY(COALESCE(paciente.equipeTecnicaIds, ARRAY[]::uuid[])) OR :studentId = ANY(COALESCE(paciente.equipeMultiIds, ARRAY[]::uuid[])))',
+          { studentId }
+        );
+      if (excludePacienteId) {
+        qb.andWhere('paciente.id <> :excludePacienteId', { excludePacienteId });
+      }
+      const activeLinks = await qb.getCount();
+      if (activeLinks >= 3) {
+        throw new BadRequestException('Discente ja possui o limite de 3 vinculos ativos com pacientes.');
+      }
+    }
+  }
+
+  private isMergeableCadastroInicial(paciente: Paciente) {
+    const normalizedStatus = String(paciente.status || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    const origins = getCadastroAtletaOrigins(paciente.confirmacaoAtleta);
+    return normalizedStatus === 'lista de espera'
+      || normalizedStatus === 'lista_espera'
+      || normalizedStatus === 'espera'
+      || normalizedStatus === 'triagem'
+      || normalizedStatus === 'triagem publica'
+      || normalizedStatus === 'triagem_publica'
+      || origins.includes('inscricao_publica');
+  }
+
+  private resolveTeamCadastroStatus(current: unknown, status: PacienteStatus) {
+    const currentConfirmation = asJsonRecord(current);
+    if (currentConfirmation.completed || currentConfirmation.completadoEm || currentConfirmation.submittedAt) {
+      return this.normalizeText(currentConfirmation.cadastroStatus) || 'cadastro_atleta_completo';
+    }
+    if (status === 'Lista de Espera' || status === 'Triagem' || status === 'Triagem Publica') {
+      return 'pre_cadastro';
+    }
+    return 'cadastro_atleta_pendente';
+  }
+
+  private buildTeamConfirmation(
+    current: unknown,
+    incoming: unknown,
+    status: PacienteStatus,
+    user: AuthenticatedUser
+  ) {
+    return mergeAthleteConfirmation(current, incoming, {
+      origem: 'equipe',
+      cadastroStatus: this.resolveTeamCadastroStatus(current, status),
+      actorId: user.id || null,
+      actorName: user.name || null
+    });
   }
 
   private async findAccessiblePacienteOrFail(pacienteId: string, user: AuthenticatedUser) {
@@ -457,10 +893,31 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    if (!this.canAccessPaciente(user, paciente)) {
+    if (!(await this.canAccessPacienteForUser(user, paciente))) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
     return paciente;
+  }
+
+  private async canWriteSupervisorMessage(user: AuthenticatedUser, paciente: Paciente) {
+    if (this.hasPatientManagementAccess(user)) return true;
+
+    const role = normalizeRole(user.role);
+    if (!user.id || !['professor', 'profissional'].includes(role)) return false;
+    if (paciente.professorSupervisorId === user.id) return true;
+
+    if (Array.isArray(paciente.equipeProfissional)) {
+      const supervisorMembership = paciente.equipeProfissional.some((member) => (
+        String(member?.userId || '') === user.id
+        && String(member?.papel || '').toLowerCase().includes('super')
+      ));
+      if (supervisorMembership) return true;
+    }
+
+    if (!paciente.alunoResponsavelId) return false;
+    const aluno = await this.usersRepo.findOne({ where: { id: paciente.alunoResponsavelId } });
+    if (!aluno || aluno.deletedAt) return false;
+    return aluno.supervisorId === user.id || aluno.profissionalId === user.id;
   }
 
   findAll(user: AuthenticatedUser, limit?: number, offset?: number) {
@@ -481,49 +938,124 @@ export class PacientesService {
       if (normalizeRole(user.role) === 'atleta') {
         return result.map((paciente) => this.mapAthletePaciente(paciente));
       }
-      return result;
+      const role = normalizeRole(user.role);
+      if (PRESIDENCY_ROLES.has(role)) {
+        return result.map((paciente) => (
+          this.canAccessPaciente(user, paciente)
+            ? this.mapPacienteResponse(paciente)
+            : this.mapWaitlistSummary(paciente)
+        ));
+      }
+      return result.map((paciente) => this.mapPacienteResponse(paciente));
     });
+  }
+
+  async findPublicTriage(user: AuthenticatedUser) {
+    if (!this.hasExtensionTriageAccess(user)) {
+      throw new ForbiddenException('Sem permissao para consultar a triagem publica.');
+    }
+
+    const pacientes = await this.repo.createQueryBuilder('paciente')
+      .where('paciente.deletedAt IS NULL')
+      .andWhere('LOWER(paciente.status) IN (:...statuses)', {
+        statuses: ['lista de espera', 'lista_de_espera', 'triagem publica', 'triagem_publica', 'triagem']
+      })
+      .orderBy('paciente.createdAt', 'ASC')
+      .getMany();
+
+    const publicos = pacientes.filter((paciente) => {
+      const confirmation = asJsonRecord(paciente.confirmacaoAtleta);
+      return getCadastroAtletaOrigins(confirmation).includes('inscricao_publica')
+        || Object.keys(asJsonRecord(confirmation.inscricaoPublica)).length > 0;
+    });
+    const ordenados = publicos.map((paciente) => this.mapPublicTriageResponse(paciente))
+      .sort((a, b) => ORDEM_PRIORIDADE_CONTATO[a.prioridadeContato.nivel]
+        - ORDEM_PRIORIDADE_CONTATO[b.prioridadeContato.nivel]
+        || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        || String(a.id).localeCompare(String(b.id)));
+    return ordenados.map((paciente, index) => ({ ...paciente, posicaoFila: index + 1 }));
+  }
+
+  async gerarRelatorioTriagemPublicaPdf(user: AuthenticatedUser) {
+    const fila = await this.findPublicTriage(user);
+    const linhas = projetarRelatorioTriagem(fila);
+    const pdf = await gerarRelatorioTriagemPdf(linhas);
+    if (!this.auditoria) {
+      throw new ServiceUnavailableException('Auditoria de exportacao indisponivel.');
+    }
+    await this.auditoria.create({
+      action: 'exportacao_fila_triagem_publica',
+      entity: 'pacientes',
+      entityId: 'triagem_publica',
+      meta: { userId: user.id, role: normalizeRole(user.role), total: linhas.length,
+        versao: VERSAO_PRIORIDADE_CONTATO }
+    });
+    return pdf;
   }
 
   async findById(id: string, user: AuthenticatedUser) {
     const paciente = await this.findByIdRaw(id);
     if (!paciente) return null;
-    if (!this.canAccessPaciente(user, paciente)) return null;
+    const link = await resolveClinicalLink(user, paciente, studentLookupFromRepository(this.usersRepo));
+    if (!link) return null;
+    if (isManagementLink(link)) {
+      await auditManagementAccess(this.auditoria, user, 'pacientes', paciente.id, { acao: 'leitura_prontuario' });
+    }
     if (normalizeRole(user.role) === 'atleta') {
       return this.mapAthletePaciente(paciente);
     }
-    return paciente;
+    // A interface consome o que o servidor decidiu para este caso; nao recalcula.
+    return {
+      ...this.mapPacienteResponse(paciente),
+      capacidadesDoCaso: resolveCaseCapabilities(user, paciente, link, Object.keys(AVALIACAO_REGISTRY_BY_TIPO))
+    };
   }
 
   async create(dto: CriarPacienteDto, user: AuthenticatedUser) {
     const role = normalizeRole(user.role);
-    const payload: CriarPacienteDto = { ...dto };
-    const isStudentScopedRole = isStudentMemberRole(role);
-
-    if (isStudentScopedRole || !hasGlobalAccess(role)) {
-      if (isStudentScopedRole) {
-        if (!user.id) {
-          throw new ForbiddenException('Usuario autenticado invalido para vinculo de paciente.');
-        }
-        if (payload.alunoResponsavelId && payload.alunoResponsavelId !== user.id) {
-          throw new ForbiddenException('Sem permissao para vincular paciente a outro aluno.');
-        }
-        payload.alunoResponsavelId = user.id;
-        payload.alunoResponsavelNome = user.name || '';
-      } else if (hasTeamScopedAccess(role)) {
-        if (payload.professorSupervisorId && payload.professorSupervisorId !== user.id) {
-          throw new ForbiddenException('Sem permissao para definir outro supervisor.');
-        }
-        payload.professorSupervisorId = payload.professorSupervisorId || user.id;
-        payload.professorSupervisorNome = user.name || '';
-      } else {
+    const payload = { ...dto };
+    this.normalizePacienteDateFields(payload);
+    const isPatientManager = this.hasPatientManagementAccess(user);
+    if (!isPatientManager) {
+      if (!PATIENT_PENDING_CREATOR_ROLES.has(role)) {
         throw new ForbiddenException('Sem permissao para criar pacientes.');
       }
+      payload.status = 'Lista de Espera';
+      delete (payload as Partial<CriarPacienteDto>).alunoResponsavelId;
+      delete (payload as Partial<CriarPacienteDto>).alunoResponsavelNome;
+      delete (payload as Partial<CriarPacienteDto>).professorSupervisorId;
+      delete (payload as Partial<CriarPacienteDto>).professorSupervisorNome;
+      delete (payload as Partial<CriarPacienteDto>).projetoId;
+      delete (payload as Partial<CriarPacienteDto>).projetoNome;
+      delete (payload as Partial<CriarPacienteDto>).equipeTecnicaIds;
+      delete (payload as Partial<CriarPacienteDto>).equipeProfissional;
+      delete (payload as Partial<CriarPacienteDto>).atletaUserId;
     }
 
-    const athleteAccess = await this.resolveAthleteUserForCreate(payload);
-    payload.atletaUserId = athleteAccess.id;
-    payload.email = athleteAccess.email || payload.email;
+    const cpf = this.validateCpf(payload.cpf);
+    payload.cpf = cpf;
+    const existingCadastroPaciente = await this.repo.findOne({ where: { cpf } });
+    if (existingCadastroPaciente && !this.isMergeableCadastroInicial(existingCadastroPaciente)) {
+      throw new BadRequestException(
+        'Ja existe um paciente cadastrado com este CPF. Abra o prontuario existente para atualizar os dados.'
+      );
+    }
+
+    if (isPatientManager) {
+      const athleteAccess = await this.resolveAthleteUserForCreate(payload);
+      if (
+        existingCadastroPaciente?.atletaUserId
+        && existingCadastroPaciente.atletaUserId !== athleteAccess.id
+      ) {
+        throw new BadRequestException(
+          'Paciente em lista de espera ja esta vinculado a outro acesso de atleta.'
+        );
+      }
+      payload.atletaUserId = athleteAccess.id;
+      payload.email = athleteAccess.email || payload.email;
+    } else {
+      delete (payload as Partial<CriarPacienteDto>).atletaUserId;
+    }
 
     if (payload.alunoResponsavelId) {
       const aluno = await this.resolveAlunoResponsavelOrThrow(payload.alunoResponsavelId);
@@ -546,6 +1078,7 @@ export class PacientesService {
     if (payload.alunoResponsavelId && !payload.professorSupervisorId) {
       throw new BadRequestException('Paciente vinculado a aluno precisa possuir professor supervisor.');
     }
+    const equipeProfissional = await this.resolveEquipeProfissionalOrThrow(payload.equipeProfissional);
     const nextStatus = this.normalizePacienteStatus(payload.status);
     this.assertActivePatientLinks({
       status: nextStatus,
@@ -553,13 +1086,49 @@ export class PacientesService {
       professorSupervisorId: payload.professorSupervisorId,
       projetoId: payload.projetoId
     });
+    if (this.isActiveStatus(nextStatus)) {
+      await this.assertStudentActiveLinkCapacityOrThrow([
+        payload.alunoResponsavelId,
+        ...(payload.equipeTecnicaIds || []),
+        ...this.syncEquipeMultiIds(equipeProfissional)
+      ]);
+    }
 
-    const cpf = this.validateCpf(payload.cpf);
     const {
       anexos: _ignoredAnexos,
       mensagensProfessor: _ignoredMensagensProfessor,
       ...safePayload
-    } = payload as any;
+    } = payload;
+
+    if (existingCadastroPaciente) {
+      const merged = this.repo.merge(existingCadastroPaciente, {
+        ...safePayload,
+        prontuario: existingCadastroPaciente.prontuario || await this.generateProntuarioNumber(),
+        cpf,
+        status: nextStatus,
+        tipoTreino: payload.tipoTreino || existingCadastroPaciente.tipoTreino || 'misto',
+        intensidade: payload.intensidade || existingCadastroPaciente.intensidade || 'moderada',
+        objetivo: payload.objetivo || existingCadastroPaciente.objetivo || 'performance',
+        equipeTecnicaIds: payload.equipeTecnicaIds || existingCadastroPaciente.equipeTecnicaIds || [],
+        equipeMultiIds: this.syncEquipeMultiIds(equipeProfissional),
+        equipeProfissional,
+        anexos: existingCadastroPaciente.anexos || [],
+        mensagensProfessor: existingCadastroPaciente.mensagensProfessor || [],
+        dataCadastro: existingCadastroPaciente.dataCadastro || new Date(),
+        linkedAt: payload.alunoResponsavelId
+          ? existingCadastroPaciente.linkedAt || new Date()
+          : existingCadastroPaciente.linkedAt,
+        confirmacaoAtleta: this.buildTeamConfirmation(
+          existingCadastroPaciente.confirmacaoAtleta,
+          safePayload.confirmacaoAtleta,
+          nextStatus,
+          user
+        )
+      } as Partial<Paciente>);
+      const saved = await this.repo.save(merged);
+      this.realtime.emit('pacientes.updated', saved);
+      return this.mapPacienteCreateResponse(saved, user);
+    }
 
     const prontuario = await this.generateProntuarioNumber();
 
@@ -572,13 +1141,21 @@ export class PacientesService {
       intensidade: payload.intensidade || 'moderada',
       objetivo: payload.objetivo || 'performance',
       equipeTecnicaIds: payload.equipeTecnicaIds || [],
+      equipeMultiIds: this.syncEquipeMultiIds(equipeProfissional),
+      equipeProfissional,
       anexos: [],
       mensagensProfessor: [],
-      dataCadastro: new Date()
-    });
+      dataCadastro: new Date(),
+      confirmacaoAtleta: this.buildTeamConfirmation(
+        null,
+        safePayload.confirmacaoAtleta,
+        nextStatus,
+        user
+      )
+    } as Partial<Paciente>);
     const saved = await this.repo.save(paciente);
     this.realtime.emit('pacientes.created', saved);
-    return saved;
+    return this.mapPacienteCreateResponse(saved, user);
   }
 
   async update(id: string, dto: AtualizarPacienteDto, user: AuthenticatedUser) {
@@ -586,7 +1163,7 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    if (!this.canAccessPaciente(user, paciente)) {
+    if (!(await this.canAccessPacienteForUser(user, paciente))) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
 
@@ -596,21 +1173,31 @@ export class PacientesService {
     if (Object.prototype.hasOwnProperty.call(dto, 'mensagensProfessor')) {
       throw new ForbiddenException('Atualizacao de mensagens deve ser feita pelo endpoint dedicado.');
     }
-    const mutableDto: AtualizarPacienteWithMetadata = dto;
+    const mutableDto: AtualizarPacienteWithMetadata & Record<string, unknown> = { ...dto };
+    this.normalizePacienteDateFields(mutableDto);
 
-    const role = normalizeRole(user.role);
-    if (isStudentMemberRole(role) || !hasGlobalAccess(role)) {
-      const blockedFields: Array<keyof AtualizarPacienteDto> = [
-        'alunoResponsavelId',
-        'alunoResponsavelNome',
-        'professorSupervisorId',
-        'professorSupervisorNome',
-        'equipeTecnicaIds',
-        'atletaUserId'
-      ];
-      const attemptedBlockedField = blockedFields.find((field) => Object.prototype.hasOwnProperty.call(dto, field));
+    if (normalizeRole(user.role) === 'coord_atendimento') {
+      const protectedField = Object.keys(dto).find((field) => COORD_ATENDIMENTO_PROTECTED_FIELDS.has(field));
+      if (protectedField) throw new ForbiddenException('Coordenacao de atendimento altera apenas cadastro e vinculos do paciente.');
+    }
+
+    const isPatientManager = this.hasPatientManagementAccess(user);
+    if (!isPatientManager) {
+      const attemptedBlockedField = Array.from(PATIENT_MANAGER_ONLY_UPDATE_FIELDS)
+        .find((field) => Object.prototype.hasOwnProperty.call(dto, field));
       if (attemptedBlockedField) {
-        throw new ForbiddenException('Sem permissao para alterar vinculos de acesso do paciente.');
+        throw new ForbiddenException('Apenas coordenacao pode alterar dados administrativos, status ou vinculos do paciente.');
+      }
+      const attemptedUnsupportedField = Object.keys(dto)
+        .find((field) => !PATIENT_SCOPED_UPDATE_FIELDS.has(field as keyof AtualizarPacienteDto));
+      if (attemptedUnsupportedField) {
+        throw new ForbiddenException('Sem permissao para alterar este campo do paciente.');
+      }
+      if (Object.prototype.hasOwnProperty.call(dto, 'confirmacaoAtleta')) {
+        if (!(await this.canWriteSupervisorMessage(user, paciente))) {
+          throw new ForbiddenException('Somente coordenacao ou supervisor responsavel pode liberar formularios do atleta.');
+        }
+        mutableDto.confirmacaoAtleta = this.sanitizeScopedConfirmationPatch(dto.confirmacaoAtleta);
       }
     }
 
@@ -622,6 +1209,11 @@ export class PacientesService {
       'projetoId',
       'projetoNome'
     ].some((field) => Object.prototype.hasOwnProperty.call(dto, field));
+    const touchedTeamFields = [
+      'equipeTecnicaIds',
+      'equipeProfissional'
+    ].some((field) => Object.prototype.hasOwnProperty.call(dto, field));
+    const touchedStatusField = Object.prototype.hasOwnProperty.call(dto, 'status');
 
     let resolvedAlunoId = paciente.alunoResponsavelId;
     let resolvedSupervisorId = paciente.professorSupervisorId;
@@ -678,27 +1270,66 @@ export class PacientesService {
     if (dto.cpf) {
       dto.cpf = this.validateCpf(dto.cpf);
     }
-    if (Object.prototype.hasOwnProperty.call(dto, 'status')) {
+    if (touchedStatusField) {
       dto.status = this.normalizePacienteStatus(dto.status);
     }
-    const nextStatus = Object.prototype.hasOwnProperty.call(dto, 'status')
+    const nextStatus = touchedStatusField
       ? this.normalizePacienteStatus(dto.status)
       : this.normalizePacienteStatus(paciente.status as string);
-    this.assertActivePatientLinks({
-      status: nextStatus,
-      alunoResponsavelId: resolvedAlunoId,
-      professorSupervisorId: resolvedSupervisorId,
-      projetoId: resolvedProjetoId
-    });
+    const currentStatus = this.normalizePacienteStatus(paciente.status as string);
+    const shouldValidateActiveLinks = this.isActiveStatus(nextStatus)
+      && (
+        touchedStatusField
+        || touchedLinkFields
+        || touchedTeamFields
+        || !this.isActiveStatus(currentStatus)
+      );
+    if (shouldValidateActiveLinks) {
+      this.assertActivePatientLinks({
+        status: nextStatus,
+        alunoResponsavelId: resolvedAlunoId,
+        professorSupervisorId: resolvedSupervisorId,
+        projetoId: resolvedProjetoId
+      });
+    }
 
     if (!paciente.prontuario) {
       mutableDto.prontuario = await this.generateProntuarioNumber();
     }
 
-    const merged = this.repo.merge(paciente, mutableDto as any);
+    if (Object.prototype.hasOwnProperty.call(dto, 'equipeProfissional')) {
+      const equipeProfissional = await this.resolveEquipeProfissionalOrThrow(dto.equipeProfissional);
+      mutableDto.equipeProfissional = equipeProfissional;
+      mutableDto.equipeMultiIds = this.syncEquipeMultiIds(equipeProfissional);
+    }
+    if (Object.prototype.hasOwnProperty.call(dto, 'confirmacaoAtleta')) {
+      mutableDto.confirmacaoAtleta = isPatientManager
+        ? this.buildTeamConfirmation(
+          paciente.confirmacaoAtleta,
+          dto.confirmacaoAtleta,
+          nextStatus,
+          user
+        )
+        : mergeAthleteConfirmation(paciente.confirmacaoAtleta, mutableDto.confirmacaoAtleta);
+    }
+    if (this.isActiveStatus(nextStatus) && (touchedStatusField || touchedLinkFields || touchedTeamFields)) {
+      const nextEquipeTecnicaIds = Object.prototype.hasOwnProperty.call(dto, 'equipeTecnicaIds')
+        ? dto.equipeTecnicaIds
+        : paciente.equipeTecnicaIds;
+      const nextEquipeMultiIds = Object.prototype.hasOwnProperty.call(mutableDto, 'equipeMultiIds')
+        ? mutableDto.equipeMultiIds
+        : paciente.equipeMultiIds;
+      await this.assertStudentActiveLinkCapacityOrThrow([
+        resolvedAlunoId,
+        ...(nextEquipeTecnicaIds || []),
+        ...(nextEquipeMultiIds || [])
+      ], id);
+    }
+
+    const merged = this.repo.merge(paciente, mutableDto);
     const saved = await this.repo.save(merged);
     this.realtime.emit('pacientes.updated', saved);
-    return saved;
+    return this.mapPacienteResponse(saved);
   }
 
   async addProfessorMessage(
@@ -710,13 +1341,12 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    if (!this.canAccessPaciente(user, paciente)) {
+    if (!(await this.canAccessPacienteForUser(user, paciente))) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
 
-    const role = normalizeRole(user.role);
-    if (!hasGlobalAccess(role) && !hasTeamScopedAccess(role)) {
-      throw new ForbiddenException('Sem permissao para enviar mensagem no prontuario.');
+    if (!(await this.canWriteSupervisorMessage(user, paciente))) {
+      throw new ForbiddenException('Somente coordenacao ou supervisor responsavel pode registrar nota no prontuario.');
     }
 
     const messageText = String(dto.texto || '').trim();
@@ -729,6 +1359,8 @@ export class PacientesService {
       texto: messageText,
       professorId: user.id || '',
       professorNome: user.name || user.email || 'Professor',
+      supervisorId: user.id || '',
+      supervisorNome: user.name || user.email || 'Supervisor',
       createdAt: new Date().toISOString()
     };
 
@@ -737,7 +1369,7 @@ export class PacientesService {
       : [];
     const merged = this.repo.merge(paciente, {
       mensagensProfessor: [payload, ...currentMessages].slice(0, 200)
-    } as any);
+    });
     const saved = await this.repo.save(merged);
     this.realtime.emit('pacientes.updated', saved);
     return payload;
@@ -827,7 +1459,7 @@ export class PacientesService {
       nomePaciente: paciente.nome,
       dataNascimento: this.normalizeText(dto.dataNascimento || paciente.dataNascimento) || undefined,
       genero: this.normalizeText(dto.genero) || undefined,
-      sexoBiologico: this.normalizeText(dto.genero) || undefined,
+      sexoBiologico: this.normalizeText(dto.sexoBiologico || paciente.sexoBiologico || dto.genero) || undefined,
       identidadeGenero: this.normalizeText(dto.identidadeGenero) || undefined,
       telefone: this.normalizeText(dto.telefone) || undefined,
       cidade: this.normalizeText(dto.cidade) || undefined,
@@ -860,6 +1492,50 @@ export class PacientesService {
     };
   }
 
+  private buildOnboardingSelfReportedData(dto: AtualizarOnboardingAtletaDto) {
+    const incomingConfirmation = this.asObject(dto.confirmacaoAtleta);
+    const incomingData = this.asObject(incomingConfirmation.dados);
+    const esportivo = this.buildOnboardingEsportivoPayload(dto.esportivo);
+    const medicamentos = this.normalizeOnboardingMedicamentos(dto.medicamentos);
+    const suplementos = this.normalizeOnboardingMedicamentos(dto.suplementos);
+    const patologias = this.normalizeOptionalStringArray(dto.patologias);
+    const comorbidadesFamiliares = this.normalizeOptionalStringArray(dto.comorbidadesFamiliares);
+    const queixaPrincipal = this.normalizeText(dto.queixaPrincipal);
+    const alergias = this.normalizeText(dto.alergias);
+
+    return compactJsonRecord({
+      ...incomingData,
+      dataNascimento: this.normalizeText(dto.dataNascimento) || undefined,
+      genero: this.normalizeText(dto.genero) || undefined,
+      sexoBiologico: this.normalizeText(dto.sexoBiologico) || undefined,
+      identidadeGenero: this.normalizeText(dto.identidadeGenero) || undefined,
+      telefone: this.normalizeText(dto.telefone) || undefined,
+      cidade: this.normalizeText(dto.cidade) || undefined,
+      estado: this.normalizeText(dto.estado) || undefined,
+      objetivos: this.normalizeOptionalStringArray(dto.objetivos),
+      queixaPrincipal: queixaPrincipal || undefined,
+      observacoes: this.normalizeText(incomingData.observacoes) || queixaPrincipal || undefined,
+      patologias,
+      comorbidadesPessoais: this.normalizeStringArray(incomingData.comorbidadesPessoais).length
+        ? this.normalizeStringArray(incomingData.comorbidadesPessoais)
+        : patologias,
+      medicamentos,
+      suplementos,
+      alergias: alergias || undefined,
+      alergiaIntolerancia: this.normalizeText(incomingData.alergiaIntolerancia) || alergias || undefined,
+      cirurgias: this.normalizeText(dto.cirurgias) || undefined,
+      sonoHoras: this.normalizeOptionalNumber(dto.sonoHoras),
+      sonoQualidade: this.normalizeOptionalNumber(dto.sonoQualidade),
+      estresseNivel: this.normalizeOptionalNumber(dto.estresseNivel),
+      alcoolUso: this.normalizeText(dto.alcoolUso) || undefined,
+      tabacoUso: this.normalizeText(dto.tabacoUso) || undefined,
+      cicloMenstrualRegularidade: this.normalizeText(dto.cicloMenstrualRegularidade) || undefined,
+      cicloMenstrualContraceptivo: this.normalizeText(dto.cicloMenstrualContraceptivo) || undefined,
+      comorbidadesFamiliares,
+      esportivo: this.hasMeaningfulValue(esportivo) ? esportivo : undefined
+    });
+  }
+
   private buildOnboardingPacientePatch(dto: AtualizarOnboardingAtletaDto): Partial<Paciente> {
     const patch: Partial<Paciente> = {};
     const has = (key: keyof AtualizarOnboardingAtletaDto) => Object.prototype.hasOwnProperty.call(dto, key);
@@ -873,9 +1549,13 @@ export class PacientesService {
 
     assignText('dataNascimento', 'dataNascimento');
     assignText('genero', 'genero');
+    assignText('sexoBiologico', 'sexoBiologico');
     assignText('telefone', 'telefone');
     assignText('cidade', 'cidade');
     assignText('estado', 'estado');
+
+    const confirmationData = this.buildOnboardingSelfReportedData(dto);
+    Object.assign(patch, this.extractClinicalSummaryFromOnboarding(confirmationData));
 
     if (has('objetivos')) {
       const objetivos = this.normalizeStringArray(dto.objetivos);
@@ -968,7 +1648,7 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    if (!this.canAccessPaciente(user, paciente)) {
+    if (!(await this.canAccessPacienteForUser(user, paciente))) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
 
@@ -1000,14 +1680,24 @@ export class PacientesService {
       const sessao = await this.resolveOnboardingSessao(currentPaciente, sessoesRepo);
       const avaliacao = await this.saveOnboardingAnamnese(currentPaciente, sessao, dto, avaliacoesRepo);
       const completedAt = new Date().toISOString();
-      const confirmation = {
-        ...this.asObject(dto.confirmacaoAtleta),
-        completadoEm: completedAt,
-        versao: '1.0',
-        anamneseId: avaliacao.id,
-        completed: true,
-        submittedAt: completedAt
-      };
+      const incomingConfirmation = this.asObject(dto.confirmacaoAtleta);
+      const confirmation = mergeAthleteConfirmation(
+        currentPaciente.confirmacaoAtleta,
+        {
+          ...incomingConfirmation,
+          dados: this.buildOnboardingSelfReportedData(dto)
+        },
+        {
+          origem: 'atleta',
+          cadastroStatus: 'cadastro_atleta_completo',
+          timestamp: completedAt,
+          actorId: user.id || null,
+          actorName: user.name || null,
+          completed: true,
+          anamneseId: avaliacao.id,
+          versao: '1.0'
+        }
+      );
       const nextProntuario = currentPaciente.prontuario || await this.generateProntuarioNumber();
       const merged = pacientesRepo.merge(currentPaciente, {
         prontuario: nextProntuario,
@@ -1017,7 +1707,7 @@ export class PacientesService {
       return pacientesRepo.save(merged);
     });
     this.realtime.emit('pacientes.updated', saved);
-    return saved;
+    return this.mapAthletePaciente(saved);
   }
 
   async getAthleteOnboardingStatus(id: string, user: AuthenticatedUser) {
@@ -1025,14 +1715,14 @@ export class PacientesService {
     if (!paciente) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
-    if (!this.canAccessPaciente(user, paciente)) {
+    if (!(await this.canAccessPacienteForUser(user, paciente))) {
       throw new NotFoundException('Paciente nao encontrado.');
     }
 
     const role = normalizeRole(user.role);
     const canViewStatus = role === 'atleta'
       ? paciente.atletaUserId === user.id
-      : hasGlobalAccess(role) || hasTeamScopedAccess(role) || isStudentMemberRole(role);
+      : hasGlobalAccess(role) || role === 'coord_atendimento' || hasTeamScopedAccess(role) || isStudentMemberRole(role);
     if (!canViewStatus) {
       throw new ForbiddenException('Sem permissao para consultar onboarding do atleta.');
     }
@@ -1128,10 +1818,13 @@ export class PacientesService {
 
   async addAttachment(
     pacienteId: string,
-    file: { filename: string; originalname: string; mimetype: string; size: number },
+    file: { filename: string; originalname: string; mimetype: string; size: number; buffer: Buffer },
     user: AuthenticatedUser
   ) {
     const paciente = await this.findAccessiblePacienteOrFail(pacienteId, user);
+    if (!(await this.canWriteSupervisorMessage(user, paciente))) {
+      throw new ForbiddenException('Somente coordenacao ou supervisor responsavel pode anexar arquivos ao prontuario.');
+    }
     const attachment = this.buildAttachmentPayload(pacienteId, file, user);
     const currentAttachments = Array.isArray(paciente.anexos) ? paciente.anexos : [];
     const mergedAttachments = [
@@ -1142,25 +1835,32 @@ export class PacientesService {
       })
     ];
 
-    const merged = this.repo.merge(paciente, {
-      anexos: mergedAttachments
-    } as any);
-
+    const absolutePath = this.buildAttachmentAbsolutePath(pacienteId, file.filename);
+    await mkdir(dirname(absolutePath), { recursive: true });
+    let created = false;
+    let saved: Paciente;
     try {
-      const saved = await this.repo.save(merged);
-      this.realtime.emit('pacientes.updated', saved);
-      return attachment;
-    } catch (error) {
-      const absolutePath = this.buildAttachmentAbsolutePath(pacienteId, file.filename);
+      const handle = await open(absolutePath, 'wx');
+      created = true;
       try {
-        if (await this.fileExists(absolutePath)) {
+        await handle.writeFile(file.buffer);
+      } finally {
+        await handle.close();
+      }
+      const merged = this.repo.merge(paciente, { anexos: mergedAttachments });
+      saved = await this.repo.save(merged);
+    } catch (error) {
+      if (created) {
+        try {
           await unlink(absolutePath);
+        } catch {
+          // Preserva o erro original de escrita ou persistencia.
         }
-      } catch {
-        // Ignora falha de limpeza: o erro principal de persistencia sera propagado.
       }
       throw error;
     }
+    this.realtime.emit('pacientes.updated', saved);
+    return attachment;
   }
 
   async resolveAttachmentDownload(
@@ -1205,6 +1905,9 @@ export class PacientesService {
   ) {
     const attachment = await this.resolveAttachmentDownload(pacienteId, filename, user);
     const paciente = await this.findAccessiblePacienteOrFail(pacienteId, user);
+    if (!(await this.canWriteSupervisorMessage(user, paciente))) {
+      throw new ForbiddenException('Somente coordenacao ou supervisor responsavel pode remover anexos do prontuario.');
+    }
 
     const currentAttachments = Array.isArray(paciente.anexos) ? paciente.anexos : [];
     const normalizedSuffix = `/anexos/${attachment.filename}`;
@@ -1215,7 +1918,7 @@ export class PacientesService {
 
     const merged = this.repo.merge(paciente, {
       anexos: nextAttachments
-    } as any);
+    });
     const saved = await this.repo.save(merged);
     this.realtime.emit('pacientes.updated', saved);
 

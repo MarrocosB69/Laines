@@ -1,511 +1,133 @@
-.perimetros-form.perimetros-form--modern {
-  --domain-color: var(--color-accent, #56ADDB);
-  border-radius: var(--radius-xl);
-  border: 1px solid color-mix(in srgb, var(--domain-color) 20%, transparent);
-}
+/* Perímetros (Antropometria básica): só o que é deste formulário. Raiz,
+   seções, campos, resultados, avisos, tendência e ações vêm da base
+   (src/components/Avaliacoes/base/avaliacao-base.css). A raiz é ao mesmo
+   tempo .av-modulo e .perimetros-form, por isso os seletores que precisam da
+   raiz usam `.av-modulo.perimetros-form`. */
 
-.perimetros-form .eval-icon {
-  background: linear-gradient(165deg, color-mix(in srgb, var(--domain-color) 12%, transparent), color-mix(in srgb, var(--domain-color) 6%, transparent));
-  color: var(--domain-color);
-  border-color: color-mix(in srgb, var(--domain-color) 22%, transparent);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--domain-color) 14%, transparent);
-}
+/* "Opcional" dentro do rótulo: a base já o deixa em texto de apoio; aqui só
+   o respiro em relação ao nome do campo. */
+.av-modulo .perimetros-optional-badge { margin-left: var(--lt-space-2); }
 
-.perimetros-form .perimetros-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.perimetros-form .perimetros-unit-badge {
-  font-size: 0.62rem;
-  padding: 0.08rem 0.36rem;
-  border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.24);
-  color: #1d4ed8;
-  font-weight: 800;
-}
-
-.perimetros-form .perimetros-required-dot {
-  color: #dc2626;
-  margin-left: 0.2rem;
-  font-weight: 900;
-}
-
-.perimetros-form .perimetros-optional-badge {
-  font-size: 0.6rem;
-  padding: 0.08rem 0.34rem;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.16);
-  color: #475569;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  font-weight: 800;
-}
-
-.perimetros-form .perimetros-help {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--domain-color) 30%, transparent);
-  background: #ffffff;
-  color: #0f5a73;
-  font-size: 0.66rem;
-  font-weight: 800;
-  margin-left: 0.2rem;
-  cursor: help;
-}
-
-.perimetros-form .perimetros-help:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--domain-color) 20%, transparent);
-}
-
-.perimetros-form .perimetros-help-tooltip {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  z-index: 20;
-  width: min(320px, 85vw);
-  background: #0f2432;
-  color: #e2f1fa;
-  border: 1px solid rgba(148, 163, 184, 0.36);
-  border-radius: 10px;
-  padding: 0.5rem 0.56rem;
-  display: grid;
-  gap: 0.24rem;
-  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.28);
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(4px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-.perimetros-form .perimetros-help-tooltip span {
-  font-size: 0.69rem;
-  line-height: 1.35;
-  font-weight: 600;
-}
-
-.perimetros-form .perimetros-help:hover .perimetros-help-tooltip,
-.perimetros-form .perimetros-help:focus-visible .perimetros-help-tooltip {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.perimetros-form .perimetros-input-invalid {
-  border-color: #dc2626;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
-}
-
-.perimetros-form .perimetros-input-warning {
-  border-color: #d97706;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
-}
-
-.perimetros-form .perimetros-field-message {
-  margin-top: 0.2rem;
-  font-size: 0.68rem;
+/* ── Aviso de faixa fisiológica sob o campo (vai em `ajuda`) ─────────── */
+.av-modulo.perimetros-form .av-campo:has(.perimetros-input-warning) .av-campo__ajuda {
+  color: var(--av-atencao-texto);
   font-weight: 700;
 }
 
-.perimetros-form .perimetros-field-message.is-error {
-  color: #b91c1c;
+/* ── Medidas bilaterais: uma faixa por membro, com D e E lado a lado ─── */
+.av-modulo .perimetros-bilateral-row {
+  box-sizing: border-box;
+  padding: var(--lt-space-3) var(--lt-space-4) var(--lt-space-4);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
 }
 
-.perimetros-form .perimetros-field-message.is-warning {
-  color: #b45309;
-}
-
-.perimetros-form .perimetros-shared-hint {
-  margin: 0.55rem 0 0;
-  font-size: 0.7rem;
-  color: #1e40af;
-  font-weight: 700;
-}
-
-.perimetros-form .perimetros-toggle {
+.av-modulo .perimetros-bilateral-header {
   display: flex;
-  align-items: center;
-  gap: 0.52rem;
-  min-height: 40px;
-  padding: 0.42rem 0.55rem;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  background: #f8fafc;
-}
-
-.perimetros-form .perimetros-toggle input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--color-navy-light, #2a4a6e);
-}
-
-.perimetros-form .perimetros-toggle span {
-  font-size: 0.7rem;
-  color: #334155;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.perimetros-form .perimetros-bilateral-row {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.5rem;
-}
-
-.perimetros-form .perimetros-bilateral-header {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 0.45rem;
-  margin-bottom: 0.35rem;
+  gap: var(--lt-space-2);
 }
 
-.perimetros-form .perimetros-bilateral-grid {
+.av-modulo .perimetros-bilateral-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-3) var(--lt-space-4);
+  min-width: 0;
 }
 
-.perimetros-form .perimetros-asymmetry-badge {
+/* Assimetria: o texto vem sempre escrito; a partir de 10 % entra também o
+   triângulo, para o alerta não depender só da cor. */
+.av-modulo .perimetros-asymmetry-badge {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  padding: 0.12rem 0.45rem;
-  font-size: 0.63rem;
-  font-weight: 800;
-  color: #0c4a6e;
-  background: rgba(14, 165, 233, 0.14);
-  border: 1px solid rgba(14, 165, 233, 0.3);
+  gap: var(--lt-space-1);
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lt-leading-snug);
 }
 
-.perimetros-form .perimetros-asymmetry-badge.is-alert {
-  color: #991b1b;
-  background: rgba(239, 68, 68, 0.14);
-  border-color: rgba(239, 68, 68, 0.32);
+.av-modulo .perimetros-asymmetry-badge.is-alert {
+  background: var(--lt-color-danger-bg);
+  color: var(--lt-color-danger-text);
 }
 
-.perimetros-form .perimetros-alert-note {
-  margin-top: 0.55rem;
-  border-color: rgba(239, 68, 68, 0.26);
-  background: rgba(254, 226, 226, 0.76);
-  color: #991b1b;
+/* ── Resultados: rótulo com a dica e a variação no texto de apoio ────── */
+.av-modulo .perimetros-waist-alert strong { display: block; }
+.av-modulo .perimetros-waist-alert p { margin: var(--lt-space-1) 0 0; }
+
+.av-modulo .perimetros-delta {
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.perimetros-form .perimetros-results-grid {
+.av-modulo.perimetros-form .is-up { color: var(--lt-color-success-text); }
+.av-modulo.perimetros-form .is-down { color: var(--lt-color-danger-text); }
+.av-modulo.perimetros-form .is-flat { color: var(--lt-color-text-muted); }
+
+.av-modulo .perimetros-sparklines {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.68rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
 }
 
-.perimetros-form .perimetros-result-card {
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 0.72rem;
-  display: grid;
-  gap: 0.45rem;
-}
-
-.perimetros-form .perimetros-result-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.45rem;
-}
-
-.perimetros-form .perimetros-result-card__header h6 {
+.av-modulo .perimetros-interpretation {
   margin: 0;
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #475569;
-  font-weight: 800;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
 }
 
-.perimetros-form .perimetros-result-card__value {
-  color: #0f172a;
-  font-size: 1rem;
-  font-weight: 800;
+/* ── Tabelas (comparação, segmentos e TMB): rolam no próprio invólucro ── */
+.av-modulo :is(.perimetros-comparison-table-wrap, .perimetros-tmb-table-wrap) {
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
 }
 
-.perimetros-form .perimetros-result-card__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.22rem;
-}
-
-.perimetros-form .perimetros-result-card__meta small {
-  color: #64748b;
-  font-size: 0.67rem;
-  font-weight: 600;
-}
-
-.perimetros-form .perimetros-status-badge {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding: 0.14rem 0.4rem;
-  border-radius: 999px;
-  font-size: 0.63rem;
-  font-weight: 800;
-  border: 1px solid transparent;
-}
-
-.perimetros-form .perimetros-tone-success {
-  background: rgba(34, 197, 94, 0.16);
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.perimetros-form .perimetros-tone-warning {
-  background: rgba(234, 179, 8, 0.18);
-  color: #854d0e;
-  border-color: rgba(234, 179, 8, 0.34);
-}
-
-.perimetros-form .perimetros-tone-danger {
-  background: rgba(239, 68, 68, 0.14);
-  color: #991b1b;
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.perimetros-form .perimetros-tone-info {
-  background: rgba(14, 165, 233, 0.14);
-  color: #0c4a6e;
-  border-color: rgba(14, 165, 233, 0.3);
-}
-
-.perimetros-form .perimetros-tone-neutral {
-  background: rgba(148, 163, 184, 0.14);
-  color: #334155;
-  border-color: rgba(148, 163, 184, 0.28);
-}
-
-.perimetros-form .perimetros-delta {
-  margin: 0;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.perimetros-form .perimetros-delta.is-up,
-.perimetros-form .is-up {
-  color: #047857;
-}
-
-.perimetros-form .perimetros-delta.is-down,
-.perimetros-form .is-down {
-  color: #b91c1c;
-}
-
-.perimetros-form .perimetros-delta.is-flat,
-.perimetros-form .is-flat {
-  color: #475569;
-}
-
-.perimetros-form .perimetros-waist-alert {
-  margin-top: 0.76rem;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: #f8fafc;
-  padding: 0.58rem 0.64rem;
-  display: flex;
-  gap: 0.45rem;
-  align-items: flex-start;
-}
-
-.perimetros-form .perimetros-waist-alert strong {
-  display: block;
-  font-size: 0.76rem;
-  margin-bottom: 0.15rem;
-}
-
-.perimetros-form .perimetros-waist-alert p {
-  margin: 0;
-  font-size: 0.69rem;
-  color: #475569;
-}
-
-.perimetros-form .perimetros-comparison {
-  margin-top: 0.92rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.24);
-  padding-top: 0.76rem;
-}
-
-.perimetros-form .perimetros-comparison h5 {
-  margin: 0 0 0.45rem;
-  font-size: 0.73rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #334155;
-  font-weight: 800;
-}
-
-.perimetros-form .perimetros-comparison-table-wrap,
-.perimetros-form .perimetros-tmb-table-wrap {
-  overflow-x: auto;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-}
-
-.perimetros-form .perimetros-comparison-table,
-.perimetros-form .perimetros-tmb-table {
+.av-modulo :is(.perimetros-comparison-table, .perimetros-tmb-table) {
   width: 100%;
+  min-width: 38.75rem;
   border-collapse: collapse;
-  min-width: 620px;
+  font-variant-numeric: tabular-nums;
 }
 
-.perimetros-form .perimetros-comparison-table th,
-.perimetros-form .perimetros-tmb-table th {
+.av-modulo :is(.perimetros-comparison-table, .perimetros-tmb-table) th {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+  background: var(--lt-color-surface-field);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 700;
   text-align: left;
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #475569;
-  padding: 0.48rem 0.55rem;
-  background: #f1f5f9;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
 }
 
-.perimetros-form .perimetros-comparison-table td,
-.perimetros-form .perimetros-tmb-table td {
-  padding: 0.48rem 0.55rem;
-  font-size: 0.74rem;
-  color: #1e293b;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+.av-modulo :is(.perimetros-comparison-table, .perimetros-tmb-table) td {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-bottom: 1px solid var(--lt-color-border);
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
 }
 
-.perimetros-form .perimetros-comparison-table tr:last-child td,
-.perimetros-form .perimetros-tmb-table tr:last-child td {
-  border-bottom: none;
-}
+.av-modulo :is(.perimetros-comparison-table, .perimetros-tmb-table) tr:last-child td { border-bottom: 0; }
 
-.perimetros-form .perimetros-sparklines {
-  margin-top: 0.65rem;
+/* ── Circunferências: silhueta e metas lado a lado ───────────────────── */
+.av-modulo .perimetros-circ-layout {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.62rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--lt-space-3);
+  align-items: start;
+  min-width: 0;
 }
 
-.perimetros-form .perimetros-sparkline-card {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 0.52rem;
-}
-
-.perimetros-form .perimetros-sparkline-card p {
-  margin: 0 0 0.35rem;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-  font-weight: 800;
-}
-
-.perimetros-form .mini-sparkline {
-  width: 100%;
-  height: 72px;
-}
-
-.perimetros-form .mini-sparkline--empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 72px;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-.perimetros-form .perimetros-interpretation {
-  margin: 0.55rem 0 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #14532d;
-}
-
-.perimetros-form .perimetros-circ-layout {
-  display: grid;
-  grid-template-columns: 0.95fr 1.35fr;
-  gap: 0.7rem;
-  margin-bottom: 0.72rem;
-}
-
-.perimetros-form .perimetros-silhouette-card,
-.perimetros-form .perimetros-meta-card {
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 0.62rem;
-}
-
-.perimetros-form .perimetros-silhouette-card h5,
-.perimetros-form .perimetros-meta-card h5 {
-  margin: 0 0 0.45rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #64748b;
-  font-weight: 800;
-}
-
-.perimetros-form .perimetros-meta-summary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  list-style: none;
-  margin: 0 0 0.45rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #64748b;
-  font-weight: 800;
-  user-select: none;
-}
-
-.perimetros-form .perimetros-meta-summary::-webkit-details-marker {
-  display: none;
-}
-
-.perimetros-form details.perimetros-meta-card .perimetros-meta-summary::before {
-  content: '▸';
-  font-size: 0.7rem;
-  color: #94a3b8;
-  transition: transform 0.15s;
-  flex-shrink: 0;
-}
-
-.perimetros-form details.perimetros-meta-card[open] .perimetros-meta-summary::before {
-  transform: rotate(90deg);
-}
-
-.perimetros-form .perimetros-meta-hint {
-  font-size: 0.69rem;
-  font-weight: 400;
-  color: #94a3b8;
-  letter-spacing: 0;
-  text-transform: none;
-  margin-left: 0.2rem;
-}
-
-.perimetros-form .perimetros-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-}
-
-.perimetros-form .perimetros-silhouette {
+.av-modulo .perimetros-silhouette {
   display: block;
   width: 100%;
   max-width: 220px;
@@ -513,143 +135,94 @@
   margin: 0 auto;
 }
 
-.perimetros-form .perimetros-silhouette > * {
-  stroke: rgba(15, 23, 42, 0.15);
+.av-modulo .perimetros-silhouette > * {
+  stroke: var(--lt-color-text);
+  stroke-opacity: 0.15;
   stroke-width: 1;
 }
 
-.perimetros-form .perimetros-segment-success {
-  fill: rgba(34, 197, 94, 0.34);
+.av-modulo .perimetros-segment-success { fill: var(--lt-color-brand-green); fill-opacity: 0.4; }
+.av-modulo .perimetros-segment-warning { fill: var(--av-atencao-traco); fill-opacity: 0.4; }
+.av-modulo .perimetros-segment-danger { fill: var(--lt-color-danger-text); fill-opacity: 0.35; }
+.av-modulo .perimetros-segment-neutral { fill: var(--lt-color-border-field); fill-opacity: 0.25; }
+
+.av-modulo .perimetros-meta-card {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0 var(--lt-space-4) var(--lt-space-4);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-control);
 }
 
-.perimetros-form .perimetros-segment-warning {
-  fill: rgba(234, 179, 8, 0.38);
-}
-
-.perimetros-form .perimetros-segment-danger {
-  fill: rgba(239, 68, 68, 0.34);
-}
-
-.perimetros-form .perimetros-segment-neutral {
-  fill: rgba(148, 163, 184, 0.28);
-}
-
-.perimetros-form .perimetros-formula-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.perimetros-form .perimetros-tmb-table tr {
-  transition: background 0.14s ease;
-}
-
-.perimetros-form .perimetros-tmb-table tr.is-selected {
-  background: rgba(14, 165, 233, 0.12);
-}
-
-.perimetros-form .perimetros-tmb-table tr.is-disabled {
-  opacity: 0.6;
-}
-
-.perimetros-form .perimetros-tmb-table tr[role='button'] {
+/* O marcador nativo do <details> fica: ele mostra aberto/fechado pela
+   forma, sem depender de cor. */
+.av-modulo .perimetros-meta-summary {
+  padding: var(--lt-space-3) 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
+  line-height: var(--lt-leading-snug);
   cursor: pointer;
 }
 
-.perimetros-form .perimetros-tmb-table tr[role='button']:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--domain-color) 45%, transparent);
-  outline-offset: -2px;
+.av-modulo .perimetros-meta-hint {
+  margin-left: var(--lt-space-2);
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  font-weight: 400;
 }
 
-.perimetros-form .perimetros-selected-formula {
-  margin-top: 0.62rem;
-  border: 1px solid color-mix(in srgb, var(--domain-color) 25%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--domain-color) 8%, transparent);
-  padding: 0.56rem 0.62rem;
+.av-modulo .perimetros-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--lt-space-3) var(--lt-space-4);
+  min-width: 0;
 }
 
-.perimetros-form .perimetros-selected-formula strong {
-  display: block;
-  font-size: 0.75rem;
-  color: #0f172a;
-}
-
-.perimetros-form .perimetros-selected-formula p {
-  margin: 0.22rem 0 0;
-  font-size: 0.68rem;
-  color: #475569;
-  font-weight: 700;
-}
-
-.perimetros-form .perimetros-tmb-warning {
-  margin-top: 0.58rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(234, 179, 8, 0.35);
-  background: rgba(254, 249, 195, 0.8);
-  color: #854d0e;
-  padding: 0.44rem 0.52rem;
-  font-size: 0.72rem;
-  font-weight: 700;
+/* ── Comparativo de TMB ──────────────────────────────────────────────── */
+/* Com quebra: aberta, a dica da base desce para a linha de baixo, na
+   largura do balão de antes. */
+.av-modulo .perimetros-formula-name {
   display: flex;
-  gap: 0.35rem;
+  flex-wrap: wrap;
   align-items: center;
+  gap: var(--lt-space-1);
 }
 
-.perimetros-form .perimetros-error-note {
-  border-color: rgba(220, 38, 38, 0.3);
-  background: rgba(254, 226, 226, 0.8);
-  color: #991b1b;
+.av-modulo .perimetros-formula-name .av-dica__painel { max-width: 20rem; }
+
+.av-modulo .perimetros-tmb-table tr[role='button'] { cursor: pointer; }
+
+/* Linha escolhida: fundo e uma barra à esquerda (forma, não só cor); o
+   leitor de tela ouve aria-pressed. */
+.av-modulo .perimetros-tmb-table tr.is-selected { background: var(--lt-color-track-tint); }
+.av-modulo .perimetros-tmb-table tr.is-selected td:first-child { box-shadow: inset 4px 0 0 var(--lt-color-brand-blue); }
+
+/* Fórmula não aplicável: texto de apoio em vez de opacidade, que tirava o
+   contraste. */
+.av-modulo .perimetros-tmb-table tr.is-disabled td { color: var(--lt-color-text-muted); cursor: default; }
+
+.av-modulo .perimetros-tmb-table tr[role='button']:focus-visible {
+  outline: 2px solid var(--lt-color-brand-blue);
+  outline-offset: -2px;
+  box-shadow: none;
 }
 
-@media (max-width: 1024px) {
-  .perimetros-form .perimetros-results-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .perimetros-form .perimetros-sparklines {
-    grid-template-columns: 1fr;
-  }
-
-  .perimetros-form .perimetros-circ-layout {
-    grid-template-columns: 1fr;
-  }
+.av-modulo .perimetros-selected-formula {
+  padding: var(--lt-space-3) var(--lt-space-4);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
 }
 
-@media (max-width: 768px) {
-  .perimetros-form .perimetros-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .perimetros-form .perimetros-results-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .perimetros-form .perimetros-bilateral-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .perimetros-form .perimetros-meta-grid {
-    grid-template-columns: 1fr;
-  }
+.av-modulo .perimetros-selected-formula strong {
+  display: block;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-base);
+  font-weight: 700;
 }
 
-@media (max-width: 480px) {
-  .perimetros-form {
-    padding: 0.75rem 0.5rem !important;
-  }
-
-  .perimetros-form .eval-card,
-  .perimetros-form .eval-section,
-  .perimetros-form .perimetros-section {
-    padding: 0.75rem !important;
-  }
-
-  .perimetros-form .eval-card-header,
-  .perimetros-form .perimetros-header {
-    padding: 0.75rem 0.75rem 0 !important;
-  }
+.av-modulo .perimetros-selected-formula p {
+  margin: var(--lt-space-1) 0 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
 }
-
-
-

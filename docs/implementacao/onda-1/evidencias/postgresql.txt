@@ -1,0 +1,6 @@
+PASS migration aplicada e banco recusa senha em texto
+PASS HTTP e socket: logout de uma familia revoga A e preserva B
+PASS recuperacao PostgreSQL: concorrencia tem um vencedor e revoga HTTP/socket
+PASS plano PostgreSQL: roundtrip legado e comparacao atomica de versao
+PASS UPD-10: publicacao, portal/PDF, copia imutavel e concorrencia transacional
+5 integracoes passaram em PostgreSQL isolado; nenhum email enviado.

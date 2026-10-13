@@ -1,0 +1,31 @@
+
+> laines-app@0.0.0 lint
+> eslint . && node scripts/check-copy-permission-guardrails.mjs
+
+
+C:\Users\bruno\laines-app\scripts\generate-profile-manuals.mjs
+  1298:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  1322:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  1324:7  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  1333:3  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+C:\Users\bruno\laines-app\src\components\AlimentoBuscador.jsx
+  145:6  warning  React Hook useEffect has a missing dependency: 'grupoFiltro'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\bruno\laines-app\src\components\Avaliacoes\Antropometria\DobrasCutaneasForm.jsx
+  497:6  warning  React Hook useMemo has an unnecessary dependency: 'sexToken'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\bruno\laines-app\src\components\Avaliacoes\avaliacao-imagem\Body3D.jsx
+  75:22  warning  Unused eslint-disable directive (no problems were reported from 'no-use-before-define')
+
+C:\Users\bruno\laines-app\src\components\RefeicaoBuilder.jsx
+  83:9  warning  The 'alimentos' conditional could make the dependencies of useMemo Hook (at line 86) change on every render. To fix this, wrap the initialization of 'alimentos' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\bruno\laines-app\src\views\admin\Dashboard\DashboardStats.jsx
+  625:6  warning  React Hook useMemo has a missing dependency: 'isElevatedRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  639:6  warning  React Hook useMemo has a missing dependency: 'isElevatedRole'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 10 problems (0 errors, 10 warnings)
+  0 errors and 5 warnings potentially fixable with the `--fix` option.
+
+[copy-guardrails] Copy/permission guardrails OK.

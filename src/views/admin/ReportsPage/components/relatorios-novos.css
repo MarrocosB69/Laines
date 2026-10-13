@@ -1,0 +1,275 @@
+/* Perfil dos atletas e Produção da liga (WI-016, etapas 2 e 3).
+   Direção "Energia e velocidade": peças de components/painel (que trazem os
+   tokens --lt-* e o par Sofia), uma cor só nas barras e todo estado escrito.
+   Tudo escopado em `.painel .rel-*` para vencer as regras globais de h3/h4,
+   `p` e `button` de src/index.css e src/styles/theme.css. */
+
+.painel .rel-novos__contexto,
+.painel .rel-novos__rodape {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.painel .rel-novos__contexto { margin-bottom: var(--lt-space-3); color: var(--lt-color-text); font-weight: 600; }
+.painel .rel-novos__rodape { margin-top: var(--lt-space-4); }
+
+/* Blocos lado a lado quando cabem; a 390px, uma coluna. */
+.painel .rel-novos__grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: var(--lt-space-3);
+  min-width: 0;
+}
+
+.painel .rel-novos__grade--areas { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+
+/* ── Bloco: cartão claro com a marca inclinada no topo ─────────────── */
+.painel .rel-bloco {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-4);
+  border: 1px solid var(--lt-color-border);
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text);
+}
+
+.painel .rel-bloco::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-4);
+  width: 2.25rem;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--lt-color-brand-blue);
+  transform: skewX(-20deg);
+}
+
+.painel .rel-bloco__titulo {
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-md);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.painel .rel-bloco__descricao,
+.painel .rel-bloco__nota,
+.painel .rel-bloco__geracao {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.painel .rel-bloco__geracao { margin-top: auto; padding-top: var(--lt-space-2); font-size: var(--lt-text-xs); }
+
+.painel .rel-bloco__n {
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+/* O "n" na voz de campanha, menor que o número dos indicadores. */
+.painel .rel-bloco__n-valor {
+  margin-right: 0.25rem;
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.painel .rel-bloco__n--suprimido {
+  padding: var(--lt-space-2) var(--lt-space-3);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface-field);
+}
+
+/* ── Distribuição: rótulo e valor em texto, barra só desenho ────────── */
+.painel .rel-dist { display: flex; flex-direction: column; gap: var(--lt-space-1); min-width: 0; }
+
+.painel .rel-dist__titulo {
+  margin: var(--lt-space-2) 0 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.painel .rel-dist__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.painel .rel-dist__linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.25rem var(--lt-space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+.painel .rel-dist__rotulo { min-width: 0; color: var(--lt-color-text); overflow-wrap: anywhere; }
+
+.painel .rel-dist__valor {
+  color: var(--lt-color-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.painel .rel-dist__pct { color: var(--lt-color-text-muted); }
+
+.painel .rel-dist__valor--suprimido {
+  color: var(--lt-color-text-muted);
+  font-style: italic;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.painel .rel-dist__trilho {
+  grid-column: 1 / -1;
+  display: block;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+}
+
+/* Grupo suprimido: trilho tracejado e vazio, sem barra que sugira tamanho. */
+.painel .rel-dist__linha--suprimida .rel-dist__trilho {
+  box-sizing: border-box;
+  border: 1px dashed var(--lt-color-border-field);
+  background: transparent;
+}
+
+.painel .rel-dist__barra {
+  display: block;
+  width: var(--rel-pct, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lt-color-brand-blue);
+}
+
+.painel .rel-dist__aviso {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+}
+
+.painel .rel-metodos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  color: var(--lt-color-text);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-snug);
+}
+
+.painel .rel-metodos__rotulo { font-weight: 700; }
+
+/* ── Produção: número grande à esquerda, texto à direita ────────────── */
+.painel .rel-producao {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.painel .rel-producao__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--lt-space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--lt-space-2) 0;
+}
+
+.painel .rel-producao__item + .rel-producao__item { border-top: 1px solid var(--lt-color-border); }
+
+.painel .rel-producao__valor {
+  flex: none;
+  min-width: 2.5rem;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-display);
+  font-style: italic;
+  font-weight: 900;
+  font-size: var(--lt-text-xl);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.painel .rel-producao__texto { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.125rem; min-width: 0; }
+
+.painel .rel-producao__rotulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-2);
+  color: var(--lt-color-text);
+  font-weight: 700;
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
+  overflow-wrap: anywhere;
+}
+
+.painel .rel-producao__detalhe {
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* Selo escrito "Situação atual": o recorte não é o período. */
+.painel .rel-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-text);
+  font-weight: 700;
+  font-size: var(--lt-text-2xs);
+  line-height: var(--lt-leading-snug);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

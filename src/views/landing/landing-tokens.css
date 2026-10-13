@@ -1,0 +1,158 @@
+/**
+ * Tokens visuais da landing/login do LAINES (UX-08 / direção visual da
+ * auditoria — docs/auditoria-2026-09-11/interface-usabilidade.md).
+ *
+ * Vocabulário puro: só declarações de `--lt-*` em `:root`. Nenhuma regra de
+ * componente, nenhum seletor de elemento — quem consome este arquivo aplica
+ * os valores nos próprios seletores em `src/views/landing/*.css`.
+ *
+ * O raciocínio completo de cada valor (por que este tom, por que este
+ * degrau, o que foi cortado e por quê) está em
+ * docs/design/landing-guia-visual.md. Os pares texto/fundo comentados aqui
+ * como "4,5:1" são verificados automaticamente por
+ * scripts/test-landing-tokens.cjs, que lê este arquivo — não copie um valor
+ * sem atualizar o comentário de contraste correspondente.
+ */
+
+:root {
+  /* ── Tipografia ───────────────────────────────────────────────────────
+     Direção "Energia e velocidade" (docs/design/landing-v2/a2-energia/).
+     Duas famílias da mesma superfamília, carregadas por landing-base.css:
+     Sofia Sans (400–700) para todo texto e Sofia Sans Extra Condensed
+     Italic 900 só para a voz de campanha — título, "Entrar" e nomes das
+     áreas. Custo medido no mockup: 55,0 KB (Outfit, a anterior: 31,5 KB). */
+  --lt-font-family: 'Sofia Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --lt-font-display: 'Sofia Sans Extra Condensed', 'Arial Narrow', sans-serif-condensed, sans-serif;
+
+  /* Escala de 7 degraus. Cada um tem um uso nomeado no guia — não é uma
+     progressão matemática solta, é o conjunto de tamanhos que o fluxo de
+     login/acesso realmente precisa. */
+  --lt-text-2xs: 0.6875rem;                 /* 11px — rótulo/eyebrow em caixa alta */
+  --lt-text-xs:  0.75rem;                   /* 12px — metadado, legenda curta */
+  --lt-text-sm:  0.8125rem;                 /* 13px — texto secundário, botão de ação secundária */
+  --lt-text-base: 0.9375rem;                /* 15px — corpo de texto padrão */
+  --lt-text-md:  1.125rem;                  /* 18px — ênfase pontual (não é título de seção) */
+  --lt-text-lg:  clamp(1.5rem, 2vw, 1.875rem);   /* 24–30px — título de painel/modal, número de estatística */
+  --lt-text-xl:  clamp(2.25rem, 4vw, 3rem);      /* 36–48px — título da página (H1), único uso deste degrau */
+
+  /* Degraus acrescentados pela direção "Energia e velocidade". */
+  --lt-text-control: 1rem;                  /* 16px — texto digitado, botão; 16px evita o zoom do iOS no foco */
+  --lt-text-lead:    1.0625rem;             /* 17px — frase sobre a liga, descrição das áreas */
+  --lt-text-title:   1.25rem;               /* 20px — título da faixa das áreas */
+
+  --lt-leading-tight:  1.15;               /* títulos (--lt-text-lg / --lt-text-xl) */
+  --lt-leading-snug:   1.35;                /* rótulos, botões, texto curto de uma linha */
+  --lt-leading-normal: 1.5;                 /* parágrafos, texto de formulário */
+
+  /* ── Espaçamento ──────────────────────────────────────────────────────
+     Régua única, múltiplos de 4px. Uso de cada degrau documentado no guia
+     ("Espaçamento"). */
+  --lt-space-1: 0.25rem;  /* 4px  — gap ícone↔texto em selos/pills */
+  --lt-space-2: 0.5rem;   /* 8px  — gap rótulo↔campo; gap entre dots do carrossel */
+  --lt-space-3: 0.75rem;  /* 12px — padding interno de botão; gap entre pills */
+  --lt-space-4: 1rem;     /* 16px — gap entre campos de formulário */
+  --lt-space-5: 1.5rem;   /* 24px — gap entre blocos de uma seção; padding padrão de cartão */
+  --lt-space-6: 2rem;     /* 32px — padding de painel em telas largas; gap entre colunas */
+  --lt-space-7: 3rem;     /* 48px — padding vertical de seção */
+  --lt-space-8: 4rem;     /* 64px — respiro entre seções empilhadas */
+
+  /* ── Cor — texto ──────────────────────────────────────────────────────
+     Contraste calculado pela fórmula WCAG 2.2 (luminância relativa sRGB),
+     a mesma de scripts/test-acessibilidade-tokens.cjs. Todos os pares abaixo
+     são tratados como texto de tamanho normal (piso 4,5:1), mesmo onde o
+     uso real (H1/H2) se qualificaria para a folga de "texto grande" — não
+     dependemos dessa exceção. */
+  /* Tinta e Apoio: o azul-violeta do corredor do emblema, no lugar do
+     azul-petróleo anterior (direção "Energia e velocidade"). */
+  --lt-color-text:        #262947; /* 14,09:1 sobre branco · 13,19:1 sobre --lt-color-surface-field · 13,35:1 sobre --lt-color-bg-app */
+  --lt-color-text-muted:  #555c78; /*  6,59:1 sobre branco ·  6,17:1 sobre --lt-color-surface-field ·  6,24:1 sobre --lt-color-bg-app */
+  --lt-color-text-subtle: #5f6782; /*  5,60:1 sobre branco ·  5,24:1 sobre --lt-color-surface-field ·  5,31:1 sobre --lt-color-bg-app */
+  --lt-color-text-inverse: #ffffff; /* 5,37:1 sobre --lt-color-brand-green-text (fundo do botão primário) */
+
+  /* ── Cor — marca ──────────────────────────────────────────────────────
+     Verde da marca dividido em dois tokens: um para uso decorativo/gráfico
+     (não precisa de 4,5:1 — WCAG 1.4.11 pede só 3:1 para elementos não
+     textuais) e outro, mais escuro, seguro como cor de TEXTO. Ver guia,
+     seção "Marca", para o achado que motivou a separação. */
+  --lt-color-brand-green:      #3d8c2a; /* 4,21:1 sobre branco — NÃO usar como cor de texto; só ícone ≥24px, traço, divisor */
+  --lt-color-brand-green-text: #2d7a1a; /* 5,37:1 sobre branco · 5,03:1 sobre --lt-color-surface-field — seguro como texto e como fundo do botão primário */
+  --lt-color-brand-blue:       #2560a8; /* 6,33:1 sobre branco · 5,93:1 sobre --lt-color-surface-field — único azul do vocabulário: link, ação secundária, anel de foco */
+
+  /* ── Cor — superfícies ────────────────────────────────────────────────
+     Não são pares de texto; contraste não se aplica a elas diretamente,
+     só como fundo nos pares acima. */
+  --lt-color-surface:       #ffffff; /* painel, cartão, modal */
+  --lt-color-surface-field: #f3f8fd; /* campo de formulário em repouso */
+  --lt-color-bg-app:        #f5faf7; /* fundo sólido da página, atrás do gradiente ambiente */
+
+  /* ── Cor — cena (direção "Energia e velocidade") ──────────────────────
+     O estádio à noite da primeira tela e a faixa das áreas. Texto sobre a
+     cena é sempre --lt-color-text-inverse (títulos) ou --lt-color-mist
+     (frases). O verde da marca entra na cena só como gráfico (gramado,
+     luz do horizonte), nunca atrás de texto. */
+  --lt-color-stadium:    #0b2a5e; /* céu da cena e faixa das áreas · branco 13,93:1 · névoa 10,73:1 */
+  --lt-color-mist:       #d6e3f5; /* texto secundário sobre a cena · 4,87:1 sobre --lt-color-brand-blue, o ponto mais claro */
+  --lt-color-track-tint: #eaf1fa; /* fundo do ícone e da porta secundária no hover · azul 5,57:1 · apoio 5,79:1 */
+  /* Degradê do único sólido (botão Entrar): luz de cima. Branco 4,82:1 no
+     topo e 6,20:1 na base — os dois pontos são medidos pelo teste. */
+  --lt-color-start-top:    #33821f;
+  --lt-color-start-bottom: #2a6f18;
+
+  /* ── Cor — bordas (não-texto) ─────────────────────────────────────────
+     Translúcidas por design; não avaliadas em 4,5:1 (não carregam texto). */
+  --lt-color-border:       rgba(12, 31, 48, 0.12);  /* borda neutra — campo, botão secundário, divisor */
+  --lt-color-border-brand: rgba(61, 140, 42, 0.2);  /* borda com identidade — acento de marca */
+  /* Limite do campo do painel de login: opaco, porque o campo é
+     componente e precisa cruzar 3:1 (WCAG 1.4.11) — a borda translúcida
+     acima não cruza. */
+  --lt-color-border-field: #7a8098; /* 3,91:1 sobre branco */
+
+  /* ── Cor — estados semânticos ─────────────────────────────────────────
+     Já estavam corretos na landing atual; mantidos sem alteração de valor. */
+  --lt-color-danger-text: #b91c1c; /* 5,91:1 sobre --lt-color-danger-bg */
+  --lt-color-danger-bg:   #fef2f2;
+  --lt-color-success-text: #166534; /* 6,81:1 sobre --lt-color-success-bg */
+  --lt-color-success-bg:   #f0fdf4;
+
+  /* ── Foco visível ─────────────────────────────────────────────────────
+     Halo branco sólido de 2px + anel azul sólido de 4px por fora. O halo
+     isola o anel de qualquer cor de fundo por trás do controle (campo,
+     painel, botão verde) — o anel só precisa de 3:1 contra o halo, que já
+     é garantido (6,33:1). Isso substitui o brilho translúcido anterior
+     (rgba com alpha ≤0,5), que media abaixo de 3:1 contra o botão verde em
+     qualquer opacidade testada. Ver guia, seção "Foco visível". */
+  --lt-focus-ring: 0 0 0 2px var(--lt-color-surface), 0 0 0 4px var(--lt-color-brand-blue);
+
+  /* ── Alvo interativo ──────────────────────────────────────────────────
+     Preferência de conforto do projeto (auditoria, UX-08) — acima do
+     mínimo WCAG 2.5.8 (24px), não uma citação dele. */
+  --lt-target-min: 44px;
+
+  /* ── Raio de borda ────────────────────────────────────────────────────
+     Três degraus no lugar dos seis valores distintos do CSS atual. */
+  --lt-radius-control: 0.75rem; /* 12px — campo de formulário, botão, item de lista */
+  --lt-radius-card:    1.25rem; /* 20px — painel, cartão, modal */
+  --lt-radius-pill:    999px;   /* selo, chip, indicador */
+
+  /* ── Margem da página ─────────────────────────────────────────────────
+     Respiro lateral da cena, do painel e da faixa das áreas: 16px no
+     celular, 64px em telas largas. */
+  --lt-page-margin: clamp(1rem, 4.5vw, 4rem);
+
+  /* ── Movimento: a entrada ─────────────────────────────────────────────
+     Um relógio só para as três superfícies (cena, painel, áreas). Os
+     tempos são contados do carregamento; o "disparo" é o instante em que
+     tudo larga (docs/design/landing-v2/a2-energia/plano.md, seção 4).
+     Toda animação de entrada: só transform/opacity, só o `from` no
+     @keyframes, preenchimento `backwards`, escopo
+     `.lp[data-entrada]` + `@media (prefers-reduced-motion: no-preference)`.
+     O CSS em repouso é o estado final. */
+  --lt-ease-out:   cubic-bezier(.16, 1, .3, 1);  /* saída exponencial: título, painel, formulário */
+  --lt-ease-start: cubic-bezier(.12, .8, .2, 1); /* arranque explosivo, freada longa: marcas do chão */
+  --lt-entrada-marcas:  60ms;    /* a linha de largada começa a se desenhar */
+  --lt-entrada-disparo: 450ms;   /* disparo: chão, luz do horizonte, 1ª linha do título */
+  --lt-entrada-painel:  650ms;   /* o painel branco varre a tela (650 ms de duração) */
+  --lt-entrada-form:    900ms;   /* o formulário assenta dentro do painel */
+  --lt-entrada-frase:   950ms;   /* a frase sobre a liga assenta */
+  --lt-entrada-brilho:  1500ms;  /* o brilho cruza o botão Entrar uma vez; a entrada termina em ~1,95 s */
+}

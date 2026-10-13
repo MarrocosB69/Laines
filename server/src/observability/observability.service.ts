@@ -482,12 +482,13 @@ export class ObservabilityService {
 
   private getDbPoolSnapshot() {
     try {
-      const driver = (this.dataSource as any)?.driver;
-      const pool = driver?.master || driver?.pool;
+      const driver = this.dataSource?.driver;
+      const pool: unknown = driver && (Reflect.get(driver, 'master') || Reflect.get(driver, 'pool'));
       if (!pool) return null;
-      const total = Number(pool.totalCount);
-      const idle = Number(pool.idleCount);
-      const waiting = Number(pool.waitingCount);
+      if (typeof pool !== 'object') return null;
+      const total = Number(Reflect.get(pool, 'totalCount'));
+      const idle = Number(Reflect.get(pool, 'idleCount'));
+      const waiting = Number(Reflect.get(pool, 'waitingCount'));
       if (!Number.isFinite(total) || !Number.isFinite(idle) || !Number.isFinite(waiting)) {
         return null;
       }

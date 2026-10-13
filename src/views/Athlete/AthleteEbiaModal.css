@@ -1,39 +1,122 @@
-.athlete-ebia-modal {
+/* Modal da EBIA liberada ao atleta (AthleteEbiaModal.jsx), onda B de
+   docs/implementacao/telas-v2/change-intent.md.
+
+   O modal vai para o `body` por createPortal e usa as classes globais
+   app-modal-* de src/styles/modalSystem.css, que são da onda A. O padrão
+   novo entra só aqui, com a classe própria do modal ao lado de cada peça
+   (duas classes vencem as regras de uma classe de modalSystem.css sem
+   depender da ordem das folhas): casca branca com --lt-radius-card, raia
+   azul e verde sob o cabeçalho, título em Sofia 700, fechar com 44 px e
+   foco com --lt-focus-ring. O formulário dentro (AvaliacaoSocioeconomica)
+   já segue a base das avaliações (.av-modulo) e não muda. */
+
+@import url('https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400..700&family=Sofia+Sans+Extra+Condensed:ital,wght@1,900&display=swap');
+@import '../landing/landing-tokens.css';
+
+/* O véu no azul do estádio da landing (--lt-color-stadium a 55%). */
+.athlete-ebia-overlay.app-modal-overlay { background: rgba(11, 42, 94, 0.55); }
+
+.athlete-ebia-modal.app-modal-shell {
   --app-modal-width: 980px;
+  border: 0;
+  border-radius: var(--lt-radius-card);
+  background: var(--lt-color-surface);
+  box-shadow: 0 0 0 1px var(--lt-color-border), 0 30px 72px -38px rgba(10, 36, 68, 0.56);
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-normal);
 }
 
-.athlete-ebia-header {
-  gap: 0.9rem;
+.athlete-ebia-modal .app-modal-header {
+  position: relative;
+  align-items: flex-start;
+  gap: var(--lt-space-3) var(--lt-space-4);
+  padding: var(--lt-space-5) var(--lt-space-5) calc(var(--lt-space-4) + 3px);
+  border-bottom: 0;
+  background: var(--lt-color-surface);
 }
 
-.athlete-ebia-header-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 0.82rem;
-  border: 1px solid rgba(16, 51, 85, 0.24);
-  background: rgba(16, 51, 85, 0.08);
-  color: #103355;
+.athlete-ebia-modal .app-modal-header::after {
+  content: '';
+  position: absolute;
+  left: var(--lt-radius-card);
+  right: var(--lt-radius-card);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, var(--lt-color-brand-blue), var(--lt-color-brand-green));
+}
+
+.athlete-ebia-modal .app-modal-header-icon {
   display: grid;
+  flex: none;
   place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lt-color-track-tint);
+  color: var(--lt-color-brand-blue);
 }
 
-.athlete-ebia-body {
-  overflow-y: auto;
-}
+.athlete-ebia-modal .app-modal-heading { flex: 1 1 auto; gap: var(--lt-space-1); min-width: 0; }
 
-.athlete-ebia-body .avaliacao-socioeconomica {
+/* Reset do h2 global (Poppins, cor e tamanho). */
+.athlete-ebia-modal .app-modal-title {
   margin: 0;
+  background: none;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--lt-color-text);
+  font-family: var(--lt-font-family);
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--lt-text-lg);
+  line-height: var(--lt-leading-tight);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
-/* Parte 3 — harmonização visual (Modal EBIA atleta) */
-.athlete-ebia-header-icon {
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(16, 51, 85, 0.2);
-  background: rgba(16, 51, 85, 0.1);
-  color: var(--color-navy);
+.athlete-ebia-modal .app-modal-subtitle {
+  margin: 0;
+  color: var(--lt-color-text-muted);
+  font-size: var(--lt-text-base);
+  line-height: var(--lt-leading-snug);
 }
 
-.athlete-ebia-body {
-  border-top: 1px solid #edf2f7;
-  padding-top: 0.95rem;
+.athlete-ebia-modal .app-modal-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--lt-target-min);
+  height: var(--lt-target-min);
+  padding: 0;
+  border: 1.5px solid var(--lt-color-border-field);
+  border-radius: var(--lt-radius-control);
+  background: var(--lt-color-surface);
+  color: var(--lt-color-text-muted);
+  cursor: pointer;
+  transition: background-color 160ms, border-color 160ms, color 160ms;
+}
+
+@media (hover: hover) {
+  .athlete-ebia-modal .app-modal-close:hover:not(:disabled) { border-color: var(--lt-color-brand-blue); background: var(--lt-color-track-tint); color: var(--lt-color-brand-blue); }
+}
+
+.athlete-ebia-modal .app-modal-close:focus-visible { outline: none; border-color: var(--lt-color-brand-blue); box-shadow: var(--lt-focus-ring); }
+.athlete-ebia-modal .app-modal-close:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.athlete-ebia-modal .athlete-ebia-body {
+  overflow-y: auto;
+  padding: var(--lt-space-5);
+  border-top: 0;
+  background: var(--lt-color-surface);
+}
+
+.athlete-ebia-body .avaliacao-socioeconomica { margin: 0; }
+
+@media (max-width: 47.5rem) {
+  .athlete-ebia-modal .app-modal-header { padding-inline: var(--lt-space-4); }
+  .athlete-ebia-modal .athlete-ebia-body { padding: var(--lt-space-4); }
 }

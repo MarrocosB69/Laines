@@ -14,6 +14,7 @@ const formatDate = (value) => {
 };
 
 function Portion({ food }) {
+  if (food.quantidadePendente) return <span className="ap-meal-plan-portion">Quantidade não confirmada</span>;
   const grams = formatNumber(food.quantidadeGramas);
   const measures = formatNumber(food.quantidadeMedidas);
   return (
@@ -54,6 +55,13 @@ function Meal({ meal }) {
                   <strong>{food.descricao}</strong>
                 </span>
                 <Portion food={food} />
+                {food.semEquivalenciaAutomatica && (
+                  <small className="ap-meal-plan-alternative-note">
+                    {food.quantidadePendente
+                      ? 'Esta alternativa precisa de quantidade confirmada pela equipe.'
+                      : 'Quantidade definida individualmente pela equipe; sem equivalência automática.'}
+                  </small>
+                )}
               </li>
             ))}
           </ul>

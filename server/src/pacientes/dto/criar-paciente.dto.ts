@@ -2,6 +2,7 @@ import {
   IsArray,
   IsEmail,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -36,6 +37,10 @@ export class CriarPacienteDto {
   @IsOptional()
   @IsString()
   genero?: string;
+
+  @IsOptional()
+  @IsString()
+  sexoBiologico?: string;
 
   @IsOptional()
   @IsString()
@@ -163,6 +168,11 @@ export class CriarPacienteDto {
   @IsArray()
   @IsUUID(undefined, { each: true })
   equipeTecnicaIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsObject({ each: true })
+  equipeProfissional?: Array<{ userId: string; userName: string; area: string; papel: string }>;
 
   @IsOptional()
   @Transform(emptyToUndefined)

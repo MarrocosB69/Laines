@@ -5,6 +5,23 @@ import { Save, X } from 'lucide-react';
 import { useModalBodyLock } from '../../../hooks/useModalBodyLock';
 import { useModalFocusTrap } from '../../../hooks/useModalFocusTrap';
 
+const normalizeProjectStatusInput = (status) => {
+  const value = String(status || '').trim().toLowerCase();
+  const map = {
+    ativo: 'em_andamento',
+    ativa: 'em_andamento',
+    andamento: 'em_andamento',
+    em_andamento: 'em_andamento',
+    finalizado: 'concluido',
+    finalizada: 'concluido',
+    concluido: 'concluido',
+    concluida: 'concluido',
+    pausado: 'pausado',
+    pausada: 'pausado',
+    planejamento: 'planejamento'
+  };
+  return map[value] || 'planejamento';
+};
 
 const defaultForm = {
   nome: '',
@@ -39,7 +56,7 @@ const ResearchProjectModal = ({
       setFormData({
         nome: initialData.nome || '',
         area: initialData.area || 'nutricao',
-        status: initialData.status || 'planejamento',
+        status: normalizeProjectStatusInput(initialData.status),
         coordenador: initialData.coordenador || '',
         descricao: initialData.descricao || '',
         equipe: (initialData.equipe || []).join(', '),
@@ -103,6 +120,7 @@ const ResearchProjectModal = ({
     try {
       const payload = {
         ...formData,
+        status: normalizeProjectStatusInput(formData.status),
         equipe: formData.equipe
           .split(',')
           .map((item) => item.trim())
@@ -252,8 +270,11 @@ const ResearchProjectModal = ({
                 {filteredStudents.length === 0 ? (
                   <span className="research-project-modal__empty">Nenhum aluno encontrado.</span>
                 ) : (
-                  filteredStudents.map((student) => (
-                    <label key={student.id} className="research-project-modal__student-option">
+                  filteredStudents.map((student, index) => (
+                    <label
+                      key={`${student.id || student.email || 'student'}-${index}`}
+                      className="research-project-modal__student-option"
+                    >
                       <input
                         type="checkbox"
                         checked={(formData.alunosIds || []).includes(student.id)}
@@ -266,8 +287,11 @@ const ResearchProjectModal = ({
               </div>
               {selectedStudents.length > 0 && (
                 <div className="research-project-modal__selected-list">
-                  {selectedStudents.map((student) => (
-                    <span key={student.id} className="research-project-modal__selected-badge">
+                  {selectedStudents.map((student, index) => (
+                    <span
+                      key={`${student.id || student.nome || 'selected'}-${index}`}
+                      className="research-project-modal__selected-badge"
+                    >
                       {student.nome}
                     </span>
                   ))}

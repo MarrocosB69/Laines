@@ -1,4 +1,5 @@
 import { ancoraEm, cargaGlicemicaItem, gramasDoItem, valorNutriente } from './nutrientes.js';
+import { nomeParaExibicao } from './nomeAlimento.js';
 
 const arredondar = (q, passo) => Math.max(passo, Math.round(q / passo) * passo);
 
@@ -18,7 +19,8 @@ export function montarOpcao(
 ) {
   const grupo = grupos[base.grupo];
   const medida = alimento.medidas[medidaIdx];
-  if (!grupo || !medida) return null;
+  if (!grupo || !medida || alimento.grupo !== base.grupo
+    || (modo === 'fixa' && (quantidadeFixa === null || quantidadeFixa === ''))) return null;
   const alvo = ancoraEm(base.comp, grupo.ancora, gramasDoItem(base));
   const porMedida = ancoraEm(alimento.comp, grupo.ancora, medida.gramas);
   if (alvo === null || alvo === 0 || porMedida === null || porMedida === 0) return null;
@@ -41,7 +43,7 @@ export function montarOpcao(
 
   return {
     alimentoId: alimento.id,
-    nome: alimento.nome,
+    nome: alimento.nomeExibicao || nomeParaExibicao(alimento),
     fonte: alimento.fonte,
     medidaIdx,
     medida,
@@ -70,6 +72,13 @@ export function substitutosPara(
   base,
   { grupos, catalogo, restricoes = [], tolerancia = 0.1, passo = 0.5, limite = 6 } = {}
 ) {
+  if (!Array.isArray(restricoes) && restricoes?.pendenteRevisao) {
+    return { motivo: 'restricoes-pendentes', candidatos: [] };
+  }
+  const alimentoIds = Array.isArray(restricoes) ? restricoes : restricoes?.alimentoIds || [];
+  // Restrição confirmada por grupo (UPD-11): nenhum candidato daquele grupo é sugerido.
+  const gruposRestritos = Array.isArray(restricoes) ? [] : restricoes?.grupos || [];
+  if (gruposRestritos.includes(base.grupo)) return { motivo: 'grupo-restrito', candidatos: [] };
   const grupo = grupos[base.grupo];
   if (!grupo) return { motivo: 'sem-grupo', candidatos: [] };
   const alvo = ancoraEm(base.comp, grupo.ancora, gramasDoItem(base));
@@ -79,7 +88,7 @@ export function substitutosPara(
   for (const alimento of catalogo) {
     if (alimento.grupo !== base.grupo) continue;
     if (alimento.id === base.alimentoId) continue;
-    if (restricoes.includes(alimento.id)) continue;
+    if (alimentoIds.includes(alimento.id)) continue;
     for (let i = 0; i < alimento.medidas.length; i += 1) {
       const op = montarOpcao(base, alimento, i, { grupos, passo });
       if (!op || Math.abs(op.desvio) > tolerancia) continue;
@@ -104,14 +113,15 @@ export function substitutosPara(
  * valendo — ela foi prescrita — mas a tela precisa dizer que ali não há
  * equivalência, e não fingir uma.
  */
-function opcaoSemEquivalencia(base, alimento, medidaIdx, quantidade) {
+function opcaoSemEquivalencia(base, alimento, medidaIdx, quantidade, modo) {
   const medida = alimento.medidas[medidaIdx] ?? alimento.medidas[0];
   // Sem equivalencia nao ha quantidade calculada. O padrao segue a medida:
   // 1 porcao caseira, ou 100 g quando o alimento e prescrito em grama —
   // porque 1 grama de azeite nao e um ponto de partida util.
-  const q = quantidade ?? (medida.gramas === 1 ? 100 : 1);
-  const gramas = q * medida.gramas;
-  const val = (k) => (alimento.comp[k] === null || alimento.comp[k] === undefined
+  const pendenteQuantidade = modo === 'fixa' && quantidade === null;
+  const q = pendenteQuantidade ? null : quantidade ?? (medida.gramas === 1 ? 100 : 1);
+  const gramas = q === null ? null : q * medida.gramas;
+  const val = (k) => (gramas === null || alimento.comp[k] === null || alimento.comp[k] === undefined
     ? null
     : (alimento.comp[k] * gramas) / 100);
   const delta = (k) => {
@@ -121,13 +131,14 @@ function opcaoSemEquivalencia(base, alimento, medidaIdx, quantidade) {
   };
   return {
     alimentoId: alimento.id,
-    nome: alimento.nome,
+    nome: alimento.nomeExibicao || nomeParaExibicao(alimento),
     fonte: alimento.fonte,
     medidaIdx,
     medida,
     quantidade: q,
     gramas,
     modo: 'fixa',
+    pendenteQuantidade,
     // Null, nao zero: nao existe desvio quando nao existe equivalencia.
     desvio: null,
     deltaCho: delta('cho'),
@@ -157,7 +168,7 @@ export function opcoesDoItem(base, { grupos, catalogoPorId } = {}) {
         modo: s.modo,
         quantidadeFixa: s.quantidade ?? null
       });
-      return op ?? opcaoSemEquivalencia(base, alimento, s.medidaIdx ?? 0, s.quantidade ?? null);
+      return op ?? opcaoSemEquivalencia(base, alimento, s.medidaIdx ?? 0, s.quantidade ?? null, s.modo);
     })
     .filter(Boolean);
 }

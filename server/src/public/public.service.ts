@@ -55,9 +55,14 @@ export class PublicService {
         .where('a.status = :status', { status: 'finalizada' })
         .andWhere('a.deletedAt IS NULL')
         .getCount(),
+      // Membro da liga, nao usuario do sistema: atleta tem conta para acompanhar
+      // o proprio atendimento, mas e atendido pela liga, nao faz parte dela.
+      // Sem este filtro a pagina publica dizia "48 atletas e 37 membros" com os
+      // atletas contados duas vezes.
       this.usersRepo.createQueryBuilder('u')
         .where('u.status = :status', { status: 'ativo' })
         .andWhere('u.deletedAt IS NULL')
+        .andWhere('LOWER(u.role) <> :atleta', { atleta: 'atleta' })
         .getCount()
     ]);
 
@@ -90,7 +95,40 @@ export class PublicService {
     return (pai.length || mae.length) ? { pai, mae } : null;
   }
 
-  private buildDadosInscricao(dto: InscricaoPublicaDto) {
+  private resolveEsportes(dto: InscricaoPublicaDto) {
+    if (!dto.esportes?.length) {
+      return {
+        esportes: undefined,
+        modalidadePrincipal: dto.modalidadePrincipal,
+        tempoPratica: dto.tempoPratica,
+        frequenciaSemanal: dto.frequenciaSemanal,
+        duracaoSessao: dto.duracaoSessao,
+        outrasModalidades: dto.outrasModalidades
+      };
+    }
+    const esportes = dto.esportes.map((item) => ({
+      modalidade: item.modalidade.trim(),
+      tempoPratica: item.tempoPratica,
+      frequenciaSemanal: item.frequenciaSemanal,
+      duracaoSessao: item.duracaoSessao
+    }));
+    const nomes = esportes.map((item) => item.modalidade
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ').toLowerCase());
+    if (nomes.some((nome) => nome.length < 2) || new Set(nomes).size !== nomes.length) {
+      throw new BadRequestException('Informe modalidades distintas e validas.');
+    }
+    return {
+      esportes,
+      modalidadePrincipal: esportes[0].modalidade,
+      tempoPratica: esportes[0].tempoPratica,
+      frequenciaSemanal: esportes[0].frequenciaSemanal ?? dto.frequenciaSemanal,
+      duracaoSessao: esportes[0].duracaoSessao,
+      outrasModalidades: esportes.slice(1).map((item) => item.modalidade).join(', ') || undefined
+    };
+  }
+
+  private buildDadosInscricao(dto: InscricaoPublicaDto, esporte: ReturnType<PublicService['resolveEsportes']>) {
     return compactJsonRecord({
       nome: String(dto.nome || '').trim() || undefined,
       dataNascimento: dto.dataNascimento,
@@ -107,11 +145,12 @@ export class PublicService {
       estado: dto.estado,
       nomeResponsavel: dto.nomeResponsavel,
       cpfResponsavel: dto.cpfResponsavel ? this.normalizeCpf(dto.cpfResponsavel) : undefined,
-      modalidadePrincipal: dto.modalidadePrincipal,
-      tempoPratica: dto.tempoPratica,
-      frequenciaSemanal: dto.frequenciaSemanal,
-      duracaoSessao: dto.duracaoSessao,
-      outrasModalidades: dto.outrasModalidades,
+      modalidadePrincipal: esporte.modalidadePrincipal,
+      esportes: esporte.esportes,
+      tempoPratica: esporte.tempoPratica,
+      frequenciaSemanal: esporte.frequenciaSemanal,
+      duracaoSessao: esporte.duracaoSessao,
+      outrasModalidades: esporte.outrasModalidades,
       tipoTreino: dto.tipoTreino,
       intensidade: dto.intensidade,
       objetivo: dto.objetivo,
@@ -125,6 +164,9 @@ export class PublicService {
       urinaUltima: dto.urinaUltima,
       suplementoNoDia: dto.suplementoNoDia,
       sinaisClinicos: dto.sinaisClinicos,
+      lesaoAtual: dto.lesaoAtual,
+      lesaoUltimos3Meses: dto.lesaoUltimos3Meses,
+      impactoLesao: dto.impactoLesao,
       relatoNegativo: dto.relatoNegativo,
       redsInstrumento: dto.redsInstrumento,
       redsRespostas: dto.redsRespostas,
@@ -180,6 +222,7 @@ export class PublicService {
       throw new BadRequestException('CPF inválido. Verifique os dígitos informados.');
     }
 
+    const esporte = this.resolveEsportes(dto);
     const normalizedEmail = dto.email ? String(dto.email).trim().toLowerCase() : '';
     return this.pacientesRepo.manager.transaction(async (manager) => {
       const repo = manager.getRepository(Paciente);
@@ -202,7 +245,7 @@ export class PublicService {
 
       const hoje = new Date().toISOString().slice(0, 10);
       const now = new Date().toISOString();
-      const dadosInscricao = this.buildDadosInscricao(dto);
+      const dadosInscricao = this.buildDadosInscricao(dto, esporte);
       const consentimento = {
         aceito: true,
         versao: CONSENTIMENTO_VERSAO,
@@ -234,15 +277,15 @@ export class PublicService {
         bairro: dto.bairro,
         cidade: dto.cidade,
         estado: dto.estado,
-        status: 'Triagem Publica',
-        modalidadePrincipal: dto.modalidadePrincipal,
-        tempoPratica: dto.tempoPratica,
-        frequenciaSemanal: dto.frequenciaSemanal,
-        duracaoSessao: dto.duracaoSessao,
-        outrasModalidades: dto.outrasModalidades,
-        tipoTreino: dto.tipoTreino || 'misto',
-        intensidade: dto.intensidade || 'moderada',
-        objetivo: dto.objetivo || 'performance',
+        status: 'Lista de Espera',
+        modalidadePrincipal: esporte.modalidadePrincipal,
+        tempoPratica: esporte.tempoPratica,
+        frequenciaSemanal: esporte.frequenciaSemanal,
+        duracaoSessao: esporte.duracaoSessao,
+        outrasModalidades: esporte.outrasModalidades,
+        tipoTreino: dto.tipoTreino || 'nao_informado',
+        intensidade: dto.intensidade || 'nao_informado',
+        objetivo: dto.objetivo || 'nao_informado',
         historicoSaude: dto.historicoSaude,
         comorbidadesPessoais: dto.comorbidadesPessoais,
         comorbidadesFamiliares: PublicService.normalizeFamiliares(dto.comorbidadesFamiliares) || undefined,
@@ -259,7 +302,7 @@ export class PublicService {
           incomingConfirmation,
           {
             origem: 'inscricao_publica',
-            cadastroStatus: 'triagem_publica',
+            cadastroStatus: 'lista_espera',
             timestamp: now
           }
         )

@@ -1,0 +1,111 @@
+- generic [ref=f1e9]:
+  - complementary [ref=f1e10]:
+    - generic [ref=f1e11]:
+      - generic [ref=f1e12]:
+        - generic [ref=f1e13]:
+          - img "LAINES Logo" [ref=f1e15]
+          - generic [ref=f1e16]:
+            - generic [ref=f1e17]: LAINES
+            - generic [ref=f1e18]: Liga Acadêmica Interprofissional de Nutrição Esportiva
+        - 'generic "Perfil: Coordenação" [ref=f1e19]': Coordenação
+      - button "Recolher barra lateral" [ref=f1e21] [cursor=pointer]
+    - navigation "Navegação principal" [ref=f1e24]:
+      - region "Visão Geral" [ref=f1e25]:
+        - heading "Visão Geral" [level=3] [ref=f1e26]
+        - button "Início" [ref=f1e28] [cursor=pointer]
+      - region "Pessoas" [ref=f1e37]:
+        - heading "Pessoas" [level=3] [ref=f1e38]
+        - generic [ref=f1e39]:
+          - button "Membros" [ref=f1e40] [cursor=pointer]
+          - button "Atletas" [ref=f1e48] [cursor=pointer]
+      - region "Áreas" [ref=f1e55]:
+        - heading "Áreas" [level=3] [ref=f1e56]
+        - generic [ref=f1e57]:
+          - button "Pesquisa" [ref=f1e58] [cursor=pointer]
+          - button "Ensino" [ref=f1e63] [cursor=pointer]
+          - button "Extensão" [ref=f1e68] [cursor=pointer]
+      - region "Gestão" [ref=f1e75]:
+        - heading "Gestão" [level=3] [ref=f1e76]
+        - generic [ref=f1e77]:
+          - button "Solicitações" [ref=f1e78] [cursor=pointer]
+          - button "Relatórios" [ref=f1e84] [cursor=pointer]
+      - region "Sistema" [ref=f1e90]:
+        - heading "Sistema" [level=3] [ref=f1e91]
+        - button "Configurações" [ref=f1e93] [cursor=pointer]
+    - generic [ref=f1e100]:
+      - generic [ref=f1e101]: BT
+      - generic [ref=f1e102]:
+        - paragraph [ref=f1e103]: Beatriz Almeida Torres
+        - paragraph [ref=f1e104]: Sessão ativa
+      - button "Encerrar sessão" [ref=f1e106] [cursor=pointer]
+  - main [ref=f1e110]:
+    - generic [ref=f1e111]:
+      - generic [ref=f1e112]:
+        - heading "Pesquisa" [level=1] [ref=f1e145]
+        - paragraph [ref=f1e118]: Painel administrativo
+      - generic [ref=f1e119]:
+        - button "Tarefas pendentes" [ref=f1e120] [cursor=pointer]
+        - button "Notificacoes" [ref=f1e124] [cursor=pointer]
+        - button [ref=f1e128] [cursor=pointer]
+        - generic [ref=f1e132]: BT
+    - generic [ref=f1e147]:
+      - generic [ref=f1e148]:
+        - generic [ref=f1e149]:
+          - generic [ref=f1e150]: PESQUISA
+          - heading "Repositório de pesquisa" [level=1] [ref=f1e153]
+          - paragraph [ref=f1e154]: Produções, arquivos, links, pesquisas ativas e ideias de projeto em um só lugar.
+        - button "Nova ideia" [ref=f1e647] [cursor=pointer]
+      - tablist "Seções de pesquisa" [ref=f1e160]:
+        - tab "Repositório" [ref=f1e161] [cursor=pointer]
+        - tab "Pesquisas 7" [ref=f1e165] [cursor=pointer]:
+          - text: Pesquisas
+          - generic [ref=f1e168]: "7"
+        - tab "Ideias 3" [active] [selected] [ref=f1e169] [cursor=pointer]:
+          - text: Ideias
+          - generic [ref=f1e172]: "3"
+      - generic [ref=f1e173]:
+        - generic [ref=f1e650]:
+          - generic [ref=f1e651]: Ideias
+          - generic [ref=f1e652]: "3"
+        - generic [ref=f1e653]:
+          - generic [ref=f1e654]: Priorizadas
+          - generic [ref=f1e655]: "0"
+        - generic [ref=f1e656]:
+          - generic [ref=f1e657]: Em discussão
+          - generic [ref=f1e658]: "0"
+        - generic [ref=f1e659]:
+          - generic [ref=f1e660]: Produções
+          - generic [ref=f1e661]: "0"
+      - generic [ref=f1e186]:
+        - textbox "Buscar por ideia, área, palavra-chave ou responsável" [ref=f1e662]
+        - generic "Modo de visualização" [ref=f1e663]:
+          - button "Visualizar em lista" [ref=f1e664] [cursor=pointer]
+          - button "Visualizar em quadro" [ref=f1e666] [cursor=pointer]
+      - generic [ref=f1e672]:
+        - article [ref=f1e673]:
+          - generic [ref=f1e678]:
+            - generic [ref=f1e679]: Psicologia
+            - heading "mhj" [level=3] [ref=f1e680]
+          - 'generic "Status: Ideia" [ref=f1e681]':
+            - generic "Ideia" [ref=f1e682]
+            - generic "Em discussão" [ref=f1e684]
+            - generic "Prioridade" [ref=f1e686]
+            - generic [ref=f1e687]: Ideia
+        - article [ref=f1e688]:
+          - generic [ref=f1e693]:
+            - generic [ref=f1e694]: Multidisciplinar
+            - heading "sds" [level=3] [ref=f1e695]
+          - 'generic "Status: Ideia" [ref=f1e696]':
+            - generic "Ideia" [ref=f1e697]
+            - generic "Em discussão" [ref=f1e699]
+            - generic "Prioridade" [ref=f1e701]
+            - generic [ref=f1e702]: Ideia
+        - article [ref=f1e703]:
+          - generic [ref=f1e708]:
+            - generic [ref=f1e709]: Multidisciplinar
+            - heading "212" [level=3] [ref=f1e710]
+          - 'generic "Status: Ideia" [ref=f1e711]':
+            - generic "Ideia" [ref=f1e712]
+            - generic "Em discussão" [ref=f1e714]
+            - generic "Prioridade" [ref=f1e716]
+            - generic [ref=f1e717]: Ideia

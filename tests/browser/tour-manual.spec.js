@@ -730,11 +730,11 @@ test.describe('05 — Avaliacoes', () => {
     await screenshot(page, '05_16_avaliacao_hidratacao');
   });
 
-  // ── Triagem RED-S ─────────────────────────────────────────
-  test('05_17 triagem red-s', async ({ page }) => {
+  // ── Disponibilidade energética ────────────────────────────
+  test('05_17 disponibilidade energetica', async ({ page }) => {
     const ok = await abrirAvaliacaoCompleta(page);
     if (!ok) return;
-    await abrirModulo(page, 'RED-S');
+    await abrirModulo(page, 'Disponibilidade energética');
     await page.waitForTimeout(1500);
     await screenshot(page, '05_17_triagem_reds');
   });

@@ -4,7 +4,7 @@ import {
   NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { TacoFood } from './taco.entity';
 
 type DecimalKeys =
@@ -38,6 +38,9 @@ type DecimalKeys =
 export type TacoItem = {
   id: number;
   codigo: number;
+  codigoTexto: string | null;
+  fonte: string;
+  tipoAlimento: string | null;
   descricao: string;
   grupo: string;
   umidade: number | null;
@@ -142,6 +145,16 @@ type BuscaParams = {
   limite?: number;
 };
 
+/** Termos de consulta, sem alterar a descricao oficial armazenada. */
+export function termosBuscaAlimento(value: unknown): string[] {
+  const normalizado = String(value ?? '').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/\bc\/(?=\s|$)/g, 'com ')
+    .replace(/\bs\/(?=\s|$)/g, 'sem ');
+  const termos = [...new Set(normalizado.match(/[a-z0-9]+/g) || [])];
+  return termos.length <= 12 ? termos : [];
+}
+
 const DECIMAL_FIELDS: DecimalKeys[] = [
   'umidade',
   'energiaKcal',
@@ -207,6 +220,9 @@ export class TacoService {
     const payload: TacoItem = {
       id: row.id,
       codigo: row.codigo,
+      codigoTexto: row.codigoTexto ?? null,
+      fonte: row.fonte || 'TACO',
+      tipoAlimento: row.tipoAlimento ?? null,
       descricao: row.descricao,
       grupo: row.grupo,
       umidade: null,
@@ -287,16 +303,33 @@ export class TacoService {
     const query = this.toText(params?.query);
     const grupo = this.toText(params?.grupo);
     const limite = this.toLimit(params?.limite);
+    const termos = termosBuscaAlimento(query);
+    if (query && termos.length === 0) return [];
+    const qb = this.repo.createQueryBuilder('alimento');
+    if (query) {
+      const codigo = termos.length === 1 && /^[a-z][0-9]+[a-z]$/.test(termos[0]);
+      if (codigo) qb.andWhere('lower(alimento.codigoTexto) = :codigo', { codigo: termos[0] });
+      else termos.forEach((termo, indice) => {
+        const campo = 'imutavel_unaccent(lower(alimento.descricao))';
+        const alternativa = termo === 'com' ? 'c/' : termo === 'sem' ? 's/' : null;
+        qb.andWhere(
+          alternativa
+            ? `(${campo} LIKE :termo${indice} OR ${campo} LIKE :alternativa${indice})`
+            : `${campo} LIKE :termo${indice}`,
+          { [`termo${indice}`]: `%${termo}%`, ...(alternativa ? { [`alternativa${indice}`]: `%${alternativa}%` } : {}) }
+        );
+      });
+    }
+    if (grupo) {
+      qb.andWhere(
+        'imutavel_unaccent(lower(alimento.grupo)) LIKE imutavel_unaccent(lower(:grupo))',
+        { grupo: `%${grupo}%` }
+      );
+    }
 
-    const where: Record<string, unknown> = {};
-    if (query) where['descricao'] = ILike(`%${query}%`);
-    if (grupo) where['grupo'] = ILike(`%${grupo}%`);
-
-    const rows = await this.repo.find({
-      where,
-      order: { descricao: 'ASC' },
-      take: limite
-    });
+    if (query) qb.orderBy('length(alimento.descricao)', 'ASC').addOrderBy('alimento.descricao', 'ASC');
+    else qb.orderBy('alimento.descricao', 'ASC');
+    const rows = await qb.take(limite).getMany();
 
     return rows.map((item) => this.toPublic(item));
   }

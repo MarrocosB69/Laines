@@ -1,36 +1,50 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp } from 'lucide-react';
+import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
 
-const StatCard = ({ title, value, icon: Icon, color, trend, description }) => (
-  <motion.div
-    whileHover={{ y: -5, scale: 1.02 }}
-    className="stat-card"
-  >
-    <div className="stat-card-overlay" />
+const trendIcons = {
+  up: TrendingUp,
+  down: TrendingDown,
+  flat: Minus
+};
 
-    <div className={`stat-card-icon ${color}`}>
-      <Icon size={24} />
-    </div>
+// Cartão no desenho de .painel-indicador (ReportsPage.css): parado, sem o
+// salto no hover. `value` "—" é ausência de valor (o leitor de tela ouve
+// "sem valor"). A tendência vem escrita (`trend.label`): o ícone só repete
+// a direção; sem base de comparação (`direction: 'none'`) não há ícone.
+const StatCard = ({ title, value, icon: Icon, color = '', trend, description }) => {
+  const TrendIcon = trend ? trendIcons[trend.direction] : null;
+  const semValor = value === '—';
 
-    <div className="stat-card-content">
-      <h3 className="stat-card-title">{title}</h3>
-      <div className="stat-card-value-container">
-        <p className="stat-card-value">{value}</p>
-        {trend && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className={`stat-card-trend ${trend.direction === 'up' ? 'trend-up' : 'trend-down'}`}
-          >
-            <TrendingUp size={12} />
-            {trend.value}
-          </motion.span>
-        )}
+  return (
+    <div className="stat-card">
+      <div className="stat-card-overlay" />
+
+      <div className={`stat-card-icon ${color}`}>
+        <Icon size={24} />
       </div>
-      {description && <p className="stat-card-description">{description}</p>}
+
+      <div className="stat-card-content">
+        <h3 className="stat-card-title">{title}</h3>
+        <div className="stat-card-value-container">
+          <p className="stat-card-value">
+            {semValor ? (
+              <>
+                <span aria-hidden="true">—</span>
+                <span className="reports-sr">sem valor</span>
+              </>
+            ) : value}
+          </p>
+          {trend && (
+            <span className={`stat-card-trend trend-${trend.direction}`}>
+              {TrendIcon && <TrendIcon size={12} />}
+              {trend.label}
+            </span>
+          )}
+        </div>
+        {description && <p className="stat-card-description">{description}</p>}
+      </div>
     </div>
-  </motion.div>
-);
+  );
+};
 
 export default StatCard;
